@@ -6,6 +6,7 @@ import globals from 'globals';
 export default tseslint.config(
   {
     ignores: [
+      '.*/**',
       '**/node_modules/**',
       '**/.next/**',
       '**/.next-check/**',

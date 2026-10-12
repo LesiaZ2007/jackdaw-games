@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.next-check/
+out/
+dist/
+coverage/
+.vercel/
+.env*.local
+.env
+*.tsbuildinfo
+test-results/
+playwright-report/
+.open-next/
+.wrangler/
+.DS_Store

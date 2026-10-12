@@ -1,0 +1,278 @@
+import { describe, expect, it } from 'vitest';
+import {
+  applyGameAction,
+  backToLobby,
+  chat,
+  createLobby,
+  createRejoinCode,
+  join,
+  kick,
+  leave,
+  playAgain,
+  reassignHostIfAway,
+  redeemRejoinCode,
+  setAvatar,
+  setGame,
+  setOptions,
+  snapshotFor,
+  start,
+  startBlocker,
+  transferHost,
+  type Ctx,
+  type Lobby,
+} from './lobby';
+import { counterGame } from './testing/counter-game';
+import type { Avatar } from './protocol';
+
+const games = { counter: counterGame };
+const ctx = (now = 1_000): Ctx => ({ now, games });
+const palette: Avatar[] = ['a', 'b', 'c', 'd', 'e', 'f'].map((x, i) => ({
+  crest: `crest-${x}`,
+  tint: `tint-${i}`,
+}));
+
+function lobbyWith(n: number, gameId?: string): Lobby {
+  let lobby = createLobby(
+    {
+      code: 'ABCD',
+      hostId: 'p1',
+      hostName: 'Ana',
+      hostAvatar: palette[0]!,
+      tokenKey: 't1',
+      gameId,
+    },
+    ctx(),
+  );
+  for (let i = 2; i <= n; i++) {
+    lobby = join(
+      lobby,
+      { tokenKey: `t${i}`, newPlayerId: `p${i}`, name: `P${i}`, palette },
+      ctx(),
+    ).lobby;
+  }
+  return lobby;
+}
+
+/** Plays the counter game to the end: players add in turn until the target is hit. */
+function playOut(lobby: Lobby): Lobby {
+  while (lobby.status === 'in_game') {
+    const s = lobby.session!;
+    const turn = (s.state as { players: string[]; turn: number }).players[
+      (s.state as { turn: number }).turn
+    ]!;
+    lobby = applyGameAction(
+      lobby,
+      turn,
+      { sessionId: s.id, seq: s.seq, action: { type: 'add' } },
+      ctx(),
+    );
+  }
+  return lobby;
+}
+
+describe('creating and joining', () => {
+  it('home-page lobbies start with no game; catalog lobbies preselect one with defaults', () => {
+    expect(lobbyWith(1).selectedGameId).toBeNull();
+    const fromCatalog = lobbyWith(1, 'counter');
+    expect(fromCatalog.selectedGameId).toBe('counter');
+    expect(fromCatalog.gameOptions).toEqual({ target: 3 });
+  });
+
+  it('a returning token reclaims its seat instead of taking a new one', () => {
+    const lobby = lobbyWith(3);
+    const again = join(
+      lobby,
+      { tokenKey: 't2', newPlayerId: 'zzz', name: 'Other', palette },
+      ctx(),
+    );
+    expect(again.playerId).toBe('p2');
+    expect(again.lobby.players).toHaveLength(3);
+  });
+
+  it('caps the lobby at 15 players', () => {
+    const full = lobbyWith(15);
+    expect(() =>
+      join(full, { tokenKey: 'tx', newPlayerId: 'px', name: 'X', palette }, ctx()),
+    ).toThrow(/full/);
+  });
+
+  it('gives every player a unique avatar', () => {
+    const lobby = lobbyWith(4);
+    const crests = new Set(lobby.players.map((p) => p.avatar.crest));
+    const tints = new Set(lobby.players.map((p) => p.avatar.tint));
+    expect(crests.size).toBe(4);
+    expect(tints.size).toBe(4);
+    expect(() => setAvatar(lobby, 'p2', lobby.players[0]!.avatar, ctx())).toThrow(/already has/);
+  });
+});
+
+describe('host powers', () => {
+  it('only the host can pick the game', () => {
+    const lobby = lobbyWith(3);
+    expect(() => setGame(lobby, 'p2', 'counter', ctx())).toThrow(/host/);
+    expect(setGame(lobby, 'p1', 'counter', ctx()).selectedGameId).toBe('counter');
+  });
+
+  it('validates options with the game schema', () => {
+    const lobby = lobbyWith(3, 'counter');
+    expect(() => setOptions(lobby, 'p1', { target: 99 }, ctx())).toThrow();
+    expect(setOptions(lobby, 'p1', { target: 5 }, ctx()).gameOptions).toEqual({ target: 5 });
+  });
+
+  it('explains why a game cannot start', () => {
+    expect(startBlocker(lobbyWith(1, 'counter'), ctx())).toBe('Needs 2 to 4 players.');
+    expect(startBlocker(lobbyWith(5, 'counter'), ctx())).toBe('Needs 2 to 4 players.');
+    const lowTarget = setOptions(lobbyWith(3, 'counter'), 'p1', { target: 2 }, ctx());
+    expect(startBlocker(lowTarget, ctx())).toMatch(/Target/);
+    expect(startBlocker(lobbyWith(3, 'counter'), ctx())).toBeNull();
+  });
+
+  it('kicks and transfers host', () => {
+    const lobby = lobbyWith(3);
+    const kicked = kick(lobby, 'p1', 'p3', ctx());
+    expect(kicked.players.map((p) => p.id)).toEqual(['p1', 'p2']);
+    expect(Object.values(kicked.seats)).not.toContain('p3');
+    expect(transferHost(lobby, 'p1', 'p2', ctx()).hostId).toBe('p2');
+  });
+
+  it('hands host to the longest-connected online player after 60s away', () => {
+    const lobby = lobbyWith(3);
+    const now = 200_000;
+    const presence = { p1: now - 61_000, p2: now - 5_000, p3: now - 1_000 };
+    expect(reassignHostIfAway(lobby, presence, ctx(now)).hostId).toBe('p2');
+    expect(reassignHostIfAway(lobby, { ...presence, p1: now - 30_000 }, ctx(now))).toBe(lobby);
+  });
+
+  it('a leaving host passes host on', () => {
+    expect(leave(lobbyWith(3), 'p1', ctx()).hostId).toBe('p2');
+  });
+});
+
+describe('running a game', () => {
+  it('end then back to lobby keeps the selected game and options', () => {
+    let lobby = setOptions(lobbyWith(3, 'counter'), 'p1', { target: 4 }, ctx());
+    lobby = start(lobby, 'p1', { sessionId: 's1', seed: 7 }, ctx());
+    lobby = playOut(lobby);
+    expect(lobby.status).toBe('results');
+    expect(lobby.history[0]?.gameId).toBe('counter');
+    lobby = backToLobby(lobby, 'p1', ctx());
+    expect(lobby.status).toBe('waiting');
+    expect(lobby.selectedGameId).toBe('counter');
+    expect(lobby.gameOptions).toEqual({ target: 4 });
+  });
+
+  it('play again starts a fresh session of the same game with the same options', () => {
+    let lobby = setOptions(lobbyWith(3, 'counter'), 'p1', { target: 5 }, ctx());
+    lobby = playOut(start(lobby, 'p1', { sessionId: 's1', seed: 7 }, ctx()));
+    lobby = playAgain(lobby, 'p1', { sessionId: 's2', seed: 8 }, ctx());
+    expect(lobby.status).toBe('in_game');
+    expect(lobby.session?.id).toBe('s2');
+    expect((lobby.session?.state as { target: number }).target).toBe(5);
+  });
+
+  it('play again waits in the lobby if the game no longer fits', () => {
+    let lobby = playOut(start(lobbyWith(3, 'counter'), 'p1', { sessionId: 's1', seed: 1 }, ctx()));
+    lobby = join(lobby, { tokenKey: 't4', newPlayerId: 'p4', name: 'D', palette }, ctx()).lobby;
+    lobby = join(lobby, { tokenKey: 't5', newPlayerId: 'p5', name: 'E', palette }, ctx()).lobby;
+    lobby = playAgain(lobby, 'p1', { sessionId: 's2', seed: 2 }, ctx());
+    expect(lobby.status).toBe('waiting');
+    expect(lobby.selectedGameId).toBe('counter');
+  });
+
+  it('records scores across games', () => {
+    let lobby = playOut(start(lobbyWith(2, 'counter'), 'p1', { sessionId: 's1', seed: 1 }, ctx()));
+    lobby = playOut(playAgain(lobby, 'p1', { sessionId: 's2', seed: 2 }, ctx()));
+    const total = Object.values(lobby.scores).reduce((n, s) => n + s.wins, 0);
+    expect(total).toBe(2);
+    expect(lobby.scores.p1?.played).toBe(2);
+  });
+
+  it('rejects actions from an earlier game, from the future, and out of turn', () => {
+    let lobby = start(lobbyWith(3, 'counter'), 'p1', { sessionId: 's1', seed: 1 }, ctx());
+    const add = { type: 'add' };
+    expect(() =>
+      applyGameAction(lobby, 'p1', { sessionId: 'old', seq: 0, action: add }, ctx()),
+    ).toThrow(/moved on/);
+    expect(() =>
+      applyGameAction(lobby, 'p1', { sessionId: 's1', seq: 5, action: add }, ctx()),
+    ).toThrow(/moved on/);
+    expect(() =>
+      applyGameAction(lobby, 'p2', { sessionId: 's1', seq: 0, action: add }, ctx()),
+    ).toThrow(/not your turn/);
+    expect(() =>
+      applyGameAction(lobby, 'p1', { sessionId: 's1', seq: 0, action: { type: 'x' } }, ctx()),
+    ).toThrow(/understood/);
+    lobby = applyGameAction(lobby, 'p1', { sessionId: 's1', seq: 0, action: add }, ctx());
+    // A slightly behind seq in the same session is fine: the game's rules judge it.
+    expect(
+      applyGameAction(lobby, 'p2', { sessionId: 's1', seq: 0, action: add }, ctx()).session?.seq,
+    ).toBe(2);
+  });
+
+  it('is deterministic for the same seed', () => {
+    const a = start(lobbyWith(3, 'counter'), 'p1', { sessionId: 's', seed: 42 }, ctx());
+    const b = start(lobbyWith(3, 'counter'), 'p1', { sessionId: 's', seed: 42 }, ctx());
+    expect(a.session?.state).toEqual(b.session?.state);
+  });
+
+  it('players who join mid-game watch, then get seated next game', () => {
+    let lobby = start(lobbyWith(2, 'counter'), 'p1', { sessionId: 's1', seed: 1 }, ctx());
+    lobby = join(lobby, { tokenKey: 't3', newPlayerId: 'p3', name: 'Late', palette }, ctx()).lobby;
+    const snap = snapshotFor(lobby, 'p3', {}, ctx());
+    expect(snap.players.find((p) => p.id === 'p3')?.seated).toBe(false);
+    expect(snap.view).toBeUndefined();
+    expect(snap.tableView).toBeDefined();
+    expect(() => leave(lobby, 'p1', ctx())).toThrow(/once this game ends/);
+    lobby = playAgain(playOut(lobby), 'p1', { sessionId: 's2', seed: 2 }, ctx());
+    expect(lobby.session?.playerIds).toContain('p3');
+  });
+});
+
+describe('hidden information in snapshots', () => {
+  it('never includes tokens, rejoin codes of others, or another player’s secret', () => {
+    let lobby = start(lobbyWith(3, 'counter'), 'p1', { sessionId: 's1', seed: 9 }, ctx());
+    lobby = createRejoinCode(lobby, 'p2', 'QWERTY', ctx());
+    const secrets = (lobby.session!.state as { secrets: Record<string, number> }).secrets;
+
+    const forP1 = snapshotFor(lobby, 'p1', {}, ctx());
+    const json = JSON.stringify(forP1);
+    expect(json).not.toMatch(/"t[123]"/);
+    expect(json).not.toContain('QWERTY');
+    expect(json).not.toContain('"secrets"');
+    expect((forP1.view as { secret: number }).secret).toBe(secrets.p1);
+
+    const tv = snapshotFor(lobby, null, {}, ctx());
+    expect(tv.view).toBeUndefined();
+    for (const value of Object.values(secrets))
+      expect(JSON.stringify(tv.tableView)).not.toContain(String(value));
+
+    expect(snapshotFor(lobby, 'p2', {}, ctx()).rejoinCode?.code).toBe('QWERTY');
+  });
+
+  it('counts recently seen TV displays, not players', () => {
+    const lobby = lobbyWith(2);
+    const snap = snapshotFor(lobby, null, { 'tv:a': 40_000, 'tv:b': 0, p1: 49_000 }, ctx(50_000));
+    expect(snap.displays).toBe(1);
+    expect(snap.players.find((p) => p.id === 'p1')?.online).toBe(true);
+  });
+});
+
+describe('rejoin codes and chat', () => {
+  it('moves a seat to a new device once', () => {
+    let lobby = createRejoinCode(lobbyWith(2), 'p2', 'ZXCVBN', ctx());
+    const moved = redeemRejoinCode(lobby, 'ZXCVBN', 'new-device', ctx());
+    expect(moved.playerId).toBe('p2');
+    expect(moved.lobby.seats['new-device']).toBe('p2');
+    expect(moved.lobby.seats.t2).toBeUndefined();
+    expect(() => redeemRejoinCode(moved.lobby, 'ZXCVBN', 'again', ctx())).toThrow(/expired/);
+    lobby = createRejoinCode(lobbyWith(2), 'p2', 'ZXCVBN', ctx(0));
+    expect(() => redeemRejoinCode(lobby, 'ZXCVBN', 'late', ctx(11 * 60_000))).toThrow(/expired/);
+  });
+
+  it('keeps the last 120 chat messages', () => {
+    let lobby = lobbyWith(2);
+    for (let i = 0; i < 130; i++) lobby = chat(lobby, 'p1', `m${i}`, `id${i}`, ctx());
+    expect(lobby.chat).toHaveLength(120);
+    expect(lobby.chat[0]?.text).toBe('m10');
+  });
+});

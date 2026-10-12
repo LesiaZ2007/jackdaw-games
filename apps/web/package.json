@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@jackdaw/engine": "workspace:*",
+    "@jackdaw/game-rps": "workspace:*",
     "@jackdaw/server": "workspace:*",
     "@jackdaw/ui": "workspace:*",
     "next": "16.4.0",

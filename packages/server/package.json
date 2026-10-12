@@ -1,0 +1,13 @@
+{
+  "name": "@jackdaw/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Platform-agnostic room runtime: storage, transport, lobby rooms",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

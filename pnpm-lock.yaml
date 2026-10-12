@@ -41,6 +41,9 @@ importers:
       '@jackdaw/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@jackdaw/game-rps':
+        specifier: workspace:*
+        version: link:../../packages/games/rps
       '@jackdaw/server':
         specifier: workspace:*
         version: link:../../packages/server
@@ -82,7 +85,24 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
-  packages/server: {}
+  packages/games/rps:
+    dependencies:
+      '@jackdaw/engine':
+        specifier: workspace:*
+        version: link:../../engine
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+
+  packages/server:
+    dependencies:
+      '@jackdaw/engine':
+        specifier: workspace:*
+        version: link:../engine
+    devDependencies:
+      '@jackdaw/game-rps':
+        specifier: workspace:*
+        version: link:../games/rps
 
   packages/ui: {}
 

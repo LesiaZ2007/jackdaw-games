@@ -1,0 +1,29 @@
+{
+  "name": "@jackdaw/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:check": "node scripts/build-check.mjs",
+    "start": "next start",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jackdaw/engine": "workspace:*",
+    "@jackdaw/server": "workspace:*",
+    "@jackdaw/ui": "workspace:*",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "tailwindcss": "4.3.3"
+  }
+}

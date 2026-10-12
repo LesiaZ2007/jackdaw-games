@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+
+/* Placeholder until STYLE_GUIDE.md is approved; real tokens come from @jackdaw/ui. */
+:root {
+  --paper: #efe6d2;
+  --ink: #26221e;
+  --ink-2: #5d564c;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}

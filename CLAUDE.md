@@ -1,0 +1,109 @@
+# Jackdaw Games
+
+A private web platform where friends open one shared lobby and play several games in a row, each
+person on their own phone, with an optional TV showing the public table. Avalon
+(`C:\Users\KBITK\OneDrive\Desktop\avalon`, play-avalon.vercel.app) is the reference
+implementation and the first game to move in.
+
+- The full plan is in `docs/BUILD_PLAN.md`. This file records the decisions that change or
+  sharpen it. Where they disagree, this file wins.
+- Current state, next steps and open questions are in `PROGRESS.md`. Read it first.
+
+## Kickoff decisions (2026-10-12, Lesia)
+
+| Topic             | Decision                                                                                                                                                                                                                                                  |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hosting           | **Everything on Vercel for now**, not Cloudflare. Rooms use Avalon's proven approach: HTTP polling plus Upstash Redis. It's hidden behind `RoomTransport` (client) and `RoomStorage` (server) so a WebSocket/Durable Object backend can replace it later. |
+| Repo layout       | There's no `apps/server`. The room runtime is `packages/server` (web-standard APIs only), mounted by Next.js route handlers in `apps/web/app/api`. A Cloudflare Worker can mount the same runtime later.                                                  |
+| Wavelength        | **Paused** until there's a real-time transport, because the shared live dial needs it.                                                                                                                                                                    |
+| Avalon port       | Full parity with the current app: **5 to 15 players** (house rules above 10), the classic/full/custom/plain modes, Lady of the Lake, and all eight roles. The plan's "5 to 10" was wrong.                                                                 |
+| Platform features | Chat, avatars/crests (adapted per game where needed), rejoin codes (move your seat to a new device) and a running per-lobby score tally all live in the platform, not in each game.                                                                       |
+| Game choice       | Only the host can change the game and options.                                                                                                                                                                                                            |
+| History           | Lobby history and scores live with the lobby and expire with it after 24h idle. There's no database.                                                                                                                                                      |
+| Look              | The shell is creative and game-like, near Avalon's parchment: birds, board games, medieval. It must not look generic. It has **one day look plus its own dark mode** (not Avalon Night). Each game keeps its own theme. See `STYLE_GUIDE.md`.             |
+| Styling           | Design tokens are CSS custom properties in `packages/ui`. Tailwind v4 is used for layout utilities only. There are no literal colours outside token files.                                                                                                |
+| Commits           | Authored as Lesia, with **no Claude/Co-Authored-By trailer** (same as Avalon).                                                                                                                                                                            |
+
+## Repo layout
+
+```
+apps/web              Next.js 16 (App Router): pages, API routes that mount the room runtime
+packages/engine       GameModule contract, lobby state machine, protocol + Zod schemas, Rng
+packages/server       RoomStorage (memory, Upstash REST), lobby room runtime, polling protocol
+packages/ui           Design tokens (CSS) and the shared game kit
+packages/games/<id>   One package per game: src/meta.ts, src/rules.ts, src/ui/, tests
+docs/                 BUILD_PLAN.md and design notes
+mockups/              Static HTML design mockups (not shipped)
+```
+
+Internal packages export TypeScript source directly (`"exports": { ".": "./src/index.ts" }`).
+Next compiles them through `transpilePackages`, so they have no build step.
+
+## Commands
+
+Run all of these from the repo root:
+
+- `pnpm dev` starts the web app on :3000. Pass `-- -p 3011` to use another port, since other sessions often hold 3000.
+- `pnpm test` runs all Vitest projects. `pnpm vitest run packages/engine` runs one project.
+- `pnpm lint`, `pnpm typecheck` and `pnpm format` (Prettier).
+- `pnpm build` is the production build. `pnpm build:check` builds into `.next-check` and is safe while dev is running.
+- Before every commit run `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test`, plus `pnpm build:check` when web code changed.
+- CI (`.github/workflows/ci.yml`) runs format, lint, typecheck, test and build on every push.
+
+On Windows, pnpm comes from corepack and its shim is in `~/.local/bin`. If `pnpm` isn't found in
+Git Bash, run `export PATH="$HOME/.local/bin:$PATH"`. In PowerShell 5.1, chain with `;`, not `&&`.
+
+## Working rules
+
+- **Branch per change** (`feat/`, `fix/`, `chore/`). Never commit directly to `main`. Lesia merges.
+- Keep commits small, one checklist item each, with a clear message.
+- Keep worktrees outside OneDrive. This repo already lives outside it on purpose.
+- Game rules are pure TypeScript with unit tests. No rules logic goes in React components.
+- **Never send another player's hidden information to a client.** It's a bug as serious as a
+  crash. `getPlayerView` / `getTableView` are the only gates, and every game has a leak test.
+- All randomness in rules goes through the injected `Rng`. ESLint bans `Math.random` in engine and game sources.
+- Ask Lesia before changing the game module contract, the lobby state machine or the message
+  protocol. Additions that the kickoff decisions require (e.g. chat messages) are noted in PROGRESS.md.
+- No hard-coded domains: URLs come from `NEXT_PUBLIC_SITE_URL` (falling back to the request origin).
+  Server code uses web-standard APIs only (`fetch`, `crypto`, `Request`/`Response`), with no `fs` or native add-ons.
+- Aesthetic is a top priority. Screens are built from `packages/ui` tokens and checked at 375,
+  768, 1280 and 1920px. Respect `prefers-reduced-motion`. Tap targets are at least 44px.
+- Keep `PROGRESS.md`, this file and `MIGRATION.md` current when things change.
+- Needing new env vars or Vercel/Upstash changes means telling Lesia (or noting it in PROGRESS.md).
+
+### Lesia's design taste (from Avalon)
+
+- Avalon's Night look is their favourite and stays untouched. "Printed" means real board-game print: cream card
+  stock, charcoal ink, double-ruled frames, perforated stamp edges, condensed caps plaques.
+- Disliked: lots of italic text, big brass-yellow button blocks, settings as wrapping centred pills, and
+  anything that looks templated or "vibe-coded".
+- Liked: a medieval palette of cream with heraldic red, green and blue. Every screen (loading, join, home) must match.
+- When given a reference, study the real thing (source, assets, screenshots) before designing.
+
+## Architecture (polling on Vercel)
+
+- **Server-authoritative.** Each lobby is one JSON document in storage (`jackdaw:lobby:<CODE>`),
+  holding players, the selected game and options, history, scores, and the private `session.state`.
+- **Writes**: `POST /api/lobby/<CODE>` with a `ClientMessage` (Zod-validated) and the
+  `x-player-token` header. The runtime takes a per-lobby lock, loads, applies through the
+  pure lobby state machine (which calls the game module), bumps `version`, saves and returns
+  that caller's snapshot.
+- **Reads**: `GET /api/lobby/<CODE>?v=<version>` returns `{unchanged:true}` or the caller's snapshot:
+  `{ lobby, view?, tableView, results? }`. Players get their own `view` plus the public `tableView`.
+  TV displays (`/tv/<CODE>`, no token) get only `tableView`. Polling is adaptive, as in Avalon:
+  about 1.5s when active, slower when idle or hidden.
+- **Timers and away-host handover** are evaluated lazily on each read and write (`onTimer`
+  deadlines live in the session), since there are no alarms on Vercel. The Redis TTL expires idle lobbies.
+- **Protocol mapping**: the plan's client→server messages are the `ClientMessage` union. The plan's
+  server→client `lobby` / `view` / `results` / `error` messages are fields of one snapshot response
+  (or a `{ error: { code, message } }` body), because polling returns everything at once.
+
+## Game module contract
+
+Defined in `packages/engine/src/contract.ts`, and exactly as in the build plan:
+`meta`, `optionsSchema`, `defaultOptions`, `validateOptions?`, `setup`, `getPlayerView`,
+`getTableView`, `applyAction` (throws `GameError`), `getResult`, and `onTimer?`. Each game also
+exports `PlayerScreen` (`{ view, tableView, me, players, sendAction }`) and `TvScreen`
+(`{ tableView, players }`). Games register in one file, `apps/web/lib/registry.ts`, which is injected into the room
+runtime and also feeds the catalog. A game package exports its rules module from `.` and its
+screens from `./ui`, so the server never imports React.

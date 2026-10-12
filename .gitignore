@@ -13,3 +13,4 @@ playwright-report/
 .open-next/
 .wrangler/
 .DS_Store
+.claude/worktrees/

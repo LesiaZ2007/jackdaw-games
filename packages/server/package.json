@@ -9,5 +9,11 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jackdaw/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@jackdaw/game-rps": "workspace:*"
   }
 }

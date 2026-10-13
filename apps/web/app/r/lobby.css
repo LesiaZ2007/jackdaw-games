@@ -409,114 +409,7 @@
   font-weight: 700;
 }
 
-/* ── Results ── */
-.results {
-  display: grid;
-  gap: var(--space-5);
-  max-width: 760px;
-  margin-inline: auto;
-}
-.results__head {
-  display: grid;
-  justify-items: center;
-  gap: var(--space-2);
-  padding: var(--space-5) var(--space-4);
-  text-align: center;
-}
-.results__title {
-  font-size: var(--step-4);
-}
-.results__summary {
-  margin: 0;
-  font-size: var(--step-1);
-  color: var(--ink-2);
-}
-.results__winners {
-  list-style: none;
-  margin: var(--space-2) 0 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-5);
-}
-.results__winners li {
-  --ring-bg: var(--paper);
-  display: grid;
-  justify-items: center;
-  gap: var(--space-2);
-  font: 800 18px var(--font-plaque);
-  text-transform: uppercase;
-  animation: results-rise 900ms var(--ease-out) both;
-}
-.results__winners .jd-token {
-  --ring-bg: var(--paper);
-}
-@keyframes results-rise {
-  from {
-    transform: translateY(28px) scale(0.85);
-    opacity: 0;
-  }
-}
-.results__standings h3 {
-  font-size: var(--step-2);
-  margin-bottom: var(--space-2);
-}
-.results__standings ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border: 2px solid var(--ink);
-  background: var(--paper);
-}
-.results__standings li {
-  --ring-bg: var(--paper);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-}
-.results__standings li + li {
-  border-top: 1px solid var(--rule);
-}
-.results__standings .jd-token {
-  --ring-bg: var(--paper);
-}
-.results__name {
-  flex: 1;
-  font-weight: 700;
-}
-.results__role {
-  color: var(--ink-2);
-  font-size: 15px;
-}
-.results__standings b {
-  font: 800 16px var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.results__standings li[data-outcome='win'] b {
-  color: var(--vert);
-}
-:root[data-theme='dark'] .results__standings li[data-outcome='win'] b {
-  color: var(--ink);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .results__standings li[data-outcome='win'] b {
-    color: var(--ink);
-  }
-}
-.results > .dock {
-  grid-template-columns: 1fr;
-}
-@media (min-width: 768px) {
-  .results > .dock {
-    grid-template-columns: 1fr 1fr;
-  }
-  .results > .dock .dock__wait {
-    grid-column: 1 / -1;
-  }
-}
+/* Results live in results.css. */
 
 /* ── Chat ── */
 .chat {
@@ -858,10 +751,4 @@
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .results__winners li {
-    animation: none;
-  }
 }

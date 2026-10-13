@@ -1,6 +1,16 @@
 'use client';
 
-import { Token, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
+import {
+  OutcomeChip,
+  Tally,
+  Token,
+  useMoment,
+  VerdictMoment,
+  type GameUi,
+  type Outcome,
+  type ScreenPlayer,
+} from '@jackdaw/ui';
+import { describeRound, roundOutcome, roundWinners } from '../outcome';
 import { PICKS, type Pick, type RpsAction, type RpsPlayerView, type RpsTableView } from '../rules';
 import './rps-player.css';
 
@@ -79,6 +89,11 @@ export function RpsTable({
   const last = table.history[table.history.length - 1];
   const ranked = [...table.players].sort((a, b) => (table.scores[b] ?? 0) - (table.scores[a] ?? 0));
   const finished = table.round > table.rounds;
+  // A round that resolves while this screen is open gets its moment (not one from before a refresh).
+  const [fresh, dismiss] = useMoment(table.history.length);
+  const roundWon = last ? roundWinners(last) : [];
+  const mineOutcome = last && me && last.picks[me] ? roundOutcome(last, me) : null;
+  const meP = me ? byId.get(me) : undefined;
 
   return (
     <div className="rps">
@@ -110,7 +125,7 @@ export function RpsTable({
                 <span className={thrown ? 'rps__thrown' : 'rps__thinking'}>
                   {thrown ? 'Thrown' : 'Thinking'}
                 </span>
-                <b className="rps__score">{table.scores[id] ?? 0}</b>
+                <Tally className="rps__score" value={table.scores[id] ?? 0} />
               </li>
             );
           })}
@@ -118,16 +133,27 @@ export function RpsTable({
       </section>
 
       {last && (
-        <section className="rps__reveal" aria-label={`Round ${last.round} reveal`}>
-          <h3 className="jd-label">Round {last.round} reveal</h3>
-          <ul>
-            {table.players.map((id) => {
+        <section className="rps__reveal" aria-label={`Round ${last.round} throws`}>
+          <h3 className="jd-label">Round {last.round} throws</h3>
+          {/* keyed by round, so each new reveal flips in */}
+          <ul key={last.round}>
+            {table.players.map((id, i) => {
               const pick = last.picks[id];
+              const points = last.points[id] ?? 0;
+              const outcome: Outcome =
+                roundWon.length === 0 ? 'draw' : roundWon.includes(id) ? 'win' : 'loss';
               return (
-                <li key={id}>
-                  <span className="rps__throw">{pick && <Throw pick={pick} size={30} />}</span>
-                  <span>{name(id)}</span>
-                  <b>+{last.points[id] ?? 0}</b>
+                <li
+                  key={id}
+                  className={`rps__card rps__card--${outcome}${id === me ? ' rps__card--me' : ''}`}
+                  style={{ animationDelay: `${i * 90}ms` }}
+                >
+                  <span className="rps__throw">{pick && <Throw pick={pick} size={34} />}</span>
+                  <span className="rps__card-name">
+                    {id === me ? 'You' : name(id)}
+                    <small>{pick ? LABEL[pick] : 'No throw'}</small>
+                  </span>
+                  <OutcomeChip outcome={outcome}>+{points}</OutcomeChip>
                 </li>
               );
             })}
@@ -160,6 +186,25 @@ export function RpsTable({
               : 'Pick your throw. Nobody sees it until everyone has thrown.'}
           </p>
         </section>
+      )}
+
+      {fresh !== null && last && mineOutcome && !finished && (
+        <VerdictMoment
+          key={last.round}
+          outcome={mineOutcome.outcome}
+          title={
+            mineOutcome.outcome === 'win'
+              ? roundWon.length > 1
+                ? `You share round ${last.round}`
+                : `You won round ${last.round}`
+              : mineOutcome.outcome === 'loss'
+                ? `You lost round ${last.round}`
+                : `Round ${last.round} is a stand-off`
+          }
+          detail={describeRound(last, me!, name)}
+          avatar={meP?.avatar}
+          onDone={dismiss}
+        />
       )}
     </div>
   );

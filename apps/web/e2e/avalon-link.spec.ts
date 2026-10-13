@@ -87,6 +87,13 @@ test('five phones gather in Avalon’s lobby, land in their own Avalon seats, an
     bran.getByText('Not enough evil seats for Mordred and Oberon yet.', { exact: false }),
   ).toBeVisible();
 
+  // The TV's lobby is Avalon's round table too, with the way to join beside it.
+  const tvLobby = await phone(browser, 1920, 1080);
+  await tvLobby.goto(`/tv/${code}`);
+  await expect(tvLobby.getByText('Gathering at the Round Table')).toBeVisible();
+  await expect(tvLobby.getByText('5 of 15 seated · ready')).toBeVisible();
+  await tvLobby.close();
+
   // Table talk in Avalon's own style: on phones the bar's chat button opens Avalon's drawer.
   await bran.getByRole('button', { name: /^Chat/ }).click();
   const talk = bran.getByRole('complementary', { name: 'Table talk' });

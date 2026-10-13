@@ -164,6 +164,38 @@ export function TvLobby({ code }: { code: string }) {
   }));
   const next = catalogEntry(snapshot.selectedGameId);
   const count = snapshot.players.length;
+  const join = (
+    <>
+      <span className="jd-label tv-join__label">Join at</span>
+      <span className="tv-join__url">{host}</span>
+      <Chits code={snapshot.code} size={next?.ui?.TvLobby ? 120 : 190} flip />
+      <div className="tv-join__qr">
+        <QrCode text={joinUrl} size={196} label={`QR code to join lobby ${snapshot.code}`} />
+        <p>Scan to join, or type the four letters on your phone.</p>
+      </div>
+    </>
+  );
+
+  // A game with its own TV lobby (Avalon's round table) takes the first screen.
+  const OwnTvLobby = next?.ui?.TvLobby;
+  if (OwnTvLobby) {
+    return (
+      <TvStage below={<TvNight code={code} snapshot={snapshot} />}>
+        <div className="tv-own-lobby">
+          <OwnTvLobby
+            code={snapshot.code}
+            players={players}
+            hostId={snapshot.hostId}
+            options={snapshot.gameOptions}
+            reactions={snapshot.reactions}
+            join={join}
+            status={`Waiting for ${hostName} to start`}
+          />
+          {snapshot.historyCount > 0 && <NightHint />}
+        </div>
+      </TvStage>
+    );
+  }
 
   return (
     <TvStage below={<TvNight code={code} snapshot={snapshot} />}>
@@ -177,13 +209,7 @@ export function TvLobby({ code }: { code: string }) {
         </header>
 
         <section className="tv-join" aria-label="How to join">
-          <span className="jd-label tv-join__label">Join at</span>
-          <span className="tv-join__url">{host}</span>
-          <Chits code={snapshot.code} size={190} flip />
-          <div className="tv-join__qr">
-            <QrCode text={joinUrl} size={196} label={`QR code to join lobby ${snapshot.code}`} />
-            <p>Scan to join, or type the four letters on your phone.</p>
-          </div>
+          {join}
         </section>
 
         <section className="tv-next" aria-label="Next game">

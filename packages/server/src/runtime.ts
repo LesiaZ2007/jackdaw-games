@@ -23,13 +23,18 @@ import {
   setAvatar,
   setGame,
   setOptions,
+  settleLinked,
   snapshotFor,
   start,
+  startBlocker,
+  startWouldBegin,
   transferHost,
   lobbyStats,
   type Avatar,
   type Ctx,
+  type GameLink,
   type GameRegistry,
+  type LinkStatus,
   type HistoryEntry,
   type Lobby,
   type LobbySnapshot,
@@ -69,6 +74,17 @@ export interface RuntimeOptions {
   readCacheMs?: number;
   rateLimit?: { posts: number; polls: number; windowMs: number };
   sleep?: (ms: number) => Promise<void>;
+  /** Links for games played in another app, by game id (see GameLink in the engine). */
+  links?: Record<string, GameLink>;
+  /** How often a poll may ask a linked game's app whether the game is over. */
+  linkCheckMs?: number;
+  /** This site's public origin, for "Back to Jackdaw" links. Falls back to the request's. */
+  siteUrl?: string;
+}
+
+/** Where a message came from, for anything that needs this site's own address. */
+export interface RequestInfo {
+  origin?: string;
 }
 
 export interface CreateInput {
@@ -119,6 +135,8 @@ export function createRoomRuntime(opts: RuntimeOptions) {
   const readCacheMs = opts.readCacheMs ?? 900;
   const limits = opts.rateLimit ?? { posts: 30, polls: 40, windowMs: 10_000 };
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const links = opts.links ?? {};
+  const linkCheckMs = opts.linkCheckMs ?? 5_000;
 
   const ctx = (): Ctx => ({ now: now(), games });
 
@@ -126,6 +144,7 @@ export function createRoomRuntime(opts: RuntimeOptions) {
   const readCache = new Map<string, { at: number; value: Promise<Lobby | null> }>();
   const tokenHashes = new Map<string, string>();
   const hits = new Map<string, number[]>();
+  const linkChecks = new Map<string, number>();
 
   async function tokenKey(token: string): Promise<string> {
     let key = tokenHashes.get(token);
@@ -251,8 +270,45 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     throw new RoomError(503, 'BUSY', 'Could not find a free lobby code. Try again.');
   }
 
+  /**
+   * For Start or Play again on a linked game: open the game in its own app first (outside the
+   * lock, since it's a network call) and return what `setup` needs. Undefined when the message
+   * won't begin a linked game, so the lobby machine handles it (and its errors) as usual.
+   */
+  async function prepareLink(
+    code: string,
+    key: string,
+    msg: Extract<ClientMessage, { type: 'start' | 'playAgain' }>,
+    info: RequestInfo,
+  ): Promise<{ data: unknown; playerIds: string[] } | undefined> {
+    const lobby = await load(code);
+    if (!lobby) throw notFound();
+    const me = playerIdForToken(lobby, key);
+    const game = lobby.selectedGameId ? games[lobby.selectedGameId] : undefined;
+    if (!me || !game?.linked || !startWouldBegin(lobby, me, msg.type)) return undefined;
+    if (startBlocker(lobby, { games })) return undefined;
+    const link = links[game.meta.id];
+    if (!link)
+      throw new GameError('NOT_SET_UP', `${game.meta.name} isn't set up on this server yet.`);
+    const origin = (opts.siteUrl || info.origin || '').replace(/\/$/, '');
+    const data = await link.start({
+      lobbyCode: lobby.code,
+      hostId: lobby.hostId,
+      players: lobby.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar })),
+      options: game.optionsSchema.parse(lobby.gameOptions),
+      returnUrl: `${origin}/r/${lobby.code}`,
+      look: msg.look ?? 'light',
+    });
+    return { data, playerIds: lobby.players.map((p) => p.id) };
+  }
+
   /** Apply one message from a device and return that device's fresh snapshot. */
-  async function post(code: string, token: string, input: unknown): Promise<LobbySnapshot> {
+  async function post(
+    code: string,
+    token: string,
+    input: unknown,
+    info: RequestInfo = {},
+  ): Promise<LobbySnapshot> {
     rateLimit(`post:${token}`, limits.posts);
     const parsed = ClientMessage.safeParse(input);
     if (!parsed.success) {
@@ -265,6 +321,10 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     const msg = parsed.data;
     const key = await tokenKey(token);
     const presence = await loadPresence(code);
+    const linked =
+      msg.type === 'start' || msg.type === 'playAgain'
+        ? await prepareLink(code, key, msg, info)
+        : undefined;
 
     const { lobby, result: playerId } = await withLobby(code, (current) => {
       const c = ctx();
@@ -285,14 +345,21 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       const me = playerIdForToken(current, key);
       if (!me) throw new GameError('NOT_A_PLAYER', 'You are not in this lobby. Join it first.');
       const before = reassignHostIfAway(current, { ...presence, [me]: c.now }, c);
-      return { lobby: apply(before, me, msg, c), result: me };
+      // The other app's room was opened for exactly these players; if the table changed while
+      // it was being made, start again rather than seat the wrong people.
+      if (linked && linked.playerIds.join() !== before.players.map((p) => p.id).join())
+        throw new GameError(
+          'TABLE_CHANGED',
+          'Someone joined or left just then. Press Start again.',
+        );
+      return { lobby: apply(before, me, msg, c, linked?.data), result: me };
     });
 
     const fresh = await checkIn(code, playerId, presence);
     return snapshotFor(lobby, playerId, fresh, ctx());
   }
 
-  function apply(lobby: Lobby, me: string, msg: ClientMessage, c: Ctx): Lobby {
+  function apply(lobby: Lobby, me: string, msg: ClientMessage, c: Ctx, linked?: unknown): Lobby {
     switch (msg.type) {
       case 'join':
         return lobby; // handled by the caller
@@ -301,7 +368,12 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       case 'setOptions':
         return setOptions(lobby, me, msg.options, c);
       case 'start':
-        return start(lobby, me, { sessionId: randomString(10, ID_ALPHABET), seed: seed() }, c);
+        return start(
+          lobby,
+          me,
+          { sessionId: randomString(10, ID_ALPHABET), seed: seed(), linked },
+          c,
+        );
       case 'action':
         return applyGameAction(
           lobby,
@@ -310,7 +382,12 @@ export function createRoomRuntime(opts: RuntimeOptions) {
           c,
         );
       case 'playAgain':
-        return playAgain(lobby, me, { sessionId: randomString(10, ID_ALPHABET), seed: seed() }, c);
+        return playAgain(
+          lobby,
+          me,
+          { sessionId: randomString(10, ID_ALPHABET), seed: seed(), linked },
+          c,
+        );
       case 'backToLobby':
         return backToLobby(lobby, me, c);
       case 'kick':
@@ -367,6 +444,8 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       ).lobby;
     }
 
+    lobby = await checkLink(lobby);
+
     if (sinceVersion === lobby.version) {
       const fresh = (id: string) => c.now - (presence[id] ?? 0) <= ONLINE_WINDOW_MS;
       return {
@@ -377,6 +456,35 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       };
     }
     return snapshotFor(lobby, me, presence, c);
+  }
+
+  /**
+   * While a linked game runs, ask its app (at most every `linkCheckMs` per lobby on this
+   * instance) whether it's over, and settle the lobby if so. A failed check just waits for the
+   * next one.
+   */
+  async function checkLink(lobby: Lobby): Promise<Lobby> {
+    const session = lobby.session;
+    const link = session && lobby.status === 'in_game' ? links[session.gameId] : undefined;
+    if (!session || !link) return lobby;
+    const t = now();
+    if (t - (linkChecks.get(session.id) ?? 0) < linkCheckMs) return lobby;
+    linkChecks.set(session.id, t);
+    if (linkChecks.size > 1000) linkChecks.clear();
+    let status: LinkStatus;
+    try {
+      status = await link.check(session.state);
+    } catch (e) {
+      console.error('[jackdaw] linked game check failed', e);
+      return lobby;
+    }
+    if (!status.over) return lobby;
+    return (
+      await withLobby(lobby.code, (l) => ({
+        lobby: settleLinked(l, session.id, status, ctx()),
+        result: null,
+      }))
+    ).lobby;
   }
 
   /** Move a seat to this device with a one-time rejoin code. */

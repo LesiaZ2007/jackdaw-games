@@ -98,6 +98,24 @@ One orchestrated moment per screen:
 
 `prefers-reduced-motion: reduce` swaps all of these for an instant state change.
 
+## Each game's lobby
+
+2026-10-13: "each game lobby [has] similar style elements but [is] decently unique."
+The **frame is shared**: the bar with the code chits and menu, chat, Game stats, Show on TV and
+the night's history are Jackdaw's on every game. The **centre is the game's own**, drawn by its
+`GameUi.Lobby`: how the players gather, its options and its Start, in its own look.
+
+- **Avalon**: the live app's own lobby, copied exactly. The round table with everyone's shield
+  (discs at Night), the fanned deal, the settings rows and "Deal the roles". Parchment by day,
+  Night in the dark. Its CSS is the app's, copied by `packages/games/avalon/scripts/copy-lobby-css.mjs`
+  and scoped under `.avalon`, with Avalon's palette as local custom properties.
+- **Rock Paper Scissors**: a chalk ring in the schoolyard. Tokens stand round a dashed circle,
+  each fist shaking through rock, paper, scissors; the rounds sit in the middle and the host
+  calls "Shoot!". Built from Jackdaw's tokens and kit.
+- A new game brings its own centre too. Keep the frame's pieces out of it, use the shell's
+  tokens unless the game has its own look (then scope that look under the game's class), and
+  follow `useTheme()` for day and dark.
+
 ## Layout by width
 
 Check every screen at **375, 768, 1280, 1920**.

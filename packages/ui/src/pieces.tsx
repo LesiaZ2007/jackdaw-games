@@ -1,8 +1,10 @@
 'use client';
 
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from 'react';
+import type { Reaction } from '@jackdaw/engine';
 import { Crest } from './crests';
 import { Glyph, Icon } from './icons';
+import { PlayerReaction } from './reactions';
 
 /** Heraldic fills for chits and box lids, as CSS variable names from tokens.css. */
 export type Heraldic = 'gules' | 'azure' | 'vert' | 'sable' | 'purpure' | 'tenne';
@@ -213,6 +215,7 @@ export function SeatTrack({
   tokenSize,
   className,
   onSeat,
+  reactions,
 }: {
   seats: Seat[];
   spaces?: number;
@@ -221,6 +224,8 @@ export function SeatTrack({
   className?: string;
   /** Called with a seat's player id when a seat that has an `action` is tapped. */
   onSeat?: (id: string) => void;
+  /** Recent reactions; each pops up over its player's seat. */
+  reactions?: Reaction[];
 }) {
   return (
     <ol
@@ -268,6 +273,7 @@ export function SeatTrack({
             )}
             <Token avatar={seat.avatar} host={seat.host} away={seat.away} />
             <span className="jd-who">{seat.name}</span>
+            <PlayerReaction reactions={reactions} playerId={seat.id} name={seat.name} />
             {onSeat && seat.action && (
               <button
                 type="button"

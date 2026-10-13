@@ -48,10 +48,19 @@ Read this first. CLAUDE.md has the decisions and rules, and `docs/BUILD_PLAN.md`
   - Each game's lobby should be themed, e.g. Avalon's round table with its rules.
   - Add a Game stats menu.
   - Use stained glass for Avalon-like games.
-- **Round two** (`mockups/a2-compendium.html`) does all of that. It is **waiting on Lesia's feedback.**
-- Ideas from round two to carry forward:
-  - Code letters use roman Grenze for legibility; headings use Grenze Gotisch.
-  - The brand mark is a printer's seal with a heraldic jackdaw holding a ring. The host's badge is the ring.
+- **Round two** (`mockups/a2-compendium.html`) answered those notes. Lesia then decided:
+  - **Avalon stays exactly as it is today**, in both gameplay and styling. Its waiting room is its current lobby (the round table).
+  - **No stained glass** anywhere.
+  - The parchment cream was too generic. The small splashes of heraldic colour stay.
+  - **Dark mode is approved.**
+  - Tapping a game opens a detail view with a description, how to play, and pictures (real screenshots).
+- **Round three** (`mockups/a3-compendium.html`, with palette and mark switchers):
+  - The day palette is **Pebble**, now grey (`--card #cfcecb`).
+  - The mark is **OpenMoji's black bird as line art** (CC BY-SA 4.0, needs a credit). The files are in `mockups/parts/free-icons`.
+  - It is **waiting on Lesia's final sign-off.**
+- Carry forward:
+  - Code letters use roman Grenze, headings Grenze Gotisch, plaques Big Shoulders, and body text Alegreya Sans.
+  - Codes are chamfered chits, players are punch-out tokens with heraldic charges, and the 15 seats are a printed track.
   - Each game's box lid gets a heraldic field pattern.
   - Once a game is chosen, its own world opens inside the Jackdaw frame, which always keeps the code, stats and chat.
 

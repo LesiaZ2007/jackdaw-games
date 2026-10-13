@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { startBlocker, type ClientMessage, type Lobby, type LobbySnapshot } from '@jackdaw/engine';
 import {
   AvatarButton,
@@ -59,6 +59,8 @@ export function Waiting({
   const arrivals = useArrivals(s.players.map((p) => p.id));
   const [picking, setPicking] = useState(false);
   const [managing, setManaging] = useState(false);
+  const [tapped, setTapped] = useState<string | null>(null);
+  const untap = useCallback(() => setTapped(null), []);
   const entry = catalogEntry(s.selectedGameId);
   const host = s.players.find((p) => p.id === s.hostId);
   const blocker = blockerFor(s);
@@ -73,7 +75,15 @@ export function Waiting({
     away: !p.online,
     me: p.id === s.me,
     landing: arrivals.has(p.id),
+    // Your own seat opens your look; the host can tap anyone else's to remove them.
+    action:
+      p.id === s.me
+        ? `${p.name} (you): change your name, crest or colour`
+        : isHost
+          ? `${p.name}: remove or make host`
+          : undefined,
   }));
+  const other = s.players.find((p) => p.id === tapped && p.id !== s.me);
   const mine = s.players.find((p) => p.id === s.me);
   const ThemedLobby = entry?.ui?.Lobby;
 
@@ -95,7 +105,10 @@ export function Waiting({
             {s.displays > 0 && `, ${s.displays} TV`}
           </span>
         </div>
-        <SeatTrack seats={seats} />
+        <SeatTrack
+          seats={seats}
+          onSeat={(id) => (id === s.me ? onOpen('me') : isHost && setTapped(id))}
+        />
         {mine && (
           <div className="you-strip">
             <AvatarButton avatar={mine.avatar} size={44} onClick={() => onOpen('me')} />
@@ -219,6 +232,37 @@ export function Waiting({
           </div>
         </div>
       )}
+
+      <Sheet open={Boolean(other)} onClose={untap} title={other?.name ?? 'Player'}>
+        {other && (
+          <div className="seat-sheet">
+            <div className="seat-sheet__who">
+              <Token avatar={other.avatar} size={64} away={!other.online} />
+              <span className="seat-sheet__note">
+                {other.online
+                  ? `${other.name} is at the table.`
+                  : `${other.name} is away from their phone.`}
+              </span>
+            </div>
+            <Plaque
+              className="seat-sheet__remove"
+              onClick={() =>
+                send({ type: 'kick', playerId: other.id }).then((r) => r && setTapped(null))
+              }
+            >
+              Remove {other.name} from the lobby
+            </Plaque>
+            <Plaque
+              small
+              onClick={() =>
+                send({ type: 'transferHost', playerId: other.id }).then((r) => r && setTapped(null))
+              }
+            >
+              Make {other.name} host
+            </Plaque>
+          </div>
+        )}
+      </Sheet>
 
       <Sheet open={managing} onClose={() => setManaging(false)} title="Manage players">
         <ul className="manage">

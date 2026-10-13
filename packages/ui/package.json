@@ -5,9 +5,21 @@
   "type": "module",
   "description": "Design tokens and the shared game kit",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens.css",
+    "./kit.css": "./src/kit.css"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.0"
+  },
+  "dependencies": {
+    "@jackdaw/engine": "workspace:*"
   }
 }

@@ -50,9 +50,9 @@
   --font-code: var(--ff-code, 'Grenze'), Georgia, serif;
   --font-plaque: var(--ff-plaque, 'Big Shoulders'), 'Arial Narrow', sans-serif;
   --font-body: var(--ff-body, 'Alegreya Sans'), 'Segoe UI', system-ui, sans-serif;
-  --step--1: clamp(0.84rem, 0.8rem + 0.15vw, 0.92rem);
-  --step-0: clamp(1.06rem, 1rem + 0.25vw, 1.19rem);
-  --step-1: clamp(1.3rem, 1.2rem + 0.4vw, 1.56rem);
+  --step--1: clamp(0.94rem, 0.9rem + 0.15vw, 1rem);
+  --step-0: clamp(1.125rem, 1.06rem + 0.3vw, 1.3rem);
+  --step-1: clamp(1.35rem, 1.25rem + 0.45vw, 1.65rem);
   --step-2: clamp(1.6rem, 1.4rem + 0.8vw, 2.1rem);
   --step-3: clamp(1.9rem, 1.6rem + 1.2vw, 2.6rem);
   --step-4: clamp(2.6rem, 2rem + 2.5vw, 4rem);

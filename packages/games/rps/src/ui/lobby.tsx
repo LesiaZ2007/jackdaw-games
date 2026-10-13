@@ -38,14 +38,14 @@ export function RpsLobby({
 
       <div className="rps-ring" data-count={n}>
         <div className="rps-ring__chalk" aria-hidden="true" />
-        <div className="rps-ring__middle">
+        <div className="rps-ring__middle" role="group" aria-label="Rounds">
           <span className="jd-label">Rounds</span>
           {isHost ? (
             <span className="rps-ring__stepper">
               <button
                 type="button"
                 className="jd-iconbtn"
-                aria-label="One round fewer"
+                aria-label="Fewer rounds"
                 disabled={rounds <= 1}
                 onClick={() => setRounds(rounds - 1)}
               >
@@ -55,7 +55,7 @@ export function RpsLobby({
               <button
                 type="button"
                 className="jd-iconbtn"
-                aria-label="One more round"
+                aria-label="More rounds"
                 disabled={rounds >= 9}
                 onClick={() => setRounds(rounds + 1)}
               >
@@ -109,7 +109,13 @@ export function RpsLobby({
       <div className="rps-lobby__go">
         {isHost ? (
           <>
-            <Plaque go disabled={Boolean(blocker)} aria-disabled={Boolean(blocker)} onClick={start}>
+            <Plaque
+              go
+              disabled={Boolean(blocker)}
+              aria-disabled={Boolean(blocker)}
+              onClick={start}
+              aria-label="Shoot! Start Rock Paper Scissors"
+            >
               Shoot!
             </Plaque>
             {blocker && <p className="rps-lobby__note">{blocker}</p>}

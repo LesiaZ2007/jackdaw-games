@@ -116,7 +116,9 @@ export function resultFrom(status: StatusResponse): GameResult {
     team: p.side === 'evil' ? 'Evil' : 'Good',
     role: roleName(p.role),
   }));
-  const summary = `${winner} wins.${status.reason ? ` ${status.reason}` : ''}`;
+  // Jackdaw's summaries carry no closing stop; the results screen adds its own.
+  const reason = status.reason?.trim().replace(/\.+$/, '');
+  const summary = reason ? `${winner} wins: ${reason}` : `${winner} wins`;
   return {
     winners: players.filter((p) => p.won).map((p) => p.id),
     summary,

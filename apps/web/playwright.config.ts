@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { FAKE_AVALON_PORT, FAKE_LINK_SECRET } from './e2e/fake-avalon';
 
 // End-to-end tests: real browsers against a real server with in-memory storage.
 // Locally this uses the installed Edge; CI installs Chromium.
@@ -21,5 +22,9 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
     timeout: 180_000,
+    env: {
+      AVALON_URL: `http://localhost:${FAKE_AVALON_PORT}`,
+      JACKDAW_LINK_SECRET: FAKE_LINK_SECRET,
+    },
   },
 });

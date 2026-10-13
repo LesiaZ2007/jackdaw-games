@@ -94,6 +94,10 @@
   grid-template-columns: repeat(5, 1fr);
   gap: 18px 16px;
 }
+.rps-tv__tok {
+  position: relative;
+  display: inline-grid;
+}
 .rps-tv__seats li {
   display: grid;
   justify-items: center;

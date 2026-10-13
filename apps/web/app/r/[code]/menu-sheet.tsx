@@ -1,11 +1,41 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
-import { AvatarButton, Chits, Plaque, Sheet } from '@jackdaw/ui';
+import { AvatarButton, Chits, Plaque, ReactionBar, Sheet } from '@jackdaw/ui';
 import { forgetSeat } from '@/lib/identity';
 import { ThemeToggle } from '../../theme-toggle';
+
+/**
+ * Ending a game takes two taps, as in Avalon: the first arms it for four seconds, the second
+ * ends it for everyone.
+ */
+function EndGameButton({ onEnd }: { onEnd: () => Promise<void> }) {
+  const [armed, setArmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(false), 4000);
+    return () => clearTimeout(t);
+  }, [armed]);
+  return (
+    <Plaque
+      small
+      className={armed ? 'menu__end is-armed' : 'menu__end'}
+      disabled={busy}
+      onClick={async () => {
+        if (!armed) return setArmed(true);
+        setBusy(true);
+        await onEnd();
+        setBusy(false);
+        setArmed(false);
+      }}
+    >
+      {armed ? 'Tap again to end the game for everyone' : 'End this game'}
+    </Plaque>
+  );
+}
 
 /** Less frequent things: move your seat to another phone, leave, switch day and dark. */
 export function MenuSheet({
@@ -52,6 +82,31 @@ export function MenuSheet({
               Change
             </Plaque>
           </div>
+        </section>
+      )}
+
+      {me && s.status !== 'waiting' && (
+        <section className="menu__block">
+          <h3 className="jd-label">React</h3>
+          <p>Pops up over your seat for everyone at the table.</p>
+          <ReactionBar
+            onReact={(kind) => {
+              void send({ type: 'react', kind });
+              onClose();
+            }}
+          />
+        </section>
+      )}
+
+      {s.status === 'in_game' && s.hostId === s.me && (
+        <section className="menu__block">
+          <h3 className="jd-label">This game</h3>
+          <p>Stop the game for everyone and go back to the lobby. It won&rsquo;t be scored.</p>
+          <EndGameButton
+            onEnd={async () => {
+              if (await send({ type: 'endGame' })) onClose();
+            }}
+          />
         </section>
       )}
 

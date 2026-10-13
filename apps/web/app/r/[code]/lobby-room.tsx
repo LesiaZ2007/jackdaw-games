@@ -71,8 +71,22 @@ export function LobbyRoom({ code }: { code: string }) {
   // Seated during this visit too (adjusting state while rendering, not in an effect).
   if (snapshot?.me && hadSeat !== snapshot.me) setHadSeat(snapshot.me);
 
-  const notice = error?.message ?? null;
-  const dismiss = clearError;
+  // Players learn when the host stops a game early; the chat also says so.
+  const [info, setInfo] = useState<string | null>(null);
+  const [lastStatus, setLastStatus] = useState(snapshot?.status ?? null);
+  const status = snapshot?.status ?? null;
+  if (status !== lastStatus) {
+    setLastStatus(status);
+    const endedEarly = lastStatus === 'in_game' && status === 'waiting';
+    if (endedEarly && snapshot?.me && snapshot.hostId !== snapshot.me)
+      setInfo('The host ended the game. It won’t be scored.');
+  }
+
+  const notice = error?.message ?? info;
+  const dismiss = useCallback(() => {
+    clearError();
+    setInfo(null);
+  }, [clearError]);
   const close = useCallback(() => setPanel(null), []);
 
   const players = useMemo(() => (snapshot ? screenPlayers(snapshot) : []), [snapshot]);

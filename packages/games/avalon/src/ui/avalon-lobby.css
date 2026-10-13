@@ -6,11 +6,26 @@
    [data-printed], exactly as in the app. */
 
 .avalon {
+  /* Chat names at Night: the light version of each player's colour (the app's AVATAR_INKS). */
+  --av-ink-slate: #8fc0d8;
+  --av-ink-plum: #b9a3dc;
+  --av-ink-moss: #a7c79a;
+  --av-ink-umber: #d6bf8e;
+  --av-ink-teal: #8fcbc0;
+  --av-ink-mauve: #d79fb4;
+  --av-ink-indigo: #a3b0e3;
+  --av-ink-olive: #c4cc86;
+  --av-ink-pewter: #b0bccb;
+  --av-ink-rust: #d8ad8f;
+  --av-ink-ochre: #dccb8a;
+  --av-ink-pine: #94cdb0;
+  --av-ink-violet: #b0aee6;
+  --av-ink-orchid: #d3a6dc;
+  --av-ink-lagoon: #8ccfdb;
   --font-heading-stack:
     var(--ff-av-heading, 'Alegreya SC'), 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
   --font-body-stack:
     var(--ff-body, 'Alegreya Sans'), 'Gill Sans', 'Segoe UI', system-ui, sans-serif;
-  container: avalon / inline-size;
   position: relative;
   padding: 18px 16px 32px;
   background: var(--bg);
@@ -53,6 +68,14 @@
 }
 .avalon .print-layer {
   display: none;
+}
+
+/* The table and hand sit in a size container. The chat stays outside it, so its drawer is fixed
+   to the screen rather than to the page. */
+.avalon .av-frame {
+  container: avalon / inline-size;
+  position: relative;
+  min-width: 0;
 }
 
 /* The app's .stage: the table, with the hand at its foot. */
@@ -115,6 +138,36 @@
   }
   .avalon[data-printed] .hand {
     border-radius: 2px;
+  }
+}
+
+/* Table talk: a drawer from the right on phones and tablets (the bar's chat button opens it),
+   docked beside the table on wide screens, as in the app (which docks it from 1240px). */
+.avalon .drawer-chat {
+  color: var(--fg);
+}
+@media (min-width: 1240px) {
+  .avalon:not(.av-away) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--dock);
+    gap: 24px;
+    align-items: start;
+  }
+  .avalon .drawer.drawer-chat {
+    position: sticky;
+    top: 84px;
+    z-index: auto;
+    transform: none;
+    visibility: visible;
+    width: auto;
+    height: calc(100dvh - 120px);
+    max-height: 900px;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+  }
+  .avalon .drawer-chat .drawer-close,
+  .avalon .drawer-scrim {
+    display: none;
   }
 }
 

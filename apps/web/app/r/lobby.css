@@ -246,8 +246,11 @@
   flex-direction: column;
   padding: 0;
 }
-.lobby-page--full .lobby-bar__chat {
-  display: grid !important;
+/* Its chat docks beside the game from 1240px (as in Avalon); below that the bar's button opens it. */
+@media (max-width: 1239.98px) {
+  .lobby-page--full .lobby-bar__chat {
+    display: grid !important;
+  }
 }
 .waiting.waiting--themed {
   flex: 1;

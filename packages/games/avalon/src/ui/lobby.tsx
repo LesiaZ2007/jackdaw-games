@@ -1,6 +1,13 @@
 'use client';
 
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import { REACTIONS, REACTION_NAMES, type Reaction, type ReactionKind } from '@jackdaw/engine';
 import {
   CREST_CHOICES,
@@ -9,6 +16,7 @@ import {
   seatTransition,
   useTheme,
   type GameLobbyProps,
+  type LobbyChat,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import {
@@ -236,6 +244,88 @@ function Fan({ roles, label }: { roles: Role[]; label: string }) {
   );
 }
 
+/**
+ * Avalon's Table talk (the app's Chat in components/Room.js): each name in its speaker's colour,
+ * a speaker's back-to-back lines grouped under one name, and the lobby's own lines set apart.
+ */
+function AvalonChat({ chat, players }: { chat: LobbyChat; players: ScreenPlayer[] }) {
+  const [text, setText] = useState('');
+  const log = useRef<HTMLDivElement>(null);
+  const tints = new Map(players.map((p) => [p.id, p.avatar.tint]));
+  const last = chat.lines.at(-1)?.id;
+
+  useEffect(() => {
+    const el = log.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [last, chat.open]);
+
+  async function send(e: FormEvent) {
+    e.preventDefault();
+    const t = text.trim();
+    if (!t) return;
+    setText('');
+    if (!(await chat.send(t))) setText(t);
+  }
+
+  return (
+    <div className="panel-body chat">
+      <div className="panel-head">
+        <h2 className="panel-title">Table talk</h2>
+        <button type="button" className="btn btn-sm btn-ghost drawer-close" onClick={chat.close}>
+          Close
+        </button>
+      </div>
+      <div className="chat-log" ref={log} aria-live="polite">
+        {chat.lines.length === 0 && <p className="muted small">No messages yet.</p>}
+        {chat.lines.map((m, i) => {
+          if (m.system)
+            return (
+              <p key={m.id} className="msg is-system">
+                {m.text}
+              </p>
+            );
+          const prev = chat.lines[i - 1];
+          const grouped = Boolean(prev && !prev.system && prev.playerId === m.playerId);
+          const tint = m.playerId ? tints.get(m.playerId) : undefined;
+          return (
+            <p
+              key={m.id}
+              className={grouped ? 'msg is-grouped' : 'msg'}
+              style={
+                tint
+                  ? vars({ '--ink': `var(--av-ink-${tint})`, '--name-tint': `var(--tint-${tint})` })
+                  : undefined
+              }
+            >
+              {!grouped && (
+                <b className="msg-name">
+                  {m.name ?? 'Someone'}
+                  {m.mine && <span className="msg-you"> (you)</span>}
+                </b>
+              )}
+              {m.text}
+            </p>
+          );
+        })}
+      </div>
+      <form className="chat-form" onSubmit={send}>
+        <input
+          aria-label="Message"
+          className="input"
+          value={text}
+          maxLength={280}
+          placeholder="Say something…"
+          autoComplete="off"
+          onChange={(e) => setText(e.target.value)}
+        />
+        <button className="btn" type="submit" disabled={!text.trim()}>
+          Send
+        </button>
+      </form>
+    </div>
+  );
+}
+
 function Setting({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <div className="setting" title={hint}>
@@ -259,6 +349,7 @@ export function AvalonLobby({
   changeGame,
   reactions,
   react,
+  chat,
 }: GameLobbyProps) {
   const look = useTheme();
   const parsed = optionsSchema.safeParse({ ...defaultOptions(), ...raw });
@@ -279,6 +370,15 @@ export function AvalonLobby({
     update(next);
   };
 
+  // Escape closes the chat drawer, as in the app.
+  const { open: chatOpen, close: closeChat } = chat;
+  useEffect(() => {
+    if (!chatOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeChat();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [chatOpen, closeChat]);
+
   async function deal_() {
     setBusy(true);
     try {
@@ -295,208 +395,224 @@ export function AvalonLobby({
         <span className="print-layer print-far" />
         <span className="print-layer print-near" />
       </div>
-      <div className="av-stage">
-        <div className="table-zone">
-          <RoundTable
-            players={players}
-            me={me}
-            hostId={hostId}
-            canInspect={(id) => id === me || isHost}
-            inspectLabel={(p) =>
-              p.id === me
-                ? `${p.name} (you): change your name, crest or colour`
-                : `${p.name}: remove or make host`
-            }
-            onInspect={onSeat}
-            center={
-              <>
-                <span className="center-kicker">Room</span>
-                <span className="center-code">{code}</span>
-                <span className="center-line">
-                  {count} of {MAX_PLAYERS} seated · {needed ? `${needed} more needed` : 'ready'}
-                </span>
-              </>
-            }
-            reactions={reactions}
-          />
-          {me && <ReactionBar onReact={react} />}
-        </div>
-
-        <section className="hand" aria-label="Avalon lobby">
-          <div className="hand-inner">
-            <p className="eyebrow">Gathering at the Round Table</p>
-            <h2 className="hand-title">
-              {needed
-                ? `Waiting for ${needed} more ${needed === 1 ? 'knight' : 'knights'}`
-                : isHost
-                  ? 'Ready when you are'
-                  : 'Waiting for the host'}
-            </h2>
-            <p className="hand-text">
-              {needed
-                ? `Share lobby code ${code}, or show the QR code from the menu.`
-                : isHost
-                  ? 'Roles are dealt the moment you start, and everyone goes straight to their seat in Avalon.'
-                  : 'The host will start once everyone is seated.'}
-            </p>
-
-            <Fan
-              roles={[...deal.good, ...deal.evil]}
-              label={`Roles dealt for ${Math.max(count, MIN_PLAYERS)} players`}
+      <div className="av-frame">
+        <div className="av-stage">
+          <div className="table-zone">
+            <RoundTable
+              players={players}
+              me={me}
+              hostId={hostId}
+              canInspect={(id) => id === me || isHost}
+              inspectLabel={(p) =>
+                p.id === me
+                  ? `${p.name} (you): change your name, crest or colour`
+                  : `${p.name}: remove or make host`
+              }
+              onInspect={onSeat}
+              center={
+                <>
+                  <span className="center-kicker">Room</span>
+                  <span className="center-code">{code}</span>
+                  <span className="center-line">
+                    {count} of {MAX_PLAYERS} seated · {needed ? `${needed} more needed` : 'ready'}
+                  </span>
+                </>
+              }
+              reactions={reactions}
             />
-            <p className="hand-text small">
-              {count >= MIN_PLAYERS ? `The deal for ${count}:` : `Preview for ${MIN_PLAYERS}:`}{' '}
-              <span className="good-text">{deal.good.length} loyal</span> against{' '}
-              <span className="evil-text">{deal.evil.length} evil</span>.
-              {deal.dropped.length > 0 &&
-                ` Not enough evil seats for ${deal.dropped.map((r) => ROLES[r].name).join(' and ')} yet.`}
-            </p>
-            {count > OFFICIAL_MAX && (
-              <p className="house-note">
-                More than {OFFICIAL_MAX} players uses house rules, since the box stops at{' '}
-                {OFFICIAL_MAX}: {deal.evil.length} evil, and quest teams of{' '}
-                {QUEST_SIZES[count]!.join(', ')}.
+            {me && <ReactionBar onReact={react} />}
+          </div>
+
+          <section className="hand" aria-label="Avalon lobby">
+            <div className="hand-inner">
+              <p className="eyebrow">Gathering at the Round Table</p>
+              <h2 className="hand-title">
+                {needed
+                  ? `Waiting for ${needed} more ${needed === 1 ? 'knight' : 'knights'}`
+                  : isHost
+                    ? 'Ready when you are'
+                    : 'Waiting for the host'}
+              </h2>
+              <p className="hand-text">
+                {needed
+                  ? `Share lobby code ${code}, or show the QR code from the menu.`
+                  : isHost
+                    ? 'Roles are dealt the moment you start, and everyone goes straight to their seat in Avalon.'
+                    : 'The host will start once everyone is seated.'}
               </p>
-            )}
 
-            <div className="settings" role="group" aria-label="Game settings">
-              <Setting label="Roles" hint={MODES[s.mode].hint}>
-                {isHost ? (
-                  <select
-                    className="setting-select"
-                    value={s.mode}
-                    onChange={(e) => update({ mode: e.target.value as Mode })}
-                    aria-label="Roles"
-                  >
-                    {Object.entries(MODES).map(([key, m]) => (
-                      <option key={key} value={key}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="setting-value">{MODES[s.mode].label}</span>
-                )}
-              </Setting>
-
-              {s.mode === 'custom' && (
-                <div className="setting-checks" role="group" aria-label="Roles in play">
-                  {OPTIONAL_ROLES.map((role) => {
-                    const needs = ROLE_NEEDS[role];
-                    const blocked = Boolean(needs && !s[needs]);
-                    const on = !blocked && s[role];
-                    return (
-                      <label
-                        key={role}
-                        className={`setting-check ${blocked ? 'is-blocked' : ''}`}
-                        title={ROLE_HINTS[role]}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={on}
-                          disabled={!isHost || blocked}
-                          onChange={() => toggleRole(role, !on)}
-                        />
-                        {role === 'merlin' ? 'Merlin & Assassin' : ROLES[role].name}
-                      </label>
-                    );
-                  })}
-                </div>
+              <Fan
+                roles={[...deal.good, ...deal.evil]}
+                label={`Roles dealt for ${Math.max(count, MIN_PLAYERS)} players`}
+              />
+              <p className="hand-text small">
+                {count >= MIN_PLAYERS ? `The deal for ${count}:` : `Preview for ${MIN_PLAYERS}:`}{' '}
+                <span className="good-text">{deal.good.length} loyal</span> against{' '}
+                <span className="evil-text">{deal.evil.length} evil</span>.
+                {deal.dropped.length > 0 &&
+                  ` Not enough evil seats for ${deal.dropped.map((r) => ROLES[r].name).join(' and ')} yet.`}
+              </p>
+              {count > OFFICIAL_MAX && (
+                <p className="house-note">
+                  More than {OFFICIAL_MAX} players uses house rules, since the box stops at{' '}
+                  {OFFICIAL_MAX}: {deal.evil.length} evil, and quest teams of{' '}
+                  {QUEST_SIZES[count]!.join(', ')}.
+                </p>
               )}
 
-              <Setting
-                label="Lady of the Lake"
-                hint="After quests 2, 3 and 4, the holder secretly learns one player's loyalty. Best with 7+ players."
-              >
-                {isHost ? (
+              <div className="settings" role="group" aria-label="Game settings">
+                <Setting label="Roles" hint={MODES[s.mode].hint}>
+                  {isHost ? (
+                    <select
+                      className="setting-select"
+                      value={s.mode}
+                      onChange={(e) => update({ mode: e.target.value as Mode })}
+                      aria-label="Roles"
+                    >
+                      {Object.entries(MODES).map(([key, m]) => (
+                        <option key={key} value={key}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="setting-value">{MODES[s.mode].label}</span>
+                  )}
+                </Setting>
+
+                {s.mode === 'custom' && (
+                  <div className="setting-checks" role="group" aria-label="Roles in play">
+                    {OPTIONAL_ROLES.map((role) => {
+                      const needs = ROLE_NEEDS[role];
+                      const blocked = Boolean(needs && !s[needs]);
+                      const on = !blocked && s[role];
+                      return (
+                        <label
+                          key={role}
+                          className={`setting-check ${blocked ? 'is-blocked' : ''}`}
+                          title={ROLE_HINTS[role]}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={on}
+                            disabled={!isHost || blocked}
+                            onChange={() => toggleRole(role, !on)}
+                          />
+                          {role === 'merlin' ? 'Merlin & Assassin' : ROLES[role].name}
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <Setting
+                  label="Lady of the Lake"
+                  hint="After quests 2, 3 and 4, the holder secretly learns one player's loyalty. Best with 7+ players."
+                >
+                  {isHost ? (
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={s.lady}
+                      aria-label="Lady of the Lake"
+                      className="setting-switch"
+                      onClick={() => update({ lady: !s.lady })}
+                    >
+                      <span className="setting-switch-knob" aria-hidden="true" />
+                      {s.lady ? 'On' : 'Off'}
+                    </button>
+                  ) : (
+                    <span className="setting-value">{s.lady ? 'On' : 'Off'}</span>
+                  )}
+                </Setting>
+
+                {(['talk', 'vote'] as const).map((which) => {
+                  const t = TIMERS[which];
+                  const value = s[t.key];
+                  return (
+                    <Setting key={which} label={t.label} hint={t.hint}>
+                      {isHost ? (
+                        <select
+                          className="setting-select"
+                          value={value}
+                          onChange={(e) => update({ [t.key]: Number(e.target.value) })}
+                          aria-label={t.label}
+                        >
+                          {TIMER_CHOICES[which].map((secs) => (
+                            <option key={secs} value={secs}>
+                              {secs ? formatSeconds(secs) : 'Off'}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="setting-value">
+                          {value ? formatSeconds(value) : 'Off'}
+                        </span>
+                      )}
+                    </Setting>
+                  );
+                })}
+
+                <Setting
+                  label="Look"
+                  hint="Avalon follows Jackdaw's day and dark looks: Parchment by day, Night in the dark."
+                >
+                  <span className="setting-value">{look === 'dark' ? 'Night' : 'Parchment'}</span>
+                </Setting>
+              </div>
+              {(s.talkTimer > 0 || s.voteTimer > 0) && (
+                <p className="hand-text small">
+                  When a timer runs out, the table sees it and the players being waited on get a
+                  buzz. Nothing is played for them.
+                </p>
+              )}
+              {!isHost && <p className="hand-text small">The host chooses these.</p>}
+
+              {isHost && (
+                <div className="row">
                   <button
                     type="button"
-                    role="switch"
-                    aria-checked={s.lady}
-                    aria-label="Lady of the Lake"
-                    className="setting-switch"
-                    onClick={() => update({ lady: !s.lady })}
+                    className="btn btn-primary btn-lg"
+                    disabled={busy || Boolean(blocker)}
+                    onClick={deal_}
+                    aria-label="Deal the roles: start Avalon"
                   >
-                    <span className="setting-switch-knob" aria-hidden="true" />
-                    {s.lady ? 'On' : 'Off'}
+                    {busy ? 'Dealing roles…' : 'Deal the roles'}
                   </button>
-                ) : (
-                  <span className="setting-value">{s.lady ? 'On' : 'Off'}</span>
-                )}
-              </Setting>
+                </div>
+              )}
+              {isHost && blocker && count >= MIN_PLAYERS && (
+                <p className="av-blocker" role="status">
+                  {blocker}
+                </p>
+              )}
 
-              {(['talk', 'vote'] as const).map((which) => {
-                const t = TIMERS[which];
-                const value = s[t.key];
-                return (
-                  <Setting key={which} label={t.label} hint={t.hint}>
-                    {isHost ? (
-                      <select
-                        className="setting-select"
-                        value={value}
-                        onChange={(e) => update({ [t.key]: Number(e.target.value) })}
-                        aria-label={t.label}
-                      >
-                        {TIMER_CHOICES[which].map((secs) => (
-                          <option key={secs} value={secs}>
-                            {secs ? formatSeconds(secs) : 'Off'}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className="setting-value">{value ? formatSeconds(value) : 'Off'}</span>
-                    )}
-                  </Setting>
-                );
-              })}
-
-              <Setting
-                label="Look"
-                hint="Avalon follows Jackdaw's day and dark looks: Parchment by day, Night in the dark."
-              >
-                <span className="setting-value">{look === 'dark' ? 'Night' : 'Parchment'}</span>
-              </Setting>
-            </div>
-            {(s.talkTimer > 0 || s.voteTimer > 0) && (
               <p className="hand-text small">
-                When a timer runs out, the table sees it and the players being waited on get a buzz.
-                Nothing is played for them.
+                {isHost && count > 1
+                  ? 'Tap a player’s seat to remove them, or your own to change your name and crest.'
+                  : 'Tap your seat to change your name and crest.'}
               </p>
-            )}
-            {!isHost && <p className="hand-text small">The host chooses these.</p>}
-
-            {isHost && (
-              <div className="row">
-                <button
-                  type="button"
-                  className="btn btn-primary btn-lg"
-                  disabled={busy || Boolean(blocker)}
-                  onClick={deal_}
-                  aria-label="Deal the roles: start Avalon"
-                >
-                  {busy ? 'Dealing roles…' : 'Deal the roles'}
+              {changeGame && (
+                <button type="button" className="av-link" onClick={changeGame}>
+                  Play a different game
                 </button>
-              </div>
-            )}
-            {isHost && blocker && count >= MIN_PLAYERS && (
-              <p className="av-blocker" role="status">
-                {blocker}
-              </p>
-            )}
-
-            <p className="hand-text small">
-              {isHost && count > 1
-                ? 'Tap a player’s seat to remove them, or your own to change your name and crest.'
-                : 'Tap your seat to change your name and crest.'}
-            </p>
-            {changeGame && (
-              <button type="button" className="av-link" onClick={changeGame}>
-                Play a different game
-              </button>
-            )}
-          </div>
-        </section>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
+
+      <aside className={`drawer drawer-chat${chat.open ? ' is-open' : ''}`} aria-label="Table talk">
+        <AvalonChat chat={chat} players={players} />
+      </aside>
+      {chat.open && (
+        <button
+          type="button"
+          className="drawer-scrim"
+          aria-label="Close chat"
+          onClick={chat.close}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import type { LobbySnapshot, RecapEvent, Standing } from '@jackdaw/engine';
-import { BirdMark, Token, type ScreenPlayer } from '@jackdaw/ui';
+import { BirdMark, OutcomeChip, Token, Verdict, type ScreenPlayer } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 
 const RECAP_ROWS = 8;
@@ -46,6 +46,13 @@ export function TvResults({
   const recap: RecapEvent[] = result.recap;
   const shown = recap.slice(0, RECAP_ROWS);
   const more = recap.length - shown.length;
+  const winnerNames = result.winners.map((id) => names.get(id) ?? 'A player who left');
+  const title =
+    winnerNames.length === 0
+      ? 'No winner this time'
+      : winnerNames.length === 1
+        ? `${winnerNames[0]} wins`
+        : `${winnerNames.slice(0, -1).join(', ')} and ${winnerNames[winnerNames.length - 1]} share the win`;
 
   return (
     <div className="tv-results">
@@ -57,22 +64,28 @@ export function TvResults({
         <span className="tv-count">Lobby {snapshot.code}</span>
       </header>
 
-      <section className="tv-winners" aria-label="Winners">
-        <span className="jd-label tv-join__label">
-          {result.winners.length === 1 ? 'Winner' : 'Winners'}
-        </span>
-        <ol className="tv-winners__row">
+      <section className="tv-winners">
+        <Verdict
+          size="tv"
+          outcome={result.winners.length ? 'win' : 'draw'}
+          title={title}
+          detail={withNames(result.summary, names)}
+          avatar={result.winners.length === 1 ? byId.get(result.winners[0]!)?.avatar : undefined}
+        />
+        <ol
+          className={result.winners.length > 1 ? 'tv-winners__row' : 'sr-only'}
+          aria-label="Winners"
+        >
           {result.winners.map((id, i) => {
             const p = byId.get(id);
             return (
-              <li key={id} className="tv-winner" style={{ animationDelay: `${300 + i * 160}ms` }}>
-                {p ? <Token avatar={p.avatar} size={132} /> : null}
+              <li key={id} className="tv-winner" style={{ animationDelay: `${900 + i * 160}ms` }}>
+                {p ? <Token avatar={p.avatar} size={96} /> : null}
                 <span className="tv-winner__name">{names.get(id) ?? 'A player who left'}</span>
               </li>
             );
           })}
         </ol>
-        <p className="jd-display tv-summary">{withNames(result.summary, names)}</p>
       </section>
 
       <section className="tv-standings" aria-label="Everyone's result">
@@ -91,7 +104,9 @@ export function TvResults({
                     {[s.team, s.role].filter(Boolean).join(', ')}
                   </span>
                 )}
-                <span className="tv-standing__outcome">{OUTCOME[s.outcome]}</span>
+                <OutcomeChip outcome={s.outcome} className="tv-standing__outcome">
+                  {OUTCOME[s.outcome]}
+                </OutcomeChip>
               </li>
             );
           })}

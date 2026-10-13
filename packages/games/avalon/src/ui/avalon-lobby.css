@@ -147,7 +147,7 @@
   color: var(--fg);
 }
 @media (min-width: 1240px) {
-  .avalon:not(.av-away) {
+  .avalon:not(.av-away):not(.av-tvlobby) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--dock);
     gap: 24px;
@@ -248,4 +248,51 @@
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* The TV's lobby (tv-lobby.tsx), on Jackdaw's TV stage: sizes are TV pixels on a canvas at least
+   1920 wide, so type is set larger than on a phone. */
+.avalon.av-tvlobby {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 700px;
+  gap: 72px;
+  align-items: center;
+  padding: 48px 88px;
+  font-size: 26px;
+}
+.avalon.av-tvlobby .table-wrap {
+  width: 100%;
+}
+.av-tvlobby__table {
+  width: min(100%, 940px);
+  justify-self: center;
+}
+.av-tvlobby__side {
+  position: relative;
+  display: grid;
+  gap: 36px;
+  align-content: center;
+}
+.av-tvlobby__join {
+  display: grid;
+  gap: 18px;
+  justify-items: start;
+  color: var(--fg);
+}
+.avalon.av-tvlobby .hand {
+  width: 100%;
+  margin: 0;
+}
+.avalon.av-tvlobby .eyebrow {
+  font-size: 20px;
+}
+.avalon.av-tvlobby .hand-title {
+  font-size: 46px;
+}
+.avalon.av-tvlobby .hand-text {
+  font-size: 26px;
+}
+.avalon.av-tvlobby .fan {
+  zoom: 1.2;
 }

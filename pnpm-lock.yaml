@@ -41,6 +41,9 @@ importers:
       '@jackdaw/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@jackdaw/game-avalon':
+        specifier: workspace:*
+        version: link:../../packages/games/avalon
       '@jackdaw/game-rps':
         specifier: workspace:*
         version: link:../../packages/games/rps
@@ -94,6 +97,28 @@ importers:
         specifier: 4.6.7
         version: 4.6.7
 
+  packages/games/avalon:
+    dependencies:
+      '@jackdaw/engine':
+        specifier: workspace:*
+        version: link:../../engine
+      '@jackdaw/ui':
+        specifier: workspace:*
+        version: link:../../ui
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@jackdaw/server':
+        specifier: workspace:*
+        version: link:../../server
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+
   packages/games/rps:
     dependencies:
       '@jackdaw/engine':
@@ -122,6 +147,9 @@ importers:
       '@jackdaw/game-rps':
         specifier: workspace:*
         version: link:../games/rps
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
 
   packages/ui:
     dependencies:

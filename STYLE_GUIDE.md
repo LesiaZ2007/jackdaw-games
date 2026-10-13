@@ -107,8 +107,9 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which Lesia prefers for 
 - **Jackdaw's bar stays** on every lobby: code chits, invite (with Show on TV), Game stats, chat
   and the menu.
 - **A game's own lobby fills the screen** under the bar, edge to edge, not a panel in the middle
-  (Lesia: "full screen when it's selected, not just a weird cutout"). Chat moves behind the
-  bar's button on every width, as in the game's own app. "Play a different game" brings back
+  (Lesia: "full screen when it's selected, not just a weird cutout"). It draws the chat too, in
+  its own style (Lesia: "chat should be like the avalon chat on the right"): Avalon's Table talk,
+  docked on the right from 1240px and a drawer from the bar's chat button below that. "Play a different game" brings back
   Jackdaw's lobby with the game list.
 - Its seats still behave like Jackdaw's: tap your own to change your look, the host taps someone
   to remove them or make them host, reactions pop over seats, away players are marked.

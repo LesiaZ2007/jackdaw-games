@@ -63,9 +63,9 @@ export interface GameUi {
 }
 
 /**
- * What a game's themed waiting room receives from the lobby. Every game's lobby keeps Jackdaw's
- * frame (the bar with the code, chat, stats, the TV) and draws its own centre: the players, the
- * options and Start, in the game's own look (Avalon: its round table of shields).
+ * What a game's own lobby receives. It fills the screen under Jackdaw's bar (the code, invite and
+ * TV, stats, the chat button, the menu) and draws the players, the options, Start and the chat,
+ * in the game's own look (Avalon: its round table of shields, and its own Table talk).
  */
 export interface GameLobbyProps {
   /** The lobby code. */
@@ -91,4 +91,30 @@ export interface GameLobbyProps {
   reactions: Reaction[];
   /** Send a reaction (only offered to seated players: `me` is set). */
   react: (kind: ReactionKind) => void;
+  /** The lobby's chat, drawn in the game's own style. */
+  chat: LobbyChat;
+}
+
+/**
+ * The lobby's chat for a game's own lobby. Laptops (at least 1240px wide) show it docked beside
+ * the game; narrower screens show it as a drawer that the bar's chat button opens.
+ */
+export interface LobbyChat {
+  /** Oldest first, with system lines already worded. */
+  lines: ChatLine[];
+  /** Resolves true once the message is saved. */
+  send: (text: string) => Promise<boolean>;
+  /** The drawer is open (narrow screens). */
+  open: boolean;
+  close: () => void;
+}
+
+export interface ChatLine {
+  id: string;
+  /** A join, leave or game line from the lobby itself. */
+  system: boolean;
+  text: string;
+  playerId?: string;
+  name?: string;
+  mine?: boolean;
 }

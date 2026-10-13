@@ -87,6 +87,15 @@ test('five phones gather in Avalon’s lobby, land in their own Avalon seats, an
     bran.getByText('Not enough evil seats for Mordred and Oberon yet.', { exact: false }),
   ).toBeVisible();
 
+  // Table talk in Avalon's own style: on phones the bar's chat button opens Avalon's drawer.
+  await bran.getByRole('button', { name: /^Chat/ }).click();
+  const talk = bran.getByRole('complementary', { name: 'Table talk' });
+  await talk.getByLabel('Message').fill('Who wants to be Merlin?');
+  await talk.getByRole('button', { name: 'Send' }).click();
+  await expect(talk.getByText('Who wants to be Merlin?')).toBeVisible();
+  await expect(host.getByRole('button', { name: 'Chat, 1 unread' })).toBeVisible();
+  await bran.keyboard.press('Escape');
+
   // Start: Jackdaw opens the Avalon room, and every phone lands on its own seat.
   await host.getByRole('button', { name: 'Deal the roles: start Avalon' }).click();
   await expect.poll(() => avalon.rooms.length).toBe(1);

@@ -12,6 +12,7 @@ import {
   Sheet,
   Token,
   useTheme,
+  type LobbyChat,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
@@ -55,6 +56,7 @@ export function Waiting({
   picking,
   themed: showOwnLobby,
   setPicking,
+  chat,
 }: {
   snapshot: LobbySnapshot;
   players: ScreenPlayer[];
@@ -67,6 +69,8 @@ export function Waiting({
   themed: boolean;
   /** The host wants the list of games (or is done with it). */
   setPicking: (picking: boolean) => void;
+  /** The chat, for a game's own lobby to draw. */
+  chat: LobbyChat;
 }) {
   const arrivals = useArrivals(s.players.map((p) => p.id));
   const [managing, setManaging] = useState(false);
@@ -131,6 +135,7 @@ export function Waiting({
             changeGame={isHost ? () => setPicking(true) : undefined}
             reactions={s.reactions}
             react={(kind) => void send({ type: 'react', kind })}
+            chat={chat}
           />
         </section>
       )}

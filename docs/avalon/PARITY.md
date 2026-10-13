@@ -491,6 +491,9 @@ What the Jackdaw lobby already provides, and how the Avalon feature maps onto it
 
 ## Needs Lesia
 
+**All nine approved by Lesia on 2026-10-13** (see CLAUDE.md, "For the Avalon port"). System chat
+lines are kept, not dropped, and Avalon's results show its own celebration, then the shared seal.
+
 Each of these changes the game module contract, the lobby state machine or the protocol, so it
 needs Lesia's OK before the port relies on it (CLAUDE.md, "Working rules").
 

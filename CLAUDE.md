@@ -131,3 +131,17 @@ Additions approved by Lesia:
   - The lobby keeps 200 games of history. Each entry records the participants, their names at the time and their standings.
   - Polls carry the latest 10 entries plus `historyCount`.
   - `GET /api/lobby/:code/stats` returns the full history and `lobbyStats(history)`.
+- **For the Avalon port (2026-10-13)**, all from `docs/avalon/STATE.md` "Needs Lesia":
+  - **A clock.** `SetupContext.now` and `applyAction(..., rng, now)`. Timed phases expose
+    `nextTimer(state)`; the runtime calls `onTimer(state, id, rng, now)` lazily on reads and
+    writes. Screens get `now()`, server time corrected for the device's drift.
+  - **The host can end a game early.** It isn't scored and goes back to the lobby.
+  - **Rejoin codes for someone else**, with Avalon's rule: the host for anyone, anyone for a
+    player unseen for over a minute; only the maker sees the code.
+  - **`sendAction` resolves true/false** once the move is saved or refused.
+  - **Reactions** (Avalon's six, over seats) are a platform feature; screens get `reactions`.
+  - **Unique names** (case-insensitive) on join and rename.
+  - **System lines in chat**: the platform posts joins and leaves, and games add lines through
+    `announce(prev, next)`.
+  - **Avalon's recap records who played each Fail card**, shown only after the game.
+  - **Avalon's results** use its own good/evil celebration first, then the shared verdict seal.

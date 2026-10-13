@@ -440,6 +440,9 @@ Ported from `scripts/simulate.mjs`, as pure unit tests on the module with a seed
 
 ## Needs Lesia
 
+**All nine approved by Lesia on 2026-10-13** (see CLAUDE.md, "For the Avalon port"). System chat
+lines are kept, not dropped, and Avalon's results show its own celebration, then the shared seal.
+
 These are the same as in `PARITY.md`. Each says what the design does without the change.
 
 1. **A clock.** `now` in `SetupContext` and as an `applyAction` argument, and server `now` on

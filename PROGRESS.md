@@ -50,8 +50,9 @@ next playtest and review before it's merged to `main`.
   - `/tv` and `/tv/[code]` are TV mode: the TV lobby, a slim join strip over the game's TV screen during a game, and the end-of-game reveal.
 - **Rock Paper Scissors** (`packages/games/rps`): the test game, with rules, tests, a phone screen, a TV screen and catalog pictures.
 - **Tests:**
-  - 77 Vitest unit tests.
-  - Playwright (`pnpm test:e2e`, 45 tests) covers:
+  - 96 Vitest unit tests.
+  - Playwright (`pnpm test:e2e`, 48 tests) covers:
+    - unique names, join lines in chat, a reaction reaching another phone, and the host ending a game early;
     - three phones create and join a lobby, change their look, play a round, a phone refreshes and gets its seat back, and Play again keeps the game;
     - home: typing a code, picking a crest, Browse scrolling to the shelves;
     - round and game verdicts on phones and the TV;
@@ -77,6 +78,31 @@ Lesia's feedback on the first preview, all done:
   your own verdict plus coloured standings on the results screens.
 - Every game follows the day/dark choice (`useTheme()`).
 - Fixed along the way: quick taps on an option stepper used to lose all but the first.
+
+### Platform additions (2026-10-13, `feat/platform-avalon`)
+
+Approved by Lesia for every game:
+
+- **Host ends a game early**: `endGame` message. The host's lobby menu shows "End this game"
+  during a game; a second tap within 4s ("Tap again to end the game for everyone") ends it.
+  Nothing is recorded (no history, no scores), the lobby goes back to waiting with the same game,
+  and players get a toast.
+- **Reactions**: `react { kind }` with Avalon's six (thumbs up, thumbs down, hmm, suspicious,
+  shocked, laughing), drawn in the house line style with a heraldic accent each
+  (`packages/ui/src/reactions.tsx`). One per player, 800ms apart, kept 6s, public (the TV gets
+  them). They pop over seats in the lobby and the TV lobby; the lobby has a reaction row under
+  the table and the menu has one during games and results. Game screens get `reactions` and draw
+  them with the kit's `PlayerReaction` (Rock Paper Scissors does, on phones and the TV).
+- **Unique names**: `join` and `rename` refuse a name someone at the table already has, ignoring
+  case (`NAME_TAKEN`, "Someone at the table is already called Bran."). The join card and your
+  sheet check first with the engine's `nameClash` and say so inline.
+- **System lines in chat**: `ChatMessage.system` lines for joins, leaves, removals, host changes,
+  rejoins, game start, game over (with the summary), ending early and score resets, plus each line
+  from a game's optional `announce(prev, next)`. Players are written `{playerId}` and shown by
+  current name (names at the time are kept for anyone who left). They're quiet, centred lines and
+  don't count toward the unread badge.
+- Not built (dropped with the Avalon port): the timer runtime, a server clock, and rejoin codes
+  made for someone else. The contract keeps `now`, `nextTimer` and `onTimer` for later.
 
 ### Design (signed off)
 

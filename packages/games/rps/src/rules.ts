@@ -13,6 +13,9 @@ export type Pick = (typeof PICKS)[number];
 
 const BEATS: Record<Pick, Pick> = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
 
+/** Does throw `a` beat throw `b`? */
+export const beats = (a: Pick, b: Pick) => BEATS[a] === b;
+
 export const optionsSchema = z.object({
   rounds: z.number().int().min(1, 'At least 1 round').max(9, 'At most 9 rounds'),
 });

@@ -6,6 +6,8 @@ const config: NextConfig = {
   transpilePackages: ['@jackdaw/engine', '@jackdaw/server', '@jackdaw/ui', '@jackdaw/game-rps'],
   // Put metadata in <head> for every client so link previews work.
   htmlLimitedBots: /.*/,
+  // Keep the dev-mode badge out of screenshots.
+  devIndicators: false,
 };
 
 export default config;

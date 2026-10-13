@@ -17,6 +17,17 @@ export const rpsUi: GameUi = {
       'Most points after the last round wins; ties share the win.',
     ],
     credit: 'A schoolyard classic. This is the test game for Jackdaw.',
+    pictures: [
+      {
+        src: '/games/rps/game-phone.png',
+        alt: 'Rock Paper Scissors on a phone: who has thrown, the scores, last round’s throws and the three throw buttons.',
+      },
+      {
+        src: '/games/rps/tv.png',
+        alt: 'Rock Paper Scissors on a TV: the round, who is still thinking, last round’s throws and the scores.',
+        wide: true,
+      },
+    ],
   },
   PlayerScreen,
   TvScreen,

@@ -196,38 +196,43 @@
 .cat-grid {
   list-style: none;
   margin: 0;
-  padding: 0;
+  /* room for the covers' box edges */
+  padding: 4px 8px 8px 0;
   display: grid;
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: var(--space-5) var(--space-5);
 }
 .cat-grid li {
-  position: relative;
   min-width: 0;
-}
-.cat-grid .jd-box {
-  height: 100%;
 }
 /* The outline marks the game shown in the side panel, which only exists on wide screens. */
 @media (max-width: 1023.98px) {
-  .cat-grid .jd-box--selected {
+  .cat-grid .jd-cover--selected {
     outline: none;
   }
 }
-.cat-soon .jd-box__art {
-  filter: saturate(0.55);
+@media (max-width: 479.98px) {
+  /* two covers a row on phones: smaller type so names still fit */
+  .cat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .cat-grid .jd-cover__name {
+    font-size: 1.3rem;
+  }
+  .cat-grid .jd-cover__tag,
+  .cat-grid .jd-cover__kind {
+    display: none;
+  }
 }
-.cat-soon__stamp {
-  position: absolute;
-  top: -7px;
-  right: 10px;
-  padding: 3px 8px;
-  font: 800 12px/1 var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink);
-  background: var(--paper);
-  border: 1.5px solid var(--ink);
-  pointer-events: none;
+.cat-foot {
+  margin: var(--space-6) 0 0;
+  color: var(--ink-2);
+  font-weight: 700;
+}
+.cat-foot a {
+  text-underline-offset: 4px;
+  text-decoration-color: var(--rule);
 }
 .cat-empty {
   margin: var(--space-5) 0;
@@ -470,9 +475,6 @@
 
 /* ── Wider screens ───────────────────────────────────────────────────────── */
 @media (min-width: 640px) {
-  .cat-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .cat-pics img {
     height: 260px;
   }
@@ -536,9 +538,6 @@
 }
 
 @media (min-width: 1700px) {
-  .cat-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   .cat-bar {
     padding-inline: var(--space-6);
   }

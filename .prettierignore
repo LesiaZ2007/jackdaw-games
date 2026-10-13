@@ -3,3 +3,4 @@ pnpm-lock.yaml
 .next-check/
 node_modules/
 .*/
+mockups/

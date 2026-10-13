@@ -69,16 +69,18 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view }) => {
   );
 };
 
-/** The TV (and anyone watching from a phone) shows Avalon's own table, inside Jackdaw's frame. */
+/**
+ * The TV (and anyone who joined after Start, watching from a phone) shows Avalon's own table
+ * inside Jackdaw's frame, so it is still here for the results when the game ends.
+ */
 export const TvScreen: GameUi['TvScreen'] = ({ tableView }) => {
   const v = tableView as AvalonTableView;
   return (
-    <iframe
-      className="av-tv"
-      src={tvUrl(v)}
-      title="Avalon, on the table"
-      allow="screen-wake-lock"
-      style={{ width: '100%', height: '100%', minHeight: '70vh', border: 0, display: 'block' }}
-    />
+    <div className="av-tv">
+      <iframe className="av-tv__frame" src={tvUrl(v)} title="Avalon, on the table" />
+      <a className="av-tv__open" href={tvUrl(v)} target="_blank" rel="noreferrer">
+        Open Avalon&rsquo;s table
+      </a>
+    </div>
   );
 };

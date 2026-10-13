@@ -140,6 +140,23 @@
   text-transform: uppercase;
 }
 
+/* Avalon's TV screen, embedded while the game runs. */
+.av-tv {
+  display: grid;
+  gap: var(--space-2, 8px);
+  justify-items: center;
+}
+.av-tv__frame {
+  display: block;
+  width: 100%;
+  min-height: 70vh;
+  border: 0;
+}
+.av-tv__open {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .avalon *,
   .avalon *::before,

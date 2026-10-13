@@ -8,6 +8,7 @@ import { catalogEntry, gameUis } from '@/lib/catalog';
 import { QrCode } from '@/lib/qr-code';
 import { siteUrl } from '@/lib/qr';
 import { useLobby } from '@/lib/use-lobby';
+import { NightHint, TvNight } from './tv-night';
 import { TvResults } from './tv-results';
 import { TvStage, useWakeLock } from './tv-stage';
 
@@ -151,7 +152,7 @@ export function TvLobby({ code }: { code: string }) {
   const count = snapshot.players.length;
 
   return (
-    <TvStage>
+    <TvStage below={<TvNight code={code} snapshot={snapshot} />}>
       <div className="tv-lobby">
         <header className="tv-lobby__top">
           <div className="tv-brand">
@@ -192,6 +193,7 @@ export function TvLobby({ code }: { code: string }) {
         </section>
 
         <SeatTrack seats={seats} cols={15} className="tv-track" />
+        {snapshot.historyCount > 0 && <NightHint />}
       </div>
     </TvStage>
   );

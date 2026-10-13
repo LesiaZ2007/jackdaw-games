@@ -60,6 +60,11 @@ export interface GameUi {
    * round table). The lobby shows the game's box lid and options when it's absent.
    */
   Lobby?: ComponentType<GameLobbyProps>;
+  /**
+   * The TV screen fills the whole display, with no Jackdaw strip above it (Avalon: its own TV
+   * page, which has its own header).
+   */
+  fullTv?: boolean;
 }
 
 /**

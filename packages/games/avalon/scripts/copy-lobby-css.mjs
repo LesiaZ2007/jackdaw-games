@@ -12,14 +12,16 @@ const repo = process.argv[2];
 if (!repo) throw new Error('Pass the path to the Avalon repo.');
 const out = join(dirname(fileURLToPath(import.meta.url)), '../src/ui/avalon-copied.css');
 
-// The classes the lobby uses (Lobby.js, RoundTable.js, Fan.js, Avatar.js).
+// The classes the lobby uses (Lobby.js, RoundTable.js, Fan.js, Avatar.js, and Room.js's Chat).
 const KEEP = new Set(
   `eyebrow good-text evil-text small muted btn btn-primary btn-ghost btn-lg btn-sm fan fan-sm
   fan-lg fan-card fan-art fan-name hand hand-inner hand-title hand-text table-wrap table-top
   table-center center-kicker center-code center-line seat-node avatar avatar-icon badge-icon
   badge-leader seat-name seat-you seat-tag tag-plain house-note settings setting setting-label
   setting-value setting-select setting-switch setting-switch-knob setting-checks setting-check
-  bubble reaction-bar reaction print-layer print-far print-near`.split(/\s+/),
+  bubble reaction-bar reaction print-layer print-far print-near drawer drawer-chat drawer-scrim
+  drawer-close panel-body panel-head panel-title chat chat-log msg msg-name msg-you chat-form
+  input`.split(/\s+/),
 );
 const KEYFRAMES = ['deal', 'pop', 'rise', 'bubble', 'glow', 'fade'];
 const FONTS = {

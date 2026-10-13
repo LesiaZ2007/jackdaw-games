@@ -1,0 +1,2 @@
+gi-raven.svg: "Raven" by Lorc, https://game-icons.net, CC BY 3.0
+fa-crow.svg: "crow" from Font Awesome Free 6.7.2, https://fontawesome.com, CC BY 4.0

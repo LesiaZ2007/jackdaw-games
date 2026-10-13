@@ -25,6 +25,8 @@
 :root[data-palette="chipboard"] { --card: #bab4a7; --card-2: #aaa395; --paper: #f4f2ec; --ink: #1f1d1a; --ink-2: #47423b; --rule: #857e71; --seal: #f4f2ec; }
 :root[data-palette="nape"]      { --card: #d2d9dd; --card-2: #c1c9ce; --paper: #f7f8f6; --ink: #1b2228; --ink-2: #46515a; --rule: #93a0a8; --seal: #f7f8f6; }
 :root[data-palette="lichen"]    { --card: #d8dbcd; --card-2: #c8cbbc; --paper: #f6f6f0; --ink: #1d201b; --ink-2: #4a5044; --rule: #989e8a; --seal: #f6f6f0; }
+:root[data-palette="pebble"]    { --card: #d0ccc3; --card-2: #c0bbb1; --paper: #f8f7f3; --ink: #1e1c1a; --ink-2: #4e4a44; --rule: #9b968c; --seal: #f8f7f3; }
+:root[data-palette="flint"]     { --card: #c5c0b5; --card-2: #b5b0a4; --paper: #f6f5f0; --ink: #1e1c1a; --ink-2: #4a463f; --rule: #918b80; --seal: #f6f5f0; }
 :root[data-palette="bone"]      { --card: #e6e4df; --card-2: #d6d3cc; --paper: #fbfaf7; --ink: #1c1b19; --ink-2: #55524c; --rule: #a8a49b; --seal: #fbfaf7; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --card: #1c1e20; --card-2: #25282b; --paper: #2b2f32; --ink: #ede5d3; --ink-2: #aeb5b8;
@@ -412,6 +414,10 @@ body.solo .laptop .device > .screen { transform: none; }
   <defs>
     <symbol id="jackdaw" viewBox="0 0 100 100"><path d="M14 30 L33 24 C36 18 42 15 49 15 C58 15 63 21 64 28 C72 34 78 44 80 56 L90 92 L80 92 L71 76 C66 79 59 80 53 78 C43 74 37 64 36 52 C35 45 35 40 36 36 L15 32 Z" fill="var(--bird)"/><circle cx="45" cy="26" r="3.4" fill="var(--iris)"/><path d="M52 78 L50 92 M60 79 L61 92" stroke="var(--bird)" stroke-width="3.4" stroke-linecap="round"/></symbol>
     <symbol id="seal" viewBox="0 0 100 100"><use href="#jackdaw"/></symbol>
+    <!-- Raven by Lorc, game-icons.net, CC BY 3.0 -->
+    <symbol id="mark-raven" viewBox="0 0 512 512"><path d="M343.313 22.22c-57.33 0-61.26 36.153-91.125 54.874C154.782 42.52 133.115 221.496 169.844 330c-15.396 31.924-30.736 75.9-43.813 134.906 56.828 30.66 119.124 38.655 182.22 9.906-6.2-37.715-14.18-68.858-21.97-95.375 25.025-12.63 59.594-14.573 86.5 14.407.24-28.626-19.022-40.956-40.53-42.25l-22.03-47.313c42.606-45.056 74.38-100.18 57.905-157.06-10.303-38.45 58.203-62.225 122.344-53.75-24.523-21.164-55.99-30.482-85.845-33.876-8.843-21.763-32.616-37.375-61.313-37.375zm10.968 21.936c9.808 0 17.783 7.944 17.783 17.75 0 9.807-7.974 17.75-17.782 17.75-9.807 0-17.75-7.943-17.75-17.75 0-9.806 7.945-17.75 17.75-17.75zm-58.092 274.25l16.28 34.938c-11.62 2.698-22.325 8.217-29.312 15.687-3.298-10.84-6.498-20.903-9.47-30.28 7.58-6.45 15.128-13.253 22.502-20.344z" fill="var(--bird)"/></symbol>
+    <!-- Crow from Font Awesome Free 6, CC BY 4.0 -->
+    <symbol id="mark-crow" viewBox="0 0 640 512"><path d="M456 0c-48.6 0-88 39.4-88 88l0 29.2L12.5 390.6c-14 10.8-16.6 30.9-5.9 44.9s30.9 16.6 44.9 5.9L126.1 384l133.1 0 46.6 113.1c5 12.3 19.1 18.1 31.3 13.1s18.1-19.1 13.1-31.3L311.1 384l40.9 0c1.1 0 2.1 0 3.2 0l46.6 113.2c5 12.3 19.1 18.1 31.3 13.1s18.1-19.1 13.1-31.3l-42-102C484.9 354.1 544 280 544 192l0-64 0-8 80.5-20.1c8.6-2.1 13.8-10.8 11.6-19.4C629 52 603.4 32 574 32l-50.1 0C507.7 12.5 483.3 0 456 0zm0 64a24 24 0 1 1 0 48 24 24 0 1 1 0-48z" fill="var(--bird)"/></symbol>
     <symbol id="fleuron" viewBox="0 0 22 22"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 19V9c0-3 3-6 6-6h10"/><path d="M7 15c0-4 4-8 8-8"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></g></symbol>
     <symbol id="c-tower" viewBox="0 0 32 32"><path d="M10 28V13h12v15M8 13V7h3.5v3h3V7h3v3h3V7H24v6M14 28v-5a2 2 0 0 1 4 0v5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></symbol>
     <symbol id="c-key" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10" cy="10" r="5"/><path d="M13.5 13.5L26 26M22 22l3-3M18.5 18.5l2.5-2.5"/></g></symbol>
@@ -451,8 +457,11 @@ body.solo .laptop .device > .screen { transform: none; }
     <p>Less Scrabble, more character: Belfry's display face, chamfered letter chits instead of tiles, a printer's seal with a heraldic jackdaw holding the stolen ring, and box lids patterned with heraldic fields. Avalon's waiting room shows how a chosen game unfolds its own world inside the Jackdaw frame.</p>
   </div>
   <div class="switches">
+    <div class="palettes marks" role="group" aria-label="Bird mark">
+      <button type="button" data-m="mark-raven">Raven</button><button type="button" data-m="mark-crow">Crow</button><button type="button" data-m="jackdaw">Upright</button>
+    </div>
     <div class="palettes" role="group" aria-label="Day palette">
-      <button type="button" data-p="parchment">Parchment</button><button type="button" data-p="chipboard">Chipboard</button><button type="button" data-p="nape">Nape</button><button type="button" data-p="lichen">Lichen</button><button type="button" data-p="bone">Bone</button>
+      <button type="button" data-p="parchment">Parchment</button><button type="button" data-p="chipboard">Chipboard</button><button type="button" data-p="pebble">Pebble</button><button type="button" data-p="flint">Flint</button><button type="button" data-p="nape">Nape</button><button type="button" data-p="lichen">Lichen</button><button type="button" data-p="bone">Bone</button>
     </div>
     <button class="toggle" id="theme-toggle" type="button">Switch to dark</button>
   </div>
@@ -788,9 +797,13 @@ body.solo .laptop .device > .screen { transform: none; }
   btn.addEventListener('click', () => { root.dataset.theme = isDark() ? 'light' : 'dark'; label(); });
   label();
   const [solo, ...mods] = location.hash.slice(1).split('-');
-  const setPalette = (p) => { if (p === 'parchment') delete root.dataset.palette; else root.dataset.palette = p; document.querySelectorAll('.palettes button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === p))); };
-  document.querySelectorAll('.palettes button').forEach((b) => b.addEventListener('click', () => setPalette(b.dataset.p)));
-  setPalette(mods.find((m) => ['parchment', 'chipboard', 'nape', 'lichen', 'bone'].includes(m)) || 'nape');
+  const setPalette = (p) => { if (p === 'parchment') delete root.dataset.palette; else root.dataset.palette = p; document.querySelectorAll('.palettes button[data-p]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === p))); };
+  document.querySelectorAll('.palettes button[data-p]').forEach((b) => b.addEventListener('click', () => setPalette(b.dataset.p)));
+  const setMark = (m) => { document.querySelectorAll('use[href="#seal"]').forEach((u) => u.setAttribute('href', '#' + m)); document.querySelectorAll('use[data-mark]').forEach((u) => u.setAttribute('href', '#' + m)); document.querySelectorAll('.marks button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.m === m))); };
+  document.querySelectorAll('use[href="#seal"]').forEach((u) => u.setAttribute('data-mark', ''));
+  document.querySelectorAll('.marks button').forEach((b) => b.addEventListener('click', () => setMark(b.dataset.m)));
+  setMark(mods.includes('crow') ? 'mark-crow' : mods.includes('upright') ? 'jackdaw' : 'mark-raven');
+  setPalette(mods.find((m) => ['parchment', 'chipboard', 'flint', 'pebble', 'nape', 'lichen', 'bone'].includes(m)) || 'pebble');
   const dark = mods.includes('dark') ? 'dark' : '';
   const ids = { detail: 'f-detail', laptop: 'f-laptop', home: 'f-home', lobby: 'f-lobby', avalon: 'f-avalon', reveal: 'f-reveal', stats: 'f-stats', catalog: 'f-catalog', tv: 'f-tv', tvav: 'f-tvav' };
   if (ids[solo]) { document.body.classList.add('solo'); document.getElementById(ids[solo]).classList.add('show'); }

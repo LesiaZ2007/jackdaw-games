@@ -99,7 +99,7 @@ function Avatar({ player, children }: { player: ScreenPlayer; children?: ReactNo
 }
 
 /** Players seated clockwise around the round table, starting at the top. */
-function RoundTable({
+export function RoundTable({
   players,
   me,
   hostId,
@@ -212,7 +212,7 @@ const shortName = (role: Role) =>
   ROLES[role].name.replace(' of Arthur', '').replace(' of Mordred', '');
 
 /** Role cards fanned out like a hand. */
-function Fan({ roles, label }: { roles: Role[]; label: string }) {
+export function Fan({ roles, label }: { roles: Role[]; label: string }) {
   const n = roles.length;
   // Keep the whole arc within ~44 degrees and a 14px dip, however many cards are in the hand.
   const spread = Math.min(9, 44 / Math.max(n - 1, 1));

@@ -64,8 +64,9 @@ for (const scheme of SCHEMES) {
     await expect(night.getByText('No games finished yet.', { exact: false })).toBeVisible();
     await shot(info, tv, `empty-1920-${scheme}`);
     await shot(info, laptop, `empty-1280-${scheme}`);
-    // Each part takes over the display: a short scroll snaps a whole screen down, never halfway.
-    await laptop.evaluate(() => window.scrollBy({ top: 300 }));
+    // Each part takes over the display: scrolling most of the way lands a whole screen down.
+    await expect(laptop.getByText('2 at the table')).toBeVisible();
+    await laptop.evaluate(() => window.scrollBy({ top: 500 }));
     await expect.poll(() => laptop.evaluate(() => window.scrollY)).toBe(720);
 
     // A single round makes a quick game.

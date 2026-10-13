@@ -111,6 +111,8 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which suits simple games
   its own style ("chat should be like the avalon chat on the right"): Avalon's Table talk,
   docked on the right from 1240px and a drawer from the bar's chat button below that. "Play a different game" brings back
   Jackdaw's lobby with the game list.
+- The TV follows: a game with its own lobby can give the TV one too (Avalon: the round table
+  beside the join panel and the deal), and every TV screen fills the display.
 - Its seats still behave like Jackdaw's: tap your own to change your look, the host taps someone
   to remove them or make them host, reactions pop over seats, away players are marked.
 

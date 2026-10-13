@@ -518,6 +518,11 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   min-height: 0;
   position: relative;
 }
+/* A game's own TV lobby takes the first screen. */
+.tv-own-lobby {
+  position: relative;
+  height: 100%;
+}
 /* A game whose TV screen has its own header takes the whole display. */
 .tv-game--full {
   grid-template-rows: 1fr;

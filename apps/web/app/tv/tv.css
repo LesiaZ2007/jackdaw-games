@@ -1,6 +1,7 @@
 /*
  * TV mode. Everything inside .tv-stage is laid out on a fixed 1920×1080 canvas that TvStage
- * scales to fit, so sizes here are in TV pixels: big type, no hover, no scrolling.
+ * scales to fit, so sizes here are in TV pixels: big type, no hover. Only the lobby scrolls, and
+ * only past its first screen, down to the night so far.
  */
 
 /* ── Entry page (/tv) ─────────────────────────────────────────────────────── */
@@ -62,6 +63,25 @@
 }
 .tv-stage .jd-label {
   font-size: 26px;
+}
+/* The lobby: the first screen fills the window, the night so far follows at the same scale. */
+.tv-viewport--scroll {
+  position: relative;
+  inset: auto;
+}
+/* No scrollbar on a TV: it would narrow the window under a stage sized to the full width. */
+html:has(.tv-viewport--scroll) {
+  scrollbar-width: none;
+}
+html:has(.tv-viewport--scroll)::-webkit-scrollbar {
+  display: none;
+}
+.tv-stage--scroll {
+  height: auto;
+}
+.tv-screen {
+  height: 1080px;
+  position: relative;
 }
 
 .tv-brand {
@@ -193,6 +213,252 @@
 }
 .tv-track .jd-who {
   font-size: 26px;
+}
+
+/* ── Below the lobby: the night so far ────────────────────────────────────── */
+.tv-more {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 800 24px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.tv-more svg {
+  animation: tv-nudge 2.4s var(--ease-out) infinite;
+}
+@keyframes tv-nudge {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: translateY(6px);
+  }
+}
+.tv-lobby {
+  position: relative;
+}
+
+.tv-night {
+  display: grid;
+  gap: 44px;
+  padding: 72px 88px 96px;
+  border-top: 3px solid var(--ink);
+  background: var(--table-2);
+}
+.tv-night--empty {
+  justify-items: center;
+  text-align: center;
+  gap: 18px;
+}
+.tv-night__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 40px;
+}
+.tv-night__title {
+  margin: 0;
+  font-size: 96px;
+  line-height: 1;
+}
+.tv-night__empty,
+.tv-night__more {
+  margin: 0;
+  font-size: 30px;
+  color: var(--ink-2);
+}
+.tv-night__more {
+  margin-top: 16px;
+}
+
+/* Highlights: printed cards, each with its own heraldic band across the top. */
+.tv-night__marks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+.tv-mark {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 26px 32px 28px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-top: 16px solid var(--band);
+  outline: 1px solid var(--ink);
+  outline-offset: -8px;
+}
+.tv-mark b {
+  font-size: 52px;
+  line-height: 1.05;
+}
+.tv-mark__who svg {
+  flex: none;
+  color: var(--ink-2);
+}
+.tv-mark__who {
+  --ring-bg: var(--paper);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.tv-night__body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 80px;
+  align-items: start;
+}
+
+/* The score tally as a ranked board: each player's bar in their own tint. */
+.tv-board,
+.tv-played {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tv-board__row {
+  --ring-bg: var(--table-2);
+  display: grid;
+  grid-template-columns: 64px 64px 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 4px 22px;
+  padding: 16px 12px 16px 0;
+  border-bottom: 1.5px solid var(--rule);
+}
+.tv-board__row > .jd-token,
+.tv-board__row > .tv-gone {
+  grid-row: 1 / 3;
+}
+.tv-board__rank {
+  grid-row: 1 / 3;
+  justify-self: center;
+  font: 800 52px/1 var(--font-code);
+  color: var(--ink-2);
+}
+.tv-board__row--top .tv-board__rank {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--or);
+  color: var(--on-fill);
+  box-shadow: 0 3px 0 var(--shadow);
+}
+.tv-board__name {
+  font: 800 40px/1.05 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tv-board__bar {
+  grid-column: 3;
+  height: 14px;
+  background: var(--paper);
+  border: 1.5px solid var(--rule);
+  position: relative;
+}
+.tv-board__bar::after {
+  content: '';
+  position: absolute;
+  inset: -1.5px auto -1.5px -1.5px;
+  width: calc(var(--share) * 100% + 3px);
+  background: var(--fill);
+  transform-origin: left;
+  animation: tv-fill 1100ms var(--ease-out) both;
+}
+@keyframes tv-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+.tv-board__record {
+  grid-column: 4;
+  grid-row: 2;
+  font-size: 22px;
+  color: var(--ink-2);
+  text-align: right;
+}
+.tv-board__wins {
+  grid-column: 4;
+  grid-row: 1;
+  justify-self: end;
+  font: 800 56px/1 var(--font-code);
+}
+.tv-board__row--top {
+  background: color-mix(in srgb, var(--vert) 14%, transparent);
+  box-shadow: inset 6px 0 0 var(--vert);
+  padding-left: 12px;
+  margin-left: -12px;
+}
+
+/* Games tonight, newest first. */
+.tv-played__game {
+  --ring-bg: var(--table-2);
+  display: grid;
+  grid-template-columns: 72px 1fr auto auto;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 0;
+  border-bottom: 1.5px solid var(--rule);
+}
+.tv-played__text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.tv-played__text b {
+  font-size: 38px;
+  line-height: 1.05;
+}
+.tv-played__text span {
+  font-size: 26px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tv-played__winners {
+  display: flex;
+}
+.tv-played__winners > * + * {
+  margin-left: -12px;
+}
+.tv-played__winners .jd-chip {
+  font-size: 22px;
+}
+.tv-played__time {
+  font: 700 24px var(--font-plaque);
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+  min-width: 96px;
+  text-align: right;
+}
+.tv-gone {
+  display: inline-block;
+  flex: none;
+  border-radius: 50%;
+  border: 2px dashed var(--rule);
 }
 
 /* ── In a game: a slim Jackdaw strip, then the game's own table ───────────── */
@@ -412,7 +678,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tv-winner {
+  .tv-winner,
+  .tv-more svg,
+  .tv-board__bar::after {
     animation: none;
   }
 }

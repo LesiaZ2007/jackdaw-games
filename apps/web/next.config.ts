@@ -9,6 +9,7 @@ const config: NextConfig = {
     '@jackdaw/ui',
     '@jackdaw/game-rps',
     '@jackdaw/game-avalon',
+    '@jackdaw/game-secret-hitler',
   ],
   // Put metadata in <head> for every client so link previews work.
   htmlLimitedBots: /.*/,

@@ -1,6 +1,7 @@
 import type { GameCategory, GameMeta } from '@jackdaw/engine';
 import { avalonUi } from '@jackdaw/game-avalon/ui';
 import { rpsUi } from '@jackdaw/game-rps/ui';
+import { secretHitlerUi } from '@jackdaw/game-secret-hitler/ui';
 import type { GameAbout, GameUi } from '@jackdaw/ui';
 import { games } from './registry';
 import type { GameArt } from '@jackdaw/ui';
@@ -23,6 +24,7 @@ export interface CatalogEntry {
 export const gameUis: Record<string, GameUi> = {
   avalon: avalonUi,
   rps: rpsUi,
+  'secret-hitler': secretHitlerUi,
 };
 
 const upcoming: Omit<CatalogEntry, 'playable'>[] = [

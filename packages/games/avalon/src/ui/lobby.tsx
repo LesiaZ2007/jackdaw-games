@@ -249,8 +249,8 @@ export function AvalonLobby({
             canInspect={(id) => id === me || isHost}
             inspectLabel={(p) =>
               p.id === me
-                ? 'Change your name, crest or colour'
-                : `Remove ${p.name} or make them host`
+                ? `${p.name} (you): change your name, crest or colour`
+                : `${p.name}: remove or make host`
             }
             onInspect={onSeat}
             center={
@@ -415,6 +415,7 @@ export function AvalonLobby({
                   className="btn btn-primary btn-lg"
                   disabled={busy || Boolean(blocker)}
                   onClick={deal_}
+                  aria-label="Deal the roles: start Avalon"
                 >
                   {busy ? 'Dealing roles…' : 'Deal the roles'}
                 </button>

@@ -1,0 +1,424 @@
+/*
+ * Outcome moments: the banner-and-seal verdict, the burst, result chips and tallies.
+ * Built from tokens.css; imported by celebrate.tsx. Every size is in --vu so the TV variant
+ * is the same drawing at twice the scale.
+ */
+:root {
+  /* Green text that stays readable on dark paper */
+  --win-ink: var(--vert);
+}
+:root[data-theme='dark'] {
+  --win-ink: #7fbf9a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --win-ink: #7fbf9a;
+  }
+}
+
+/* ── Verdict: a heraldic banner with a wax seal pressed onto it ── */
+.jd-verdict {
+  --vu: 1px;
+  --v-fill: var(--sable);
+  --v-wax: var(--sable);
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  /* side room so the ribbon's tails never run off a narrow screen */
+  padding: calc(var(--vu) * 4) calc(var(--vu) * 36) calc(var(--vu) * 6);
+  text-align: center;
+  animation: jd-thud 260ms 300ms ease-out both;
+}
+.jd-verdict--tv {
+  --vu: 1.9px;
+}
+.jd-verdict--win {
+  --v-fill: var(--vert);
+  --v-wax: var(--or);
+}
+.jd-verdict--loss {
+  --v-fill: color-mix(in srgb, var(--gules) 80%, var(--sable));
+  --v-wax: color-mix(in srgb, var(--gules) 62%, var(--sable));
+}
+.jd-verdict--draw {
+  --v-fill: var(--sable);
+  --v-wax: color-mix(in srgb, var(--sable) 80%, var(--on-fill));
+}
+.jd-verdict--reveal {
+  --v-fill: var(--azure);
+  --v-wax: var(--or);
+}
+
+.jd-verdict__seal {
+  position: relative;
+  z-index: 2;
+  width: calc(var(--vu) * 96);
+  height: calc(var(--vu) * 96);
+  margin-bottom: calc(var(--vu) * -22);
+  display: grid;
+  place-items: center;
+  animation: jd-seal-slam 520ms var(--ease-out) both;
+}
+.jd-verdict__wax {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 calc(var(--vu) * 3) 0 var(--shadow));
+}
+.jd-verdict__wax path {
+  fill: var(--v-wax);
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.jd-verdict__wax circle {
+  fill: none;
+  stroke: rgba(36, 33, 30, 0.35);
+  stroke-width: 2.5;
+}
+.jd-verdict__face {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.jd-verdict__face .jd-token {
+  --ring-bg: var(--v-wax);
+}
+.jd-verdict__mark {
+  display: grid;
+  place-items: center;
+  width: calc(var(--vu) * 56);
+  height: calc(var(--vu) * 56);
+  color: #24211e;
+}
+.jd-verdict--loss .jd-verdict__mark,
+.jd-verdict--draw .jd-verdict__mark {
+  color: var(--on-fill);
+}
+.jd-verdict__mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.jd-verdict__banner {
+  position: relative;
+  z-index: 1;
+  max-width: min(100%, calc(var(--vu) * 420));
+  min-width: min(100%, calc(var(--vu) * 240));
+  padding: calc(var(--vu) * 30) calc(var(--vu) * 30) calc(var(--vu) * 14);
+  color: var(--on-fill);
+  background: var(--v-fill);
+  border: 2px solid var(--ink);
+  outline: 1px solid rgba(246, 240, 225, 0.6);
+  outline-offset: calc(var(--vu) * -7);
+  box-shadow: 0 calc(var(--vu) * 4) 0 var(--shadow);
+  animation: jd-unfurl 560ms 240ms var(--ease-out) both;
+}
+/* the folded ends of the ribbon, tucked behind the band */
+.jd-verdict__tail {
+  position: absolute;
+  z-index: -1;
+  top: calc(var(--vu) * 14);
+  bottom: calc(var(--vu) * -14);
+  width: calc(var(--vu) * 46);
+  background: color-mix(in srgb, var(--v-fill) 72%, #000);
+  border: 2px solid var(--ink);
+  animation: jd-tail 420ms 620ms var(--ease-out) both;
+}
+.jd-verdict__tail--l {
+  left: calc(var(--vu) * -34);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 34% 50%);
+  --tail-from: calc(var(--vu) * 30);
+}
+.jd-verdict__tail--r {
+  right: calc(var(--vu) * -34);
+  clip-path: polygon(0 0, 100% 0, 66% 50%, 100% 100%, 0 100%);
+  --tail-from: calc(var(--vu) * -30);
+}
+.jd-verdict__title {
+  margin: 0;
+  font: 800 calc(var(--vu) * 36) / 1 var(--font-display);
+  text-wrap: balance;
+}
+.jd-verdict__detail {
+  margin: calc(var(--vu) * 22) 0 0;
+  max-width: 34ch;
+  font-size: calc(var(--vu) * 18);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+  animation: jd-detail 420ms 760ms var(--ease-out) both;
+}
+.jd-verdict--loss .jd-verdict__banner {
+  animation:
+    jd-unfurl 560ms 240ms var(--ease-out) both,
+    jd-droop 700ms 900ms var(--ease-out) forwards;
+}
+
+@keyframes jd-seal-slam {
+  0% {
+    transform: scale(2.4) rotate(-18deg);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(0.9) rotate(3deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes jd-thud {
+  0%,
+  100% {
+    transform: none;
+  }
+  35% {
+    transform: translateY(3px);
+  }
+  70% {
+    transform: translateY(-1px);
+  }
+}
+@keyframes jd-unfurl {
+  from {
+    clip-path: inset(0 50% 0 50%);
+  }
+  to {
+    clip-path: inset(-40% -40% -40% -40%);
+  }
+}
+@keyframes jd-tail {
+  from {
+    translate: var(--tail-from) 0;
+    opacity: 0;
+  }
+}
+@keyframes jd-droop {
+  to {
+    transform: translateY(calc(var(--vu) * 5)) rotate(-2.5deg);
+  }
+}
+@keyframes jd-detail {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+
+/* ── Burst: punched-out chits and feathers flying from the seal ── */
+.jd-burst {
+  --reach: calc(var(--vu, 1px) * 170);
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: calc(var(--vu, 1px) * 52);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.jd-burst__chit,
+.jd-burst__feather {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  animation: jd-fly 1300ms calc(320ms + var(--delay, 0ms)) cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+.jd-burst__chit {
+  width: calc(var(--vu, 1px) * 13);
+  height: calc(var(--vu, 1px) * 15);
+  margin: calc(var(--vu, 1px) * -7) 0 0 calc(var(--vu, 1px) * -6);
+  background: var(--fill);
+  clip-path: polygon(22% 0, 78% 0, 100% 20%, 100% 80%, 78% 100%, 22% 100%, 0 80%, 0 20%);
+}
+.jd-burst__feather {
+  width: calc(var(--vu, 1px) * 13);
+  height: calc(var(--vu, 1px) * 26);
+  margin: calc(var(--vu, 1px) * -13) 0 0 calc(var(--vu, 1px) * -6);
+  color: var(--ink);
+  animation-duration: 1800ms;
+}
+.jd-burst__feather svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+@keyframes jd-fly {
+  0% {
+    transform: translate(0, 0) rotate(0) scale(0.3);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(calc(var(--x) * var(--reach)), calc(var(--y) * var(--reach)))
+      rotate(calc(var(--spin) * 0.5)) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(
+        calc(var(--x) * var(--reach) * 1.2),
+        calc(var(--y) * var(--reach) + var(--reach) * 0.7)
+      )
+      rotate(var(--spin)) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* ── Moment: the verdict laid over a game screen for a few seconds ── */
+.jd-moment {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--gutter);
+  background: color-mix(in srgb, var(--table) 78%, transparent);
+  cursor: pointer;
+  overflow: hidden;
+  animation:
+    jd-moment-in 200ms ease-out both,
+    jd-moment-out 360ms calc(var(--moment-ms, 3400ms) - 360ms) ease-in forwards;
+}
+.jd-moment--tv {
+  position: absolute;
+  cursor: default;
+}
+.jd-moment .jd-verdict {
+  max-width: 460px;
+}
+.jd-moment--tv .jd-verdict {
+  max-width: none;
+}
+.jd-moment__hint {
+  font: 700 14px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+  animation: jd-detail 400ms 1200ms both;
+}
+@keyframes jd-moment-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes jd-moment-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* ── Chips and tallies: per-row results ── */
+.jd-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.4em;
+  padding: 3px 9px 2px;
+  font: 800 15px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  border: 1.5px solid var(--ink);
+  animation: jd-pop 440ms var(--ease-out) both;
+}
+.jd-chip--win {
+  color: var(--on-fill);
+  background: var(--vert);
+}
+.jd-chip--loss {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--gules) 12%, var(--paper));
+  border-color: color-mix(in srgb, var(--danger) 70%, transparent);
+}
+.jd-chip--draw {
+  color: var(--on-fill);
+  background: var(--sable);
+}
+.jd-chip--reveal {
+  color: var(--on-fill);
+  background: var(--azure);
+}
+@keyframes jd-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.jd-tally {
+  position: relative;
+  display: inline-grid;
+  justify-items: end;
+}
+.jd-tally__n {
+  display: inline-block;
+}
+.jd-tally__n--up {
+  animation:
+    jd-pop 520ms var(--ease-out) both,
+    jd-tally-ink 1400ms ease-out both;
+}
+@keyframes jd-tally-ink {
+  0%,
+  45% {
+    color: var(--win-ink);
+  }
+}
+.jd-tally__gain {
+  position: absolute;
+  right: -0.15em;
+  top: -0.55em;
+  font: 800 0.6em/1 var(--font-plaque);
+  color: var(--win-ink);
+  pointer-events: none;
+  animation: jd-gain 1300ms var(--ease-out) forwards;
+}
+@keyframes jd-gain {
+  0% {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-18px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jd-verdict,
+  .jd-verdict__seal,
+  .jd-verdict__banner,
+  .jd-verdict__tail,
+  .jd-verdict__detail,
+  .jd-moment__hint,
+  .jd-chip,
+  .jd-tally__n--up {
+    animation: none;
+  }
+  .jd-verdict--loss .jd-verdict__banner {
+    animation: none;
+    transform: translateY(calc(var(--vu) * 5)) rotate(-2.5deg);
+  }
+  .jd-moment {
+    animation: jd-moment-out 1ms calc(var(--moment-ms, 3400ms) - 1ms) forwards;
+  }
+  .jd-burst,
+  .jd-tally__gain {
+    display: none;
+  }
+}

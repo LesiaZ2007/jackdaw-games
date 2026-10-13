@@ -8,7 +8,8 @@
     "build": "next build",
     "build:check": "node scripts/build-check.mjs",
     "start": "next start",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@jackdaw/engine": "workspace:*",
@@ -23,6 +24,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/qrcode": "1.5.6",
     "@types/react": "19.3.0",

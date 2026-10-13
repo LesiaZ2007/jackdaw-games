@@ -3,6 +3,7 @@
 import type { GameUi } from '@jackdaw/ui';
 import { AvalonLobby } from './lobby';
 import { PlayerScreen, TvScreen } from './screens';
+import { AvalonTvLobby } from './tv-lobby';
 
 /** Avalon, linked: catalog art, detail page, its own lobby, and the hand-off screens. */
 export const avalonUi: GameUi = {
@@ -38,4 +39,5 @@ export const avalonUi: GameUi = {
   PlayerScreen,
   TvScreen,
   Lobby: AvalonLobby,
+  TvLobby: AvalonTvLobby,
 };

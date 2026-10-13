@@ -158,5 +158,7 @@ Additions approved by Lesia:
 - **`GameUi.Lobby`** (optional) draws a game's own lobby (players, options, Start), full screen
   under Jackdaw's bar, chat included (`LobbyChat`: lines, send, open/close); games without one
   use Jackdaw's lobby. Only Avalon has one. A game's own lobby draws its chat with the kit's
-  `LobbyChatPanel` (restyled through `--lc-*` properties), unless it ports one exactly (Avalon). It gets the code, players, options, `start()`, `onSeat(id)` (own seat opens your look;
+  `LobbyChatPanel` (restyled through `--lc-*` properties), unless it ports one exactly (Avalon).
+  `GameUi.TvLobby` (optional) is the TV's lobby in the game's look; the platform hands it the
+  join panel and keeps the night so far below. `fullTv` drops Jackdaw's strip above the TV screen. It gets the code, players, options, `start()`, `onSeat(id)` (own seat opens your look;
   the host's tap opens remove / make host) and `changeGame` for the host.

@@ -1,0 +1,551 @@
+/*
+ * Catalog, game detail and About. Built on @jackdaw/ui tokens and kit; class names are
+ * prefixed `cat-`. Phone: one column, detail on its own page. Wide (≥1024): filters | shelf |
+ * detail panel, each scrolling on its own.
+ */
+
+/* ── Shared bar ──────────────────────────────────────────────────────────── */
+.cat-bar {
+  grid-area: bar;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--gutter);
+  border-bottom: 2px solid var(--ink);
+}
+.cat-bar__home {
+  display: grid;
+  place-items: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+}
+.cat-bar__title {
+  font-size: var(--step-3);
+}
+.cat-bar__join {
+  margin-left: auto;
+}
+.cat-linkbtn {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--rule);
+}
+.cat-linkbtn:focus-visible,
+.cat-select:focus-visible,
+.cat-stepper button:focus-visible,
+.cat-checks input:focus-visible + span,
+.cat-pics:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+
+/* ── Catalog layout ──────────────────────────────────────────────────────── */
+.cat {
+  display: grid;
+  grid-template-areas: 'bar' 'filters' 'shelf';
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  min-height: 100dvh;
+}
+.cat-filters {
+  grid-area: filters;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-4) var(--gutter) 0;
+}
+.cat-shelf {
+  grid-area: shelf;
+  padding: var(--space-3) var(--gutter) var(--space-6);
+  min-width: 0;
+}
+.cat-panel {
+  display: none;
+}
+
+/* ── Filters ─────────────────────────────────────────────────────────────── */
+.cat-filter {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.cat-filter--stepper {
+  grid-column: 1 / -1;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+.cat-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.cat-stepper button {
+  appearance: none;
+  width: var(--tap);
+  height: var(--tap);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font: 800 24px/1 var(--font-plaque);
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+}
+.cat-stepper button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.cat-stepper output {
+  min-width: 52px;
+  text-align: center;
+  font: 800 28px/1 var(--font-code);
+}
+.cat-select {
+  appearance: none;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 26px 0 0;
+  font: 800 17px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: transparent
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6' fill='none' stroke='%23888' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    right 2px center / 18px no-repeat;
+  border: 0;
+  text-overflow: ellipsis;
+}
+.cat-select option {
+  color: var(--ink);
+  background: var(--paper);
+  text-transform: none;
+}
+.cat-checks {
+  display: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  gap: 2px;
+}
+.cat-checks label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.cat-checks input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.cat-checks span::before {
+  content: '';
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+.cat-checks span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cat-checks input:checked + span::before {
+  background: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--paper);
+}
+.cat-checks input:checked + span {
+  font-weight: 700;
+}
+
+/* ── Shelf ───────────────────────────────────────────────────────────────── */
+.cat-count {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--tap);
+  font: 700 14px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+.cat-count .cat-linkbtn {
+  font: 700 15px var(--font-body);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.cat-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.cat-grid li {
+  position: relative;
+  min-width: 0;
+}
+.cat-grid .jd-box {
+  height: 100%;
+}
+/* The outline marks the game shown in the side panel, which only exists on wide screens. */
+@media (max-width: 1023.98px) {
+  .cat-grid .jd-box--selected {
+    outline: none;
+  }
+}
+.cat-soon .jd-box__art {
+  filter: saturate(0.55);
+}
+.cat-soon__stamp {
+  position: absolute;
+  top: -7px;
+  right: 10px;
+  padding: 3px 8px;
+  font: 800 12px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  pointer-events: none;
+}
+.cat-empty {
+  margin: var(--space-5) 0;
+  font-size: 18px;
+}
+
+/* ── Detail ──────────────────────────────────────────────────────────────── */
+.cat-detail__hero {
+  position: relative;
+  height: 150px;
+  display: grid;
+  place-items: center;
+  color: var(--on-fill);
+  background-color: var(--band);
+  background-image: var(--field);
+  border-block: 2px solid var(--ink);
+}
+.cat-detail__hero::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(246, 240, 225, 0.55);
+}
+.cat-detail__dev {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--band);
+  box-shadow: 0 0 0 3px rgba(246, 240, 225, 0.8);
+}
+.cat-detail__dev svg {
+  width: 64px;
+  height: 64px;
+}
+.cat-detail__body {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--gutter) var(--space-4);
+}
+.cat-detail__body p {
+  margin: 0;
+  line-height: 1.5;
+  max-width: 62ch;
+}
+.cat-detail__name {
+  font-size: clamp(2.6rem, 2.2rem + 2vw, 3.4rem);
+}
+.cat-detail__tag {
+  margin-top: 4px !important;
+  font-size: 18px;
+  color: var(--ink-2);
+}
+.cat-detail__h3 {
+  margin: var(--space-1) 0 0;
+  font-size: var(--step-2);
+}
+.cat-spec {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.cat-spec div {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 2px;
+  border-right: 1px solid var(--rule);
+  text-align: center;
+  min-width: 0;
+}
+.cat-spec div:last-child {
+  border-right: 0;
+}
+.cat-spec dt {
+  font: 700 12px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.cat-spec dd {
+  margin: 0;
+  font: 800 20px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.cat-pics {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  margin-inline: calc(var(--gutter) * -1);
+  padding: 2px var(--gutter) 6px;
+  scrollbar-width: thin;
+}
+.cat-pics img {
+  height: 210px;
+  width: auto;
+  flex: none;
+  scroll-snap-align: start;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+.cat-pics--empty {
+  margin: 0;
+  padding: var(--space-4);
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--paper) 55%, transparent);
+  border: 1.5px dashed var(--rule);
+  overflow: visible;
+}
+.cat-pics--empty p {
+  font-weight: 700;
+}
+.cat-steps {
+  list-style: decimal;
+  margin: 0;
+  padding-left: 1.4em;
+  display: grid;
+  gap: 4px;
+  line-height: 1.4;
+  max-width: 62ch;
+}
+.cat-credit {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+/* Docked start button */
+.cat-dock {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--gutter) max(var(--space-4), env(safe-area-inset-bottom, 0px));
+  background: var(--dock-bg, var(--table));
+  border-top: 2px solid var(--ink);
+  box-shadow: 0 -10px 16px -14px var(--shadow);
+}
+.cat-dock .jd-plaque {
+  padding-block: 10px;
+  line-height: 1.05;
+  text-align: center;
+}
+.cat-dock__name {
+  display: grid;
+  gap: 6px;
+}
+.cat-dock__note {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink-2);
+  text-align: center;
+}
+.cat-dock__note .cat-linkbtn {
+  font-size: 15px;
+  padding: 0;
+}
+.cat-error {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* ── Detail as a page (phones and shared links) ─────────────────────────── */
+.cat-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.cat-page .cat-bar {
+  border-bottom: 0;
+}
+.cat-page__body {
+  flex: 1;
+}
+.cat-page__missing {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--gutter);
+}
+
+/* ── About ───────────────────────────────────────────────────────────────── */
+.cat-about {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-5) var(--gutter) var(--space-7);
+}
+.cat-about__lid {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-5) var(--space-5);
+  text-align: center;
+}
+.cat-about__lid h1 {
+  font-size: var(--step-4);
+}
+.cat-about__lid p {
+  margin: 0;
+  max-width: 52ch;
+  color: var(--ink-2);
+}
+.cat-about__section {
+  display: grid;
+  gap: var(--space-2);
+}
+.cat-about__section h2 {
+  font-size: var(--step-3);
+}
+.cat-credits {
+  list-style: square;
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: var(--space-2);
+  line-height: 1.5;
+}
+.cat-credits a {
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+.cat-about__nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+/* ── Wider screens ───────────────────────────────────────────────────────── */
+@media (min-width: 640px) {
+  .cat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cat-pics img {
+    height: 260px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .cat {
+    height: 100dvh;
+    min-height: 0;
+    grid-template-columns: 250px minmax(0, 1fr) clamp(400px, 34vw, 560px);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: 'bar bar bar' 'filters shelf panel';
+  }
+  .cat-filters {
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-4);
+    border-right: 2px solid var(--ink);
+    overflow-y: auto;
+  }
+  .cat-filter--stepper {
+    grid-template-columns: 1fr;
+    grid-column: auto;
+  }
+  .cat-stepper {
+    justify-content: flex-start;
+  }
+  .cat-select {
+    display: none;
+  }
+  .cat-checks {
+    display: grid;
+  }
+  .cat-shelf {
+    padding: var(--space-3) var(--space-5) var(--space-6);
+    overflow-y: auto;
+  }
+  .cat-panel {
+    grid-area: panel;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--paper);
+    border-left: 2px solid var(--ink);
+    --dock-bg: var(--paper);
+    --gutter: var(--space-5);
+  }
+  .cat-panel__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .cat-panel .cat-detail__hero {
+    border-top: 0;
+    height: 140px;
+  }
+  .cat-panel .cat-pics img {
+    height: 170px;
+  }
+}
+
+@media (min-width: 1700px) {
+  .cat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .cat-bar {
+    padding-inline: var(--space-6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-pics {
+    scroll-behavior: auto;
+  }
+}

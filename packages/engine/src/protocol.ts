@@ -37,7 +37,8 @@ export const ClientMessage = z.discriminatedUnion('type', [
   z.object({ type: z.literal('join'), name: PlayerName, avatar: Avatar.optional() }),
   z.object({ type: z.literal('setGame'), gameId: z.string().min(1).max(40).nullable() }),
   z.object({ type: z.literal('setOptions'), options: z.record(z.string(), z.unknown()) }),
-  z.object({ type: z.literal('start') }),
+  /** `look` is the starter's day/dark choice, for games played in another app (Avalon). */
+  z.object({ type: z.literal('start'), look: z.enum(['light', 'dark']).optional() }),
   z.object({
     type: z.literal('action'),
     /** The session the player was looking at; actions from an earlier game are rejected. */
@@ -46,7 +47,7 @@ export const ClientMessage = z.discriminatedUnion('type', [
     seq: z.number().int().nonnegative(),
     action: z.unknown(),
   }),
-  z.object({ type: z.literal('playAgain') }),
+  z.object({ type: z.literal('playAgain'), look: z.enum(['light', 'dark']).optional() }),
   z.object({ type: z.literal('backToLobby') }),
   z.object({ type: z.literal('kick'), playerId: z.string() }),
   z.object({ type: z.literal('transferHost'), playerId: z.string() }),

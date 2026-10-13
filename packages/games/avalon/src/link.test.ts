@@ -29,6 +29,7 @@ function fakeAvalon() {
   let status: Record<string, unknown> = { phase: 'team', over: false };
   let statusCode = 200;
   let createError: { status: number; error: string } | null = null;
+  const ended: string[] = [];
   const fetchFn = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = new URL(String(input));
     if (new Headers(init?.headers).get('authorization') !== `Bearer ${SECRET}`)
@@ -47,6 +48,10 @@ function fakeAvalon() {
     if (m) {
       if (!rooms.has(m[1]!) || statusCode === 404)
         return Response.json({ error: 'Gone' }, { status: 404 });
+      if (init?.method === 'DELETE') {
+        ended.push(m[1]!);
+        return Response.json({ phase: 'lobby', over: true, endedEarly: true });
+      }
       return Response.json(status, { status: statusCode });
     }
     return new Response('not found', { status: 404 });
@@ -54,6 +59,7 @@ function fakeAvalon() {
   return {
     fetch: fetchFn,
     rooms,
+    ended,
     setStatus: (s: Record<string, unknown>, code = 200) => {
       status = s;
       statusCode = code;
@@ -191,6 +197,15 @@ describe('the Avalon link', () => {
     const back = await snap(runtime.poll(code, { token: tokenFor('Elin') }));
     expect(back.status).toBe('waiting');
     expect(back.historyCount).toBe(0);
+  });
+
+  it("closes the Avalon game when Jackdaw's host ends it, unscored", async () => {
+    const { runtime, code, app } = await fiveAtTheTable();
+    await runtime.post(code, tokenFor('Lesia'), { type: 'start' });
+    const back = await runtime.post(code, tokenFor('Lesia'), { type: 'endGame' });
+    expect(back.status).toBe('waiting');
+    expect(back.historyCount).toBe(0);
+    expect(app.ended).toEqual(['ABCD']);
   });
 
   it("keeps waiting while Avalon can't be reached, and shows Avalon's own error on Start", async () => {

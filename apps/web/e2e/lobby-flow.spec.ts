@@ -21,7 +21,7 @@ test('three phones play a round, a refresh keeps its seat, and Play again keeps 
 }) => {
   const host = await newPlayer(browser);
   await host.goto('/');
-  await host.getByPlaceholder('e.g. the owner').fill('Wren');
+  await host.getByPlaceholder('e.g. Jackdaw').fill('Wren');
   await host.getByRole('button', { name: 'Create a lobby' }).click();
   await host.waitForURL(/\/r\/[A-Z]{4}$/);
   const code = host.url().split('/').pop()!;
@@ -37,8 +37,12 @@ test('three phones play a round, a refresh keeps its seat, and Play again keeps 
     .getByRole('button', { name: /Rock Paper Scissors/ })
     .first()
     .click();
+  // Next up starts small; the host opens it to reach the options.
+  await expect(host.getByText('Rounds: 3')).toBeVisible();
+  await host.getByRole('button', { name: 'Show options and rules' }).click();
   await host.getByRole('button', { name: 'Fewer rounds' }).click();
   await host.getByRole('button', { name: 'Fewer rounds' }).click();
+  await expect(host.getByText('Rounds: 1')).toBeVisible();
   await host.getByRole('button', { name: 'Start Rock Paper Scissors' }).click();
 
   for (const p of [host, bran, cerys])

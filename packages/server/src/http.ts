@@ -10,6 +10,7 @@ import { isValidDisplayId, isValidToken, type RoomRuntime } from './runtime';
  *   GET  /api/lobby/:code?v=N       poll        header x-player-token (players) or x-display-id (TV)
  *   POST /api/lobby/:code           message     header x-player-token, body ClientMessage
  *   POST /api/lobby/:code/rejoin    rejoin      header x-player-token, body { rejoinCode }
+ *   GET  /api/lobby/:code/stats     stats       full history and lobbyStats, for the Game stats menu
  */
 
 export const TOKEN_HEADER = 'x-player-token';
@@ -90,6 +91,14 @@ export function createHttpHandlers(runtime: RoomRuntime) {
         const code = parseCode(rawCode);
         const token = requireToken(req);
         return json(await runtime.post(code, token, await readJson(req)));
+      } catch (e) {
+        return errorResponse(e);
+      }
+    },
+
+    async getStats(_req: Request, rawCode: string): Promise<Response> {
+      try {
+        return json(await runtime.stats(parseCode(rawCode)));
       } catch (e) {
         return errorResponse(e);
       }

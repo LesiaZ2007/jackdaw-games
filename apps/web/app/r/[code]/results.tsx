@@ -8,6 +8,7 @@ import {
   RecapTimeline,
   Token,
   Verdict,
+  useTheme,
   type Outcome,
   type ScreenPlayer,
 } from '@jackdaw/ui';
@@ -37,6 +38,7 @@ export function Results({
   isHost: boolean;
   send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
 }) {
+  const look = useTheme();
   const result = s.results;
   if (!result) return null;
   const entry = catalogEntry(result.gameId);
@@ -164,7 +166,7 @@ export function Results({
       <div className="dock">
         {isHost ? (
           <>
-            <Plaque go onClick={() => send({ type: 'playAgain' })}>
+            <Plaque go onClick={() => send({ type: 'playAgain', look })}>
               Play {entry?.meta.name ?? 'it'} again
             </Plaque>
             <Plaque onClick={() => send({ type: 'backToLobby' })}>Back to lobby</Plaque>

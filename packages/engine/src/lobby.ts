@@ -115,11 +115,23 @@ function say(lobby: Lobby, lines: string[], now: number): Lobby {
   return { ...lobby, chat: [...lobby.chat, ...messages].slice(-CHAT_LIMIT) };
 }
 
-/** Throws NAME_TAKEN if someone other than `playerId` already has this name (any case). */
+/**
+ * Why this name can't be used, or null if it can: someone other than `playerId` already has it,
+ * ignoring case and spacing. Screens use it to explain before sending.
+ */
+export function nameClash(
+  players: { id: string; name: string }[],
+  name: string,
+  playerId?: string | null,
+): string | null {
+  const wanted = name.replace(/\s+/g, ' ').trim().toLowerCase();
+  const clash = players.find((p) => p.id !== playerId && p.name.toLowerCase() === wanted);
+  return clash ? `Someone at the table is already called ${clash.name}.` : null;
+}
+
 function requireFreeName(lobby: Lobby, name: string, playerId?: string) {
-  const wanted = name.trim().toLowerCase();
-  const clash = lobby.players.find((p) => p.id !== playerId && p.name.toLowerCase() === wanted);
-  if (clash) fail('NAME_TAKEN', `Someone at the table is already called ${clash.name}.`);
+  const why = nameClash(lobby.players, name, playerId);
+  if (why) fail('NAME_TAKEN', why);
 }
 
 function requireHost(lobby: Lobby, playerId: string) {

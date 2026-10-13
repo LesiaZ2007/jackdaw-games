@@ -101,20 +101,26 @@ One orchestrated moment per screen:
 ## Each game's lobby
 
 2026-10-13: "each game lobby [has] similar style elements but [is] decently unique."
-The **frame is shared**: the bar with the code chits and menu, chat, Game stats, Show on TV and
-the night's history are Jackdaw's on every game. The **centre is the game's own**, drawn by its
-`GameUi.Lobby`: how the players gather, its options and its Start, in its own look.
+A game with a strong look of its own brings its own lobby through `GameUi.Lobby`; every other
+game uses Jackdaw's lobby (seat track, Next up, Start), which suits simple games best.
+
+- **Jackdaw's bar stays** on every lobby: code chits, invite (with Show on TV), Game stats, chat
+  and the menu.
+- **A game's own lobby fills the screen** under the bar, edge to edge, not a panel in the middle
+  ("full screen when it's selected, not just a weird cutout"). Chat moves behind the
+  bar's button on every width, as in the game's own app. "Play a different game" brings back
+  Jackdaw's lobby with the game list.
+- Its seats still behave like Jackdaw's: tap your own to change your look, the host taps someone
+  to remove them or make them host, reactions pop over seats, away players are marked.
 
 - **Avalon**: the live app's own lobby, copied exactly. The round table with everyone's shield
   (discs at Night), the fanned deal, the settings rows and "Deal the roles". Parchment by day,
   Night in the dark. Its CSS is the app's, copied by `packages/games/avalon/scripts/copy-lobby-css.mjs`
   and scoped under `.avalon`, with Avalon's palette as local custom properties.
-- **Rock Paper Scissors**: a chalk ring in the schoolyard. Tokens stand round a dashed circle,
-  each fist shaking through rock, paper, scissors; the rounds sit in the middle and the host
-  calls "Shoot!". Built from Jackdaw's tokens and kit.
-- A new game brings its own centre too. Keep the frame's pieces out of it, use the shell's
-  tokens unless the game has its own look (then scope that look under the game's class), and
-  follow `useTheme()` for day and dark.
+- **Rock Paper Scissors** uses Jackdaw's lobby. Its own chalk-ring lobby was tried and dropped
+  (2026-10-13: "the old rock paper scissors lobby was miles better").
+- A game that gets its own lobby scopes its look under the game's class, keeps the bar's pieces
+  out of it, and follows `useTheme()` for day and dark.
 
 ## Layout by width
 

@@ -167,15 +167,27 @@ export interface TokenProps {
   host?: boolean;
   away?: boolean;
   title?: string;
+  /** A view-transition name, so the token can fly to its place in another layout. */
+  transitionName?: string;
 }
 
+/**
+ * View-transition names for a player's seat, shared by every lobby layout (the seat track and a
+ * game's own lobby), so switching layouts moves each crest and name to its new place.
+ */
+export const seatTransition = (playerId: string) => ({
+  token: `jd-seat-${playerId}`,
+  name: `jd-seat-name-${playerId}`,
+});
+
 /** A player: a punch-out token in their tint with their crest. */
-export function Token({ avatar, size, host, away, title }: TokenProps) {
+export function Token({ avatar, size, host, away, title, transitionName }: TokenProps) {
   return (
     <span
       className={cx('jd-token', away && 'jd-token--away')}
       title={title}
       style={vars({
+        ...(transitionName ? { viewTransitionName: transitionName } : {}),
         ...(size ? { '--z': `${size}px` } : {}),
         '--c': `var(--tint-${avatar.tint}, var(--sable))`,
       })}
@@ -216,6 +228,7 @@ export function SeatTrack({
   className,
   onSeat,
   reactions,
+  transitions,
 }: {
   seats: Seat[];
   spaces?: number;
@@ -226,6 +239,8 @@ export function SeatTrack({
   onSeat?: (id: string) => void;
   /** Recent reactions; each pops up over its player's seat. */
   reactions?: Reaction[];
+  /** Name each token and name for view transitions (one track per page). */
+  transitions?: boolean;
 }) {
   return (
     <ol
@@ -271,8 +286,18 @@ export function SeatTrack({
                 You
               </span>
             )}
-            <Token avatar={seat.avatar} host={seat.host} away={seat.away} />
-            <span className="jd-who">{seat.name}</span>
+            <Token
+              avatar={seat.avatar}
+              host={seat.host}
+              away={seat.away}
+              transitionName={transitions ? seatTransition(seat.id).token : undefined}
+            />
+            <span
+              className="jd-who"
+              style={transitions ? { viewTransitionName: seatTransition(seat.id).name } : undefined}
+            >
+              {seat.name}
+            </span>
             <PlayerReaction reactions={reactions} playerId={seat.id} name={seat.name} />
             {onSeat && seat.action && (
               <button

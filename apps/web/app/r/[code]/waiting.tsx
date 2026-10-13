@@ -52,15 +52,23 @@ export function Waiting({
   isHost,
   send,
   onOpen,
+  picking,
+  themed: showOwnLobby,
+  setPicking,
 }: {
   snapshot: LobbySnapshot;
   players: ScreenPlayer[];
   isHost: boolean;
   send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
   onOpen: (p: Panel) => void;
+  /** The host is looking at the list of games. */
+  picking: boolean;
+  /** Show the selected game's own lobby (the page decides, so it can animate the switch). */
+  themed: boolean;
+  /** The host wants the list of games (or is done with it). */
+  setPicking: (picking: boolean) => void;
 }) {
   const arrivals = useArrivals(s.players.map((p) => p.id));
-  const [picking, setPicking] = useState(false);
   const [managing, setManaging] = useState(false);
   const [tapped, setTapped] = useState<string | null>(null);
   const untap = useCallback(() => setTapped(null), []);
@@ -90,8 +98,8 @@ export function Waiting({
   const mine = s.players.find((p) => p.id === s.me);
   const ThemedLobby = entry?.ui?.Lobby;
   // A game with its own lobby (Avalon's round table) draws the players and the options itself,
-  // inside Jackdaw's frame. The host can still go back to the list of games.
-  const themed = Boolean(entry && ThemedLobby && !picking);
+  // and fills the screen under Jackdaw's bar. The host can still go back to the list of games.
+  const themed = Boolean(entry && ThemedLobby && showOwnLobby);
   const look = useTheme();
   const [lobbyOptions, setLobbyOptions] = useOptionsDraft(s.gameOptions, (o) =>
     send({ type: 'setOptions', options: o }),
@@ -138,7 +146,7 @@ export function Waiting({
               {s.displays > 0 && `, ${s.displays} TV`}
             </span>
           </div>
-          <SeatTrack seats={seats} onSeat={onSeat} reactions={s.reactions} />
+          <SeatTrack seats={seats} onSeat={onSeat} reactions={s.reactions} transitions />
           {mine && (
             <div className="you-strip">
               <AvatarButton avatar={mine.avatar} size={44} onClick={() => onOpen('me')} />
@@ -209,7 +217,7 @@ export function Waiting({
         </section>
       )}
 
-      {s.history.length > 0 && (
+      {!themed && s.history.length > 0 && (
         <section className="waiting__history" aria-label="Recent games">
           <h2 className="jd-label">Recent games</h2>
           <ul>
@@ -228,20 +236,8 @@ export function Waiting({
         </section>
       )}
 
-      {themed ? (
-        <div className="dock dock--themed">
-          <div className="dock__row">
-            <Link className="jd-plaque jd-plaque--small" href={`/tv/${s.code}`} target="_blank">
-              <Icon.tv />
-              Show on TV
-            </Link>
-            <Plaque small onClick={() => onOpen('stats')}>
-              <Icon.stats />
-              Game stats
-            </Plaque>
-          </div>
-        </div>
-      ) : (
+      {/* A game's own lobby has its own Start; the TV and stats stay in the bar. */}
+      {!themed && (
         <div className="dock">
           {isHost ? (
             <>

@@ -15,7 +15,8 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "pnpm -r --parallel typecheck",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:e2e": "pnpm --filter @jackdaw/web test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

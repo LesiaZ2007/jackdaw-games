@@ -75,7 +75,7 @@ export function Home() {
               style={
                 {
                   '--band': `var(--${g.art.band})`,
-                  '--x': `${(i - (fan.length - 1) / 2) * 62}px`,
+                  '--x': `calc(${i - (fan.length - 1) / 2} * min(62px, 15.5vw))`,
                   '--r': `${(i - (fan.length - 1) / 2) * 7.5}deg`,
                 } as React.CSSProperties
               }

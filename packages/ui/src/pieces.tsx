@@ -108,10 +108,12 @@ export function CodeInput({
   value: string;
   onChange: (v: string) => void;
   length?: number;
-  size?: number;
+  /** Chit width: px, or any CSS length such as "min(84px, 18vw)". */
+  size?: number | string;
   id?: string;
   onEnter?: () => void;
 }) {
+  const t = typeof size === 'number' ? `${size}px` : size;
   const letters = value.toUpperCase().slice(0, length).split('');
   return (
     <span className="jd-code-entry">
@@ -134,14 +136,14 @@ export function CodeInput({
         aria-label="Lobby code"
         maxLength={length}
       />
-      <span className="jd-chits" aria-hidden="true" style={vars({ '--t': `${size}px` })}>
+      <span className="jd-chits" aria-hidden="true" style={vars({ '--t': t })}>
         {Array.from({ length }, (_, i) => {
           const ch = letters[i];
           return (
             <span
               key={i}
               className={cx('jd-chit', ch ? 'jd-chit--blank' : 'jd-chit--slot')}
-              style={vars({ '--t': `${size}px` })}
+              style={vars({ '--t': t })}
             >
               {ch ?? ''}
             </span>

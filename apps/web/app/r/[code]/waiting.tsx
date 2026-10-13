@@ -16,6 +16,7 @@ import {
 } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 import { games } from '@/lib/registry';
+import { useOptionsDraft } from '@/lib/use-options-draft';
 import type { Panel } from './bar';
 import { GamePicker, NextUp } from './next-up';
 
@@ -92,6 +93,9 @@ export function Waiting({
   // inside Jackdaw's frame. The host can still go back to the list of games.
   const themed = Boolean(entry && ThemedLobby && !picking);
   const look = useTheme();
+  const [lobbyOptions, setLobbyOptions] = useOptionsDraft(s.gameOptions, (o) =>
+    send({ type: 'setOptions', options: o }),
+  );
   const startGame = () => send({ type: 'start', look });
   const onSeat = (id: string) => (id === s.me ? onOpen('me') : isHost && setTapped(id));
 
@@ -111,8 +115,8 @@ export function Waiting({
             me={s.me}
             hostId={s.hostId}
             isHost={isHost}
-            options={s.gameOptions}
-            setOptions={(o) => send({ type: 'setOptions', options: o })}
+            options={lobbyOptions}
+            setOptions={setLobbyOptions}
             blocker={blocker}
             start={startGame}
             onSeat={onSeat}

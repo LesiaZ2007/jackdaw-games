@@ -24,11 +24,14 @@ import {
   snapshotFor,
   start,
   transferHost,
+  lobbyStats,
   type Avatar,
   type Ctx,
   type GameRegistry,
+  type HistoryEntry,
   type Lobby,
   type LobbySnapshot,
+  type LobbyStats,
   type Presence,
 } from '@jackdaw/engine';
 import { DEFAULT_AVATARS, isKnownAvatar } from './avatars';
@@ -387,7 +390,18 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     return snapshotFor(lobby, playerId, fresh, ctx());
   }
 
-  return { create, post, poll, redeemRejoin };
+  /**
+   * The lobby's full record for the Game stats menu. Fetched on demand rather than with every
+   * poll, since history can hold 200 games. Everything in it was revealed when each game ended.
+   */
+  async function stats(code: string): Promise<{ stats: LobbyStats; history: HistoryEntry[] }> {
+    rateLimit(`stats:${code}`, limits.polls);
+    const lobby = await loadShared(code);
+    if (!lobby) throw notFound();
+    return { stats: lobbyStats(lobby.history), history: lobby.history };
+  }
+
+  return { create, post, poll, redeemRejoin, stats };
 }
 
 export type RoomRuntime = ReturnType<typeof createRoomRuntime>;

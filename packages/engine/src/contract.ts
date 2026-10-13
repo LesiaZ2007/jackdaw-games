@@ -47,6 +47,17 @@ export interface RecapEvent {
   data?: unknown;
 }
 
+/**
+ * How one player finished a game, for lobby stats. `team` and `role` are display labels
+ * ("Evil", "Assassin"); leave them out when a game has no teams or roles.
+ */
+export interface Standing {
+  playerId: string;
+  outcome: 'win' | 'loss' | 'draw';
+  team?: string;
+  role?: string;
+}
+
 export interface GameResult {
   /** Player ids of the winners. */
   winners: string[];
@@ -56,6 +67,11 @@ export interface GameResult {
   reveal: unknown;
   /** Ordered timeline of the game, secrets included. */
   recap: RecapEvent[];
+  /**
+   * Optional per-player outcome, team and role, used for lobby stats. When a game leaves it
+   * out, the platform derives win/loss from `winners`.
+   */
+  standings?: Standing[];
 }
 
 export interface GameModule<State, Action, View, TableView, Options> {

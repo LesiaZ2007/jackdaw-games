@@ -3,3 +3,4 @@ export * from './errors';
 export * from './lobby';
 export * from './protocol';
 export * from './rng';
+export * from './stats';

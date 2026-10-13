@@ -15,6 +15,10 @@ describe('unreadCount', () => {
   it('is zero once everything has been seen', () => {
     expect(unreadCount(chat, 'me', 40)).toBe(0);
   });
+  it("doesn't count system lines", () => {
+    const line = { id: 's', system: true as const, text: '{p1} joined.', at: 50 };
+    expect(unreadCount([...chat, line], 'me', 40)).toBe(0);
+  });
 });
 
 describe('badgeText', () => {

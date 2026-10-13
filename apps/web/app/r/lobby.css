@@ -163,6 +163,9 @@
   font-size: 17px;
 }
 /* ── You, under the seat track ── */
+.waiting__react {
+  margin-top: var(--space-3);
+}
 .you-strip {
   display: flex;
   align-items: center;
@@ -545,6 +548,20 @@
     --who: color-mix(in srgb, var(--c, var(--ink)) 40%, var(--ink));
   }
 }
+/* What happened at the table ("Bran joined."): quiet, centred, set apart from what people said */
+.chat__system {
+  grid-column: 1 / -1;
+  margin: var(--space-2) 0 0;
+  padding: 0 var(--space-2);
+  text-align: center;
+  font-size: var(--step--1);
+  line-height: 1.35;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.chat__system:first-child {
+  margin-top: 0;
+}
 .chat__empty {
   grid-column: 1 / -1;
   color: var(--ink-2);
@@ -752,6 +769,12 @@
 .menu__block p {
   margin: 0;
   color: var(--ink-2);
+}
+/* Ending a game: gules once armed, so the second tap is plainly the serious one */
+.menu__end.jd-plaque.is-armed {
+  background: var(--gules);
+  color: var(--on-fill);
+  outline-color: var(--on-fill);
 }
 .menu__me {
   display: flex;

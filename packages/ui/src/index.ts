@@ -8,3 +8,4 @@ export * from './avatar-picker';
 export * from './theme';
 export * from './cover';
 export * from './celebrate';
+export * from './reactions';

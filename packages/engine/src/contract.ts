@@ -142,12 +142,15 @@ export interface GameModule<State, Action, View, TableView, Options> {
  * - While the session runs, polls call `check` at most every few seconds. `over` with a result
  *   finishes the game as usual (history, scores, results screen); `abandoned` goes back to the
  *   lobby with nothing scored.
+ * - When the Jackdaw host ends the game early, the runtime calls `end` (if given) after saving,
+ *   so the other app closes its game too. A failed `end` is logged, not shown.
  *
  * See docs/avalon/LINK.md.
  */
 export interface GameLink<State = unknown, Options = unknown> {
   start(ctx: LinkStartContext<Options>): Promise<unknown>;
   check(state: State): Promise<LinkStatus>;
+  end?(state: State): Promise<void>;
 }
 
 export interface LinkStartContext<Options> {

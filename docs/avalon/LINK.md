@@ -70,7 +70,14 @@ Server-to-server calls send `authorization: Bearer <JACKDAW_LINK_SECRET>`. Avalo
 { "phase": "lobby", "over": true, "endedEarly": true }
 ```
 
-Only after the game is over does this include roles. Nothing secret is returned mid-game.
+Only after the game is over does this include roles. Nothing secret is returned mid-game. An
+unknown or expired room is a 404, which Jackdaw treats as abandoned (nothing scored).
+
+### `DELETE /api/jackdaw/rooms/:code`
+
+Jackdaw's host ended the game in Jackdaw ("End this game"). A running game ends early, exactly
+as if Avalon's host had ended it, and the response is the status above. Jackdaw calls it after
+saving its own lobby and only logs a failure.
 
 ### Entry page `/j/:code`
 
@@ -85,7 +92,8 @@ the location with `/r/:code`. Without a fragment it goes to `/r/:code` (the norm
 - The host's "end game early" still works; the room then goes to Avalon's lobby phase with a
   "Back to Jackdaw" link and nothing else to do there.
 - Nobody can join a linked room by code (it's mid-game anyway).
-- Everything else, including the look, gameplay and TV, is unchanged.
+- Everything else, including the look, gameplay and TV, is unchanged. `/tv/:code` stays
+  frameable (no `X-Frame-Options` / `frame-ancestors`), because Jackdaw's TV and latecomers embed it.
 
 ## Jackdaw's side (branch `feat/avalon-link`)
 

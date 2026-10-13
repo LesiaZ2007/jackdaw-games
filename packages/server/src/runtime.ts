@@ -326,8 +326,11 @@ export function createRoomRuntime(opts: RuntimeOptions) {
         ? await prepareLink(code, key, msg, info)
         : undefined;
 
+    // A linked game the host ends here should end in its own app too (after the save).
+    let ending: { gameId: string; state: unknown } | undefined;
     const { lobby, result: playerId } = await withLobby(code, (current) => {
       const c = ctx();
+      ending = undefined;
       if (msg.type === 'join') {
         const joined = join(
           current,
@@ -352,9 +355,13 @@ export function createRoomRuntime(opts: RuntimeOptions) {
           'TABLE_CHANGED',
           'Someone joined or left just then. Press Start again.',
         );
-      return { lobby: apply(before, me, msg, c, linked?.data), result: me };
+      const next = apply(before, me, msg, c, linked?.data);
+      if (msg.type === 'endGame' && before.session && links[before.session.gameId])
+        ending = { gameId: before.session.gameId, state: before.session.state };
+      return { lobby: next, result: me };
     });
 
+    if (ending) await endLink(ending.gameId, ending.state);
     const fresh = await checkIn(code, playerId, presence);
     return snapshotFor(lobby, playerId, fresh, ctx());
   }
@@ -485,6 +492,15 @@ export function createRoomRuntime(opts: RuntimeOptions) {
         result: null,
       }))
     ).lobby;
+  }
+
+  /** Tell a linked game's app the host ended it here. Best effort: Jackdaw has already moved on. */
+  async function endLink(gameId: string, state: unknown) {
+    try {
+      await links[gameId]?.end?.(state);
+    } catch (e) {
+      console.error('[jackdaw] ending a linked game failed', e);
+    }
   }
 
   /** Move a seat to this device with a one-time rejoin code. */

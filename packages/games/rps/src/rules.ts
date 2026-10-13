@@ -119,7 +119,12 @@ export const rps: GameModule<RpsState, RpsAction, RpsPlayerView, RpsTableView, R
       scores,
       recap: [
         ...state.recap,
-        { round: state.round, text: `Round ${state.round}: everyone revealed`, data: result },
+        {
+          round: state.round,
+          // Player ids in the text are swapped for names by the recap screens.
+          text: state.players.map((id) => `${id} threw ${picks[id]} (+${points[id]})`).join(', '),
+          data: result,
+        },
       ],
     };
   },

@@ -193,7 +193,7 @@ export function SeatTrack({
   seats,
   spaces = 15,
   cols = 5,
-  tokenSize,
+  tokenSize = 34,
   className,
 }: {
   seats: Seat[];

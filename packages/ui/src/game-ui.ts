@@ -35,4 +35,22 @@ export interface GameUi {
   TvScreen: ComponentType<TvScreenProps<any> & { players: ScreenPlayer[] }>;
   /** Optional game-specific end-of-game reveal; the shell shows the recap timeline otherwise. */
   Reveal?: ComponentType<{ result: GameResult; players: ScreenPlayer[]; me: string | null }>;
+  /**
+   * Optional themed waiting room shown in the lobby once this game is chosen (e.g. Avalon's
+   * round table). The lobby shows the game's box lid and options when it's absent.
+   */
+  Lobby?: ComponentType<GameLobbyProps>;
+}
+
+/** What a game's themed waiting room receives from the lobby. */
+export interface GameLobbyProps {
+  players: ScreenPlayer[];
+  me: string | null;
+  hostId: string;
+  isHost: boolean;
+  options: Record<string, unknown>;
+  setOptions: (options: Record<string, unknown>) => void;
+  /** Why the game can't start yet, or null. */
+  blocker: string | null;
+  start: () => void;
 }

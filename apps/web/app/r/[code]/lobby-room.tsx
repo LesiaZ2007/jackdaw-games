@@ -11,6 +11,7 @@ import { Chat } from './chat';
 import { GameShell } from './game-shell';
 import { JoinCard } from './join-card';
 import { MenuSheet } from './menu-sheet';
+import { MeSheet } from './me-sheet';
 import { Results } from './results';
 import { ShareSheet } from './share-sheet';
 import { StatsSheet } from './stats-sheet';
@@ -132,7 +133,9 @@ export function LobbyRoom({ code }: { code: string }) {
         code={code}
         snapshot={snapshot}
         send={send}
+        onEdit={() => setPanel('me')}
       />
+      <MeSheet open={panel === 'me'} onClose={close} snapshot={snapshot} send={send} />
       {panel === 'chat' && (
         <ChatSheet onClose={close}>
           <Chat snapshot={snapshot} players={players} send={send} />

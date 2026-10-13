@@ -3,7 +3,16 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { startBlocker, type ClientMessage, type Lobby, type LobbySnapshot } from '@jackdaw/engine';
-import { BoxLid, Icon, Plaque, SeatTrack, Sheet, Token, type ScreenPlayer } from '@jackdaw/ui';
+import {
+  AvatarButton,
+  BoxLid,
+  Icon,
+  Plaque,
+  SeatTrack,
+  Sheet,
+  Token,
+  type ScreenPlayer,
+} from '@jackdaw/ui';
 import { catalog, catalogEntry, unfitReason } from '@/lib/catalog';
 import { games } from '@/lib/registry';
 import type { Panel } from './bar';
@@ -63,8 +72,10 @@ export function Waiting({
     avatar: p.avatar,
     host: p.id === s.hostId,
     away: !p.online,
+    me: p.id === s.me,
     landing: arrivals.has(p.id),
   }));
+  const mine = s.players.find((p) => p.id === s.me);
   const ThemedLobby = entry?.ui?.Lobby;
 
   async function choose(id: string) {
@@ -86,14 +97,23 @@ export function Waiting({
           </span>
         </div>
         <SeatTrack seats={seats} />
-        {isHost && count > 1 && (
-          <button
-            type="button"
-            className="home-link waiting__manage"
-            onClick={() => setManaging(true)}
-          >
-            Manage players
-          </button>
+        {mine && (
+          <div className="you-strip">
+            <AvatarButton avatar={mine.avatar} size={44} onClick={() => onOpen('me')} />
+            <span className="you-strip__who">
+              <b>{mine.name}</b>
+              <span>That&rsquo;s you. Tap your token to change your name, crest or colour.</span>
+            </span>
+            {isHost && count > 1 && (
+              <button
+                type="button"
+                className="home-link waiting__manage"
+                onClick={() => setManaging(true)}
+              >
+                Manage players
+              </button>
+            )}
+          </div>
         )}
       </section>
 

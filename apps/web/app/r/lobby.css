@@ -104,7 +104,7 @@
 }
 .section-head > span {
   color: var(--ink-2);
-  font-size: 15px;
+  font-size: 17px;
   text-align: right;
 }
 
@@ -122,7 +122,34 @@
 .waiting__hint {
   margin: 0;
   color: var(--ink-2);
-  font-size: 15px;
+  font-size: 17px;
+}
+/* ── You, under the seat track ── */
+.you-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-3);
+}
+.you-strip__who {
+  flex: 1;
+  min-width: 12ch;
+  display: grid;
+  gap: 2px;
+}
+.you-strip__who b {
+  font: 800 20px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.you-strip__who span {
+  color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1.3;
+}
+.you-strip .waiting__manage {
+  margin-top: 0;
 }
 .waiting__chosen {
   display: grid;
@@ -148,16 +175,17 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 2px;
+  gap: 4px;
   color: var(--ink-2);
-  font-size: 16px;
+  font-size: 18px;
 }
 .waiting__history b {
   color: var(--ink);
 }
 @media (min-width: 768px) {
   .waiting {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    /* the table gets the larger share, so tokens are easy to find on a laptop */
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     align-items: start;
     column-gap: var(--space-6);
   }
@@ -188,11 +216,11 @@
   margin: 0;
   text-align: center;
   color: var(--ink-2);
-  font-size: 15px;
+  font-size: 17px;
 }
 .dock__wait {
   padding: 14px;
-  font: 800 18px/1.2 var(--font-plaque);
+  font: 800 20px/1.2 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--ink);
@@ -308,10 +336,15 @@
 }
 .manage .jd-token {
   --ring-bg: var(--paper);
+  margin-left: 4px;
 }
 .manage__name {
   flex: 1;
+  min-width: 0;
   font-weight: 700;
+  font-size: 19px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 .manage__name small {
   color: var(--ink-2);
@@ -334,58 +367,19 @@
   margin: 0;
   color: var(--ink-2);
 }
-.join-card__pick {
-  border: 0;
-  margin: 0;
-  padding: 0;
+.join-card__name {
   display: grid;
   gap: var(--space-2);
 }
-.join-card__crests {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 4px;
+.join-card__row {
+  --ring-bg: var(--paper);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
 }
-.join-card__crest {
-  appearance: none;
-  aspect-ratio: 1;
-  min-height: var(--tap);
-  display: grid;
-  place-items: center;
-  padding: 4px;
-  border: 2px solid var(--rule);
-  background: var(--c);
-  color: var(--on-fill);
-  cursor: pointer;
-}
-.join-card__crest svg {
-  width: 100%;
-  height: 100%;
-}
-.join-card__tints {
-  display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 4px;
-}
-.join-card__tint {
-  appearance: none;
-  aspect-ratio: 1;
-  min-height: var(--tap);
-  border-radius: 50%;
-  border: 2px solid var(--rule);
-  background: var(--c);
-  cursor: pointer;
-}
-.join-card__crest[aria-pressed='true'],
-.join-card__tint[aria-pressed='true'] {
-  border-color: var(--ink);
-  outline: 3px solid var(--or);
-  outline-offset: 1px;
-}
-.join-card__crest:disabled,
-.join-card__tint:disabled {
-  opacity: 0.2;
-  cursor: not-allowed;
+.join-card__row .jd-token {
+  --ring-bg: var(--paper);
+  margin-left: 6px;
 }
 .join-card__rejoin {
   font: 800 28px var(--font-code);
@@ -547,29 +541,64 @@
   overflow-y: auto;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0 var(--space-2);
   display: grid;
   align-content: start;
-  gap: var(--space-2);
+  gap: 2px;
 }
-.chat__list li {
+/* One message: token and name on the first line, the text beneath, both indented past the token */
+.chat__msg {
   --ring-bg: var(--paper);
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  font-size: 16px;
-  line-height: 1.35;
+  --who: var(--c, var(--ink));
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-2);
+  font-size: 18px;
+  line-height: 1.4;
 }
-.chat__list .jd-token {
+.chat__msg:not(.more) {
+  margin-top: var(--space-2);
+}
+.chat__msg:first-child {
+  margin-top: 0;
+}
+.chat__token {
+  grid-row: 1;
+  display: grid;
+  place-items: center;
+}
+.chat__msg .jd-token {
   --ring-bg: var(--paper);
-  margin-top: 2px;
 }
-.chat__list li span {
+.chat__who {
+  grid-row: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 18px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--who);
+}
+.chat__text {
+  grid-column: 2;
   min-width: 0;
   overflow-wrap: anywhere;
 }
+/* Tints are dark inks; on the dark board, lift each name toward the cream so it stays legible */
+:root[data-theme='dark'] .chat__msg {
+  --who: color-mix(in srgb, var(--c, var(--ink)) 40%, var(--ink));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .chat__msg {
+    --who: color-mix(in srgb, var(--c, var(--ink)) 40%, var(--ink));
+  }
+}
 .chat__empty {
   color: var(--ink-2);
+  font-size: 18px;
 }
 .chat__form {
   display: flex;
@@ -609,7 +638,7 @@
   appearance: none;
   padding: 10px 14px;
   min-height: var(--tap);
-  font: 800 15px var(--font-plaque);
+  font: 800 17px var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--ink-2);
@@ -627,15 +656,16 @@
 .pad__empty {
   margin: 0;
   color: var(--ink-2);
+  font-size: 18px;
 }
 .pad__sheet {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: 18px;
   font-variant-numeric: tabular-nums;
 }
 .pad__sheet th {
-  font: 700 12px var(--font-plaque);
+  font: 700 14px var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-2);
@@ -647,6 +677,7 @@
   padding: 6px;
   border-bottom: 1px solid var(--rule);
   text-align: right;
+  vertical-align: middle;
 }
 .pad__sheet th:first-child,
 .pad__sheet td:first-child {
@@ -663,12 +694,13 @@
   background: none;
   border: 0;
   color: var(--ink);
-  font: 700 16px var(--font-body);
+  font: 700 18px/1.2 var(--font-body);
   cursor: pointer;
   text-align: left;
 }
 .pad__who .jd-token {
   --ring-bg: var(--paper);
+  margin-left: 4px;
 }
 .pad__sheet tr.open td,
 .pad__sheet tr.detail td {
@@ -678,7 +710,7 @@
   text-align: left;
   padding: 2px 10px 10px 36px;
   color: var(--ink-2);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.45;
 }
 .pad__detail p {
@@ -719,15 +751,16 @@
 }
 .pad__list span {
   color: var(--ink-2);
+  font-size: 17px;
 }
 .pad__log li {
   display: grid;
-  grid-template-columns: 52px 1fr;
+  grid-template-columns: 60px 1fr;
   gap: var(--space-2);
-  font-size: 15px;
+  font-size: 17px;
 }
 .pad__log time {
-  font: 700 14px var(--font-plaque);
+  font: 700 16px/1.45 var(--font-plaque);
   color: var(--ink-2);
 }
 
@@ -755,7 +788,7 @@
 }
 .share__link {
   margin: 0;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--ink-2);
   overflow-wrap: anywhere;
 }
@@ -769,6 +802,54 @@
 .menu__block p {
   margin: 0;
   color: var(--ink-2);
+}
+.menu__me {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+.menu__me b {
+  flex: 1;
+  min-width: 0;
+  font: 800 20px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  overflow-wrap: anywhere;
+}
+.menu__me .jd-token,
+.me-sheet .jd-token {
+  --ring-bg: var(--paper);
+}
+
+/* ── Changing your name, crest and colour ── */
+.me-sheet {
+  display: grid;
+  gap: var(--space-5);
+}
+.me-sheet__who {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-4);
+  padding-left: 6px;
+}
+.me-sheet__who > .jd-token {
+  margin-bottom: -7px;
+}
+.me-sheet__who > b {
+  align-self: center;
+  font: 800 24px var(--font-plaque);
+  text-transform: uppercase;
+}
+.me-sheet__name {
+  flex: 1;
+  display: grid;
+  gap: var(--space-2);
+}
+.me-sheet__note {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 18px;
 }
 
 .sr-only {

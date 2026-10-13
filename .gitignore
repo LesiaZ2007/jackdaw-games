@@ -14,3 +14,5 @@ playwright-report/
 .wrangler/
 .DS_Store
 .claude/worktrees/
+.vercel
+.env*

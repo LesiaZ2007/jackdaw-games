@@ -17,7 +17,8 @@ export function ShareSheet({
   code: string;
 }) {
   const [copied, setCopied] = useState(false);
-  const link = `${siteUrl()}/r/${code}`;
+  // The short link (/QGYR) redirects to the lobby, and makes a smaller QR code.
+  const link = `${siteUrl()}/${code}`;
 
   async function copy() {
     try {

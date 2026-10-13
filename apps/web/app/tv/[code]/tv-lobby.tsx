@@ -62,7 +62,8 @@ export function TvLobby({ code }: { code: string }) {
   useWakeLock();
   const { snapshot, missing } = useLobby(code, 'display');
   const site = useSiteUrl();
-  const joinUrl = `${site}/r/${code}`;
+  // The short link (/QGYR) redirects to the lobby, and makes a smaller QR code.
+  const joinUrl = `${site}/${code}`;
   const host = site.replace(/^https?:\/\//, '');
   const arrivals = useArrivals(snapshot?.players.map((p) => p.id) ?? []);
 

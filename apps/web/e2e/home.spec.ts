@@ -45,3 +45,10 @@ test('Browse the games scrolls down to the shelves', async ({ page }) => {
     .click();
   await page.waitForURL(/\/games\/rps$/);
 });
+
+test('a short link opens its lobby, and other short paths are not found', async ({ page }) => {
+  await page.goto('/qgyr');
+  await page.waitForURL(/\/r\/QGYR$/);
+  const missing = await page.goto('/notacode');
+  expect(missing?.status()).toBe(404);
+});

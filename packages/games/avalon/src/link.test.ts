@@ -170,7 +170,7 @@ describe('the Avalon link', () => {
     clock.advance(5_000);
     const done = await snap(runtime.poll(code, { token: tokenFor('Bran') }));
     expect(done.status).toBe('results');
-    expect(done.results?.summary).toBe('Good wins. Merlin survived the assassination.');
+    expect(done.results?.summary).toBe('Good wins: Merlin survived the assassination');
     expect(done.results?.winners).toEqual(ids.slice(0, 3));
     expect(done.history[0]?.standings?.[3]).toMatchObject({
       outcome: 'loss',

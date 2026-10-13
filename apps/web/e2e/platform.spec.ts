@@ -59,10 +59,9 @@ test('names are unique, joins show in chat, reactions reach other phones, and th
   await host.getByRole('button', { name: 'Lobby menu' }).click();
   await host.getByRole('button', { name: 'End this game' }).click();
   await host.getByRole('button', { name: 'Tap again to end the game for everyone' }).click();
-  // Back in Rock Paper Scissors' lobby, the chalk ring.
-  await expect(host.getByRole('group', { name: 'Rounds' })).toBeVisible();
+  await expect(host.getByText('At the table')).toBeVisible();
   await expect(bran.getByText('The host ended the game. It won’t be scored.')).toBeVisible();
-  await expect(bran.getByRole('group', { name: 'Rounds' })).toBeVisible();
+  await expect(bran.getByText('At the table')).toBeVisible();
   const stats = await (await host.request.get(`/api/lobby/${code}/stats`)).json();
   expect(stats.history).toHaveLength(0);
 });

@@ -228,9 +228,20 @@
     column-gap: var(--space-6);
   }
   .waiting__history,
-  .waiting > .dock {
+  .waiting > .dock,
+  .waiting__themed {
     grid-column: 1 / -1;
   }
+}
+/* A game with its own lobby fills the centre; Jackdaw's frame stays around it. */
+.waiting--themed {
+  max-width: 1320px;
+}
+.dock.dock--themed {
+  position: static;
+  padding-top: 0;
+  background: none;
+  box-shadow: none;
 }
 
 /* The primary action sits in the bottom third, within thumb reach */

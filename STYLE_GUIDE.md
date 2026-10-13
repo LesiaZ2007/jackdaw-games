@@ -108,8 +108,12 @@ Check every screen at **375, 768, 1280, 1920**.
 - **Laptop (1280):** home is the welcome screen with its nav in one row, then shelves of game
   covers ("Browse the games" scrolls there). Catalog = filters | shelf | detail panel.
   Lobby = table (the wider column, tokens about 84px) | game | chat.
-- **TV (1920):** no scrolling, no hover. Huge code chits + QR, the seat track along the bottom,
-  the next game on the right. Everything on the TV is also on every phone.
+- **TV (1920):** no hover. Huge code chits + QR, the seat track along the bottom, the next game
+  on the right, all on one screen. Only the lobby scrolls: below its first screen is **the night
+  so far** (highlights on banded cards, the score tally as a ranked board with each player's
+  bar in their tint, and the games played tonight). A small "The night so far" hint shows once
+  a game has finished. Games and results never scroll. Everything on the TV is also on every
+  phone.
 
 ## Words
 

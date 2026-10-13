@@ -160,6 +160,7 @@ export function CodeInput({
 
 export interface TokenProps {
   avatar: { crest: string; tint: string };
+  /** Diameter in px. Leave it out to let CSS size the token (e.g. on the seat track). */
   size?: number;
   host?: boolean;
   away?: boolean;
@@ -167,12 +168,15 @@ export interface TokenProps {
 }
 
 /** A player: a punch-out token in their tint with their crest. */
-export function Token({ avatar, size = 46, host, away, title }: TokenProps) {
+export function Token({ avatar, size, host, away, title }: TokenProps) {
   return (
     <span
       className={cx('jd-token', away && 'jd-token--away')}
       title={title}
-      style={vars({ '--z': `${size}px`, '--c': `var(--tint-${avatar.tint}, var(--sable))` })}
+      style={vars({
+        ...(size ? { '--z': `${size}px` } : {}),
+        '--c': `var(--tint-${avatar.tint}, var(--sable))`,
+      })}
     >
       <Crest id={avatar.crest} />
       {host && (
@@ -190,16 +194,21 @@ export interface Seat {
   avatar: { crest: string; tint: string };
   host?: boolean;
   away?: boolean;
+  /** This device's own seat: framed and marked "You". */
+  me?: boolean;
   /** Animate this token being placed (the newest arrival). */
   landing?: boolean;
 }
 
-/** The seat track: numbered printed spaces, filled with tokens in seat order. */
+/**
+ * The seat track: numbered printed spaces, filled with tokens in seat order. Tokens and names
+ * grow with the track's width (it is a size container), unless `tokenSize` fixes them.
+ */
 export function SeatTrack({
   seats,
   spaces = 15,
   cols = 5,
-  tokenSize = 34,
+  tokenSize,
   className,
 }: {
   seats: Seat[];
@@ -211,7 +220,13 @@ export function SeatTrack({
   return (
     <ol
       className={cx('jd-track', className)}
-      style={vars({ '--cols': cols, listStyle: 'none', margin: 0, padding: 0 })}
+      style={vars({
+        '--cols': cols,
+        ...(tokenSize ? { '--seat-z': `${tokenSize}px` } : {}),
+        listStyle: 'none',
+        margin: 0,
+        padding: 0,
+      })}
       aria-label={`${seats.length} of ${spaces} seats taken`}
     >
       {Array.from({ length: spaces }, (_, i) => {
@@ -230,13 +245,22 @@ export function SeatTrack({
         return (
           <li
             key={seat.id}
-            className={cx('jd-space', seat.landing && 'jd-space--landing')}
-            aria-label={`Seat ${i + 1}, ${seat.name}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}`}
+            className={cx(
+              'jd-space',
+              seat.landing && 'jd-space--landing',
+              seat.me && 'jd-space--me',
+            )}
+            aria-label={`Seat ${i + 1}, ${seat.name}${seat.me ? ' (you)' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}`}
           >
             <span className="jd-n" aria-hidden="true">
               {i + 1}
             </span>
-            <Token avatar={seat.avatar} host={seat.host} away={seat.away} size={tokenSize} />
+            {seat.me && (
+              <span className="jd-you" aria-hidden="true">
+                You
+              </span>
+            )}
+            <Token avatar={seat.avatar} host={seat.host} away={seat.away} />
             <span className="jd-who">{seat.name}</span>
           </li>
         );

@@ -182,7 +182,7 @@ export function TvLobby({ code }: { code: string }) {
           )}
         </section>
 
-        <SeatTrack seats={seats} cols={15} tokenSize={70} className="tv-track" />
+        <SeatTrack seats={seats} cols={15} className="tv-track" />
       </div>
     </TvStage>
   );

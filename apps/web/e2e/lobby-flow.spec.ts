@@ -21,7 +21,7 @@ test('three phones play a round, a refresh keeps its seat, and Play again keeps 
 }) => {
   const host = await newPlayer(browser);
   await host.goto('/');
-  await host.getByPlaceholder('e.g. Lesia').fill('Lesia');
+  await host.getByLabel('Your name').fill('Lesia');
   await host.getByRole('button', { name: 'Create a lobby' }).click();
   await host.waitForURL(/\/r\/[A-Z]{4}$/);
   const code = host.url().split('/').pop()!;
@@ -31,6 +31,21 @@ test('three phones play a round, a refresh keeps its seat, and Play again keeps 
   await join(bran, code, 'Bran');
   await join(cerys, code, 'Cerys');
   await expect(host.getByText('3 of 15 seats')).toBeVisible();
+
+  // Bran changes name, crest and colour from the lobby; the host sees the owl is now taken.
+  await bran.getByRole('button', { name: 'Change your crest and colour' }).click();
+  const mine = bran.getByRole('dialog', { name: 'You at the table' });
+  await mine.getByLabel('Your name').fill('Branwen');
+  await mine.getByRole('button', { name: 'Owl', exact: true }).click();
+  await mine.getByRole('button', { name: 'Lagoon', exact: true }).click();
+  await mine.getByRole('button', { name: 'Save' }).click();
+  await expect(mine).toBeHidden();
+  await expect(host.getByRole('listitem', { name: /Branwen/ })).toBeVisible();
+  await host.getByRole('button', { name: 'Change your crest and colour' }).click();
+  await expect(
+    host.getByRole('dialog').getByRole('button', { name: 'Owl, taken by Branwen' }),
+  ).toBeDisabled();
+  await host.keyboard.press('Escape');
 
   // Host picks the game and makes it a single round.
   await host

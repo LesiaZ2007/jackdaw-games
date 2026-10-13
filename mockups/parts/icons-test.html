@@ -1,0 +1,24 @@
+<meta charset="utf-8">
+<style>
+:root{--ink:#1f1d1a;--bg:#e4e4df;--iris:#eef2f3;--slate:#8d979c}
+body{margin:0;background:var(--bg);font:14px sans-serif;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;padding:24px}
+.c{display:grid;justify-items:center;gap:14px}
+.row{display:flex;gap:18px;align-items:end}
+.dk{background:#1c1e20;--ink:#ede5d3;padding:10px;border-radius:8px}
+.tile{width:64px;height:64px;border-radius:14px;background:#24211e;display:grid;place-items:center}
+.tile svg{--ink:#f2efe8}
+</style>
+<svg width="0" height="0" style="position:absolute"><defs>
+<!-- 1 Perched: one silhouette, pale eye -->
+<symbol id="i1" viewBox="0 0 100 100"><path d="M6 41 L28 30.5 C31 27.5 36 25.5 42 25.5 C50 25.5 55 29 57 34 C68 37 80 45 88 55 L98 64 C98.5 66 97 67 95 66.5 L81 63 C77 69 69 73 60 73 C47 73 37 66 32 56 C30 52 29 48 29 45 L7 42.8 Z" fill="var(--ink)"/><path d="M55 72 L52 89 M65 72 L66 89 M48 89 H57 M61 89 H70" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round"/><circle cx="38.5" cy="34" r="3.4" fill="var(--iris)"/></symbol>
+<!-- 2 Geometric: circles and a wedge -->
+<symbol id="i2" viewBox="0 0 100 100"><path d="M14 30 L33 24 C36 18 42 15 49 15 C58 15 63 21 64 28 C72 34 78 44 80 56 L90 92 L80 92 L71 76 C66 79 59 80 53 78 C43 74 37 64 36 52 C35 45 35 40 36 36 L15 32 Z" fill="var(--ink)"/><circle cx="45" cy="26" r="3.4" fill="var(--iris)"/><path d="M52 78 L50 92 M60 79 L61 92" stroke="var(--ink)" stroke-width="3.4" stroke-linecap="round"/></symbol>
+<!-- 3 In flight: fingered wingtips, a corvid tell -->
+<symbol id="i3" viewBox="0 0 100 100"><path d="M50 36 C46 36 44 39 43 42 C34 40 22 38 6 40 L10 43 L4 45 L10 47 L5 50 L12 51 L9 54 C22 52 33 52 43 53 C44 58 45 62 47 65 L40 80 L50 76 L60 80 L53 65 C55 62 56 58 57 53 C67 52 78 52 91 54 L88 51 L95 50 L90 47 L96 45 L90 43 L94 40 C78 38 66 40 57 42 C56 39 54 36 50 36 Z" fill="var(--ink)"/><path d="M47.5 37 L50 28 L52.5 37 Z" fill="var(--ink)"/></symbol>
+<!-- 4 Head in a roundel -->
+<symbol id="i4" viewBox="0 0 100 100"><clipPath id="cc"><circle cx="50" cy="50" r="44"/></clipPath><circle cx="50" cy="50" r="47" fill="none" stroke="var(--ink)" stroke-width="5"/><g clip-path="url(#cc)"><path d="M4 54 L36 36 C40 28 48 24 58 24 C76 24 90 38 92 58 L100 100 L44 100 C44 88 42 76 38 66 L6 58 Z" fill="var(--ink)"/><circle cx="52" cy="39" r="5" fill="var(--iris)"/><circle cx="51" cy="39" r="2" fill="var(--ink)"/></g></symbol>
+</defs></svg>
+<div class="c"><b>1. Walking</b><div class="row"><svg width="140" viewBox="0 0 100 100"><use href="#i1"/></svg><svg width="40" viewBox="0 0 100 100"><use href="#i1"/></svg><svg width="20" viewBox="0 0 100 100"><use href="#i1"/></svg></div><div class="row"><span class="tile"><svg width="46" viewBox="0 0 100 100"><use href="#i1"/></svg></span><span class="dk"><svg width="60" viewBox="0 0 100 100"><use href="#i1"/></svg></span></div></div>
+<div class="c"><b>2. Upright</b><div class="row"><svg width="140" viewBox="0 0 100 100"><use href="#i2"/></svg><svg width="40" viewBox="0 0 100 100"><use href="#i2"/></svg><svg width="20" viewBox="0 0 100 100"><use href="#i2"/></svg></div><div class="row"><span class="tile"><svg width="46" viewBox="0 0 100 100"><use href="#i2"/></svg></span><span class="dk"><svg width="60" viewBox="0 0 100 100"><use href="#i2"/></svg></span></div></div>
+<div class="c"><b>3. Gliding</b><div class="row"><svg width="140" viewBox="0 0 100 100"><use href="#i3"/></svg><svg width="40" viewBox="0 0 100 100"><use href="#i3"/></svg><svg width="20" viewBox="0 0 100 100"><use href="#i3"/></svg></div><div class="row"><span class="tile"><svg width="46" viewBox="0 0 100 100"><use href="#i3"/></svg></span><span class="dk"><svg width="60" viewBox="0 0 100 100"><use href="#i3"/></svg></span></div></div>
+<div class="c"><b>4. Head</b><div class="row"><svg width="140" viewBox="0 0 100 100"><use href="#i4"/></svg><svg width="40" viewBox="0 0 100 100"><use href="#i4"/></svg><svg width="20" viewBox="0 0 100 100"><use href="#i4"/></svg></div><div class="row"><span class="tile"><svg width="46" viewBox="0 0 100 100"><use href="#i4"/></svg></span><span class="dk"><svg width="60" viewBox="0 0 100 100"><use href="#i4"/></svg></span></div></div>

@@ -7,3 +7,4 @@ export * from './overlays';
 export * from './avatar-picker';
 export * from './theme';
 export * from './cover';
+export * from './celebrate';

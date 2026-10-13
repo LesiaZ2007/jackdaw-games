@@ -80,6 +80,21 @@ Git Bash, run `export PATH="$HOME/.local/bin:$PATH"`. In PowerShell 5.1, chain w
 - Liked: a medieval palette of cream with heraldic red, green and blue. Every screen (loading, join, home) must match.
 - When given a reference, study the real thing (source, assets, screenshots) before designing.
 
+### Every game (Lesia, 2026-10-12)
+
+- **Results you can feel.** "If I win the round, I can't tell" is a bug. Whenever a round, vote
+  or mission resolves, each phone shows the player's own result with the kit's `VerdictMoment`
+  (`packages/ui/src/celebrate.tsx`): a wax seal pressed onto a heraldic ribbon, vert with a burst
+  of chits and feathers for a win, drooping gules for a loss, sable for a draw, azure `reveal`
+  for someone watching. Work the outcome out from public table data only, key it with
+  `useMoment(<public counter>)` so a refresh doesn't replay it, and let it clear itself (tap,
+  Escape or about 3.4s) so it never blocks the next move. The TV shows it at `size="tv"`.
+  Per-row results use `OutcomeChip`; running scores use `Tally`. The end-of-game results screen
+  gives everyone their own `Verdict` already. See the doc comment in `packages/ui/src/game-ui.ts`.
+- **Day and dark follow the shell.** Every game follows the day/dark choice through `useTheme()`
+  (`packages/ui/src/theme.ts`). A game with its own looks maps onto them: Avalon's day is its Day
+  look and dark is its Night look.
+
 ## Architecture (polling on Vercel)
 
 - **Server-authoritative.** Each lobby is one JSON document in storage (`jackdaw:lobby:<CODE>`),

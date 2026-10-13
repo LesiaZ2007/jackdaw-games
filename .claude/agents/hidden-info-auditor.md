@@ -8,6 +8,7 @@ tools: Read, Grep, Glob, Bash
 Leaking hidden information is a bug as serious as a crash. You audit, you don't edit.
 
 Check, for the game or area you're given:
+
 1. getPlayerView: for every role/phase, does any field reveal another player's secret
    (role, hand, pick, vote before reveal, investigation result, location, key)? Include
    indirect leaks: array order, counts, ids, timing fields, recap data before the end.

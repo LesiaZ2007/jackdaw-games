@@ -129,11 +129,17 @@ export const rps: GameModule<RpsState, RpsAction, RpsPlayerView, RpsTableView, R
     const best = Math.max(...state.players.map((id) => state.scores[id]!));
     const winners = state.players.filter((id) => state.scores[id] === best);
     const pts = `${best} point${best === 1 ? '' : 's'}`;
+    // A tie for first between some players is a shared win; a tie between everyone is a draw.
+    const allTied = winners.length === state.players.length;
     return {
       winners,
       summary: winners.length === 1 ? `Won with ${pts}` : `${winners.length}-way tie at ${pts}`,
       reveal: { history: state.history, scores: state.scores },
       recap: state.recap,
+      standings: state.players.map((playerId) => ({
+        playerId,
+        outcome: allTied ? 'draw' : winners.includes(playerId) ? 'win' : 'loss',
+      })),
     };
   },
 };

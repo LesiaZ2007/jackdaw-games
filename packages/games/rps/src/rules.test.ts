@@ -53,6 +53,15 @@ describe('rounds', () => {
     expect(() => pick(tie, 'a', 'rock')).toThrow(/over/);
   });
 
+  it('reports standings: shared wins, losses, and a draw when everyone ties', () => {
+    const outcomes = (s: RpsState) =>
+      Object.fromEntries(rps.getResult(s)!.standings!.map((x) => [x.playerId, x.outcome]));
+    const shared = playRound(fresh(1), { a: 'rock', b: 'rock', c: 'scissors' });
+    expect(outcomes(shared)).toEqual({ a: 'win', b: 'win', c: 'loss' });
+    const allTied = playRound(fresh(1), { a: 'rock', b: 'paper', c: 'scissors' });
+    expect(outcomes(allTied)).toEqual({ a: 'draw', b: 'draw', c: 'draw' });
+  });
+
   it('rejects bad actions and players outside the game', () => {
     expect(rps.actionSchema.safeParse({ type: 'pick', pick: 'lizard' }).success).toBe(false);
     expect(() => pick(fresh(), 'zed', 'rock')).toThrow(/not in this game/);

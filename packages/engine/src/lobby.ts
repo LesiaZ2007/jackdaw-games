@@ -1,4 +1,4 @@
-import type { AnyGameModule, GameRegistry, GameResult } from './contract';
+import type { AnyGameModule, GameRegistry, GameResult, Standing } from './contract';
 import { GameError } from './errors';
 import {
   CHAT_LIMIT,
@@ -65,7 +65,9 @@ export interface Lobby {
 export const HOST_AWAY_MS = 60_000;
 export const ONLINE_WINDOW_MS = 45_000;
 export const REJOIN_CODE_TTL_MS = 10 * 60_000;
-export const HISTORY_LIMIT = 30;
+export const HISTORY_LIMIT = 200;
+/** How many recent games each poll carries. */
+export const SNAPSHOT_HISTORY = 10;
 
 /** Last-seen times by player id (and `tv:<id>` for displays), kept outside the lobby document. */
 export type Presence = Record<string, number>;
@@ -445,23 +447,44 @@ function finishIfOver(lobby: Lobby, ctx: Ctx): Lobby {
   return result ? endGame(lobby, result, ctx) : lobby;
 }
 
+/**
+ * One standing per participant, in seat order. Uses the game's standings where it gave them
+ * (ignoring ids that didn't play) and falls back to win/loss from `winners` for anyone missing.
+ */
+function standingsFor(playerIds: string[], result: GameResult): Standing[] {
+  const given = new Map((result.standings ?? []).map((s) => [s.playerId, s]));
+  return playerIds.map(
+    (id) =>
+      given.get(id) ?? { playerId: id, outcome: result.winners.includes(id) ? 'win' : 'loss' },
+  );
+}
+
 /** Move to results: record history and scores, keep the selected game and options. */
 export function endGame(lobby: Lobby, result: GameResult, ctx: Ctx): Lobby {
   requireStatus(lobby, 'in_game');
   const session = lobby.session!;
+  const standings = standingsFor(session.playerIds, result);
   const scores = { ...lobby.scores };
-  for (const id of session.playerIds) {
-    const line = scores[id] ?? { wins: 0, played: 0 };
-    scores[id] = {
-      wins: line.wins + (result.winners.includes(id) ? 1 : 0),
+  for (const s of standings) {
+    const line = scores[s.playerId] ?? { wins: 0, losses: 0, played: 0 };
+    scores[s.playerId] = {
+      wins: line.wins + (s.outcome === 'win' ? 1 : 0),
+      losses: line.losses + (s.outcome === 'loss' ? 1 : 0),
       played: line.played + 1,
     };
   }
+  const names = Object.fromEntries(
+    session.playerIds.map((id) => [id, lobby.players.find((p) => p.id === id)?.name ?? 'Unknown']),
+  );
   const entry: HistoryEntry = {
     gameId: session.gameId,
+    startedAt: session.startedAt,
     endedAt: ctx.now,
     summary: result.summary,
     winners: result.winners,
+    players: session.playerIds,
+    names,
+    standings,
   };
   return touch(
     {
@@ -528,7 +551,9 @@ export function snapshotFor(
     displays,
     selectedGameId: lobby.selectedGameId,
     gameOptions: lobby.gameOptions,
-    history: lobby.history,
+    // Polls carry only the latest games; the full record is served separately as stats.
+    history: lobby.history.slice(0, SNAPSHOT_HISTORY),
+    historyCount: lobby.history.length,
     scores: lobby.scores,
     chat: lobby.chat,
     me: viewerId,

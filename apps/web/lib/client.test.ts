@@ -48,6 +48,7 @@ const snapshot = (over: Partial<LobbySnapshot> = {}): LobbySnapshot => ({
   selectedGameId: null,
   gameOptions: {},
   history: [],
+  historyCount: 0,
   scores: {},
   chat: [],
   me: 'p1',

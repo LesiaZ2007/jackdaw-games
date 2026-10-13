@@ -203,6 +203,10 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
 .tv-track .jd-space .jd-token {
   --z: min(62cqi, 116px);
 }
+/* Reactions read from across the room */
+.tv-track .jd-bubble {
+  --b: min(44cqi, 84px);
+}
 .tv-track .jd-n {
   font-size: 20px;
   top: 6px;

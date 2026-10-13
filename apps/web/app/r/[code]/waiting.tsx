@@ -7,6 +7,7 @@ import {
   AvatarButton,
   Icon,
   Plaque,
+  ReactionBar,
   SeatTrack,
   Sheet,
   Token,
@@ -116,6 +117,8 @@ export function Waiting({
             start={startGame}
             onSeat={onSeat}
             changeGame={isHost ? () => setPicking(true) : undefined}
+            reactions={s.reactions}
+            react={(kind) => void send({ type: 'react', kind })}
           />
         </section>
       )}
@@ -131,7 +134,7 @@ export function Waiting({
               {s.displays > 0 && `, ${s.displays} TV`}
             </span>
           </div>
-          <SeatTrack seats={seats} onSeat={onSeat} />
+          <SeatTrack seats={seats} onSeat={onSeat} reactions={s.reactions} />
           {mine && (
             <div className="you-strip">
               <AvatarButton avatar={mine.avatar} size={44} onClick={() => onOpen('me')} />
@@ -149,6 +152,12 @@ export function Waiting({
                 </button>
               )}
             </div>
+          )}
+          {mine && (
+            <ReactionBar
+              className="waiting__react"
+              onReact={(kind) => void send({ type: 'react', kind })}
+            />
           )}
         </section>
       )}

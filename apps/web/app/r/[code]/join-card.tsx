@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Avatar, ClientMessage, LobbySnapshot } from '@jackdaw/engine';
+import { nameClash, type Avatar, type ClientMessage, type LobbySnapshot } from '@jackdaw/engine';
 import {
   AvatarPicker,
   Chits,
@@ -77,6 +77,8 @@ export function JoinCard({
   async function join() {
     const trimmed = name.trim();
     if (!trimmed) return setError('Type your name, so the table knows who you are.');
+    const clash = nameClash(snapshot.players, trimmed);
+    if (clash) return setError(`${clash} Add an initial or pick another.`);
     setBusy(true);
     setError(null);
     rememberName(trimmed);

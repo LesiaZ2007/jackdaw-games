@@ -19,7 +19,7 @@ const KEEP = new Set(
   table-center center-kicker center-code center-line seat-node avatar avatar-icon badge-icon
   badge-leader seat-name seat-you seat-tag tag-plain house-note settings setting setting-label
   setting-value setting-select setting-switch setting-switch-knob setting-checks setting-check
-  bubble`.split(/\s+/),
+  bubble reaction-bar reaction`.split(/\s+/),
 );
 const KEYFRAMES = ['deal', 'pop', 'rise', 'bubble', 'glow', 'fade'];
 const FONTS = {

@@ -5,12 +5,15 @@ import {
   chat,
   createLobby,
   createRejoinCode,
+  endGameEarly,
   join,
   kick,
   leave,
   playAgain,
+  react,
   reassignHostIfAway,
   redeemRejoinCode,
+  rename,
   setAvatar,
   setGame,
   setOptions,
@@ -22,7 +25,7 @@ import {
   type Lobby,
 } from './lobby';
 import { counterGame } from './testing/counter-game';
-import type { Avatar } from './protocol';
+import { systemText, type Avatar } from './protocol';
 
 const games = { counter: counterGame };
 const ctx = (now = 1_000): Ctx => ({ now, games });
@@ -333,5 +336,94 @@ describe('history and standings', () => {
     const snap = snapshotFor(lobby, 'p1', {}, ctx());
     expect(snap.history).toHaveLength(10);
     expect(snap.historyCount).toBe(12);
+  });
+});
+
+describe('platform additions', () => {
+  it('refuses a name someone at the table already has, in any case', () => {
+    const lobby = lobbyWith(2);
+    expect(() =>
+      join(lobby, { tokenKey: 'tx', newPlayerId: 'px', name: ' ana ', palette }, ctx()),
+    ).toThrow('Someone at the table is already called Ana.');
+    expect(() => rename(lobby, 'p2', 'ANA', ctx())).toThrow(/already called Ana/);
+    // Changing only the case of your own name is fine.
+    expect(rename(lobby, 'p1', 'ANA', ctx()).players[0]!.name).toBe('ANA');
+  });
+
+  it('lets the host end a game early without recording it', () => {
+    const running = start(lobbyWith(3, 'counter'), 'p1', { sessionId: 's1', seed: 2 }, ctx());
+    expect(() => endGameEarly(running, 'p2', ctx())).toThrow(/Only the host/);
+    const ended = endGameEarly(running, 'p1', ctx());
+    expect(ended.status).toBe('waiting');
+    expect(ended.session).toBeNull();
+    expect(ended.results).toBeNull();
+    expect(ended.history).toEqual([]);
+    expect(ended.scores).toEqual({});
+    expect(ended.selectedGameId).toBe('counter');
+    expect(ended.chat.at(-1)?.text).toBe('The host ended the game early.');
+    expect(() => endGameEarly(ended, 'p1', ctx())).toThrow(/waiting/);
+  });
+
+  it('keeps one reaction per player for six seconds, ignoring repeats within 800ms', () => {
+    let lobby = lobbyWith(2);
+    lobby = react(lobby, 'p1', 'up', 'r1', ctx(1_000));
+    expect(react(lobby, 'p1', 'haha', 'r2', ctx(1_500))).toBe(lobby);
+    lobby = react(lobby, 'p1', 'haha', 'r3', ctx(1_900));
+    lobby = react(lobby, 'p2', 'sus', 'r4', ctx(2_000));
+    expect(snapshotFor(lobby, null, {}, ctx(2_000)).reactions).toEqual([
+      { id: 'r3', playerId: 'p1', kind: 'haha', at: 1_900 },
+      { id: 'r4', playerId: 'p2', kind: 'sus', at: 2_000 },
+    ]);
+    expect(snapshotFor(lobby, null, {}, ctx(7_950)).reactions.map((r) => r.id)).toEqual(['r4']);
+    expect(() => react(lobby, 'nobody', 'up', 'r5', ctx())).toThrow(/not in this lobby/);
+  });
+
+  it('posts system lines for joins, leaves, removals, host changes and games', () => {
+    let lobby = lobbyWith(4, 'counter');
+    lobby = kick(lobby, 'p1', 'p4', ctx());
+    lobby = leave(lobby, 'p1', ctx());
+    lobby = playOut(start(lobby, 'p2', { sessionId: 's1', seed: 4 }, ctx()));
+    const names = Object.fromEntries(lobby.players.map((p) => [p.id, p.name]));
+    const lines = lobby.chat.filter((m) => m.system).map((m) => systemText(m, names));
+    expect(lines.slice(0, 7)).toEqual([
+      'P2 joined.',
+      'P3 joined.',
+      'P4 joined.',
+      'P4 was removed by the host.',
+      'Ana left.',
+      'P2 is now the host.',
+      'Counter started.',
+    ]);
+    // The game's own announcements follow, then the result.
+    expect(lines[7]).toMatch(/^P[23] goes first\.$/);
+    expect(lines.at(-1)).toBe('Game over. Reached 3');
+    expect(lobby.chat.every((m) => m.system || m.playerId)).toBe(true);
+    expect(new Set(lobby.chat.map((m) => m.id)).size).toBe(lobby.chat.length);
+  });
+
+  it('system lines keep the names of players who have left', () => {
+    const lobby = leave(lobbyWith(3), 'p3', ctx());
+    const line = lobby.chat.find((m) => m.text === '{p3} left.')!;
+    expect(systemText(line, {})).toBe('P3 left.');
+  });
+
+  it('system lines and reactions carry nothing private', () => {
+    let lobby = start(lobbyWith(3, 'counter'), 'p1', { sessionId: 's1', seed: 9 }, ctx());
+    lobby = react(lobby, 'p2', 'wow', 'r1', ctx());
+    lobby = createRejoinCode(lobby, 'p2', 'QWERTY', ctx());
+    const tv = snapshotFor(lobby, null, {}, ctx());
+    const shared = JSON.stringify({ chat: tv.chat, reactions: tv.reactions });
+    expect(shared).not.toContain('QWERTY');
+    expect(shared).not.toMatch(/"t[123]"/);
+    expect(shared).not.toContain('secret');
+    // Only the public fields, nothing copied from the game's state.
+    for (const m of tv.chat)
+      expect(Object.keys(m).sort()).toEqual(
+        m.system
+          ? expect.arrayContaining(['at', 'id', 'system', 'text'])
+          : ['at', 'id', 'playerId', 'text'],
+      );
+    for (const r of tv.reactions)
+      expect(Object.keys(r).sort()).toEqual(['at', 'id', 'kind', 'playerId']);
   });
 });

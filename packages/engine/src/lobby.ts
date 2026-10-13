@@ -387,7 +387,7 @@ function beginSession(lobby: Lobby, input: StartInput, ctx: Ctx): Lobby {
   const options = game.optionsSchema.parse(lobby.gameOptions);
   const rng = createRng(input.seed);
   const playerIds = lobby.players.map((p) => p.id);
-  const state = game.setup({ playerIds, options, rng });
+  const state = game.setup({ playerIds, options, rng, now: ctx.now });
   const session: Session = {
     id: input.sessionId,
     gameId: game.meta.id,
@@ -432,7 +432,7 @@ export function applyGameAction(
   const parsed = game.actionSchema.safeParse(input.action);
   if (!parsed.success) fail('BAD_REQUEST', "That move isn't understood.");
   const rng = createRng(session.rngState);
-  const state = game.applyAction(session.state, playerId, parsed.data, rng);
+  const state = game.applyAction(session.state, playerId, parsed.data, rng, ctx.now);
   const next = touch(
     { ...lobby, session: { ...session, state, seq: session.seq + 1, rngState: rng.state } },
     ctx.now,

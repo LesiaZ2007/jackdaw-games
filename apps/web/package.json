@@ -14,6 +14,7 @@
   "dependencies": {
     "@jackdaw/engine": "workspace:*",
     "@jackdaw/game-avalon": "workspace:*",
+    "@jackdaw/game-codenames": "workspace:*",
     "@jackdaw/game-rps": "workspace:*",
     "@jackdaw/server": "workspace:*",
     "@jackdaw/ui": "workspace:*",

@@ -6,6 +6,7 @@ import { PlayerScreen, TvScreen } from './screens';
 
 /** Avalon, linked: catalog art, detail page, its own lobby, and the hand-off screens. */
 export const avalonUi: GameUi = {
+  fullTv: true,
   art: { band: 'azure', field: 'wavy', glyph: 'avalon' },
   about: {
     description:

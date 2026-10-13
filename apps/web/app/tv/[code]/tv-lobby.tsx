@@ -109,6 +109,20 @@ export function TvLobby({ code }: { code: string }) {
   if (snapshot.status === 'in_game' && snapshot.session) {
     const ui = gameUis[snapshot.session.gameId];
     const name = catalogEntry(snapshot.session.gameId)?.meta.name ?? 'The game';
+    if (ui?.fullTv) {
+      return (
+        <TvStage>
+          <div className="tv-game tv-game--full">
+            <ui.TvScreen
+              tableView={snapshot.tableView}
+              players={players}
+              now={clock}
+              reactions={snapshot.reactions}
+            />
+          </div>
+        </TvStage>
+      );
+    }
     return (
       <TvStage>
         <div className="tv-game">

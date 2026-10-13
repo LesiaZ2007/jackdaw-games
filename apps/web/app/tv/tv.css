@@ -68,10 +68,21 @@
 .tv-viewport--scroll {
   position: relative;
   inset: auto;
+  /* Clip without becoming a scroll container, so the page's snap points belong to the page. */
+  overflow: clip;
 }
-/* No scrollbar on a TV: it would narrow the window under a stage sized to the full width. */
+/* No scrollbar on a TV: it would narrow the window under a stage sized to the full width.
+   Scrolling snaps from the first screen to the night so far, so each fills the display. */
 html:has(.tv-viewport--scroll) {
   scrollbar-width: none;
+  scroll-snap-type: y mandatory;
+}
+.tv-snap {
+  position: absolute;
+  left: 0;
+  width: 1px;
+  pointer-events: none;
+  scroll-snap-align: start;
 }
 html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   display: none;
@@ -80,8 +91,12 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   height: auto;
 }
 .tv-screen {
-  height: 1080px;
   position: relative;
+}
+/* The night so far: a second full screen, however little there is to show yet. */
+.tv-below {
+  display: grid;
+  background: var(--table-2);
 }
 
 .tv-brand {
@@ -258,7 +273,11 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   border-top: 3px solid var(--ink);
   background: var(--table-2);
 }
+.tv-night {
+  align-content: start;
+}
 .tv-night--empty {
+  align-content: center;
   justify-items: center;
   text-align: center;
   gap: 18px;
@@ -498,6 +517,10 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
 .tv-game__table {
   min-height: 0;
   position: relative;
+}
+/* A game whose TV screen has its own header takes the whole display. */
+.tv-game--full {
+  grid-template-rows: 1fr;
 }
 
 /* ── Results: the big reveal ──────────────────────────────────────────────── */

@@ -142,7 +142,11 @@ export function CodeInput({
           return (
             <span
               key={i}
-              className={cx('jd-chit', ch ? 'jd-chit--blank' : 'jd-chit--slot')}
+              className={cx(
+                'jd-chit',
+                ch ? 'jd-chit--blank' : 'jd-chit--slot',
+                i === letters.length && 'jd-chit--next',
+              )}
               style={vars({ '--t': t })}
             >
               {ch ?? ''}

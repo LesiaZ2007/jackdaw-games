@@ -110,6 +110,15 @@ export const Icon = {
       </g>,
       p,
     ),
+  edit: (p: IconProps) =>
+    svg(
+      '0 0 24 24',
+      <g {...stroke(2.4)}>
+        <path d="M4 20l1-5L15.5 4.5l4 4L9 19z" />
+        <path d="M13 7l4 4" />
+      </g>,
+      p,
+    ),
   /** Host badge: a crown */
   host: (p: IconProps) =>
     svg('0 0 32 32', <path d="M6 24L7.5 10l5.5 7 3-9 3 9 5.5-7L26 24z" {...stroke(2.8)} />, p),

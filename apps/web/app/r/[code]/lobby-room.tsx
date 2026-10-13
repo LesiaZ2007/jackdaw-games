@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
-import type { ChatMessage, LobbySnapshot } from '@jackdaw/engine';
-import { BirdMark, Lid, Plaque, Toast, type ScreenPlayer } from '@jackdaw/ui';
+import { systemText, type ChatMessage, type LobbySnapshot } from '@jackdaw/engine';
+import { BirdMark, Lid, Plaque, Toast, type LobbyChat, type ScreenPlayer } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 import { forgetSeat, rememberedSeat, rememberSeat } from '@/lib/identity';
 import { readSeen, unreadCount, writeSeen } from '@/lib/unread';
@@ -21,16 +21,17 @@ import { StatsSheet } from './stats-sheet';
 import { Waiting } from './waiting';
 import '../lobby.css';
 
+/** Jackdaw's chat docks beside the lobby from here; a game's own lobby docks its chat from 1240px. */
 const WIDE = '(min-width: 1024px)';
-/** True when chat is docked beside the game (laptops), so it is always on screen. */
-function useChatDocked(): boolean {
+const WIDE_OWN = '(min-width: 1240px)';
+function useMedia(query: string): boolean {
   return useSyncExternalStore(
     (onChange) => {
-      const mq = window.matchMedia(WIDE);
+      const mq = window.matchMedia(query);
       mq.addEventListener('change', onChange);
       return () => mq.removeEventListener('change', onChange);
     },
-    () => window.matchMedia(WIDE).matches,
+    () => window.matchMedia(query).matches,
     () => false,
   );
 }
@@ -132,8 +133,29 @@ export function LobbyRoom({ code }: { code: string }) {
   const players = useMemo(() => (snapshot ? screenPlayers(snapshot) : []), [snapshot]);
   useLobbySwitch(wantFull, shownFull, setShownFull);
   const full = status === 'waiting' && shownFull;
-  const docked = useChatDocked() && !full;
+  const wide = useMedia(WIDE);
+  const wideOwn = useMedia(WIDE_OWN);
+  // True when the chat is on screen without opening it.
+  const docked = full ? wideOwn : wide;
   const seenAt = useChatSeen(code, snapshot?.chat, docked || panel === 'chat');
+
+  // The same chat, worded for a game's own lobby to draw in its own style.
+  const lobbyChat = useMemo<LobbyChat>(() => {
+    const names = Object.fromEntries(players.map((p) => [p.id, p.name]));
+    return {
+      lines: (snapshot?.chat ?? []).map((m) => ({
+        id: m.id,
+        system: Boolean(m.system),
+        text: m.system ? systemText(m, names) : m.text,
+        playerId: m.playerId,
+        name: m.playerId ? names[m.playerId] : undefined,
+        mine: Boolean(m.playerId && m.playerId === snapshot?.me),
+      })),
+      send: async (text) => (await send({ type: 'chat', text })) !== null,
+      open: panel === 'chat',
+      close,
+    };
+  }, [snapshot?.chat, snapshot?.me, players, send, panel, close]);
 
   if (missing) {
     return (
@@ -203,6 +225,7 @@ export function LobbyRoom({ code }: { code: string }) {
               picking={picking}
               themed={full}
               setPicking={setPicking}
+              chat={lobbyChat}
             />
           )}
           {snapshot.status === 'in_game' && (
@@ -230,7 +253,7 @@ export function LobbyRoom({ code }: { code: string }) {
         onEdit={() => setPanel('me')}
       />
       <MeSheet open={panel === 'me'} onClose={close} snapshot={snapshot} send={send} />
-      {panel === 'chat' && (
+      {panel === 'chat' && !full && (
         <ChatSheet onClose={close}>
           <Chat snapshot={snapshot} players={players} send={send} />
         </ChatSheet>

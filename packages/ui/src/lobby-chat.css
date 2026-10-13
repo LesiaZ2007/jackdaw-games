@@ -1,0 +1,159 @@
+/* Table talk for a game's own lobby (lobby-chat.tsx). Tokens only; a game restyles it through
+   the --lc-* properties. A drawer below 1240px, a docked column from 1240px. */
+
+.jd-lchat {
+  --lc-bg-v: var(--lc-bg, var(--paper));
+  --lc-ink-v: var(--lc-ink, var(--ink));
+  --lc-dim-v: var(--lc-dim, var(--ink-2));
+  --lc-rule-v: var(--lc-rule, var(--rule));
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  width: min(420px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) var(--space-4)
+    calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  border-left: 2px solid var(--lc-rule-v);
+  border-radius: var(--lc-radius, 0);
+  background: var(--lc-bg-v);
+  color: var(--lc-ink-v);
+  transform: translateX(100%);
+  visibility: hidden;
+  transition:
+    transform 300ms var(--ease-out),
+    visibility 300ms;
+}
+.jd-lchat.is-open {
+  transform: none;
+  visibility: visible;
+  box-shadow: 0 0 60px var(--shadow);
+}
+.jd-lchat__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  border: 0;
+  background: var(--shadow);
+  cursor: pointer;
+}
+.jd-lchat__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.jd-lchat__title {
+  margin: 0;
+  font: 400 var(--step-2) / 1.1 var(--lc-title-font, var(--font-display));
+}
+.jd-lchat__close {
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  border: 2px solid var(--lc-rule-v);
+  border-radius: var(--lc-radius, 0);
+  background: none;
+  color: inherit;
+  font: 700 15px var(--font-body);
+  cursor: pointer;
+}
+.jd-lchat__log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding-right: 4px;
+}
+.jd-lchat__empty {
+  margin: 0;
+  color: var(--lc-dim-v);
+}
+.jd-lchat__line {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 17px;
+  line-height: 1.4;
+}
+.jd-lchat__line.is-grouped {
+  margin-top: -5px;
+}
+.jd-lchat__name {
+  display: block;
+  color: var(--lc-name, var(--lc-ink-v));
+  font: 800 15px/1.3 var(--lc-name-font, var(--font-plaque));
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.jd-lchat__you {
+  color: var(--lc-dim-v);
+  font-weight: 500;
+  text-transform: none;
+}
+.jd-lchat__line.is-system {
+  padding-left: 10px;
+  border-left: 2px solid var(--lc-rule-v);
+  color: var(--lc-dim-v);
+  font-size: 15px;
+}
+.jd-lchat__form {
+  display: flex;
+  gap: var(--space-2);
+}
+.jd-lchat__field {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border: 2px solid var(--lc-rule-v);
+  border-radius: var(--lc-radius, 0);
+  background: var(--lc-field, transparent);
+  color: inherit;
+  font: 400 16px var(--font-body);
+}
+.jd-lchat__send {
+  min-height: 48px;
+  padding: 0 var(--space-4);
+  border: 2px solid var(--lc-ink-v);
+  border-radius: var(--lc-radius, 0);
+  background: var(--lc-ink-v);
+  color: var(--lc-bg-v);
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.jd-lchat__send:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Wide screens: a column the game places in its own layout, level with the bar. */
+@media (min-width: 1240px) {
+  .jd-lchat {
+    position: sticky;
+    top: 84px;
+    z-index: auto;
+    width: auto;
+    height: calc(100dvh - 120px);
+    max-height: 900px;
+    border: 2px solid var(--lc-rule-v);
+    transform: none;
+    visibility: visible;
+  }
+  .jd-lchat__close,
+  .jd-lchat__scrim {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jd-lchat {
+    transition: none;
+  }
+}

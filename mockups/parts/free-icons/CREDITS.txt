@@ -1,2 +1,3 @@
 gi-raven.svg: "Raven" by Lorc, https://game-icons.net, CC BY 3.0
 fa-crow.svg: "crow" from Font Awesome Free 6.7.2, https://fontawesome.com, CC BY 4.0
+openmoji-blackbird-line.svg: "Black bird" (1F426-200D-2B1B), line variant, OpenMoji https://openmoji.org, CC BY-SA 4.0

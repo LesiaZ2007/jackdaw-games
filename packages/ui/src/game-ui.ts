@@ -5,6 +5,19 @@ import type { GameArt } from './pieces';
 /**
  * The client half of a game: how it looks in the catalog, its detail page, and its two screens.
  * Each game package exports one of these from `./ui`; `lib/catalog.ts` registers them.
+ *
+ * Two things every game's screens do, so all games feel like one compendium:
+ *
+ * - **Outcome moments.** Whenever a round, a mission or a vote resolves, each phone shows that
+ *   player's own result with the kit's `VerdictMoment` (`celebrate.tsx`): `win`, `loss`, `draw`, or
+ *   `reveal` for someone only watching. Key it on something public that moves on when the round
+ *   resolves (`useMoment(history.length)`) so a refresh doesn't replay it, and work the outcome
+ *   out from the public table view only, never from hidden state. The TV shows the same moment
+ *   at `size="tv"` naming the winners. Rows that change colour with a result use `OutcomeChip`,
+ *   and running scores use `Tally` so they pop when they go up. The end-of-game results screen
+ *   already gives each player their `Verdict`; a game's `Reveal` sits under it.
+ * - **Day and dark.** Screens follow the shell's choice via `useTheme()` (`theme.ts`). A game
+ *   with its own looks maps day and dark onto them (Avalon: day is its Day look, dark its Night).
  */
 export interface GameAbout {
   /** A short paragraph: what it's like to play. */

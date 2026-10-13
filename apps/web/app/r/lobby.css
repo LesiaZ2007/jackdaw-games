@@ -163,6 +163,9 @@
   font-size: 17px;
 }
 /* ── You, under the seat track ── */
+.waiting__react {
+  margin-top: var(--space-3);
+}
 .you-strip {
   display: flex;
   align-items: center;

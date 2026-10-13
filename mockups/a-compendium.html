@@ -1,0 +1,409 @@
+<title>Compendium Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=Big+Shoulders+Display:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* Direction A, "Compendium": Jackdaw is a boxed set of games. Every piece is printed card:
+   letters are tiles, players are punch-out tokens, the 15 seats are a printed track,
+   games are box lids. Layout: one lid-like hero, then pieces on the table. */
+:root {
+  --card: #ebe2cc;        /* card stock, the table */
+  --card-2: #ddd2b7;      /* shaded card */
+  --paper: #f6f0e1;       /* printed panels, inputs */
+  --ink: #24211e;         /* charcoal print */
+  --ink-2: #5d564b;
+  --rule: #a59b87;
+  --slate: #8b959a;       /* jackdaw nape */
+  --iris: #eef2f3;        /* jackdaw eye */
+  --bird: #24211e;        /* a jackdaw stays black in both looks */
+  --bird-edge: transparent;
+  --gules: #a63a30;
+  --azure: #2b5683;
+  --vert: #30634a;
+  --vert-ink: #f3eedf;
+  --or: #a77d2c;
+  --tile: #efe2c4;        /* letter tile face */
+  --tile-edge: #c9b48a;
+  --shadow: rgba(36, 33, 30, .28);
+  --font-plaque: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+  --font-body: 'Alegreya Sans', 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+/* Dark: the same print on jackdaw-black board, silver nape for secondary ink. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --card: #1c1e20; --card-2: #25282b; --paper: #2b2f32; --ink: #ede5d3; --ink-2: #aeb5b8;
+    --rule: #4f5559; --slate: #9aa4a9; --iris: #eef2f3; --vert-ink: #f3eedf; --or: #d2aa5c; --bird: #121314; --bird-edge: #9aa4a9; --tile: #e7dcc2; --tile-edge: #a8946b;
+    --shadow: rgba(0, 0, 0, .55); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --card: #1c1e20; --card-2: #25282b; --paper: #2b2f32; --ink: #ede5d3; --ink-2: #aeb5b8;
+  --rule: #4f5559; --slate: #9aa4a9; --iris: #eef2f3; --vert-ink: #f3eedf; --or: #d2aa5c; --bird: #121314; --bird-edge: #9aa4a9; --tile: #e7dcc2; --tile-edge: #a8946b;
+  --shadow: rgba(0, 0, 0, .55); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--card-2); color: var(--ink); font-family: var(--font-body); }
+
+/* ── Review chrome (not part of the design) ─────────────────────────────── */
+.review-bar { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between;
+  padding: 18px 16px; max-width: 1400px; margin: 0 auto; }
+.review-bar h1 { margin: 0; font: 800 28px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .02em; }
+.review-bar p { margin: 4px 0 0; color: var(--ink-2); max-width: 60ch; }
+.toggle { font: 700 16px var(--font-plaque); text-transform: uppercase; letter-spacing: .04em; color: var(--ink);
+  background: var(--paper); border: 2px solid var(--ink); padding: 10px 16px; cursor: pointer; }
+.stage { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; padding: 8px 16px 48px; max-width: 1400px; margin: 0 auto; }
+.frame { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.frame figcaption { font: 700 15px var(--font-plaque); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); }
+.device { overflow: hidden; border: 1px solid var(--rule); box-shadow: 0 20px 50px -24px var(--shadow); }
+.phone .device { width: 390px; height: 844px; border-radius: 28px; max-width: calc(100vw - 32px); }
+.tv { flex-basis: 100%; }
+.tv .device { width: 100%; aspect-ratio: 16 / 9; position: relative; max-width: 100%; }
+.tv .device > .screen { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; transform-origin: 0 0; transform: scale(var(--s, .5)); }
+body.solo .review-bar, body.solo figcaption { display: none; }
+body.solo .stage { padding: 0; display: block; max-width: none; margin: 0; }
+body.solo .frame { display: none; }
+body.solo .frame.show { display: block; }
+body.solo .device { border: 0; border-radius: 0; box-shadow: none; max-width: none; }
+body.solo .tv .device { width: 1920px; height: 1080px; aspect-ratio: auto; }
+body.solo .tv .device > .screen { transform: none; }
+
+/* ── The table ──────────────────────────────────────────────────────────── */
+.screen { position: relative; height: 100%; overflow: hidden; background-color: var(--card);
+  /* faint jackdaw footprints wandering across the card */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='none' stroke='%23a59b87' stroke-opacity='.35' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M30 40l0-9M30 40l-5-6M30 40l5-6M30 40l0 4'/%3E%3Cpath d='M52 30l0-9M52 30l-5-6M52 30l5-6M52 30l0 4'/%3E%3Cpath d='M118 128l0-9M118 128l-5-6M118 128l5-6M118 128l0 4'/%3E%3Cpath d='M140 118l0-9M140 118l-5-6M140 118l5-6M140 118l0 4'/%3E%3C/g%3E%3C/svg%3E");
+}
+.screen::before { /* printed grain */
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .5 0 0 0 0 .42 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.screen > * { position: relative; }
+
+/* Letter tiles: the wordmark, lobby codes and code entry */
+.tiles { display: flex; gap: var(--tg, 6px); }
+.tile { --t: 44px; width: var(--t); height: calc(var(--t) * 1.05); position: relative; display: grid; place-items: center;
+  background: var(--tile); color: #24211e; border-radius: calc(var(--t) * .12);
+  box-shadow: inset 0 calc(var(--t) * -.07) 0 var(--tile-edge), inset 0 1px 0 rgba(255,255,255,.55), 0 calc(var(--t) * .06) calc(var(--t) * .12) var(--shadow);
+  font: 800 calc(var(--t) * .62)/1 var(--font-plaque); text-transform: uppercase; padding-bottom: calc(var(--t) * .06); }
+.tile sub { position: absolute; right: calc(var(--t) * .1); bottom: calc(var(--t) * .12); font: 700 calc(var(--t) * .2)/1 var(--font-body); }
+.tile.empty { background: transparent; box-shadow: inset 0 0 0 2px var(--rule); color: var(--ink-2); }
+.tile.empty.caret::after { content: ''; width: 2px; height: 45%; background: var(--ink); animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Printed frames and plaques */
+.lid { background: var(--paper); border: 2px solid var(--ink); outline: 1px solid var(--ink); outline-offset: -7px; }
+.plaque { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 20px;
+  font: 800 21px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .03em; color: var(--ink);
+  background: var(--paper); border: 2px solid var(--ink); outline: 1px solid var(--ink); outline-offset: -6px; }
+.plaque.go { background: var(--vert); color: var(--vert-ink); border-color: var(--ink); outline-color: var(--vert-ink); }
+.plaque.small { min-height: 44px; font-size: 17px; padding: 0 14px; }
+.label { font: 700 13px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .12em; color: var(--ink-2); }
+
+/* Punch-out player tokens: a tinted disc, a die-cut ring, and two sprue nubs */
+.token { --z: 46px; width: var(--z); height: var(--z); border-radius: 50%; position: relative; flex: none;
+  background: var(--c); color: #f3eedf; display: grid; place-items: center;
+  box-shadow: 0 0 0 3px var(--card), 0 0 0 4.5px var(--rule), 0 3px 6px var(--shadow); }
+.token::before, .token::after { content: ''; position: absolute; width: 5px; height: 4px; background: var(--card); top: 50%; translate: 0 -50%; }
+.token::before { left: -6px; } .token::after { right: -6px; }
+.token svg { width: 58%; height: 58%; }
+.token.away { filter: grayscale(1); opacity: .45; }
+.token .host { position: absolute; top: -9px; right: -9px; width: 22px; height: 22px; border-radius: 50%; background: var(--or);
+  box-shadow: 0 0 0 2px var(--card); display: grid; place-items: center; color: #24211e; }
+.token .host svg { width: 14px; height: 14px; }
+
+/* Seat track: 15 printed spaces, numbered like a scoring track */
+.track { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.space { aspect-ratio: 1 / 1.08; border: 1.5px solid var(--ink); background: var(--paper); position: relative; display: grid; place-items: center; align-content: center; gap: 6px; padding-top: 4px; }
+.space:nth-child(odd) { background: color-mix(in srgb, var(--paper) 82%, var(--card-2)); }
+.space .n { position: absolute; top: 3px; left: 5px; font: 700 12px var(--font-plaque); color: var(--ink-2); }
+.space .who { font: 800 13px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .03em; max-width: 92%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.space.free .n { font-size: 20px; position: static; color: var(--rule); }
+
+/* Box-lid game cards */
+.boxlid { background: var(--paper); border: 2px solid var(--ink); display: grid; grid-template-columns: 96px 1fr; position: relative; }
+.boxlid .art { background: var(--band); display: grid; place-items: center; color: #f3eedf; border-right: 2px solid var(--ink); position: relative; }
+.boxlid .art::after { content: ''; position: absolute; inset: 6px; border: 1px solid rgba(243,238,223,.6); }
+.boxlid .art svg { width: 58px; height: 58px; }
+.boxlid .body { padding: 12px 14px 12px; display: grid; gap: 6px; }
+.boxlid h3 { margin: 0; font: 900 30px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .01em; }
+.side { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 700 14px var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); }
+.side span { display: inline-flex; align-items: center; gap: 5px; }
+.side svg { width: 15px; height: 15px; }
+
+/* ── Phone: home ────────────────────────────────────────────────────────── */
+.home { display: flex; flex-direction: column; padding: 22px 16px 20px; gap: 18px; }
+.home .hero { padding: 22px 16px 18px; display: grid; gap: 14px; justify-items: center; text-align: center; }
+.wordmark { position: relative; padding-top: 64px; }
+.wordmark .bird { position: absolute; width: 96px; top: 2px; left: 124px; }
+.wordmark .tile { --t: 41px; }
+.hero .strap { font: 800 16px/1.15 var(--font-plaque); text-transform: uppercase; letter-spacing: .08em; display: grid; gap: 2px; }
+.hero .strap small { font-size: 13px; color: var(--ink-2); letter-spacing: .14em; }
+.hero p { margin: 0; font-size: 17px; line-height: 1.45; color: var(--ink-2); max-width: 30ch; }
+.jd { filter: drop-shadow(0 0 .7px var(--bird-edge)) drop-shadow(0 0 .7px var(--bird-edge)); }
+.fan { position: relative; height: 172px; margin-top: 4px; }
+.mini { position: absolute; left: 50%; top: 8px; width: 96px; height: 132px; margin-left: -48px; background: var(--band); border: 2px solid var(--ink);
+  color: #f3eedf; display: grid; place-items: center; align-content: center; gap: 8px; transform: translateX(var(--x)) rotate(var(--r)); transform-origin: 50% 130%;
+  box-shadow: 0 8px 12px -6px var(--shadow); }
+.mini::after { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(243,238,223,.55); }
+.mini svg { width: 42px; height: 42px; }
+.mini b { font: 800 14px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .04em; text-align: center; padding: 0 6px; }
+.actions { margin-top: auto; display: grid; gap: 12px; }
+.name-row { display: flex; gap: 14px; align-items: center; }
+.field { flex: 1; display: grid; gap: 6px; }
+.input { height: 50px; border: 2px solid var(--ink); background: var(--paper); display: flex; align-items: center; padding: 0 14px; font-size: 18px; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--ink-2); font: 700 14px var(--font-plaque); letter-spacing: .14em; text-transform: uppercase; }
+.or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+.join-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.join-row .tile { --t: 50px; }
+.browse { display: flex; justify-content: center; gap: 8px; align-items: center; font: 700 17px var(--font-body); color: var(--ink); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--rule); padding: 8px; }
+
+/* ── Phone: lobby ───────────────────────────────────────────────────────── */
+.lobby { display: flex; flex-direction: column; padding: 14px 16px 18px; gap: 14px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.topbar .mark { width: 46px; }
+.code-mini { display: flex; align-items: center; gap: 10px; }
+.code-mini .tile { --t: 32px; }
+.iconbtn { width: 44px; height: 44px; border: 2px solid var(--ink); background: var(--paper); display: grid; place-items: center; color: var(--ink); }
+.iconbtn svg { width: 22px; height: 22px; }
+.section-head { display: flex; justify-content: space-between; align-items: baseline; }
+.section-head h2 { margin: 0; font: 900 22px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .02em; }
+.section-head span { color: var(--ink-2); font-size: 15px; }
+.lobby .track .token { --z: 34px; box-shadow: 0 0 0 2.5px var(--paper), 0 0 0 3.5px var(--rule), 0 2px 4px var(--shadow); }
+.lobby .track .token::before, .lobby .track .token::after { background: var(--paper); width: 4px; left: -5px; }
+.lobby .track .token::after { left: auto; right: -5px; }
+.lobby .track .token .host { width: 18px; height: 18px; top: -7px; right: -8px; box-shadow: 0 0 0 2px var(--paper); }
+.lobby .track .token .host svg { width: 12px; height: 12px; }
+.options { margin: 0; font-size: 15px; color: var(--ink-2); line-height: 1.35; }
+.options b { color: var(--ink); font-weight: 700; }
+.lastgame { display: flex; gap: 10px; align-items: center; font-size: 15px; color: var(--ink-2); border-top: 1px dashed var(--rule); padding-top: 10px; }
+.lastgame b { color: var(--ink); }
+.dock { margin-top: auto; display: grid; gap: 10px; }
+.dock .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dock .note { text-align: center; font-size: 15px; color: var(--ink-2); }
+
+/* ── TV: lobby ──────────────────────────────────────────────────────────── */
+.tvlobby { display: grid; grid-template-columns: 1fr 640px; grid-template-rows: auto 1fr auto; gap: 40px 72px; padding: 64px 88px 70px; }
+.tvlobby .brand { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; }
+.tvlobby .brand .mark { display: flex; align-items: end; gap: 18px; }
+.tvlobby .brand .mark svg { width: 92px; }
+.tvlobby .brand .mark .tile { --t: 46px; }
+.tvlobby .brand .count { font: 800 34px var(--font-plaque); text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); }
+.joinpanel { display: grid; gap: 30px; align-content: center; }
+.joinpanel .label { font-size: 26px; letter-spacing: .14em; }
+.joinpanel .url { font: 700 54px/1 var(--font-body); }
+.joinpanel .bigcode { --tg: 22px; }
+.joinpanel .bigcode .tile { --t: 196px; }
+.joinpanel .qrline { display: flex; gap: 28px; align-items: center; }
+.qr { width: 196px; height: 196px; background: #f6f0e1; padding: 12px; border: 2px solid var(--ink); }
+.joinpanel .qrline p { margin: 0; font-size: 30px; line-height: 1.35; color: var(--ink-2); max-width: 22ch; }
+.nextup { align-self: center; display: grid; gap: 20px; }
+.nextup .boxlid { grid-template-columns: 210px 1fr; }
+.nextup .boxlid .art svg { width: 130px; height: 130px; }
+.nextup .boxlid .body { padding: 26px 28px; gap: 14px; }
+.nextup .boxlid h3 { font-size: 72px; }
+.nextup .side { font-size: 24px; gap: 10px 26px; }
+.nextup .side svg { width: 24px; height: 24px; }
+.nextup .options { font-size: 26px; }
+.nextup .waiting { font: 800 30px var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: center; gap: 14px; }
+.nextup .waiting .dots i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); margin-right: 6px; animation: hop 1.2s infinite; }
+.nextup .waiting .dots i:nth-child(2) { animation-delay: .15s; } .nextup .waiting .dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes hop { 0%, 60%, 100% { translate: 0 0; } 30% { translate: 0 -8px; } }
+.tvtrack { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(15, 1fr); gap: 8px; }
+.tvtrack .space { aspect-ratio: 1 / 1.25; gap: 12px; }
+.tvtrack .space .n { font-size: 18px; top: 6px; left: 9px; }
+.tvtrack .space.free .n { font-size: 40px; }
+.tvtrack .space .who { font-size: 22px; }
+.tvtrack .token { --z: 70px; box-shadow: 0 0 0 4px var(--paper), 0 0 0 6px var(--rule), 0 5px 10px var(--shadow); }
+.tvtrack .token::before, .tvtrack .token::after { background: var(--paper); width: 7px; height: 6px; left: -9px; }
+.tvtrack .token::after { left: auto; right: -9px; }
+.tvtrack .token .host { width: 32px; height: 32px; top: -12px; right: -12px; box-shadow: 0 0 0 3px var(--paper); }
+.tvtrack .token .host svg { width: 20px; height: 20px; }
+.tvtrack .landing .token { animation: place 900ms cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes place { 0% { translate: 0 -120px; scale: 1.35; rotate: -14deg; opacity: 0; } 60% { translate: 0 6px; scale: .96; opacity: 1; } 100% { translate: 0 0; scale: 1; rotate: 0deg; } }
+@media (prefers-reduced-motion: reduce) { .tvtrack .landing .token, .nextup .waiting .dots i, .tile.empty.caret::after { animation: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="jackdaw" viewBox="0 0 120 100">
+      <path d="M72 61 L107 83 C109 85 107 88 104 87 L66 73 Z" fill="var(--bird)"/>
+      <path d="M27 22 C29 17 35 15.5 41 16.5 C47 17.5 50 22 52 27 C62 33 74 44 80 56 C84 64 80 72 70 74 C58 76 46 70 39 61 C33 53 29 43 27 34 Z" fill="var(--bird)"/>
+      <path d="M42 16.9 C47.5 17.7 50.5 21.5 52 27 C56 31 57.5 38 54.5 45 C50 40 45.5 33.5 43.5 27 C42.3 23 41.8 19.6 42 16.9 Z" fill="var(--slate)"/>
+      <path d="M27.5 23.6 Q20.5 25.3 15 30 L27.5 33.6 Z" fill="var(--bird)"/>
+      <path d="M48 51 C58 49 70 54 79 64" stroke="var(--slate)" stroke-opacity=".55" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="34.6" cy="24.2" r="3.3" fill="var(--iris)"/>
+      <circle cx="34.2" cy="24.2" r="1.35" fill="var(--bird)"/>
+      <path d="M53 73 L52 86 M52 86 L47.5 88 M52 86 L56 88 M60 73.5 L60.5 86 M60.5 86 L56 88 M60.5 86 L65 88" stroke="var(--bird)" stroke-width="2" stroke-linecap="round" fill="none"/>
+    </symbol>
+    <!-- Heraldic charges, Avalon's house line: 2.6 rounded strokes in currentColor -->
+    <g id="charges" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+      <symbol id="c-tower" viewBox="0 0 32 32"><path d="M10 28V13h12v15M8 13V7h3.5v3h3V7h3v3h3V7H24v6M14 28v-5a2 2 0 0 1 4 0v5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></symbol>
+      <symbol id="c-key" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10" cy="10" r="5"/><path d="M13.5 13.5L26 26M22 22l3-3M18.5 18.5l2.5-2.5"/></g></symbol>
+      <symbol id="c-ring" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><circle cx="16" cy="20" r="7.5"/><path d="M12.5 9L16 4.5 19.5 9 16 12.5z"/></g></symbol>
+      <symbol id="c-crown" viewBox="0 0 32 32"><path d="M6 24L7.5 10l5.5 7 3-9 3 9 5.5-7L26 24z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></symbol>
+      <symbol id="c-feather" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M25 5C15 7 9 15 7.5 27M7.5 27C17 25 24 16 25 5M11 21l5.5-1M13.5 15.5l5-1"/></g></symbol>
+      <symbol id="c-acorn" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M9 14h14a7 7 0 0 0-14 0zM10.5 14c0 7 3 11.5 5.5 13 2.5-1.5 5.5-6 5.5-13M16 4v3"/></g></symbol>
+      <symbol id="c-moon" viewBox="0 0 32 32"><path d="M20 5a11 11 0 1 0 7 17 9 9 0 1 1-7-17z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></symbol>
+      <symbol id="c-bell" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 24h16M10.5 24c0-8 .5-14 5.5-14s5.5 6 5.5 14M16 10V6.5M14 27.5h4"/></g></symbol>
+    </g>
+    <symbol id="i-people" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-4 3.3-6 6.5-6s5.7 2 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.5c1.6.9 2.6 2.7 3 5.5"/></g></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></g></symbol>
+    <symbol id="i-weight" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M5 20l2-11h10l2 11z"/><circle cx="12" cy="6" r="2.4"/></g></symbol>
+    <symbol id="i-tv" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="1"/><path d="M8 21h8M12 17v4"/></g></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></g></symbol>
+    <symbol id="i-avalon" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 5l3.2 5V38h-6.4V10z"/><path d="M22 38h20M32 38v7"/><circle cx="32" cy="47.5" r="2.6"/><path d="M8 51c4-3 8-3 12 0s8 3 12 0 8-3 12 0 8 3 12 0M14 58c3-2.2 6-2.2 9 0s6 2.2 9 0 6-2.2 9 0 6 2.2 9 0"/></g></symbol>
+    <symbol id="i-ballot" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 30h44v26H10zM20 30V10h24v20M26 18h12M26 24h8M24 38h16"/></g></symbol>
+    <symbol id="i-grid" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linejoin="round"><path d="M8 8h14v14H8zM25 8h14v14H25zM42 8h14v14H42zM8 25h14v14H8zM42 25h14v14H42zM8 42h14v14H8zM25 42h14v14H25zM42 42h14v14H42z"/><path d="M25 25h14v14H25z" fill="currentColor"/></g></symbol>
+    <symbol id="i-wolf" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M40 8a20 20 0 1 0 16 30A16 16 0 0 1 40 8z"/><path d="M14 56l6-14 4 5 4-9 4 9 4-5 6 14"/></g></symbol>
+    <symbol id="i-spy" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"><circle cx="27" cy="27" r="15"/><path d="M38 38l16 16M20 24c2-4 6-6 10-5"/></g></symbol>
+  </defs>
+</svg>
+
+<div class="review-bar">
+  <div>
+    <h1>A. Compendium</h1>
+    <p>Jackdaw as a boxed set of games. Letters are tiles, players are punch-out tokens, the 15 seats are a printed track, and each game is a box lid.</p>
+  </div>
+  <button class="toggle" id="theme-toggle" type="button">Switch to dark</button>
+</div>
+
+<main class="stage">
+  <figure class="frame phone" id="f-home">
+    <div class="device"><div class="screen home">
+      <section class="hero lid">
+        <div class="wordmark" aria-label="Jackdaw">
+          <svg class="bird jd" viewBox="0 0 120 100" aria-hidden="true"><use href="#jackdaw"/></svg>
+          <div class="tiles" style="--tg:4px">
+            <span class="tile">J<sub>8</sub></span><span class="tile">A<sub>1</sub></span><span class="tile">C<sub>3</sub></span><span class="tile">K<sub>5</sub></span><span class="tile">D<sub>2</sub></span><span class="tile">A<sub>1</sub></span><span class="tile">W<sub>4</sub></span>
+          </div>
+        </div>
+        <div class="strap">A compendium of games<small>for 2 to 15 players</small></div>
+        <p>Everyone plays on their own phone. Put the table on a TV if you have one.</p>
+      </section>
+
+      <div class="fan" aria-label="Some of the games inside">
+        <span class="mini" style="--band: #4b5560; --x: -132px; --r: -16deg"><svg><use href="#i-wolf"/></svg><b>Werewolf</b></span>
+        <span class="mini" style="--band: var(--vert); --x: -66px; --r: -8deg"><svg><use href="#i-grid"/></svg><b>Codenames</b></span>
+        <span class="mini" style="--band: var(--azure); --x: 0px; --r: 0deg"><svg><use href="#i-avalon"/></svg><b>Avalon</b></span>
+        <span class="mini" style="--band: var(--gules); --x: 66px; --r: 8deg"><svg><use href="#i-ballot"/></svg><b>Secret Hitler</b></span>
+        <span class="mini" style="--band: #9a5a22; --x: 132px; --r: 16deg"><svg><use href="#i-spy"/></svg><b>Spyfall</b></span>
+      </div>
+
+      <section class="actions">
+        <div class="name-row">
+          <span class="token" style="--c: var(--azure)"><svg aria-hidden="true"><use href="#c-feather"/></svg></span>
+          <label class="field"><span class="label">Your name</span><span class="input">the owner</span></label>
+        </div>
+        <span class="plaque go">Create a lobby</span>
+        <div class="or">or join one</div>
+        <div class="join-row">
+          <div class="tiles"><span class="tile">C</span><span class="tile">A</span><span class="tile empty caret"></span><span class="tile empty"></span></div>
+          <span class="plaque small">Join</span>
+        </div>
+        <a class="browse" href="#">Browse the 6 games</a>
+      </section>
+    </div></div>
+    <figcaption>Home, phone</figcaption>
+  </figure>
+
+  <figure class="frame phone" id="f-lobby">
+    <div class="device"><div class="screen lobby">
+      <div class="topbar">
+        <svg class="mark jd" viewBox="0 0 120 100" aria-label="Jackdaw"><use href="#jackdaw"/></svg>
+        <div class="code-mini"><span class="label">Lobby</span><div class="tiles" style="--tg:4px"><span class="tile">C</span><span class="tile">A</span><span class="tile">W</span><span class="tile">S</span></div></div>
+        <span class="iconbtn" aria-label="Share"><svg><use href="#i-share"/></svg></span>
+      </div>
+
+      <div class="section-head"><h2>At the table</h2><span>6 of 15 seats</span></div>
+      <div class="track">
+        <div class="space"><span class="n">1</span><span class="token" style="--c: var(--azure)"><svg><use href="#c-feather"/></svg><span class="host"><svg><use href="#c-ring"/></svg></span></span><span class="who">the owner</span></div>
+        <div class="space"><span class="n">2</span><span class="token" style="--c: var(--gules)"><svg><use href="#c-tower"/></svg></span><span class="who">Bran</span></div>
+        <div class="space"><span class="n">3</span><span class="token" style="--c: var(--vert)"><svg><use href="#c-acorn"/></svg></span><span class="who">Cerys</span></div>
+        <div class="space"><span class="n">4</span><span class="token" style="--c: #6a3f74"><svg><use href="#c-moon"/></svg></span><span class="who">Dafydd</span></div>
+        <div class="space"><span class="n">5</span><span class="token away" style="--c: #9a5a22"><svg><use href="#c-key"/></svg></span><span class="who">Elin</span></div>
+        <div class="space"><span class="n">6</span><span class="token" style="--c: #4b5560"><svg><use href="#c-bell"/></svg></span><span class="who">Fen</span></div>
+        <div class="space free"><span class="n">7</span></div><div class="space free"><span class="n">8</span></div><div class="space free"><span class="n">9</span></div><div class="space free"><span class="n">10</span></div>
+        <div class="space free"><span class="n">11</span></div><div class="space free"><span class="n">12</span></div><div class="space free"><span class="n">13</span></div><div class="space free"><span class="n">14</span></div><div class="space free"><span class="n">15</span></div>
+      </div>
+
+      <div class="section-head"><h2>Next up</h2><span>Host picks</span></div>
+      <div class="boxlid" style="--band: var(--azure)">
+        <div class="art"><svg><use href="#i-avalon"/></svg></div>
+        <div class="body">
+          <h3>Avalon</h3>
+          <div class="side"><span><svg><use href="#i-people"/></svg>5–15</span><span><svg><use href="#i-clock"/></svg>30–60 min</span><span><svg><use href="#i-weight"/></svg>Medium</span></div>
+          <p class="options"><b>Merlin &amp; Assassin</b>, Lady of the Lake</p>
+        </div>
+      </div>
+      <div class="lastgame"><svg width="22" height="22" style="color:var(--ink-2)"><use href="#c-crown"/></svg><span>Last game: <b>Secret Hitler</b>, Liberals won</span></div>
+
+      <div class="dock">
+        <span class="plaque go">Start Avalon</span>
+        <div class="row"><span class="plaque small"><svg width="20" height="20"><use href="#i-tv"/></svg>Show on TV</span><span class="plaque small"><svg width="20" height="20"><use href="#i-chat"/></svg>Chat</span></div>
+      </div>
+    </div></div>
+    <figcaption>Lobby, phone (host)</figcaption>
+  </figure>
+
+  <figure class="frame tv" id="f-tv">
+    <div class="device"><div class="screen tvlobby">
+      <div class="brand">
+        <div class="mark"><svg class="jd" viewBox="0 0 120 100"><use href="#jackdaw"/></svg>
+          <div class="tiles" style="--tg:5px"><span class="tile">J</span><span class="tile">A</span><span class="tile">C</span><span class="tile">K</span><span class="tile">D</span><span class="tile">A</span><span class="tile">W</span></div></div>
+        <span class="count">6 at the table</span>
+      </div>
+      <div class="joinpanel">
+        <span class="label">Join at</span>
+        <span class="url">jackdaw.games</span>
+        <div class="tiles bigcode"><span class="tile">C<sub>3</sub></span><span class="tile">A<sub>1</sub></span><span class="tile">W<sub>4</sub></span><span class="tile">S<sub>1</sub></span></div>
+        <div class="qrline">
+          <svg class="qr" viewBox="-2 -2 33 33" shape-rendering="crispEdges" aria-label="QR code"><path fill="#24211e" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM8 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM14 0h1v1h-1zM18 0h1v1h-1zM20 0h1v1h-1zM22 0h1v1h-1zM23 0h1v1h-1zM24 0h1v1h-1zM25 0h1v1h-1zM26 0h1v1h-1zM27 0h1v1h-1zM28 0h1v1h-1zM0 1h1v1h-1zM6 1h1v1h-1zM9 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM14 1h1v1h-1zM15 1h1v1h-1zM16 1h1v1h-1zM19 1h1v1h-1zM22 1h1v1h-1zM28 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM6 2h1v1h-1zM8 2h1v1h-1zM9 2h1v1h-1zM10 2h1v1h-1zM13 2h1v1h-1zM16 2h1v1h-1zM20 2h1v1h-1zM22 2h1v1h-1zM24 2h1v1h-1zM25 2h1v1h-1zM26 2h1v1h-1zM28 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM6 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM14 3h1v1h-1zM16 3h1v1h-1zM18 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM25 3h1v1h-1zM26 3h1v1h-1zM28 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM17 4h1v1h-1zM19 4h1v1h-1zM20 4h1v1h-1zM22 4h1v1h-1zM24 4h1v1h-1zM25 4h1v1h-1zM26 4h1v1h-1zM28 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM11 5h1v1h-1zM15 5h1v1h-1zM16 5h1v1h-1zM18 5h1v1h-1zM22 5h1v1h-1zM28 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM25 6h1v1h-1zM26 6h1v1h-1zM27 6h1v1h-1zM28 6h1v1h-1zM9 7h1v1h-1zM11 7h1v1h-1zM13 7h1v1h-1zM16 7h1v1h-1zM18 7h1v1h-1zM19 7h1v1h-1zM1 8h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM11 8h1v1h-1zM13 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM19 8h1v1h-1zM21 8h1v1h-1zM24 8h1v1h-1zM26 8h1v1h-1zM28 8h1v1h-1zM0 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM15 9h1v1h-1zM17 9h1v1h-1zM20 9h1v1h-1zM22 9h1v1h-1zM23 9h1v1h-1zM26 9h1v1h-1zM27 9h1v1h-1zM28 9h1v1h-1zM1 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM11 10h1v1h-1zM13 10h1v1h-1zM15 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM23 10h1v1h-1zM24 10h1v1h-1zM25 10h1v1h-1zM26 10h1v1h-1zM0 11h1v1h-1zM1 11h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM7 11h1v1h-1zM9 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM14 11h1v1h-1zM15 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM19 11h1v1h-1zM20 11h1v1h-1zM21 11h1v1h-1zM24 11h1v1h-1zM27 11h1v1h-1zM0 12h1v1h-1zM2 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM9 12h1v1h-1zM11 12h1v1h-1zM16 12h1v1h-1zM17 12h1v1h-1zM19 12h1v1h-1zM22 12h1v1h-1zM23 12h1v1h-1zM25 12h1v1h-1zM26 12h1v1h-1zM28 12h1v1h-1zM0 13h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM10 13h1v1h-1zM13 13h1v1h-1zM15 13h1v1h-1zM18 13h1v1h-1zM21 13h1v1h-1zM23 13h1v1h-1zM27 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM16 14h1v1h-1zM17 14h1v1h-1zM22 14h1v1h-1zM23 14h1v1h-1zM24 14h1v1h-1zM25 14h1v1h-1zM27 14h1v1h-1zM1 15h1v1h-1zM3 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM16 15h1v1h-1zM17 15h1v1h-1zM19 15h1v1h-1zM21 15h1v1h-1zM22 15h1v1h-1zM24 15h1v1h-1zM25 15h1v1h-1zM27 15h1v1h-1zM0 16h1v1h-1zM1 16h1v1h-1zM2 16h1v1h-1zM6 16h1v1h-1zM7 16h1v1h-1zM12 16h1v1h-1zM13 16h1v1h-1zM14 16h1v1h-1zM15 16h1v1h-1zM20 16h1v1h-1zM21 16h1v1h-1zM22 16h1v1h-1zM23 16h1v1h-1zM28 16h1v1h-1zM4 17h1v1h-1zM7 17h1v1h-1zM9 17h1v1h-1zM10 17h1v1h-1zM11 17h1v1h-1zM13 17h1v1h-1zM15 17h1v1h-1zM17 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM21 17h1v1h-1zM22 17h1v1h-1zM23 17h1v1h-1zM26 17h1v1h-1zM2 18h1v1h-1zM4 18h1v1h-1zM5 18h1v1h-1zM6 18h1v1h-1zM7 18h1v1h-1zM10 18h1v1h-1zM11 18h1v1h-1zM14 18h1v1h-1zM15 18h1v1h-1zM17 18h1v1h-1zM19 18h1v1h-1zM21 18h1v1h-1zM22 18h1v1h-1zM23 18h1v1h-1zM24 18h1v1h-1zM0 19h1v1h-1zM1 19h1v1h-1zM2 19h1v1h-1zM4 19h1v1h-1zM5 19h1v1h-1zM11 19h1v1h-1zM15 19h1v1h-1zM16 19h1v1h-1zM19 19h1v1h-1zM21 19h1v1h-1zM22 19h1v1h-1zM26 19h1v1h-1zM27 19h1v1h-1zM28 19h1v1h-1zM1 20h1v1h-1zM4 20h1v1h-1zM5 20h1v1h-1zM6 20h1v1h-1zM9 20h1v1h-1zM11 20h1v1h-1zM12 20h1v1h-1zM13 20h1v1h-1zM15 20h1v1h-1zM16 20h1v1h-1zM17 20h1v1h-1zM20 20h1v1h-1zM21 20h1v1h-1zM22 20h1v1h-1zM23 20h1v1h-1zM24 20h1v1h-1zM25 20h1v1h-1zM26 20h1v1h-1zM27 20h1v1h-1zM28 20h1v1h-1zM9 21h1v1h-1zM10 21h1v1h-1zM11 21h1v1h-1zM12 21h1v1h-1zM13 21h1v1h-1zM16 21h1v1h-1zM18 21h1v1h-1zM20 21h1v1h-1zM24 21h1v1h-1zM25 21h1v1h-1zM0 22h1v1h-1zM1 22h1v1h-1zM2 22h1v1h-1zM3 22h1v1h-1zM4 22h1v1h-1zM5 22h1v1h-1zM6 22h1v1h-1zM9 22h1v1h-1zM10 22h1v1h-1zM12 22h1v1h-1zM13 22h1v1h-1zM14 22h1v1h-1zM16 22h1v1h-1zM17 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM20 22h1v1h-1zM22 22h1v1h-1zM24 22h1v1h-1zM27 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM10 23h1v1h-1zM11 23h1v1h-1zM14 23h1v1h-1zM15 23h1v1h-1zM18 23h1v1h-1zM19 23h1v1h-1zM20 23h1v1h-1zM24 23h1v1h-1zM25 23h1v1h-1zM26 23h1v1h-1zM27 23h1v1h-1zM0 24h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM6 24h1v1h-1zM8 24h1v1h-1zM11 24h1v1h-1zM18 24h1v1h-1zM20 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM23 24h1v1h-1zM24 24h1v1h-1zM25 24h1v1h-1zM26 24h1v1h-1zM27 24h1v1h-1zM0 25h1v1h-1zM2 25h1v1h-1zM3 25h1v1h-1zM4 25h1v1h-1zM6 25h1v1h-1zM9 25h1v1h-1zM12 25h1v1h-1zM13 25h1v1h-1zM14 25h1v1h-1zM15 25h1v1h-1zM16 25h1v1h-1zM17 25h1v1h-1zM19 25h1v1h-1zM22 25h1v1h-1zM23 25h1v1h-1zM26 25h1v1h-1zM0 26h1v1h-1zM2 26h1v1h-1zM3 26h1v1h-1zM4 26h1v1h-1zM6 26h1v1h-1zM10 26h1v1h-1zM17 26h1v1h-1zM21 26h1v1h-1zM25 26h1v1h-1zM0 27h1v1h-1zM6 27h1v1h-1zM8 27h1v1h-1zM10 27h1v1h-1zM11 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM15 27h1v1h-1zM16 27h1v1h-1zM18 27h1v1h-1zM19 27h1v1h-1zM21 27h1v1h-1zM22 27h1v1h-1zM23 27h1v1h-1zM24 27h1v1h-1zM27 27h1v1h-1zM28 27h1v1h-1zM0 28h1v1h-1zM1 28h1v1h-1zM2 28h1v1h-1zM3 28h1v1h-1zM4 28h1v1h-1zM5 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM10 28h1v1h-1zM12 28h1v1h-1zM13 28h1v1h-1zM14 28h1v1h-1zM16 28h1v1h-1zM17 28h1v1h-1zM18 28h1v1h-1zM21 28h1v1h-1zM22 28h1v1h-1zM26 28h1v1h-1zM28 28h1v1h-1z"/></svg>
+          <p>Scan to join, or type the four letters on your phone.</p>
+        </div>
+      </div>
+      <div class="nextup">
+        <span class="label" style="font-size:26px">Next up</span>
+        <div class="boxlid" style="--band: var(--azure)">
+          <div class="art"><svg><use href="#i-avalon"/></svg></div>
+          <div class="body">
+            <h3>Avalon</h3>
+            <div class="side"><span><svg><use href="#i-people"/></svg>5–15 players</span><span><svg><use href="#i-clock"/></svg>30–60 min</span></div>
+            <p class="options"><b>Merlin &amp; Assassin</b>, Lady of the Lake</p>
+          </div>
+        </div>
+        <div class="waiting"><span class="dots"><i></i><i></i><i></i></span>Waiting for the owner to start</div>
+      </div>
+      <div class="tvtrack track">
+        <div class="space"><span class="n">1</span><span class="token" style="--c: var(--azure)"><svg><use href="#c-feather"/></svg><span class="host"><svg><use href="#c-ring"/></svg></span></span><span class="who">the owner</span></div>
+        <div class="space"><span class="n">2</span><span class="token" style="--c: var(--gules)"><svg><use href="#c-tower"/></svg></span><span class="who">Bran</span></div>
+        <div class="space"><span class="n">3</span><span class="token" style="--c: var(--vert)"><svg><use href="#c-acorn"/></svg></span><span class="who">Cerys</span></div>
+        <div class="space"><span class="n">4</span><span class="token" style="--c: #6a3f74"><svg><use href="#c-moon"/></svg></span><span class="who">Dafydd</span></div>
+        <div class="space"><span class="n">5</span><span class="token away" style="--c: #9a5a22"><svg><use href="#c-key"/></svg></span><span class="who">Elin</span></div>
+        <div class="space landing"><span class="n">6</span><span class="token" style="--c: #4b5560"><svg><use href="#c-bell"/></svg></span><span class="who">Fen</span></div>
+        <div class="space free"><span class="n">7</span></div><div class="space free"><span class="n">8</span></div><div class="space free"><span class="n">9</span></div><div class="space free"><span class="n">10</span></div>
+        <div class="space free"><span class="n">11</span></div><div class="space free"><span class="n">12</span></div><div class="space free"><span class="n">13</span></div><div class="space free"><span class="n">14</span></div><div class="space free"><span class="n">15</span></div>
+      </div>
+    </div></div>
+    <figcaption>TV lobby, 1920 × 1080 (newest token lands on its space)</figcaption>
+  </figure>
+</main>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const btn = document.getElementById('theme-toggle');
+  const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  const label = () => { btn.textContent = isDark() ? 'Switch to day' : 'Switch to dark'; };
+  btn.addEventListener('click', () => { root.dataset.theme = isDark() ? 'light' : 'dark'; label(); });
+  label();
+  // #home, #lobby, #tv show one screen at full size (for screenshots); add -dark for the dark look.
+  const [solo, dark] = location.hash.slice(1).split('-');
+  const ids = { home: 'f-home', lobby: 'f-lobby', tv: 'f-tv' };
+  if (ids[solo]) { document.body.classList.add('solo'); document.getElementById(ids[solo]).classList.add('show'); }
+  if (dark === 'dark') root.dataset.theme = 'dark';
+  const fit = () => document.querySelectorAll('.tv .device').forEach((d) => d.style.setProperty('--s', d.clientWidth / 1920));
+  addEventListener('resize', fit); fit();
+})();
+</script>

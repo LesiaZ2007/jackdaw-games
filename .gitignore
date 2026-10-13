@@ -13,3 +13,5 @@ playwright-report/
 .open-next/
 .wrangler/
 .DS_Store
+.vercel
+.env*

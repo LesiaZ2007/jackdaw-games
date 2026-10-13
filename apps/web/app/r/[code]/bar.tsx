@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type { LobbyStatus } from '@jackdaw/engine';
 import { BirdMark, Chits, Icon } from '@jackdaw/ui';
 
-export type Panel = 'share' | 'stats' | 'chat' | 'menu' | null;
+export type Panel = 'share' | 'stats' | 'chat' | 'menu' | 'me' | null;
 
 /** The Jackdaw frame's top bar: always shows the code, sharing, stats and chat, even mid-game. */
 export function LobbyBar({

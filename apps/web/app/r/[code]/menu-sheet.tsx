@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
-import { Chits, Plaque, Sheet } from '@jackdaw/ui';
+import { AvatarButton, Chits, Plaque, Sheet } from '@jackdaw/ui';
 import { forgetSeat } from '@/lib/identity';
 import { ThemeToggle } from '../../theme-toggle';
 
@@ -14,15 +14,18 @@ export function MenuSheet({
   code,
   snapshot: s,
   send,
+  onEdit,
 }: {
   open: boolean;
   onClose: () => void;
   code: string;
   snapshot: LobbySnapshot;
   send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
+  onEdit: () => void;
 }) {
   const router = useRouter();
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const me = s.players.find((p) => p.id === s.me);
   const rejoin = s.rejoinCode;
   const inGame = s.status === 'in_game' && s.players.find((p) => p.id === s.me)?.seated;
   const until = rejoin
@@ -39,6 +42,19 @@ export function MenuSheet({
 
   return (
     <Sheet open={open} onClose={onClose} title="Lobby menu">
+      {me && (
+        <section className="menu__block">
+          <h3 className="jd-label">You</h3>
+          <div className="menu__me">
+            <AvatarButton avatar={me.avatar} size={48} onClick={onEdit} />
+            <b>{me.name}</b>
+            <Plaque small onClick={onEdit}>
+              Change
+            </Plaque>
+          </div>
+        </section>
+      )}
+
       <section className="menu__block">
         <h3 className="jd-label">Move to another phone</h3>
         {rejoin ? (

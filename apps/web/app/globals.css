@@ -1,13 +1,57 @@
 @import 'tailwindcss';
 
-/* Placeholder until STYLE_GUIDE.md is approved; real tokens come from @jackdaw/ui. */
-:root {
-  --paper: #efe6d2;
-  --ink: #26221e;
-  --ink-2: #5d564c;
+/* Tailwind is for layout only; colour, type and pieces come from @jackdaw/ui tokens and kit. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+}
+a {
+  color: inherit;
 }
 
-body {
-  background: var(--paper);
+/* Home */
+.home-fan {
+  position: relative;
+  height: 120px;
+}
+.home-fan__lid {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 74px;
+  height: 98px;
+  margin-left: -37px;
+  display: grid;
+  place-items: center;
+  color: var(--on-fill);
+  background-color: var(--band);
+  background-image: var(--field);
+  border: 2px solid var(--ink);
+  transform: translateX(var(--x)) rotate(var(--r));
+  transform-origin: 50% 140%;
+  box-shadow: 0 8px 12px -6px var(--shadow);
+}
+.home-fan__lid::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(246, 240, 225, 0.55);
+}
+.home-link {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 10px 2px;
+  font: inherit;
+  font-weight: 700;
   color: var(--ink);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--rule);
 }

@@ -5,13 +5,22 @@
   "type": "module",
   "description": "Rock Paper Scissors: the Phase 1 test game (simultaneous secret picks)",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.tsx"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@jackdaw/engine": "workspace:*",
+    "@jackdaw/ui": "workspace:*",
     "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.0"
   }
 }

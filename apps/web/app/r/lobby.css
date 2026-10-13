@@ -236,15 +236,36 @@
     grid-column: 1 / -1;
   }
 }
-/* A game with its own lobby fills the centre; Jackdaw's frame stays around it. */
-.waiting--themed {
-  max-width: 1320px;
+/* A game with its own lobby (Avalon's round table) fills the screen under Jackdaw's bar, edge to
+   edge, and chat moves behind the bar's button, as in the game's own app. */
+.lobby-page--full .lobby-layout {
+  grid-template-columns: minmax(0, 1fr);
 }
-.dock.dock--themed {
-  position: static;
-  padding-top: 0;
-  background: none;
-  box-shadow: none;
+.lobby-page--full .lobby-main {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.lobby-page--full .lobby-bar__chat {
+  display: grid !important;
+}
+.waiting.waiting--themed {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+.waiting__themed {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.waiting__themed > * {
+  flex: 1;
 }
 
 /* The primary action sits in the bottom third, within thumb reach */
@@ -842,4 +863,35 @@
   height: 1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
+}
+
+/* Switching between Jackdaw's lobby and a game's own lobby (lobby-room.tsx): crests and names
+   glide from the seat track to the game's seats while everything else cross-fades. */
+::view-transition-group(*) {
+  animation-duration: 760ms;
+  animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1);
+}
+/* The old page fades out first, then the new one comes in, so the two layouts never muddle. */
+::view-transition-old(root) {
+  animation: 240ms ease-in both jd-vt-out;
+}
+::view-transition-new(root) {
+  animation: 320ms ease-out 160ms both jd-vt-in;
+}
+@keyframes jd-vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes jd-vt-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

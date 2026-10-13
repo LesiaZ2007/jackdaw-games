@@ -6,6 +6,7 @@ import {
   CREST_CHOICES,
   Crest,
   reactionOf,
+  seatTransition,
   useTheme,
   type GameLobbyProps,
   type ScreenPlayer,
@@ -71,7 +72,11 @@ function Avatar({ player, children }: { player: ScreenPlayer; children?: ReactNo
   return (
     <span
       className="avatar has-icon"
-      style={vars({ '--tint': `var(--tint-${player.avatar.tint})` })}
+      style={vars({
+        '--tint': `var(--tint-${player.avatar.tint})`,
+        // Flies here from (and back to) the player's token on Jackdaw's seat track.
+        viewTransitionName: seatTransition(player.id).token,
+      })}
     >
       {(CREST_CHOICES as readonly string[]).includes(player.avatar.crest) ? (
         <span className="avatar-icon">
@@ -155,7 +160,7 @@ function RoundTable({
                 <AvalonReactionIcon kind={reaction.kind} />
               </span>
             )}
-            <span className="seat-name">
+            <span className="seat-name" style={{ viewTransitionName: seatTransition(p.id).name }}>
               {p.name}
               {you && <span className="seat-you"> (you)</span>}
             </span>

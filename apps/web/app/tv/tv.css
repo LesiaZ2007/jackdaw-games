@@ -1,0 +1,396 @@
+/*
+ * TV mode. Everything inside .tv-stage is laid out on a fixed 1920×1080 canvas that TvStage
+ * scales to fit, so sizes here are in TV pixels: big type, no hover, no scrolling.
+ */
+
+/* ── Entry page (/tv) ─────────────────────────────────────────────────────── */
+.tv-entry {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--gutter);
+}
+.tv-entry__lid {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  max-width: 620px;
+  padding: var(--space-6) var(--space-5);
+  text-align: center;
+}
+.tv-entry__title {
+  font-size: var(--step-4);
+}
+.tv-entry__note {
+  margin: 0;
+  max-width: 40ch;
+  color: var(--ink-2);
+  font-size: var(--step-1);
+}
+.tv-entry__error {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 700;
+}
+.tv-entry__go {
+  min-width: 260px;
+  min-height: 64px;
+  font-size: 26px;
+}
+.tv-entry__home {
+  font-weight: 700;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--rule);
+}
+
+/* ── The stage ────────────────────────────────────────────────────────────── */
+.tv-viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+.tv-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: 0 0;
+  overflow: hidden;
+}
+.tv-stage .jd-label {
+  font-size: 26px;
+}
+
+.tv-brand {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.tv-brand__name {
+  font-size: 84px;
+}
+.tv-count {
+  font: 800 34px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+.tv-waiting {
+  margin: 0;
+  font: 800 32px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Waiting in the lobby ─────────────────────────────────────────────────── */
+.tv-lobby {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 640px;
+  grid-template-rows: auto 1fr auto;
+  gap: 24px 80px;
+  padding: 52px 88px 56px;
+}
+.tv-lobby__top {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tv-join {
+  display: grid;
+  gap: 24px;
+  align-content: center;
+  justify-items: start;
+}
+.tv-join__label {
+  letter-spacing: 0.14em;
+}
+.tv-join__url {
+  font: 700 56px/1 var(--font-body);
+  margin-top: -8px;
+}
+.tv-join__qr {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.tv-join__qr svg {
+  border: 2px solid var(--ink);
+  padding: 4px;
+}
+.tv-join__qr p {
+  margin: 0;
+  max-width: 22ch;
+  font-size: 30px;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.tv-next {
+  display: grid;
+  gap: 20px;
+  align-content: center;
+}
+.tv-next .jd-box {
+  cursor: default;
+}
+.tv-next .jd-box__name {
+  font-size: 58px;
+}
+.tv-next .jd-box__side {
+  font-size: 24px;
+  gap: 8px 24px;
+}
+.tv-next .jd-box__side svg {
+  width: 24px;
+  height: 24px;
+}
+.tv-next .jd-box__tag {
+  font-size: 24px;
+}
+.tv-next .jd-box__body {
+  padding: 18px 22px;
+  gap: 10px;
+}
+.tv-options {
+  margin: 0;
+  font-size: 28px;
+  color: var(--ink-2);
+}
+.tv-track {
+  grid-column: 1 / -1;
+  gap: 8px;
+}
+.tv-track .jd-space {
+  aspect-ratio: 1 / 1.25;
+  gap: 12px;
+}
+.tv-track .jd-n {
+  font-size: 18px;
+  top: 6px;
+  left: 9px;
+}
+.tv-track .jd-space--free .jd-n {
+  font-size: 44px;
+}
+.tv-track .jd-who {
+  font-size: 22px;
+}
+
+/* ── In a game: a slim Jackdaw strip, then the game's own table ───────────── */
+.tv-game {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+.tv-strip {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 14px 60px;
+  border-bottom: 3px solid var(--ink);
+  background: var(--table-2);
+}
+.tv-strip__game {
+  font-size: 54px;
+  margin-right: auto;
+}
+.tv-strip__join {
+  display: grid;
+  gap: 6px;
+  text-align: right;
+}
+.tv-strip__join b {
+  font: 700 38px/1 var(--font-body);
+}
+.tv-strip svg[role='img'] {
+  border: 2px solid var(--ink);
+  padding: 2px;
+}
+.tv-game__table {
+  min-height: 0;
+  position: relative;
+}
+
+/* ── Results: the big reveal ──────────────────────────────────────────────── */
+.tv-results {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 20px 80px;
+  padding: 44px 88px 44px;
+}
+.tv-results__top {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tv-results__game {
+  font-size: 64px;
+}
+.tv-winners {
+  grid-column: 1 / -1;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  text-align: center;
+}
+.tv-winners__row {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px 56px;
+}
+.tv-winner {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  animation: tv-rise 900ms var(--ease-out) both;
+}
+.tv-winner__name {
+  font: 800 40px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+@keyframes tv-rise {
+  from {
+    transform: translateY(80px);
+    opacity: 0;
+  }
+}
+.tv-summary {
+  font-size: 76px;
+  max-width: 24ch;
+}
+.tv-section-title {
+  font-size: 46px;
+  margin: 0 0 14px;
+}
+.tv-standings ol,
+.tv-recap ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tv-standings ol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 36px;
+}
+.tv-standing {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 70px;
+  border-bottom: 1.5px solid var(--rule);
+  font-size: 30px;
+}
+.tv-standing__name {
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tv-standing__role {
+  color: var(--ink-2);
+  font-size: 24px;
+}
+.tv-standing__outcome {
+  margin-left: auto;
+  font: 800 26px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.tv-standing--win .tv-standing__outcome {
+  color: var(--on-fill);
+  background: var(--vert);
+  padding: 4px 12px;
+}
+.tv-standing__gone {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px dashed var(--rule);
+}
+.tv-recap__event {
+  display: flex;
+  gap: 18px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1.5px solid var(--rule);
+  font-size: 28px;
+  line-height: 1.3;
+}
+.tv-recap__round {
+  flex: none;
+  min-width: 52px;
+  text-align: center;
+  font: 800 26px var(--font-plaque);
+  color: var(--on-fill);
+  background: var(--sable);
+  padding: 2px 8px;
+}
+.tv-recap__text {
+  display: grid;
+  gap: 4px;
+}
+.tv-recap__secret {
+  color: var(--danger);
+  font-weight: 700;
+}
+.tv-recap__empty,
+.tv-recap__more {
+  margin: 12px 0 0;
+  font-size: 26px;
+  color: var(--ink-2);
+}
+.tv-results__waiting {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--ink-2);
+}
+
+/* ── Closed or loading ────────────────────────────────────────────────────── */
+.tv-closed {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 28px;
+  text-align: center;
+  padding: 0 200px;
+}
+.tv-closed h1 {
+  font-size: 96px;
+}
+.tv-closed p {
+  margin: 0;
+  max-width: 40ch;
+  font-size: 34px;
+  color: var(--ink-2);
+}
+.tv-closed .jd-plaque {
+  min-height: 64px;
+  font-size: 26px;
+}
+.tv-closed__finding {
+  font: 800 40px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-winner {
+    animation: none;
+  }
+}

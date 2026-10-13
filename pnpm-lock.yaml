@@ -122,6 +122,9 @@ importers:
       '@jackdaw/game-rps':
         specifier: workspace:*
         version: link:../games/rps
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
 
   packages/ui:
     dependencies:

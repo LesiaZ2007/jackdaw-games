@@ -214,17 +214,27 @@
   text-transform: uppercase;
 }
 
-/* Avalon's TV screen, embedded while the game runs. */
+/* Avalon's TV screen, embedded while the game runs: it fills whatever holds it (the whole TV, or
+   a latecomer's phone screen), with a small way to open it on its own. */
 .av-tv {
-  display: grid;
-  gap: var(--space-2, 8px);
-  justify-items: center;
+  position: relative;
+  height: 100%;
+  min-height: 70vh;
 }
 .av-tv__frame {
   display: block;
   width: 100%;
-  min-height: 70vh;
+  height: 100%;
   border: 0;
+}
+.av-tv__open {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--paper);
+  font-size: 14px;
 }
 .av-tv__open {
   color: inherit;

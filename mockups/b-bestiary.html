@@ -1,0 +1,361 @@
+<title>Bestiary Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700&family=Alegreya+SC:wght@500;700&family=Texturina:opsz,wght@12..72,500;12..72,700;12..72,800&display=swap" rel="stylesheet">
+<style>
+/* Direction B, "Bestiary": Jackdaw is an illuminated book of games. Pages are vellum with
+   ruled margins; initials alternate lapis and vermilion; the jackdaw lives in the margin with
+   the ring it stole (the Jackdaw of Rheims). Layout: a single text column inside ruled margins. */
+:root {
+  --vellum: #efe4c9;
+  --vellum-2: #e3d3af;
+  --ink: #2a2019;          /* iron-gall ink */
+  --ink-2: #6b5a47;
+  --rubric: #a3262b;       /* vermilion rubric, for text */
+  --lapis: #2b4389;        /* for text */
+  --verdigris: #3d7a60;
+  --gold: #b48c34;
+  --ruling: #d8b8a2;       /* faint red ruling lines */
+  --paint-lapis: #2b4389;  /* painted grounds stay rich in both looks */
+  --paint-rubric: #a3262b;
+  --paint-light: #f4ead2;
+  --bird: #22201d; --slate: #8b959a; --iris: #eef2f3; --bird-edge: transparent;
+  --shadow: rgba(42, 32, 25, .3);
+  --font-display: 'Texturina', 'Georgia', serif;
+  --font-body: 'Alegreya', 'Georgia', serif;
+  --font-caps: 'Alegreya SC', 'Georgia', serif;
+  color-scheme: light;
+}
+/* Dark: the same book by candlelight. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --vellum: #1f1914; --vellum-2: #2a221b; --ink: #ecdfc4; --ink-2: #b6a487; --rubric: #e57767;
+    --lapis: #9db0ec; --verdigris: #8cc6a8; --gold: #d8b45d; --ruling: #4a3427; --bird: #0f0f10;
+    --bird-edge: #a49379; --shadow: rgba(0, 0, 0, .6); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --vellum: #1f1914; --vellum-2: #2a221b; --ink: #ecdfc4; --ink-2: #b6a487; --rubric: #e57767;
+  --lapis: #9db0ec; --verdigris: #8cc6a8; --gold: #d8b45d; --ruling: #4a3427; --bird: #0f0f10;
+  --bird-edge: #a49379; --shadow: rgba(0, 0, 0, .6); color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--vellum-2); color: var(--ink); font-family: var(--font-body); }
+
+/* ── Review chrome (not part of the design) ─────────────────────────────── */
+.review-bar { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; padding: 18px 16px; max-width: 1400px; margin: 0 auto; }
+.review-bar h1 { margin: 0; font: 800 30px/1 var(--font-display); }
+.review-bar p { margin: 4px 0 0; color: var(--ink-2); max-width: 60ch; }
+.toggle { font: 700 17px var(--font-caps); color: var(--ink); background: var(--vellum); border: 1.5px solid var(--ink); padding: 9px 16px; cursor: pointer; }
+.stage { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; padding: 8px 16px 48px; max-width: 1400px; margin: 0 auto; }
+.frame { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.frame figcaption { font: 700 16px var(--font-caps); color: var(--ink-2); }
+.device { overflow: hidden; border: 1px solid var(--ruling); box-shadow: 0 20px 50px -24px var(--shadow); }
+.phone .device { width: 390px; height: 844px; border-radius: 28px; max-width: calc(100vw - 32px); }
+.tv { flex-basis: 100%; }
+.tv .device { width: 100%; aspect-ratio: 16 / 9; position: relative; }
+.tv .device > .screen { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; transform-origin: 0 0; transform: scale(var(--s, .5)); }
+body.solo .review-bar, body.solo figcaption { display: none; }
+body.solo .stage { padding: 0; display: block; max-width: none; margin: 0; }
+body.solo .frame { display: none; }
+body.solo .frame.show { display: block; }
+body.solo .device { border: 0; border-radius: 0; box-shadow: none; max-width: none; }
+body.solo .tv .device { width: 1920px; height: 1080px; aspect-ratio: auto; }
+body.solo .tv .device > .screen { transform: none; }
+
+/* ── The page ───────────────────────────────────────────────────────────── */
+.screen { position: relative; height: 100%; overflow: hidden; background: var(--vellum); }
+.screen::before { /* vellum grain and a little foxing */
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .55; mix-blend-mode: multiply;
+  background-image:
+    radial-gradient(ellipse at 12% 8%, rgba(150, 110, 60, .14), transparent 45%),
+    radial-gradient(ellipse at 90% 96%, rgba(150, 110, 60, .16), transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .42 0 0 0 0 .3 0 0 0 .2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.screen > * { position: relative; }
+.ruled { position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(var(--ruling), var(--ruling)) 26px 0 / 1px 100% no-repeat,
+    linear-gradient(var(--ruling), var(--ruling)) 31px 0 / 1px 100% no-repeat,
+    linear-gradient(var(--ruling), var(--ruling)) calc(100% - 26px) 0 / 1px 100% no-repeat,
+    linear-gradient(var(--ruling), var(--ruling)) calc(100% - 31px) 0 / 1px 100% no-repeat; }
+.runhead { display: flex; justify-content: space-between; align-items: baseline; font: 500 15px var(--font-caps); color: var(--rubric); letter-spacing: .04em; }
+.runhead .folio { color: var(--ink-2); font-family: var(--font-body); }
+
+/* Illuminated initials: painted ground, gold hairline, vellum letter, pen-work dots */
+.initial { --z: 92px; width: var(--z); height: var(--z); flex: none; background: var(--paint, var(--paint-lapis)); position: relative;
+  display: grid; place-items: center; color: var(--paint-light); font: 800 calc(var(--z) * .7)/1 var(--font-display);
+  box-shadow: inset 0 0 0 calc(var(--z) * .035) var(--gold), inset 0 0 0 calc(var(--z) * .07) var(--paint, var(--paint-lapis)), inset 0 0 0 calc(var(--z) * .085) rgba(244, 234, 210, .7); }
+.initial::before { /* white pen-work dots in the corners */
+  content: ''; position: absolute; inset: calc(var(--z) * .14);
+  background:
+    radial-gradient(circle, var(--paint-light) 1.3px, transparent 1.6px) 0 0 / 50% 50%; opacity: .35; }
+.initial span { position: relative; padding-bottom: calc(var(--z) * .05); }
+.initial.red { --paint: var(--paint-rubric); }
+.initial.empty { background: transparent; box-shadow: inset 0 0 0 1.5px var(--rubric); color: var(--ink-2); }
+.initial.empty::before { display: none; }
+
+.smallcaps { font: 700 15px var(--font-caps); letter-spacing: .05em; color: var(--ink-2); }
+.rubric { color: var(--rubric); }
+
+/* Buttons: a wax seal for the one thing that starts something; plain ruled buttons otherwise */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 18px;
+  font: 700 20px/1 var(--font-caps); letter-spacing: .03em; color: var(--ink); background: transparent;
+  border-top: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); }
+.btn.primary { color: var(--paint-light); background: var(--paint-rubric); border: 0; box-shadow: inset 0 0 0 3px var(--paint-rubric), inset 0 0 0 4px var(--gold); position: relative; padding-left: 64px; }
+.seal { position: absolute; left: 8px; top: 50%; translate: 0 -50%; width: 44px; height: 44px; }
+
+/* Player charges in painted roundels */
+.roundel { --z: 38px; width: var(--z); height: var(--z); border-radius: 50%; flex: none; background: var(--c); color: var(--paint-light);
+  display: grid; place-items: center; box-shadow: inset 0 0 0 2px var(--gold); }
+.roundel svg { width: 60%; height: 60%; }
+.roundel.away { filter: grayscale(1); opacity: .45; }
+
+/* Miniature: a framed painting for each game */
+.mini { width: 104px; aspect-ratio: 4 / 5; flex: none; background: var(--paint-lapis); box-shadow: inset 0 0 0 3px var(--gold), inset 0 0 0 6px var(--paint-lapis), inset 0 0 0 7px var(--paint-light);
+  display: grid; place-items: center; color: var(--paint-light); }
+.mini svg { width: 64%; height: 64%; }
+.manicule { width: 30px; height: 18px; flex: none; color: var(--rubric); }
+
+/* ── Phone: home ────────────────────────────────────────────────────────── */
+.home { display: flex; flex-direction: column; padding: 18px 44px 20px 46px; gap: 16px; }
+.opening { display: flex; gap: 14px; align-items: flex-start; margin-top: 18px; }
+.opening h2 { margin: 0; font: 800 50px/0.95 var(--font-display); letter-spacing: -.01em; padding-top: 6px; }
+.lede { margin: 0; font-size: 19px; line-height: 1.5; text-wrap: pretty; }
+.lede .rubric { font-weight: 700; }
+.margin-bird { position: absolute; right: 0; top: 300px; width: 96px; transform: scaleX(-1); }
+.margin-bird .ring { position: absolute; }
+.contents { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; max-width: 220px; font-size: 17px; }
+.contents li { display: flex; align-items: baseline; gap: 6px; }
+.contents i { flex: 1; border-bottom: 1.5px dotted var(--ink-2); translate: 0 -4px; }
+.contents b { font-weight: 500; color: var(--rubric); }
+.gloss { font-size: 15px; line-height: 1.45; color: var(--ink-2); max-width: 21ch; }
+.actions { margin-top: auto; display: grid; gap: 12px; }
+.written { display: grid; gap: 2px; }
+.written .line { border-bottom: 1.5px solid var(--ink); font-size: 22px; padding: 6px 2px; }
+.joinrow { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.joinrow .initial { --z: 50px; }
+.joinrow .btn { min-height: 50px; }
+.browse { font: 700 18px var(--font-body); color: var(--ink); text-align: center; text-decoration: underline; text-decoration-color: var(--rubric); text-underline-offset: 4px; padding: 6px; }
+.or { text-align: center; font: 500 16px var(--font-caps); color: var(--rubric); }
+
+/* ── Phone: lobby ───────────────────────────────────────────────────────── */
+.lobby { display: flex; flex-direction: column; padding: 18px 44px 20px 46px; gap: 14px; }
+.codeline { display: flex; align-items: center; justify-content: space-between; }
+.codeline .letters { display: flex; gap: 5px; }
+.codeline .initial { --z: 44px; }
+.iconbtn { width: 44px; height: 44px; display: grid; place-items: center; color: var(--ink); border: 1.5px solid var(--ink); }
+.iconbtn svg { width: 22px; height: 22px; }
+.lobby h3 { margin: 0; font: 800 26px/1 var(--font-display); display: flex; justify-content: space-between; align-items: baseline; }
+.lobby h3 small { font: 500 15px var(--font-body); color: var(--ink-2); }
+.roll { list-style: none; margin: 0; padding: 0; display: grid; }
+.roll li { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--ruling); font-size: 19px; min-height: 48px; }
+.roll li .who { flex: 1; }
+.roll .tag { font: 700 14px var(--font-caps); color: var(--rubric); display: flex; align-items: center; gap: 4px; }
+.roll .tag.away { color: var(--ink-2); }
+.roll li.blank { color: var(--ink-2); font-size: 16px; justify-content: center; border-bottom: 0; }
+.entry { display: flex; gap: 14px; align-items: flex-start; }
+.entry h4 { margin: 0; font: 800 32px/1 var(--font-display); }
+.entry p { margin: 6px 0 0; font-size: 16px; line-height: 1.4; }
+.entry .meta { font: 700 14px var(--font-caps); color: var(--ink-2); letter-spacing: .04em; margin-top: 6px; }
+.lastnote { display: flex; gap: 8px; align-items: center; font-size: 15px; color: var(--ink-2); }
+.dock { margin-top: auto; display: grid; gap: 10px; }
+.dock .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dock .row .btn { font-size: 17px; min-height: 46px; }
+
+/* ── TV: an open book ───────────────────────────────────────────────────── */
+.tvbook { display: grid; grid-template-columns: 1fr 1fr; padding: 0; }
+.tvbook .page { position: relative; padding: 70px 110px 60px; display: flex; flex-direction: column; gap: 30px; }
+.tvbook .page.left { box-shadow: inset -60px 0 70px -50px var(--shadow); }
+.tvbook .page.right { box-shadow: inset 60px 0 70px -50px var(--shadow); }
+.tvbook .ruled { background:
+    linear-gradient(var(--ruling), var(--ruling)) 70px 0 / 1.5px 100% no-repeat,
+    linear-gradient(var(--ruling), var(--ruling)) 80px 0 / 1.5px 100% no-repeat,
+    linear-gradient(var(--ruling), var(--ruling)) calc(100% - 70px) 0 / 1.5px 100% no-repeat,
+    linear-gradient(var(--ruling), var(--ruling)) calc(100% - 80px) 0 / 1.5px 100% no-repeat; }
+.tvbook .runhead { font-size: 26px; }
+.tvbook .bigcode { display: flex; gap: 22px; }
+.tvbook .bigcode .initial { --z: 176px; }
+.tvbook .joinat { font: 500 30px var(--font-caps); color: var(--ink-2); }
+.tvbook .url { font: 700 60px/1 var(--font-body); }
+.tvbook .qrline { display: flex; gap: 30px; align-items: center; }
+.tvbook .tvbird { position: absolute; right: 120px; bottom: 60px; width: 300px; transform: scaleX(-1); filter: drop-shadow(0 0 1px var(--bird-edge)) drop-shadow(0 0 1px var(--bird-edge)); }
+.qr { width: 190px; height: 190px; background: #f4ead2; padding: 10px; box-shadow: inset 0 0 0 2px var(--gold); flex: none; }
+.tvbook .qrline p { margin: 0; font-size: 30px; line-height: 1.4; color: var(--ink-2); }
+.tvbook .entry { gap: 30px; }
+.tvbook .entry .mini { width: 190px; }
+.tvbook .entry h4 { font-size: 80px; }
+.tvbook .entry p { font-size: 28px; }
+.tvbook .entry .meta { font-size: 24px; }
+.tvbook h3 { margin: 0; font: 800 46px/1 var(--font-display); display: flex; justify-content: space-between; align-items: baseline; }
+.tvbook h3 small { font: 500 26px var(--font-body); color: var(--ink-2); }
+.tvroll { list-style: none; margin: 0; padding: 0; columns: 2; column-gap: 60px; }
+.tvroll li { display: flex; align-items: center; gap: 18px; font-size: 34px; padding: 10px 0; border-bottom: 1.5px solid var(--ruling); break-inside: avoid; }
+.tvroll .roundel { --z: 56px; }
+.tvroll .tag { font: 700 22px var(--font-caps); color: var(--rubric); margin-left: auto; }
+.tvroll li.writing .who { display: inline-block; clip-path: inset(0 0 0 0); animation: write 1.6s steps(14) both; }
+@keyframes write { from { clip-path: inset(0 100% 0 0); } }
+.tvbook .footnote { margin-top: auto; display: flex; justify-content: space-between; font-size: 24px; color: var(--ink-2); }
+.tvbook .waiting { font: 700 30px var(--font-caps); color: var(--rubric); }
+@media (prefers-reduced-motion: reduce) { .tvroll li.writing .who { animation: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="jackdaw" viewBox="0 0 120 100">
+      <path d="M72 61 L107 83 C109 85 107 88 104 87 L66 73 Z" fill="var(--bird)"/>
+      <path d="M27 22 C29 17 35 15.5 41 16.5 C47 17.5 50 22 52 27 C62 33 74 44 80 56 C84 64 80 72 70 74 C58 76 46 70 39 61 C33 53 29 43 27 34 Z" fill="var(--bird)"/>
+      <path d="M42 16.9 C47.5 17.7 50.5 21.5 52 27 C56 31 57.5 38 54.5 45 C50 40 45.5 33.5 43.5 27 C42.3 23 41.8 19.6 42 16.9 Z" fill="var(--slate)"/>
+      <path d="M27.5 23.6 Q20.5 25.3 15 30 L27.5 33.6 Z" fill="var(--bird)"/>
+      <path d="M48 51 C58 49 70 54 79 64" stroke="var(--slate)" stroke-opacity=".55" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <circle cx="34.6" cy="24.2" r="3.3" fill="var(--iris)"/>
+      <circle cx="34.2" cy="24.2" r="1.35" fill="var(--bird)"/>
+      <path d="M53 73 L52 86 M52 86 L47.5 88 M52 86 L56 88 M60 73.5 L60.5 86 M60.5 86 L56 88 M60.5 86 L65 88" stroke="var(--bird)" stroke-width="2" stroke-linecap="round" fill="none"/>
+    </symbol>
+    <symbol id="c-tower" viewBox="0 0 32 32"><path d="M10 28V13h12v15M8 13V7h3.5v3h3V7h3v3h3V7H24v6M14 28v-5a2 2 0 0 1 4 0v5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></symbol>
+    <symbol id="c-key" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10" cy="10" r="5"/><path d="M13.5 13.5L26 26M22 22l3-3M18.5 18.5l2.5-2.5"/></g></symbol>
+    <symbol id="c-ring" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><circle cx="16" cy="20" r="7.5"/><path d="M12.5 9L16 4.5 19.5 9 16 12.5z"/></g></symbol>
+    <symbol id="c-feather" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M25 5C15 7 9 15 7.5 27M7.5 27C17 25 24 16 25 5M11 21l5.5-1M13.5 15.5l5-1"/></g></symbol>
+    <symbol id="c-acorn" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M9 14h14a7 7 0 0 0-14 0zM10.5 14c0 7 3 11.5 5.5 13 2.5-1.5 5.5-6 5.5-13M16 4v3"/></g></symbol>
+    <symbol id="c-moon" viewBox="0 0 32 32"><path d="M20 5a11 11 0 1 0 7 17 9 9 0 1 1-7-17z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></symbol>
+    <symbol id="c-bell" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 24h16M10.5 24c0-8 .5-14 5.5-14s5.5 6 5.5 14M16 10V6.5M14 27.5h4"/></g></symbol>
+    <symbol id="i-avalon" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M32 5l3.2 5V38h-6.4V10z"/><path d="M22 38h20M32 38v7"/><circle cx="32" cy="47.5" r="2.6"/><path d="M8 51c4-3 8-3 12 0s8 3 12 0 8-3 12 0 8 3 12 0M14 58c3-2.2 6-2.2 9 0s6 2.2 9 0 6-2.2 9 0 6 2.2 9 0"/></g></symbol>
+    <symbol id="i-tv" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="1"/><path d="M8 21h8M12 17v4"/></g></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></g></symbol>
+    <!-- a manicule: the pointing hand scribes drew in margins -->
+    <symbol id="manicule" viewBox="0 0 50 30"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c4-1 8-1 12 0h30c2.5 0 2.5 4 0 4H26M26 16h4c2.2 0 2.2 3.6 0 3.6h-5M25 19.6h3.5c2 0 2 3.4 0 3.4h-4M24.5 23h2.5c1.8 0 1.8 3.2 0 3.2H18c-6 0-10-3-16-4"/><path d="M14 12c2-4 6-6 9-5"/></g></symbol>
+    <!-- wax seal -->
+    <symbol id="seal" viewBox="0 0 44 44"><path d="M22 2l4 3 5-1 2 4.5 4.5 2-1 5 3 4-3 4 1 5-4.5 2-2 4.5-5-1-4 3-4-3-5 1-2-4.5-4.5-2 1-5-3-4 3-4-1-5 4.5-2 2-4.5 5 1z" fill="#7d1a1e"/><circle cx="22" cy="22" r="12" fill="none" stroke="#c9464a" stroke-width="1.5"/><path d="M15.5 21.5c1.4-1.3 3.4-2 5.4-1.7l6.5-3.3-3 4.8c-.4 3.2-3.3 5.5-6.6 5.1l-3.6 2.6 1.3-3.6c-1-1.1-1.4-2.6-1.2-3.9z" fill="#c9464a"/></symbol>
+  </defs>
+</svg>
+
+<div class="review-bar">
+  <div>
+    <h1>B. Bestiary</h1>
+    <p>Jackdaw as an illuminated book of games. Ruled vellum pages, initials painted in alternating lapis and vermilion, and a jackdaw in the margin holding the ring it stole.</p>
+  </div>
+  <button class="toggle" id="theme-toggle" type="button">Switch to dark</button>
+</div>
+
+<main class="stage">
+  <figure class="frame phone" id="f-home">
+    <div class="device"><div class="screen home">
+      <div class="ruled"></div>
+      <div class="runhead"><span>Jackdaw</span><span class="folio">f. 1r</span></div>
+      <div class="opening">
+        <div class="initial"><span>J</span></div>
+        <h2>ackdaw</h2>
+      </div>
+      <p class="lede"><span class="rubric">A book of games</span> for gatherings of two to fifteen. Everyone plays on their own phone, and a TV can show the table.</p>
+      <ol class="contents"><li><span>Avalon</span><i></i><b>f. 3</b></li><li><span>Secret Hitler</span><i></i><b>f. 9</b></li><li><span>Codenames</span><i></i><b>f. 15</b></li><li><span>Werewolf</span><i></i><b>f. 21</b></li><li><span>Spyfall</span><i></i><b>f. 27</b></li></ol>
+      <svg class="margin-bird" viewBox="0 0 120 100" aria-hidden="true" style="filter: drop-shadow(0 0 .7px var(--bird-edge)) drop-shadow(0 0 .7px var(--bird-edge))"><use href="#jackdaw"/><circle cx="14" cy="33" r="4.2" fill="none" stroke="var(--gold)" stroke-width="1.8"/></svg>
+
+      <section class="actions">
+        <label class="written"><span class="smallcaps">Your name</span><span class="line">the owner</span></label>
+        <span class="btn primary"><svg class="seal"><use href="#seal"/></svg>Create a lobby</span>
+        <div class="or">or join one</div>
+        <div class="joinrow">
+          <span class="initial"><span>C</span></span><span class="initial red"><span>A</span></span><span class="initial empty"><span></span></span><span class="initial empty"><span></span></span>
+          <span class="btn" style="padding:0 12px">Join</span>
+        </div>
+        <a class="browse" href="#">Browse the 6 games</a>
+      </section>
+    </div></div>
+    <figcaption>Home, phone</figcaption>
+  </figure>
+
+  <figure class="frame phone" id="f-lobby">
+    <div class="device"><div class="screen lobby">
+      <div class="ruled"></div>
+      <div class="runhead"><span>Jackdaw</span><span class="folio">f. 2v</span></div>
+      <div class="codeline">
+        <div class="letters"><span class="initial"><span>C</span></span><span class="initial red"><span>A</span></span><span class="initial"><span>W</span></span><span class="initial red"><span>S</span></span></div>
+        <span class="iconbtn" aria-label="Share"><svg><use href="#i-share"/></svg></span>
+      </div>
+      <h3>The roll <small>6 of 15</small></h3>
+      <ul class="roll">
+        <li><span class="roundel" style="--c: var(--paint-lapis)"><svg><use href="#c-feather"/></svg></span><span class="who">the owner</span><span class="tag"><svg width="16" height="16"><use href="#c-ring"/></svg>host</span></li>
+        <li><span class="roundel" style="--c: var(--paint-rubric)"><svg><use href="#c-tower"/></svg></span><span class="who">Bran</span></li>
+        <li><span class="roundel" style="--c: #2f6247"><svg><use href="#c-acorn"/></svg></span><span class="who">Cerys</span></li>
+        <li><span class="roundel" style="--c: #6a3f74"><svg><use href="#c-moon"/></svg></span><span class="who">Dafydd</span></li>
+        <li><span class="roundel away" style="--c: #9a5a22"><svg><use href="#c-key"/></svg></span><span class="who" style="color:var(--ink-2)">Elin</span><span class="tag away">away</span></li>
+        <li><span class="roundel" style="--c: #4b5560"><svg><use href="#c-bell"/></svg></span><span class="who">Fen</span></li>
+      </ul>
+      <div class="entry">
+        <div class="mini"><svg><use href="#i-avalon"/></svg></div>
+        <div>
+          <h4>Avalon</h4>
+          <div class="meta">5 to 15 players, 30 to 60 min</div>
+          <p>Merlin and the Assassin, with the Lady of the Lake.</p>
+        </div>
+      </div>
+      <div class="lastnote"><svg class="manicule"><use href="#manicule"/></svg><span>Last game: Secret Hitler, won by the Liberals.</span></div>
+      <div class="dock">
+        <span class="btn primary"><svg class="seal"><use href="#seal"/></svg>Start Avalon</span>
+        <div class="row"><span class="btn"><svg width="20" height="20"><use href="#i-tv"/></svg>Show on TV</span><span class="btn"><svg width="20" height="20"><use href="#i-chat"/></svg>Chat</span></div>
+      </div>
+    </div></div>
+    <figcaption>Lobby, phone (host)</figcaption>
+  </figure>
+
+  <figure class="frame tv" id="f-tv">
+    <div class="device"><div class="screen tvbook">
+      <section class="page left">
+        <div class="ruled"></div>
+        <div class="runhead"><span>Jackdaw</span><span class="folio">f. 12v</span></div>
+        <div>
+          <div class="joinat">Join at</div>
+          <div class="url">jackdaw.games</div>
+        </div>
+        <div class="bigcode"><span class="initial"><span>C</span></span><span class="initial red"><span>A</span></span><span class="initial"><span>W</span></span><span class="initial red"><span>S</span></span></div>
+        <div class="qrline">
+          <svg class="qr" viewBox="-2 -2 33 33" shape-rendering="crispEdges" aria-label="QR code"><path fill="#2a2019" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM8 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM14 0h1v1h-1zM18 0h1v1h-1zM20 0h1v1h-1zM22 0h1v1h-1zM23 0h1v1h-1zM24 0h1v1h-1zM25 0h1v1h-1zM26 0h1v1h-1zM27 0h1v1h-1zM28 0h1v1h-1zM0 1h1v1h-1zM6 1h1v1h-1zM9 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM14 1h1v1h-1zM15 1h1v1h-1zM16 1h1v1h-1zM19 1h1v1h-1zM22 1h1v1h-1zM28 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM6 2h1v1h-1zM8 2h1v1h-1zM9 2h1v1h-1zM10 2h1v1h-1zM13 2h1v1h-1zM16 2h1v1h-1zM20 2h1v1h-1zM22 2h1v1h-1zM24 2h1v1h-1zM25 2h1v1h-1zM26 2h1v1h-1zM28 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM6 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM14 3h1v1h-1zM16 3h1v1h-1zM18 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM25 3h1v1h-1zM26 3h1v1h-1zM28 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM17 4h1v1h-1zM19 4h1v1h-1zM20 4h1v1h-1zM22 4h1v1h-1zM24 4h1v1h-1zM25 4h1v1h-1zM26 4h1v1h-1zM28 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM11 5h1v1h-1zM15 5h1v1h-1zM16 5h1v1h-1zM18 5h1v1h-1zM22 5h1v1h-1zM28 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM25 6h1v1h-1zM26 6h1v1h-1zM27 6h1v1h-1zM28 6h1v1h-1zM9 7h1v1h-1zM11 7h1v1h-1zM13 7h1v1h-1zM16 7h1v1h-1zM18 7h1v1h-1zM19 7h1v1h-1zM1 8h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM11 8h1v1h-1zM13 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM19 8h1v1h-1zM21 8h1v1h-1zM24 8h1v1h-1zM26 8h1v1h-1zM28 8h1v1h-1zM0 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM15 9h1v1h-1zM17 9h1v1h-1zM20 9h1v1h-1zM22 9h1v1h-1zM23 9h1v1h-1zM26 9h1v1h-1zM27 9h1v1h-1zM28 9h1v1h-1zM1 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM11 10h1v1h-1zM13 10h1v1h-1zM15 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM23 10h1v1h-1zM24 10h1v1h-1zM25 10h1v1h-1zM26 10h1v1h-1zM0 11h1v1h-1zM1 11h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM7 11h1v1h-1zM9 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM14 11h1v1h-1zM15 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM19 11h1v1h-1zM20 11h1v1h-1zM21 11h1v1h-1zM24 11h1v1h-1zM27 11h1v1h-1zM0 12h1v1h-1zM2 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM9 12h1v1h-1zM11 12h1v1h-1zM16 12h1v1h-1zM17 12h1v1h-1zM19 12h1v1h-1zM22 12h1v1h-1zM23 12h1v1h-1zM25 12h1v1h-1zM26 12h1v1h-1zM28 12h1v1h-1zM0 13h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM10 13h1v1h-1zM13 13h1v1h-1zM15 13h1v1h-1zM18 13h1v1h-1zM21 13h1v1h-1zM23 13h1v1h-1zM27 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM16 14h1v1h-1zM17 14h1v1h-1zM22 14h1v1h-1zM23 14h1v1h-1zM24 14h1v1h-1zM25 14h1v1h-1zM27 14h1v1h-1zM1 15h1v1h-1zM3 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM16 15h1v1h-1zM17 15h1v1h-1zM19 15h1v1h-1zM21 15h1v1h-1zM22 15h1v1h-1zM24 15h1v1h-1zM25 15h1v1h-1zM27 15h1v1h-1zM0 16h1v1h-1zM1 16h1v1h-1zM2 16h1v1h-1zM6 16h1v1h-1zM7 16h1v1h-1zM12 16h1v1h-1zM13 16h1v1h-1zM14 16h1v1h-1zM15 16h1v1h-1zM20 16h1v1h-1zM21 16h1v1h-1zM22 16h1v1h-1zM23 16h1v1h-1zM28 16h1v1h-1zM4 17h1v1h-1zM7 17h1v1h-1zM9 17h1v1h-1zM10 17h1v1h-1zM11 17h1v1h-1zM13 17h1v1h-1zM15 17h1v1h-1zM17 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM21 17h1v1h-1zM22 17h1v1h-1zM23 17h1v1h-1zM26 17h1v1h-1zM2 18h1v1h-1zM4 18h1v1h-1zM5 18h1v1h-1zM6 18h1v1h-1zM7 18h1v1h-1zM10 18h1v1h-1zM11 18h1v1h-1zM14 18h1v1h-1zM15 18h1v1h-1zM17 18h1v1h-1zM19 18h1v1h-1zM21 18h1v1h-1zM22 18h1v1h-1zM23 18h1v1h-1zM24 18h1v1h-1zM0 19h1v1h-1zM1 19h1v1h-1zM2 19h1v1h-1zM4 19h1v1h-1zM5 19h1v1h-1zM11 19h1v1h-1zM15 19h1v1h-1zM16 19h1v1h-1zM19 19h1v1h-1zM21 19h1v1h-1zM22 19h1v1h-1zM26 19h1v1h-1zM27 19h1v1h-1zM28 19h1v1h-1zM1 20h1v1h-1zM4 20h1v1h-1zM5 20h1v1h-1zM6 20h1v1h-1zM9 20h1v1h-1zM11 20h1v1h-1zM12 20h1v1h-1zM13 20h1v1h-1zM15 20h1v1h-1zM16 20h1v1h-1zM17 20h1v1h-1zM20 20h1v1h-1zM21 20h1v1h-1zM22 20h1v1h-1zM23 20h1v1h-1zM24 20h1v1h-1zM25 20h1v1h-1zM26 20h1v1h-1zM27 20h1v1h-1zM28 20h1v1h-1zM9 21h1v1h-1zM10 21h1v1h-1zM11 21h1v1h-1zM12 21h1v1h-1zM13 21h1v1h-1zM16 21h1v1h-1zM18 21h1v1h-1zM20 21h1v1h-1zM24 21h1v1h-1zM25 21h1v1h-1zM0 22h1v1h-1zM1 22h1v1h-1zM2 22h1v1h-1zM3 22h1v1h-1zM4 22h1v1h-1zM5 22h1v1h-1zM6 22h1v1h-1zM9 22h1v1h-1zM10 22h1v1h-1zM12 22h1v1h-1zM13 22h1v1h-1zM14 22h1v1h-1zM16 22h1v1h-1zM17 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM20 22h1v1h-1zM22 22h1v1h-1zM24 22h1v1h-1zM27 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM10 23h1v1h-1zM11 23h1v1h-1zM14 23h1v1h-1zM15 23h1v1h-1zM18 23h1v1h-1zM19 23h1v1h-1zM20 23h1v1h-1zM24 23h1v1h-1zM25 23h1v1h-1zM26 23h1v1h-1zM27 23h1v1h-1zM0 24h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM6 24h1v1h-1zM8 24h1v1h-1zM11 24h1v1h-1zM18 24h1v1h-1zM20 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM23 24h1v1h-1zM24 24h1v1h-1zM25 24h1v1h-1zM26 24h1v1h-1zM27 24h1v1h-1zM0 25h1v1h-1zM2 25h1v1h-1zM3 25h1v1h-1zM4 25h1v1h-1zM6 25h1v1h-1zM9 25h1v1h-1zM12 25h1v1h-1zM13 25h1v1h-1zM14 25h1v1h-1zM15 25h1v1h-1zM16 25h1v1h-1zM17 25h1v1h-1zM19 25h1v1h-1zM22 25h1v1h-1zM23 25h1v1h-1zM26 25h1v1h-1zM0 26h1v1h-1zM2 26h1v1h-1zM3 26h1v1h-1zM4 26h1v1h-1zM6 26h1v1h-1zM10 26h1v1h-1zM17 26h1v1h-1zM21 26h1v1h-1zM25 26h1v1h-1zM0 27h1v1h-1zM6 27h1v1h-1zM8 27h1v1h-1zM10 27h1v1h-1zM11 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM15 27h1v1h-1zM16 27h1v1h-1zM18 27h1v1h-1zM19 27h1v1h-1zM21 27h1v1h-1zM22 27h1v1h-1zM23 27h1v1h-1zM24 27h1v1h-1zM27 27h1v1h-1zM28 27h1v1h-1zM0 28h1v1h-1zM1 28h1v1h-1zM2 28h1v1h-1zM3 28h1v1h-1zM4 28h1v1h-1zM5 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM10 28h1v1h-1zM12 28h1v1h-1zM13 28h1v1h-1zM14 28h1v1h-1zM16 28h1v1h-1zM17 28h1v1h-1zM18 28h1v1h-1zM21 28h1v1h-1zM22 28h1v1h-1zM26 28h1v1h-1zM28 28h1v1h-1z"/></svg>
+          <p>Scan to join, or type the four letters on your phone.</p>
+        </div>
+        <svg class="tvbird" viewBox="0 0 120 100" aria-hidden="true"><use href="#jackdaw"/><circle cx="14" cy="33" r="4.2" fill="none" stroke="var(--gold)" stroke-width="1.8"/></svg>
+      </section>
+      <section class="page right">
+        <div class="ruled"></div>
+        <div class="runhead"><span>Next up</span><span class="folio">f. 13r</span></div>
+        <div class="entry">
+          <div class="mini"><svg><use href="#i-avalon"/></svg></div>
+          <div>
+            <h4>Avalon</h4>
+            <div class="meta">5 to 15 players, 30 to 60 min</div>
+            <p>Merlin and the Assassin, with the Lady of the Lake.</p>
+          </div>
+        </div>
+        <h3>The roll <small>6 of 15</small></h3>
+        <ul class="tvroll">
+          <li><span class="roundel" style="--c: var(--paint-lapis)"><svg><use href="#c-feather"/></svg></span><span class="who">the owner</span><span class="tag">host</span></li>
+          <li><span class="roundel" style="--c: var(--paint-rubric)"><svg><use href="#c-tower"/></svg></span><span class="who">Bran</span></li>
+          <li><span class="roundel" style="--c: #2f6247"><svg><use href="#c-acorn"/></svg></span><span class="who">Cerys</span></li>
+          <li><span class="roundel" style="--c: #6a3f74"><svg><use href="#c-moon"/></svg></span><span class="who">Dafydd</span></li>
+          <li><span class="roundel away" style="--c: #9a5a22"><svg><use href="#c-key"/></svg></span><span class="who" style="color:var(--ink-2)">Elin</span><span class="tag" style="color:var(--ink-2)">away</span></li>
+          <li class="writing"><span class="roundel" style="--c: #4b5560"><svg><use href="#c-bell"/></svg></span><span class="who">Fen</span></li>
+        </ul>
+        <div class="footnote"><span class="waiting">Waiting for the owner to begin</span><span>Last game: Secret Hitler</span></div>
+      </section>
+    </div></div>
+    <figcaption>TV lobby, 1920 × 1080 (the newest name is written in)</figcaption>
+  </figure>
+</main>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const btn = document.getElementById('theme-toggle');
+  const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  const label = () => { btn.textContent = isDark() ? 'Switch to day' : 'Switch to dark'; };
+  btn.addEventListener('click', () => { root.dataset.theme = isDark() ? 'light' : 'dark'; label(); });
+  label();
+  const [solo, dark] = location.hash.slice(1).split('-');
+  const ids = { home: 'f-home', lobby: 'f-lobby', tv: 'f-tv' };
+  if (ids[solo]) { document.body.classList.add('solo'); document.getElementById(ids[solo]).classList.add('show'); }
+  if (dark === 'dark') root.dataset.theme = 'dark';
+  const fit = () => document.querySelectorAll('.tv .device').forEach((d) => d.style.setProperty('--s', d.clientWidth / 1920));
+  addEventListener('resize', fit); fit();
+})();
+</script>

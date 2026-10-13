@@ -90,7 +90,9 @@ export function createHttpHandlers(runtime: RoomRuntime) {
       try {
         const code = parseCode(rawCode);
         const token = requireToken(req);
-        return json(await runtime.post(code, token, await readJson(req)));
+        return json(
+          await runtime.post(code, token, await readJson(req), { origin: new URL(req.url).origin }),
+        );
       } catch (e) {
         return errorResponse(e);
       }

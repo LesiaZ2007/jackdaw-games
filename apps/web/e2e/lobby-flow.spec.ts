@@ -52,12 +52,16 @@ test('three phones play a round, a refresh keeps its seat, and Play again keeps 
     .getByRole('button', { name: /Rock Paper Scissors/ })
     .first()
     .click();
-  // Next up starts small; the host opens it to reach the options.
-  await expect(host.getByText('Rounds: 3')).toBeVisible();
-  await host.getByRole('button', { name: 'Show options and rules' }).click();
+  // Rock Paper Scissors' own lobby: the rounds sit in the middle of the chalk ring.
+  const rounds = host.getByRole('group', { name: 'Rounds' });
+  await expect(rounds).toContainText('3');
   await host.getByRole('button', { name: 'Fewer rounds' }).click();
+  await expect(rounds).toContainText('2');
   await host.getByRole('button', { name: 'Fewer rounds' }).click();
-  await expect(host.getByText('Rounds: 1')).toBeVisible();
+  await expect(rounds).toContainText('1');
+  // Everyone sees the same number, but only the host can change it.
+  await expect(bran.getByRole('group', { name: 'Rounds' })).toContainText('1');
+  await expect(bran.getByRole('button', { name: 'Fewer rounds' })).toHaveCount(0);
   await host.getByRole('button', { name: 'Start Rock Paper Scissors' }).click();
 
   for (const p of [host, bran, cerys])

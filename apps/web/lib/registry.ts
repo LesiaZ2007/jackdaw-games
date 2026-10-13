@@ -1,4 +1,5 @@
 import type { GameMeta, GameRegistry } from '@jackdaw/engine';
+import { avalon } from '@jackdaw/game-avalon';
 import { rps } from '@jackdaw/game-rps';
 
 /**
@@ -7,6 +8,7 @@ import { rps } from '@jackdaw/game-rps';
  * on the client, so the server never imports React).
  */
 export const games: GameRegistry = {
+  [avalon.meta.id]: avalon,
   [rps.meta.id]: rps,
 };
 

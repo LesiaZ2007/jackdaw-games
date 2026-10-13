@@ -1,5 +1,12 @@
 import type { ComponentType } from 'react';
-import type { Avatar, GameResult, PlayerScreenProps, TvScreenProps } from '@jackdaw/engine';
+import type {
+  Avatar,
+  GameResult,
+  PlayerScreenProps,
+  Reaction,
+  ReactionKind,
+  TvScreenProps,
+} from '@jackdaw/engine';
 import type { GameArt } from './pieces';
 
 /**
@@ -55,8 +62,14 @@ export interface GameUi {
   Lobby?: ComponentType<GameLobbyProps>;
 }
 
-/** What a game's themed waiting room receives from the lobby. */
+/**
+ * What a game's themed waiting room receives from the lobby. Every game's lobby keeps Jackdaw's
+ * frame (the bar with the code, chat, stats, the TV) and draws its own centre: the players, the
+ * options and Start, in the game's own look (Avalon: its round table of shields).
+ */
 export interface GameLobbyProps {
+  /** The lobby code. */
+  code: string;
   players: ScreenPlayer[];
   me: string | null;
   hostId: string;
@@ -65,5 +78,17 @@ export interface GameLobbyProps {
   setOptions: (options: Record<string, unknown>) => void;
   /** Why the game can't start yet, or null. */
   blocker: string | null;
-  start: () => void;
+  /** Resolves once the game has started (or Start was refused; the lobby shows why). */
+  start: () => Promise<unknown>;
+  /**
+   * A seat was tapped: your own opens your name and look; the host's tap on someone else opens
+   * remove / make host. Only offer it where the lobby would act (own seat, or host).
+   */
+  onSeat: (playerId: string) => void;
+  /** Host only: back to the list of games. */
+  changeGame?: () => void;
+  /** Reactions from the last few seconds, to pop over the game's own seats. */
+  reactions: Reaction[];
+  /** Send a reaction (only offered to seated players: `me` is set). */
+  react: (kind: ReactionKind) => void;
 }

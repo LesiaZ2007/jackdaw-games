@@ -1,0 +1,28 @@
+{
+  "name": "@jackdaw/game-avalon",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Avalon, linked: Jackdaw is the lobby and the live Avalon app runs the game (docs/avalon/LINK.md)",
+  "exports": {
+    ".": "./src/index.ts",
+    "./link": "./src/link.ts",
+    "./ui": "./src/ui/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jackdaw/engine": "workspace:*",
+    "@jackdaw/ui": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@jackdaw/server": "workspace:*",
+    "@types/react": "19.3.0",
+    "react": "19.3.0"
+  }
+}

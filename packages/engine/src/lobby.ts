@@ -1,4 +1,4 @@
-import type { AnyGameModule, GameRegistry, GameResult, Standing } from './contract';
+import type { AnyGameModule, GameRegistry, GameResult, LinkStatus, Standing } from './contract';
 import { GameError } from './errors';
 import {
   CHAT_LIMIT,
@@ -372,6 +372,8 @@ export function startBlocker(lobby: Lobby, ctx: Pick<Ctx, 'games'>): string | nu
 export interface StartInput {
   sessionId: string;
   seed: number;
+  /** For a linked game: what the runtime's `GameLink.start` returned. */
+  linked?: unknown;
 }
 
 export function start(lobby: Lobby, hostId: string, input: StartInput, ctx: Ctx): Lobby {
@@ -385,9 +387,11 @@ function beginSession(lobby: Lobby, input: StartInput, ctx: Ctx): Lobby {
   if (blocker) fail('PLAYER_COUNT', blocker);
   const game = gameFor(ctx, lobby.selectedGameId);
   const options = game.optionsSchema.parse(lobby.gameOptions);
+  if (game.linked && input.linked === undefined)
+    fail('NOT_SET_UP', `${game.meta.name} isn't set up on this server yet.`);
   const rng = createRng(input.seed);
   const playerIds = lobby.players.map((p) => p.id);
-  const state = game.setup({ playerIds, options, rng, now: ctx.now });
+  const state = game.setup({ playerIds, options, rng, now: ctx.now, linked: input.linked });
   const session: Session = {
     id: input.sessionId,
     gameId: game.meta.id,
@@ -497,6 +501,25 @@ export function endGame(lobby: Lobby, result: GameResult, ctx: Ctx): Lobby {
     },
     ctx.now,
   );
+}
+
+/**
+ * What a linked game's other app reported (see GameLink): a result finishes the game as usual,
+ * `abandoned` goes back to waiting with nothing recorded. `sessionId` guards against a report
+ * about a game that has already been replaced.
+ */
+export function settleLinked(lobby: Lobby, sessionId: string, status: LinkStatus, ctx: Ctx): Lobby {
+  if (!status.over || lobby.status !== 'in_game' || lobby.session?.id !== sessionId) return lobby;
+  if ('abandoned' in status)
+    return touch({ ...lobby, status: 'waiting', session: null, results: null }, ctx.now);
+  return endGame(lobby, status.result, ctx);
+}
+
+/** Whether a start or play-again right now would begin the selected game. */
+export function startWouldBegin(lobby: Lobby, playerId: string, kind: 'start' | 'playAgain') {
+  if (lobby.hostId !== playerId) return false;
+  if (kind === 'start') return lobby.status === 'waiting';
+  return lobby.status === 'results';
 }
 
 /** Back to waiting with the same game and options selected. */

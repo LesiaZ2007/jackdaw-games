@@ -30,6 +30,8 @@ export interface SetupContext<Options> {
   rng: Rng;
   /** Server time in ms. Rules never read the clock themselves (approved by Lesia, 2026-10-13). */
   now: number;
+  /** For a linked game: what its `GameLink.start` returned (e.g. the other app's room). */
+  linked?: unknown;
 }
 
 /** A timer a game wants fired: `onTimer(state, id, now)` runs once server time reaches `at`. */
@@ -123,7 +125,45 @@ export interface GameModule<State, Action, View, TableView, Options> {
    * only: everyone in the lobby reads them.
    */
   announce?(prev: State | null, next: State): Announcement[];
+
+  /** Played in another app through a `GameLink` registered with the runtime (see GameLink). */
+  linked?: boolean;
 }
+
+/**
+ * Linked games (Lesia, 2026-10-13) are played in another app, e.g. the live Avalon app. Jackdaw
+ * is their lobby: the module still declares meta, options and views, and sets `linked: true`.
+ * The server registers a `GameLink` for it with the room runtime, which does the network calls
+ * outside the pure lobby machine:
+ *
+ * - On Start (and Play again) the runtime calls `start` before the session is created and passes
+ *   what it returns to `setup` as `ctx.linked`. If it throws, nothing changes and the host sees
+ *   the error.
+ * - While the session runs, polls call `check` at most every few seconds. `over` with a result
+ *   finishes the game as usual (history, scores, results screen); `abandoned` goes back to the
+ *   lobby with nothing scored.
+ *
+ * See docs/avalon/LINK.md.
+ */
+export interface GameLink<State = unknown, Options = unknown> {
+  start(ctx: LinkStartContext<Options>): Promise<unknown>;
+  check(state: State): Promise<LinkStatus>;
+}
+
+export interface LinkStartContext<Options> {
+  lobbyCode: string;
+  hostId: string;
+  /** Seated players, in seat order. */
+  players: { id: string; name: string; avatar: { crest: string; tint: string } }[];
+  options: Options;
+  /** This lobby's page, for the other app's "Back to Jackdaw" link. */
+  returnUrl: string;
+  /** The starter's day/dark choice. */
+  look: 'light' | 'dark';
+}
+
+export type LinkStatus =
+  { over: false } | { over: true; result: GameResult } | { over: true; abandoned: true };
 
 /** A module with its type parameters erased, as the platform sees it. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

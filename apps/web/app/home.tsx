@@ -127,6 +127,9 @@ export function Home() {
           <Link href="/tv" className="home-link">
             Show a lobby on a TV
           </Link>
+          <Link href="/about" className="home-link">
+            About
+          </Link>
           <ThemeToggle />
         </nav>
       </section>

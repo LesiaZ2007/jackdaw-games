@@ -163,7 +163,7 @@ export function StartLobby({ entry }: { entry: CatalogEntry }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={20}
-            placeholder="e.g. the owner"
+            placeholder="e.g. Jackdaw"
             autoComplete="nickname"
             onKeyDown={(e) => e.key === 'Enter' && start()}
           />

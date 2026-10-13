@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import type { ZodType } from 'zod';
+import { useOptionsDraft } from '@/lib/use-options-draft';
 
 interface FieldDef {
   type: string;
@@ -33,11 +33,7 @@ export function OptionsPanel({
   /** Sends the new options; may return the save's promise. */
   onChange: (next: Record<string, unknown>) => unknown;
 }) {
-  // Changes show at once and stack while saves are in flight, so two quick taps on − both count.
-  const [draft, setDraft] = useState<Record<string, unknown> | null>(null);
-  const [pending, setPending] = useState(0);
-  if (pending === 0 && draft !== null) setDraft(null);
-  const current = draft ?? options;
+  const [current, save] = useOptionsDraft(options, onChange);
 
   const shape = (schema as unknown as { shape?: Record<string, ZodType> }).shape;
   if (!shape || Object.keys(shape).length === 0) return null;
@@ -48,12 +44,7 @@ export function OptionsPanel({
         const f = field as unknown as FieldDef & { def: { type: string } };
         const type = f.def.type;
         const value = current[key];
-        const set = (v: unknown) => {
-          const next = { ...current, [key]: v };
-          setDraft(next);
-          setPending((n) => n + 1);
-          void Promise.resolve(onChange(next)).finally(() => setPending((n) => n - 1));
-        };
+        const set = (v: unknown) => save({ ...current, [key]: v });
         return (
           <div key={key} className="options__row">
             <dt>{f.description ?? label(key)}</dt>

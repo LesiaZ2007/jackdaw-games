@@ -198,6 +198,8 @@ export interface Seat {
   me?: boolean;
   /** Animate this token being placed (the newest arrival). */
   landing?: boolean;
+  /** What tapping this seat does, e.g. "Remove Bran". With `onSeat`, the seat becomes a button. */
+  action?: string;
 }
 
 /**
@@ -210,12 +212,15 @@ export function SeatTrack({
   cols = 5,
   tokenSize,
   className,
+  onSeat,
 }: {
   seats: Seat[];
   spaces?: number;
   cols?: number;
   tokenSize?: number;
   className?: string;
+  /** Called with a seat's player id when a seat that has an `action` is tapped. */
+  onSeat?: (id: string) => void;
 }) {
   return (
     <ol
@@ -249,6 +254,7 @@ export function SeatTrack({
               'jd-space',
               seat.landing && 'jd-space--landing',
               seat.me && 'jd-space--me',
+              onSeat && seat.action && 'jd-space--tap',
             )}
             aria-label={`Seat ${i + 1}, ${seat.name}${seat.me ? ' (you)' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}`}
           >
@@ -262,6 +268,14 @@ export function SeatTrack({
             )}
             <Token avatar={seat.avatar} host={seat.host} away={seat.away} />
             <span className="jd-who">{seat.name}</span>
+            {onSeat && seat.action && (
+              <button
+                type="button"
+                className="jd-space__tap"
+                aria-label={seat.action}
+                onClick={() => onSeat(seat.id)}
+              />
+            )}
           </li>
         );
       })}

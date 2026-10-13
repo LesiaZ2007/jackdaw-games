@@ -1156,3 +1156,28 @@
   background: rgba(241, 233, 214, 0.14);
   color: var(--p-card);
 }
+
+.avalon[data-printed] .print-layer {
+  display: block;
+  position: absolute;
+  inset: -48px;
+  background-color: var(--p-ink);
+}
+
+.avalon[data-printed] .print-far {
+  opacity: 0.07;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' fill='none' stroke='black' stroke-width='1.5'%3E%3Cpath d='M48 0 96 48 48 96 0 48Z'/%3E%3Ccircle cx='48' cy='48' r='3' fill='black' stroke='none'/%3E%3C/svg%3E")
+    0 0 / 96px 96px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' fill='none' stroke='black' stroke-width='1.5'%3E%3Cpath d='M48 0 96 48 48 96 0 48Z'/%3E%3Ccircle cx='48' cy='48' r='3' fill='black' stroke='none'/%3E%3C/svg%3E")
+    0 0 / 96px 96px;
+  transform: translate(calc(var(--px, 0) * -10px), calc(var(--py, 0) * -10px));
+}
+
+.avalon[data-printed] .print-near {
+  opacity: 0.1;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' fill='black'%3E%3Cg transform='translate(60 70)'%3E%3Cpath d='M0-16C5-9 5-3 0 4-5-3-5-9 0-16Z'/%3E%3Cpath d='M-2 2C-8-4-15-2-15 4-15 9-9 10-6 6-5 9-2 9 0 6 2 9 5 9 6 6 9 10 15 9 15 4 15-2 8-4 2 2Z'/%3E%3Crect x='-7' y='7' width='14' height='3' rx='1.5'/%3E%3C/g%3E%3Cg transform='translate(190 185) scale(.8)'%3E%3Cpath d='M0-16C5-9 5-3 0 4-5-3-5-9 0-16Z'/%3E%3Cpath d='M-2 2C-8-4-15-2-15 4-15 9-9 10-6 6-5 9-2 9 0 6 2 9 5 9 6 6 9 10 15 9 15 4 15-2 8-4 2 2Z'/%3E%3Crect x='-7' y='7' width='14' height='3' rx='1.5'/%3E%3C/g%3E%3C/svg%3E")
+    0 0 / 260px 260px;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' fill='black'%3E%3Cg transform='translate(60 70)'%3E%3Cpath d='M0-16C5-9 5-3 0 4-5-3-5-9 0-16Z'/%3E%3Cpath d='M-2 2C-8-4-15-2-15 4-15 9-9 10-6 6-5 9-2 9 0 6 2 9 5 9 6 6 9 10 15 9 15 4 15-2 8-4 2 2Z'/%3E%3Crect x='-7' y='7' width='14' height='3' rx='1.5'/%3E%3C/g%3E%3Cg transform='translate(190 185) scale(.8)'%3E%3Cpath d='M0-16C5-9 5-3 0 4-5-3-5-9 0-16Z'/%3E%3Cpath d='M-2 2C-8-4-15-2-15 4-15 9-9 10-6 6-5 9-2 9 0 6 2 9 5 9 6 6 9 10 15 9 15 4 15-2 8-4 2 2Z'/%3E%3Crect x='-7' y='7' width='14' height='3' rx='1.5'/%3E%3C/g%3E%3C/svg%3E")
+    0 0 / 260px 260px;
+  transform: translate(calc(var(--px, 0) * -26px), calc(var(--py, 0) * -26px));
+}

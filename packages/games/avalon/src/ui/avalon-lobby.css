@@ -45,8 +45,21 @@
   outline-color: var(--p-vert);
 }
 
+/* The page ground the app draws behind everything; only Parchment shows its print layers. */
+.avalon .av-ground {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.avalon .print-layer {
+  display: none;
+}
+
 /* The app's .stage: the table, with the hand at its foot. */
 .avalon .av-stage {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 4px;
@@ -73,8 +86,8 @@
     width: min(100%, max(520px, calc(100dvh - 110px)));
   }
 }
-/* Laptops: the hand beside the table, as the app's lobby lays it out (hand 400–480px). */
-@container avalon (min-width: 860px) {
+/* Laptops: the hand beside the table, as the app's lobby lays it out (the app uses a 400–480px hand). */
+@container avalon (min-width: 760px) {
   .avalon .av-stage {
     grid-template-columns: minmax(340px, 440px) minmax(0, 1fr);
     grid-template-areas: 'hand table';

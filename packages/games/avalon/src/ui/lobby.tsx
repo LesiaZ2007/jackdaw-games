@@ -5,7 +5,6 @@ import { REACTIONS, REACTION_NAMES, type Reaction, type ReactionKind } from '@ja
 import {
   CREST_CHOICES,
   Crest,
-  ReactionIcon,
   reactionOf,
   useTheme,
   type GameLobbyProps,
@@ -28,7 +27,7 @@ import {
   type Role,
 } from '../lineup';
 import { defaultOptions, lineupSettings, optionsSchema, type AvalonOptions } from '../rules';
-import { Crown, RoleEmblem } from './art';
+import { AvalonReactionIcon, Crown, RoleEmblem } from './art';
 import './avalon-copied.css';
 import './avalon-lobby.css';
 
@@ -153,7 +152,7 @@ function RoundTable({
                 role="img"
                 aria-label={`${p.name}: ${REACTION_NAMES[reaction.kind as ReactionKind] ?? 'reacted'}`}
               >
-                <ReactionIcon kind={reaction.kind} />
+                <AvalonReactionIcon kind={reaction.kind} />
               </span>
             )}
             <span className="seat-name">
@@ -189,7 +188,7 @@ function ReactionBar({ onReact }: { onReact: (kind: ReactionKind) => void }) {
           aria-label={REACTION_NAMES[kind]}
           title={REACTION_NAMES[kind]}
         >
-          <ReactionIcon kind={kind} />
+          <AvalonReactionIcon kind={kind} />
         </button>
       ))}
     </div>
@@ -286,6 +285,11 @@ export function AvalonLobby({
 
   return (
     <div className="avalon" data-printed={look === 'light' ? '' : undefined}>
+      {/* Parchment's printed ground: a faint lozenge lattice and scattered fleurs-de-lis. */}
+      <div className="av-ground" aria-hidden="true">
+        <span className="print-layer print-far" />
+        <span className="print-layer print-near" />
+      </div>
       <div className="av-stage">
         <div className="table-zone">
           <RoundTable

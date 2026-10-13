@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import type {
   Avatar,
   GameResult,
@@ -61,6 +61,12 @@ export interface GameUi {
    */
   Lobby?: ComponentType<GameLobbyProps>;
   /**
+   * Optional: the TV's lobby once this game is chosen, in the game's own look (Avalon: its round
+   * table). The platform hands it the join panel (address, code chits, QR) to place, and keeps the
+   * night so far below it. Without it the TV shows Jackdaw's lobby with the game's box lid.
+   */
+  TvLobby?: ComponentType<GameTvLobbyProps>;
+  /**
    * The TV screen fills the whole display, with no Jackdaw strip above it (Avalon: its own TV
    * page, which has its own header).
    */
@@ -98,6 +104,19 @@ export interface GameLobbyProps {
   react: (kind: ReactionKind) => void;
   /** The lobby's chat, drawn in the game's own style. */
   chat: LobbyChat;
+}
+
+/** What a game's TV lobby receives: public facts only (a TV has no seat). */
+export interface GameTvLobbyProps {
+  code: string;
+  players: ScreenPlayer[];
+  hostId: string;
+  options: Record<string, unknown>;
+  reactions: Reaction[];
+  /** How to join: the address, the code chits and the QR code, ready to place. */
+  join: ReactNode;
+  /** "Waiting for the owner to start", or why the game can't start yet. */
+  status: string;
 }
 
 /**

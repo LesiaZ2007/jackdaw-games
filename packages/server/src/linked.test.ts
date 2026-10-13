@@ -46,6 +46,7 @@ function fakeLink() {
   let status: LinkStatus = { over: false };
   let checks = 0;
   let fail: string | null = null;
+  const ended: FarState[] = [];
   const link: GameLink<FarState, object> = {
     async start(ctx) {
       calls.push(ctx);
@@ -59,6 +60,10 @@ function fakeLink() {
       checks++;
       return status;
     },
+    async end(state) {
+      ended.push(state);
+      if (fail) throw new Error(fail);
+    },
   };
   return {
     link: link as GameLink,
@@ -66,6 +71,7 @@ function fakeLink() {
     setStatus: (s: LinkStatus) => (status = s),
     failWith: (m: string | null) => (fail = m),
     checks: () => checks,
+    ended,
   };
 }
 
@@ -192,6 +198,21 @@ describe('linked games', () => {
     expect(back.status).toBe('waiting');
     expect(back.history).toHaveLength(0);
     expect(back.scores).toEqual({});
+  });
+
+  it('ends the game in its app too when the host ends it here, even if that call fails', async () => {
+    const { runtime, code, fake } = await lobbyWithLink();
+    await runtime.post(code, TOKENS.ana, { type: 'start' });
+    const back = await runtime.post(code, TOKENS.ana, { type: 'endGame' });
+    expect(back.status).toBe('waiting');
+    expect(fake.ended.map((s) => s.room)).toEqual(['ROOM1']);
+
+    await runtime.post(code, TOKENS.ana, { type: 'start' });
+    fake.failWith('Far Game is down.');
+    const again = await runtime.post(code, TOKENS.ana, { type: 'endGame' });
+    expect(again.status).toBe('waiting');
+    expect(again.history).toHaveLength(0);
+    expect(fake.ended.map((s) => s.room)).toEqual(['ROOM1', 'ROOM2']);
   });
 
   it("refuses to seat the wrong table if someone joined while the app's room was being made", async () => {

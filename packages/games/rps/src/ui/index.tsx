@@ -1,6 +1,7 @@
 'use client';
 
 import type { GameUi } from '@jackdaw/ui';
+import { RpsLobby } from './lobby';
 import { PlayerScreen } from './player';
 import { TvScreen } from './tv';
 
@@ -31,4 +32,5 @@ export const rpsUi: GameUi = {
   },
   PlayerScreen,
   TvScreen,
+  Lobby: RpsLobby,
 };

@@ -107,3 +107,12 @@ exports `PlayerScreen` (`{ view, tableView, me, players, sendAction }`) and `TvS
 (`{ tableView, players }`). Games register in one file, `apps/web/lib/registry.ts`, which is injected into the room
 runtime and also feeds the catalog. A game package exports its rules module from `.` and its
 screens from `./ui`, so the server never imports React.
+
+Additions approved by Lesia:
+
+- **`actionSchema`** is a Zod schema for one action. The platform validates untrusted input with it before calling `applyAction`.
+- **`GameResult.standings?`** (2026-10-12) holds one `{ playerId, outcome: 'win' | 'loss' | 'draw', team?, role? }` per player. `team` and `role` are display labels such as "Evil" and "Assassin". Every game with teams or roles should report them, because they feed the lobby's Game stats.
+  - Where a game leaves standings out, the lobby derives win/loss from `winners`.
+  - The lobby keeps 200 games of history. Each entry records the participants, their names at the time and their standings.
+  - Polls carry the latest 10 entries plus `historyCount`.
+  - `GET /api/lobby/:code/stats` returns the full history and `lobbyStats(history)`.

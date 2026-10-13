@@ -59,6 +59,44 @@
   }
 }
 
+/* Missed messages, on the chat button (phones and tablets; laptops dock the chat) */
+.lobby-bar__chat {
+  position: relative;
+}
+.lobby-bar__badge {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--gules);
+  color: var(--on-fill);
+  box-shadow: 0 0 0 2px var(--table);
+  font: 800 14px/1 var(--font-plaque);
+  letter-spacing: 0.02em;
+  animation: badge-pop 360ms var(--ease-out);
+}
+@keyframes badge-pop {
+  0% {
+    transform: scale(0.3);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lobby-bar__badge {
+    animation: none;
+  }
+}
+
 /* ── Layout ── */
 .lobby-layout {
   flex: 1;
@@ -319,6 +357,28 @@
 }
 
 /* ── Manage players ── */
+/* The host's sheet for one player, opened by tapping their seat */
+.seat-sheet {
+  display: grid;
+  gap: var(--space-3);
+}
+.seat-sheet__who {
+  --ring-bg: var(--paper);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+.seat-sheet__note {
+  font-size: var(--step-0);
+  color: var(--ink-2);
+}
+.seat-sheet__remove.jd-plaque {
+  background: var(--gules);
+  color: var(--on-fill);
+  outline-color: var(--on-fill);
+}
+
 .manage {
   list-style: none;
   margin: 0;
@@ -436,17 +496,18 @@
   margin: 0;
   padding: 0 0 var(--space-2);
   display: grid;
+  /* names in one column (as wide as the longest, up to a limit), messages beside them */
+  grid-template-columns: fit-content(8.5em) minmax(0, 1fr);
   align-content: start;
-  gap: 2px;
+  column-gap: var(--space-3);
+  row-gap: 2px;
 }
-/* One message: token and name on the first line, the text beneath, both indented past the token */
 .chat__msg {
-  --ring-bg: var(--paper);
   --who: var(--c, var(--ink));
+  grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  align-items: center;
-  column-gap: var(--space-2);
+  grid-template-columns: subgrid;
+  align-items: baseline;
   font-size: 18px;
   line-height: 1.4;
 }
@@ -456,21 +517,14 @@
 .chat__msg:first-child {
   margin-top: 0;
 }
-.chat__token {
-  grid-row: 1;
-  display: grid;
-  place-items: center;
-}
-.chat__msg .jd-token {
-  --ring-bg: var(--paper);
-}
 .chat__who {
-  grid-row: 1;
+  grid-column: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 800 18px/1.1 var(--font-plaque);
+  text-align: right;
+  font: 800 17px/1.4 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--who);
@@ -490,6 +544,7 @@
   }
 }
 .chat__empty {
+  grid-column: 1 / -1;
   color: var(--ink-2);
   font-size: 18px;
 }

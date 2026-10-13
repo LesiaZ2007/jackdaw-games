@@ -157,5 +157,6 @@ Additions approved by Lesia:
     `settleLinked(lobby, sessionId, status, ctx)` applies it. A failed check waits for the next.
 - **`GameUi.Lobby`** (optional) draws a game's own lobby (players, options, Start), full screen
   under Jackdaw's bar, chat included (`LobbyChat`: lines, send, open/close); games without one
-  use Jackdaw's lobby. Only Avalon has one. It gets the code, players, options, `start()`, `onSeat(id)` (own seat opens your look;
+  use Jackdaw's lobby. Only Avalon has one. A game's own lobby draws its chat with the kit's
+  `LobbyChatPanel` (restyled through `--lc-*` properties), unless it ports one exactly (Avalon). It gets the code, players, options, `start()`, `onSeat(id)` (own seat opens your look;
   the host's tap opens remove / make host) and `changeGame` for the host.

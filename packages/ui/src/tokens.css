@@ -1,0 +1,109 @@
+/*
+ * Jackdaw design tokens. STYLE_GUIDE.md explains each one; nothing on screen should use a
+ * literal colour, font or size that isn't defined here.
+ *
+ * Fonts are loaded by the app (next/font) into --ff-* variables; the stacks below fall back
+ * to similar system faces if they're missing.
+ */
+:root {
+  /* Day: Pebble */
+  --table: #cfcecb;
+  --table-2: #bfbebb;
+  --paper: #f7f7f5;
+  --ink: #1d1d1c;
+  --ink-2: #4a4947;
+  --rule: #9a9995;
+  --on-fill: #f6f0e1;
+  --or: #a77d2c;
+  --danger: #a63a30;
+  --shadow: rgba(29, 29, 28, 0.28);
+  --footprint: rgba(90, 88, 84, 0.15);
+  --grain-opacity: 0.45;
+
+  /* Heraldic fills: printed, so the same in both themes */
+  --gules: #a63a30;
+  --azure: #2b5683;
+  --vert: #30634a;
+  --sable: #3a3d42;
+  --purpure: #6a3f74;
+  --tenne: #9a5a22;
+
+  /* Player tints, by avatar id (carried over from Avalon) */
+  --tint-slate: #3e5b6b;
+  --tint-plum: #5b4b6f;
+  --tint-moss: #4f6348;
+  --tint-umber: #6c5a3d;
+  --tint-teal: #3e5f5a;
+  --tint-mauve: #6a4b57;
+  --tint-indigo: #4a5678;
+  --tint-olive: #5e6440;
+  --tint-pewter: #55606c;
+  --tint-rust: #6f5147;
+  --tint-ochre: #7a6930;
+  --tint-pine: #33604a;
+  --tint-violet: #4c4980;
+  --tint-orchid: #6e4475;
+  --tint-lagoon: #2d6874;
+
+  /* Type */
+  --font-display: var(--ff-display, 'Grenze Gotisch'), 'UnifrakturMaguntia', Georgia, serif;
+  --font-code: var(--ff-code, 'Grenze'), Georgia, serif;
+  --font-plaque: var(--ff-plaque, 'Big Shoulders'), 'Arial Narrow', sans-serif;
+  --font-body: var(--ff-body, 'Alegreya Sans'), 'Segoe UI', system-ui, sans-serif;
+  --step--1: clamp(0.84rem, 0.8rem + 0.15vw, 0.92rem);
+  --step-0: clamp(1.06rem, 1rem + 0.25vw, 1.19rem);
+  --step-1: clamp(1.3rem, 1.2rem + 0.4vw, 1.56rem);
+  --step-2: clamp(1.6rem, 1.4rem + 0.8vw, 2.1rem);
+  --step-3: clamp(1.9rem, 1.6rem + 1.2vw, 2.6rem);
+  --step-4: clamp(2.6rem, 2rem + 2.5vw, 4rem);
+  --step-5: clamp(4rem, 3rem + 4vw, 6rem);
+
+  /* Space */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --gutter: max(16px, env(safe-area-inset-left, 0px));
+  --tap: 44px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --table: #1c1e20;
+    --table-2: #25282b;
+    --paper: #2b2f32;
+    --ink: #ede5d3;
+    --ink-2: #aeb5b8;
+    --rule: #4f5559;
+    --or: #d2aa5c;
+    --danger: #d4695d;
+    --shadow: rgba(0, 0, 0, 0.55);
+    --footprint: rgba(170, 176, 179, 0.16);
+    --grain-opacity: 0.25;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --table: #1c1e20;
+  --table-2: #25282b;
+  --paper: #2b2f32;
+  --ink: #ede5d3;
+  --ink-2: #aeb5b8;
+  --rule: #4f5559;
+  --or: #d2aa5c;
+  --danger: #d4695d;
+  --shadow: rgba(0, 0, 0, 0.55);
+  --footprint: rgba(170, 176, 179, 0.16);
+  --grain-opacity: 0.25;
+  color-scheme: dark;
+}

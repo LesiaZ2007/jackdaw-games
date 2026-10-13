@@ -1,0 +1,548 @@
+/*
+ * The Jackdaw kit: printed pieces built from tokens.css. Class names are prefixed `jd-` so a
+ * game's own styles never collide with the shell. See STYLE_GUIDE.md for what each piece is.
+ */
+
+/* ── The table (page background) ─────────────────────────────────────────── */
+.jd-table {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  background: var(--table);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+.jd-table::before,
+.jd-table::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+/* jackdaw footprints wandering across the table */
+.jd-table::before {
+  background: var(--footprint);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M30 40l0-9M30 40l-5-6M30 40l5-6M30 40l0 4'/%3E%3Cpath d='M52 30l0-9M52 30l-5-6M52 30l5-6M52 30l0 4'/%3E%3Cpath d='M118 128l0-9M118 128l-5-6M118 128l5-6M118 128l0 4'/%3E%3Cpath d='M140 118l0-9M140 118l-5-6M140 118l5-6M140 118l0 4'/%3E%3C/g%3E%3C/svg%3E")
+    0 0 / 180px 180px repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M30 40l0-9M30 40l-5-6M30 40l5-6M30 40l0 4'/%3E%3Cpath d='M52 30l0-9M52 30l-5-6M52 30l5-6M52 30l0 4'/%3E%3Cpath d='M118 128l0-9M118 128l-5-6M118 128l5-6M118 128l0 4'/%3E%3Cpath d='M140 118l0-9M140 118l-5-6M140 118l5-6M140 118l0 4'/%3E%3C/g%3E%3C/svg%3E")
+    0 0 / 180px 180px repeat;
+}
+/* light print grain */
+.jd-table::after {
+  opacity: var(--grain-opacity);
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Type helpers ────────────────────────────────────────────────────────── */
+.jd-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 0.95;
+  text-wrap: balance;
+  margin: 0;
+}
+.jd-label {
+  font: 700 13px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+}
+
+/* ── Lid: a printed panel with a double rule (fleuron corners come from <Lid>) ── */
+.jd-lid {
+  position: relative;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: -7px;
+}
+.jd-lid > .jd-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  color: var(--ink);
+  pointer-events: none;
+}
+.jd-corner.tl {
+  top: 3px;
+  left: 3px;
+}
+.jd-corner.tr {
+  top: 3px;
+  right: 3px;
+  transform: scaleX(-1);
+}
+.jd-corner.bl {
+  bottom: 3px;
+  left: 3px;
+  transform: scaleY(-1);
+}
+.jd-corner.br {
+  bottom: 3px;
+  right: 3px;
+  transform: scale(-1);
+}
+
+/* ── Plaques (buttons) ───────────────────────────────────────────────────── */
+.jd-plaque {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 20px;
+  font: 800 21px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: -6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 120ms var(--ease-out);
+}
+.jd-plaque:active {
+  transform: translateY(1px);
+}
+.jd-plaque svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.jd-plaque--go {
+  background: var(--vert);
+  color: var(--on-fill);
+  outline-color: var(--on-fill);
+}
+.jd-plaque--small {
+  min-height: var(--tap);
+  font-size: 17px;
+  padding: 0 14px;
+}
+.jd-plaque[disabled],
+.jd-plaque[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.jd-plaque:focus-visible,
+.jd-iconbtn:focus-visible,
+.jd-input:focus-visible,
+.jd-box:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+
+.jd-iconbtn {
+  appearance: none;
+  width: var(--tap);
+  height: var(--tap);
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  padding: 0;
+}
+.jd-iconbtn svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+.jd-input {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 14px;
+  font: 500 18px var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+}
+.jd-input::placeholder {
+  color: var(--ink-2);
+  opacity: 0.8;
+}
+.jd-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.jd-or::before,
+.jd-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* ── Chits: lobby code letters ───────────────────────────────────────────── */
+.jd-chits {
+  display: flex;
+  gap: var(--chit-gap, 6px);
+  filter: drop-shadow(0 calc(var(--t, 44px) * 0.05) 0 var(--shadow));
+}
+.jd-chit {
+  --t: 44px;
+  width: var(--t);
+  height: calc(var(--t) * 1.12);
+  flex: none;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: var(--fill, var(--paper));
+  color: var(--on-fill);
+  clip-path: polygon(16% 0, 84% 0, 100% 14%, 100% 86%, 84% 100%, 16% 100%, 0 86%, 0 14%);
+  font: 800 calc(var(--t) * 0.7) / 1 var(--font-code);
+  padding-bottom: calc(var(--t) * 0.06);
+  text-transform: uppercase;
+}
+.jd-chit::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--t) * 0.07);
+  border: 1px solid rgba(246, 240, 225, 0.55);
+  clip-path: polygon(14% 0, 86% 0, 100% 12%, 100% 88%, 86% 100%, 14% 100%, 0 88%, 0 12%);
+}
+.jd-chit--blank {
+  --fill: var(--paper);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.jd-chit--blank::before {
+  border-color: var(--rule);
+}
+.jd-chit--slot {
+  --fill: color-mix(in srgb, var(--paper) 45%, transparent);
+  color: var(--ink-2);
+}
+.jd-chit--slot::before {
+  border: 1.5px solid var(--rule);
+}
+.jd-chits--flip .jd-chit {
+  animation: jd-chit-in 520ms var(--ease-out) both;
+}
+.jd-chits--flip .jd-chit:nth-child(2) {
+  animation-delay: 70ms;
+}
+.jd-chits--flip .jd-chit:nth-child(3) {
+  animation-delay: 140ms;
+}
+.jd-chits--flip .jd-chit:nth-child(4) {
+  animation-delay: 210ms;
+}
+@keyframes jd-chit-in {
+  from {
+    transform: rotateX(80deg) translateY(-6px);
+    opacity: 0;
+  }
+}
+
+/* A hidden input laid over code chits, so typing a code still uses a real text field */
+.jd-code-entry {
+  position: relative;
+  display: inline-flex;
+}
+.jd-code-entry input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1em;
+  cursor: text;
+}
+.jd-code-entry input:focus-visible + .jd-chits {
+  outline: 3px solid var(--or);
+  outline-offset: 4px;
+}
+
+/* ── Tokens: players ─────────────────────────────────────────────────────── */
+.jd-token {
+  --z: 46px;
+  --ring-bg: var(--table);
+  width: var(--z);
+  height: var(--z);
+  flex: none;
+  border-radius: 50%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: var(--c, var(--sable));
+  color: var(--on-fill);
+  box-shadow:
+    0 0 0 calc(var(--z) * 0.065) var(--ring-bg),
+    0 0 0 calc(var(--z) * 0.1) var(--rule),
+    0 3px 6px var(--shadow);
+}
+.jd-token::before,
+.jd-token::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  width: calc(var(--z) * 0.11);
+  height: calc(var(--z) * 0.09);
+  background: var(--ring-bg);
+}
+.jd-token::before {
+  left: calc(var(--z) * -0.13);
+}
+.jd-token::after {
+  right: calc(var(--z) * -0.13);
+}
+.jd-token > svg {
+  width: 64%;
+  height: 64%;
+}
+.jd-token--away {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.jd-token .jd-host {
+  position: absolute;
+  top: calc(var(--z) * -0.18);
+  right: calc(var(--z) * -0.2);
+  width: calc(var(--z) * 0.46);
+  height: calc(var(--z) * 0.46);
+  border-radius: 50%;
+  background: var(--or);
+  color: #24211e;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px var(--ring-bg);
+}
+.jd-token .jd-host svg {
+  width: 62%;
+  height: 62%;
+}
+
+/* ── Seat track ──────────────────────────────────────────────────────────── */
+.jd-track {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 5), 1fr);
+  gap: 4px;
+}
+.jd-space {
+  --ring-bg: var(--paper);
+  aspect-ratio: 1 / 1.08;
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  padding-top: 4px;
+  min-width: 0;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+}
+.jd-space:nth-child(even) {
+  --ring-bg: color-mix(in srgb, var(--paper) 86%, var(--table-2));
+  background: var(--ring-bg);
+}
+.jd-space .jd-token {
+  --z: 34px;
+}
+.jd-space .jd-n {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font: 700 12px var(--font-plaque);
+  color: var(--ink-2);
+}
+.jd-space .jd-who {
+  max-width: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 13px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.jd-space--free .jd-n {
+  position: static;
+  font: 600 22px var(--font-display);
+  color: var(--rule);
+}
+.jd-space--landing .jd-token {
+  animation: jd-place 900ms var(--ease-out) both;
+}
+@keyframes jd-place {
+  0% {
+    translate: 0 -80px;
+    scale: 1.3;
+    rotate: -14deg;
+    opacity: 0;
+  }
+  60% {
+    translate: 0 4px;
+    scale: 0.96;
+    opacity: 1;
+  }
+  100% {
+    translate: 0 0;
+    scale: 1;
+    rotate: 0deg;
+  }
+}
+
+/* ── Box lids: games ─────────────────────────────────────────────────────── */
+.jd-box {
+  appearance: none;
+  display: grid;
+  grid-template-columns: var(--art, 84px) 1fr;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  color: var(--ink);
+  font: inherit;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+}
+.jd-box__art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: var(--art-h, 92px);
+  color: var(--on-fill);
+  background-color: var(--band);
+  background-image: var(--field);
+  border-right: 2px solid var(--ink);
+}
+.jd-box__art::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid rgba(246, 240, 225, 0.6);
+}
+.jd-box__dev {
+  width: 58%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--band);
+  box-shadow: 0 0 0 2px rgba(246, 240, 225, 0.75);
+}
+.jd-box__dev svg {
+  width: 68%;
+  height: 68%;
+}
+.jd-box__body {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  align-content: center;
+  padding: 10px 12px;
+}
+.jd-box__name {
+  margin: 0;
+  font: 800 26px/0.95 var(--font-display);
+}
+.jd-box__side {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font: 700 14px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+}
+.jd-box__side span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.jd-box__side svg {
+  width: 15px;
+  height: 15px;
+}
+.jd-box__tag {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+.jd-box__why {
+  font: 800 14px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--danger);
+}
+.jd-box--unfit {
+  opacity: 0.6;
+}
+.jd-box--unfit .jd-box__art {
+  filter: grayscale(0.85);
+}
+.jd-box--selected {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+
+/* Heraldic fields: the pattern behind each game's emblem */
+.jd-field-wavy {
+  --field: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='14'%3E%3Cpath d='M0 10c4.7-5 9.3-5 14 0s9.3 5 14 0' fill='none' stroke='%23f6f0e1' stroke-opacity='.28' stroke-width='3'/%3E%3C/svg%3E");
+}
+.jd-field-lozengy {
+  --field: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='28'%3E%3Cpath d='M10 0L20 14L10 28L0 14Z' fill='none' stroke='%23f6f0e1' stroke-opacity='.3' stroke-width='1.6'/%3E%3C/svg%3E");
+}
+.jd-field-checky {
+  --field: conic-gradient(
+      rgba(246, 240, 225, 0.18) 25%,
+      transparent 0 50%,
+      rgba(246, 240, 225, 0.18) 0 75%,
+      transparent 0
+    )
+    0 0 / 22px 22px;
+}
+.jd-field-semee {
+  --field: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cpath d='M6 2l1.2 3.2L10.5 5.5 7.8 7.4 8.7 10.6 6 8.7 3.3 10.6 4.2 7.4 1.5 5.5 4.8 5.2zM19 15l1.2 3.2 3.3.3-2.7 1.9.9 3.2-2.7-1.9-2.7 1.9.9-3.2-2.7-1.9 3.3-.3z' fill='%23f6f0e1' fill-opacity='.3'/%3E%3C/svg%3E");
+}
+.jd-field-fretty {
+  --field:
+    repeating-linear-gradient(45deg, transparent 0 9px, rgba(246, 240, 225, 0.25) 9px 11px),
+    repeating-linear-gradient(-45deg, transparent 0 9px, rgba(246, 240, 225, 0.25) 9px 11px);
+}
+.jd-field-paly {
+  --field: repeating-linear-gradient(90deg, transparent 0 9px, rgba(246, 240, 225, 0.2) 9px 18px);
+}
+.jd-field-bendy {
+  --field: repeating-linear-gradient(
+    135deg,
+    transparent 0 10px,
+    rgba(246, 240, 225, 0.18) 10px 20px
+  );
+}
+
+/* ── Bird mark ───────────────────────────────────────────────────────────── */
+.jd-mark {
+  color: var(--ink);
+  flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jd-chits--flip .jd-chit,
+  .jd-space--landing .jd-token {
+    animation: none;
+  }
+  .jd-plaque {
+    transition: none;
+  }
+}

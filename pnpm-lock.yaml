@@ -90,9 +90,19 @@ importers:
       '@jackdaw/engine':
         specifier: workspace:*
         version: link:../../engine
+      '@jackdaw/ui':
+        specifier: workspace:*
+        version: link:../../ui
       zod:
         specifier: 4.6.7
         version: 4.6.7
+    devDependencies:
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
 
   packages/server:
     dependencies:
@@ -104,7 +114,18 @@ importers:
         specifier: workspace:*
         version: link:../games/rps
 
-  packages/ui: {}
+  packages/ui:
+    dependencies:
+      '@jackdaw/engine':
+        specifier: workspace:*
+        version: link:../engine
+    devDependencies:
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
 
 packages:
 

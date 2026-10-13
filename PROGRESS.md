@@ -8,11 +8,11 @@ Read this first. CLAUDE.md has the decisions and rules, and `docs/BUILD_PLAN.md`
 
 ### Branches
 
-| Branch | State |
-| --- | --- |
-| `main` | Only the initial workspace commit. Lesia merges. |
-| `chore/phase-0-setup` | Scaffold, CI, engine, docs, round-one mockups. CI is green. |
-| `feat/phase-1` | **The working branch.** It holds Phase 0, the backend (`feat/phase-1-backend`), stats (`feat/stats`) and round-two mockups. CI is green and 64 tests pass. |
+| Branch                | State                                                                                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `main`                | Only the initial workspace commit. Lesia merges.                                                                                                           |
+| `chore/phase-0-setup` | Scaffold, CI, engine, docs, round-one mockups. CI is green.                                                                                                |
+| `feat/phase-1`        | **The working branch.** It holds Phase 0, the backend (`feat/phase-1-backend`), stats (`feat/stats`) and round-two mockups. CI is green and 64 tests pass. |
 
 ### Deployed
 

@@ -1,8 +1,16 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Token, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
-import type { Pick, RpsTableView } from '../rules';
+import {
+  Tally,
+  Token,
+  useMoment,
+  VerdictMoment,
+  type GameUi,
+  type ScreenPlayer,
+} from '@jackdaw/ui';
+import { listNames, roundWinners } from '../outcome';
+import { beats, type Pick, type RoundResult, type RpsTableView } from '../rules';
 import './tv.css';
 
 const stroke = {
@@ -60,6 +68,9 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players }) => {
   const last = view.history[view.history.length - 1];
   const board = [...view.players].sort((a, b) => (view.scores[b] ?? 0) - (view.scores[a] ?? 0));
   const top = Math.max(1, ...view.players.map((id) => view.scores[id] ?? 0));
+  const [fresh, dismiss] = useMoment(view.history.length);
+  const roundWon = last ? roundWinners(last) : [];
+  const finished = view.round > view.rounds;
 
   return (
     <div className="rps-tv">
@@ -87,7 +98,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players }) => {
                 <span className="rps-tv__bar" aria-hidden="true">
                   <i style={{ width: `${(score / top) * 100}%` }} />
                 </span>
-                <b>{score}</b>
+                <Tally value={score} />
               </li>
             );
           })}
@@ -119,12 +130,18 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players }) => {
       <section className="rps-tv__last" aria-label="Last round">
         <h2 className="rps-tv__heading">{last ? `Round ${last.round} throws` : 'Throws'}</h2>
         {last ? (
-          <ul className="rps-tv__throws">
-            {view.players.map((id) => {
+          <ul className="rps-tv__throws" key={last.round}>
+            {view.players.map((id, i) => {
               const pick = last.picks[id];
               const pts = last.points[id] ?? 0;
+              const outcome =
+                roundWon.length === 0 ? 'draw' : roundWon.includes(id) ? 'win' : 'loss';
               return (
-                <li key={id}>
+                <li
+                  key={id}
+                  className={`rps-tv__card rps-tv__card--${outcome}`}
+                  style={{ animationDelay: `${i * 110}ms` }}
+                >
                   {pick && <Throw pick={pick} size={72} />}
                   <span className="rps-tv__throw-name">{pick ? THROW_NAME[pick] : 'No throw'}</span>
                   <span className="rps-tv__seat-name">{name(id)}</span>
@@ -139,6 +156,35 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players }) => {
           </p>
         )}
       </section>
+
+      {fresh !== null && last && !finished && (
+        <VerdictMoment
+          key={last.round}
+          size="tv"
+          ms={4200}
+          outcome={roundWon.length ? 'win' : 'draw'}
+          title={roundTitle(last, roundWon, name)}
+          detail={roundDetail(last, roundWon, name)}
+          avatar={roundWon.length === 1 ? byId.get(roundWon[0]!)?.avatar : undefined}
+          onDone={dismiss}
+        />
+      )}
     </div>
   );
 };
+
+function roundTitle(last: RoundResult, winners: string[], name: (id: string) => string) {
+  if (winners.length === 0) return `Round ${last.round} is a stand-off`;
+  if (winners.length === 1) return `${name(winners[0]!)} takes round ${last.round}`;
+  return `${listNames(winners, name)} share round ${last.round}`;
+}
+
+/** "Rock beat Ash and Cerys", from the public throws only. */
+function roundDetail(last: RoundResult, winners: string[], name: (id: string) => string) {
+  if (winners.length === 0) return 'Nobody got ahead this round.';
+  const pick = last.picks[winners[0]!]!;
+  const beaten = Object.keys(last.picks).filter((id) => beats(pick, last.picks[id]!));
+  const sameThrow = winners.every((id) => last.picks[id] === pick);
+  if (!sameThrow) return 'Everyone at the top scored the same.';
+  return `${THROW_NAME[pick]} beat ${listNames(beaten, name, 3)}.`;
+}

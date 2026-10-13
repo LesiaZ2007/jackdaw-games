@@ -70,11 +70,11 @@ for (const scheme of SCHEMES) {
       .getByRole('button', { name: /Rock Paper Scissors/ })
       .first()
       .click();
-    const rounds = host.getByRole('group', { name: 'Rounds' });
+    const rounds = host.getByRole('group', { name: 'Rounds' }).locator('b');
     await host.getByRole('button', { name: 'Fewer rounds' }).click();
-    await expect(rounds).toContainText('2');
+    await expect(rounds).toHaveText('2');
     await host.getByRole('button', { name: 'Fewer rounds' }).click();
-    await expect(rounds).toContainText('1');
+    await expect(rounds).toHaveText('1');
     await host.getByRole('button', { name: 'Start Rock Paper Scissors' }).click();
 
     // While a game runs, the TV's read carries the public table only: no private view, no

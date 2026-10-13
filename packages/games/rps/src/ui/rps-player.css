@@ -1,0 +1,171 @@
+/* Rock Paper Scissors, phone and table. Built from @jackdaw/ui tokens. */
+.rps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 640px;
+  /* fill the screen below the lobby bar, so the throws sit in the bottom third */
+  min-height: calc(100dvh - 96px);
+}
+.rps__hand {
+  margin-top: auto;
+}
+.rps__head h2 {
+  font-size: var(--step-3);
+}
+.rps__head p {
+  margin: var(--space-1) 0 0;
+  color: var(--ink-2);
+}
+.rps__board ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.rps__board li {
+  --ring-bg: var(--paper);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+.rps__board li + li {
+  border-top: 1px solid var(--rule);
+}
+.rps__board .jd-token {
+  --ring-bg: var(--paper);
+}
+.rps__board li.me {
+  background: color-mix(in srgb, var(--paper) 82%, var(--table-2));
+}
+.rps__name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rps__name small {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+.rps__thrown,
+.rps__thinking {
+  font: 700 13px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.rps__thrown {
+  color: var(--ink);
+}
+.rps__thrown::before {
+  content: '✓ ';
+}
+.rps__thinking {
+  color: var(--ink-2);
+}
+.rps__score {
+  min-width: 2ch;
+  text-align: right;
+  font: 800 26px var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+.rps__reveal {
+  display: grid;
+  gap: var(--space-2);
+}
+.rps__reveal ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-2);
+}
+.rps__reveal li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  font-weight: 700;
+}
+.rps__reveal li span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rps__reveal b {
+  font: 800 18px var(--font-plaque);
+}
+.rps__throw {
+  display: grid;
+  color: var(--ink);
+}
+.rps__hand {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: var(--space-2);
+  margin-inline: calc(var(--gutter) * -1);
+  padding: var(--space-4) var(--gutter) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to bottom, transparent, var(--table) 18%);
+}
+.rps__picks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.rps__pick {
+  appearance: none;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  min-height: 108px;
+  padding: var(--space-3) var(--space-1);
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: -6px;
+  font: 800 18px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 140ms var(--ease-out);
+}
+.rps__pick:active {
+  transform: translateY(1px);
+}
+.rps__pick[aria-checked='true'] {
+  color: var(--on-fill);
+  background: var(--vert);
+  outline-color: var(--on-fill);
+}
+.rps__pick:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+.rps__status {
+  margin: 0;
+  text-align: center;
+  color: var(--ink-2);
+  font-size: 15px;
+}
+@media (min-width: 768px) {
+  .rps__hand {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rps__pick {
+    transition: none;
+  }
+}

@@ -1,0 +1,163 @@
+/* Sheets, toasts and the recap timeline. Built from tokens.css; imported by overlays.tsx. */
+.jd-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+}
+.jd-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(20, 20, 19, 0.45);
+  cursor: pointer;
+}
+.jd-sheet__panel {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  max-height: min(88dvh, 860px);
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  box-shadow: 0 -20px 50px -24px var(--shadow);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: jd-sheet-up 320ms var(--ease-out) both;
+}
+.jd-sheet__panel:focus {
+  outline: none;
+}
+.jd-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-2);
+}
+.jd-sheet__title {
+  font-size: var(--step-3);
+}
+.jd-sheet__body {
+  overflow: auto;
+  padding: 0 var(--space-4) var(--space-5);
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+@media (min-width: 768px) {
+  .jd-sheet {
+    align-items: center;
+  }
+  .jd-sheet__panel {
+    border-bottom: 2px solid var(--ink);
+  }
+  .jd-sheet--right {
+    justify-items: end;
+    align-items: stretch;
+  }
+  .jd-sheet--right .jd-sheet__panel {
+    max-height: none;
+    height: 100dvh;
+    max-width: 440px;
+    border-width: 0 0 0 2px;
+    animation-name: jd-sheet-left;
+  }
+}
+@keyframes jd-sheet-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+@keyframes jd-sheet-left {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+}
+
+.jd-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  z-index: 60;
+  translate: -50% 0;
+  width: max-content;
+  max-width: min(92vw, 440px);
+  padding: 12px 18px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 700 16px/1.35 var(--font-body);
+  box-shadow: 0 10px 30px -10px var(--shadow);
+  animation: jd-sheet-up 260ms var(--ease-out) both;
+}
+
+.jd-recap {
+  display: grid;
+  gap: var(--space-3);
+}
+.jd-recap__title {
+  font-size: var(--step-2);
+}
+.jd-recap__list,
+.jd-recap__list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.jd-recap__list {
+  display: grid;
+  gap: var(--space-3);
+  border-left: 2px solid var(--ink);
+  padding-left: var(--space-4);
+}
+.jd-recap__round {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+}
+.jd-recap__round::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--space-4) * -1 - 6px);
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  transform: rotate(45deg);
+}
+.jd-recap__n {
+  font: 700 13px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+}
+.jd-recap__event {
+  display: grid;
+  gap: 2px;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.jd-recap__secret {
+  justify-self: start;
+  padding: 2px 8px;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--or) 22%, var(--paper));
+  border-left: 3px solid var(--or);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jd-sheet__panel,
+  .jd-toast {
+    animation: none;
+  }
+}

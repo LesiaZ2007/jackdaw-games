@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { LobbyStatus } from '@jackdaw/engine';
 import { BirdMark, Chits, Icon } from '@jackdaw/ui';
+import { badgeText } from '@/lib/unread';
 
 export type Panel = 'share' | 'stats' | 'chat' | 'menu' | 'me' | null;
 
@@ -11,12 +12,13 @@ export function LobbyBar({
   code,
   status,
   onOpen,
-  chatCount,
+  unread,
 }: {
   code: string;
   status: LobbyStatus;
   onOpen: (p: Panel) => void;
-  chatCount: number;
+  /** Messages from others since the chat was last open (phones only; laptops dock the chat). */
+  unread: number;
 }) {
   return (
     <header className="lobby-bar">
@@ -53,9 +55,15 @@ export function LobbyBar({
           type="button"
           className="jd-iconbtn lobby-bar__chat"
           onClick={() => onOpen('chat')}
-          aria-label={`Chat, ${chatCount} messages`}
+          aria-label={unread > 0 ? `Chat, ${unread} unread` : 'Chat'}
         >
           <Icon.chat />
+          {unread > 0 && (
+            // Keyed on the count, so each new message pops the badge again.
+            <span key={unread} className="lobby-bar__badge" aria-hidden="true">
+              {badgeText(unread)}
+            </span>
+          )}
         </button>
         <button
           type="button"

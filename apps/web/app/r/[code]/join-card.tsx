@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import type { Avatar, ClientMessage, LobbySnapshot } from '@jackdaw/engine';
-import { Chits, Crest, CREST_CHOICES, Lid, Plaque, TINT_CHOICES, Token } from '@jackdaw/ui';
+import {
+  AvatarPicker,
+  Chits,
+  CREST_CHOICES,
+  Lid,
+  Plaque,
+  TINT_CHOICES,
+  takenAvatars,
+  Token,
+} from '@jackdaw/ui';
 import {
   getDeviceToken,
   rememberAvatar,
@@ -61,8 +70,6 @@ export function JoinCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const crestTaken = new Set(taken.map((a) => a.crest));
-  const tintTaken = new Set(taken.map((a) => a.tint));
   const full = snapshot.players.length >= 15;
   const game = catalogEntry(snapshot.selectedGameId);
   const playing = snapshot.status === 'in_game';
@@ -152,57 +159,26 @@ export function JoinCard({
         </div>
       ) : (
         <div className="grid gap-4">
-          <div className="flex items-center gap-4">
-            <Token avatar={avatar} size={52} />
-            <label className="grid flex-1 gap-1.5">
-              <span className="jd-label">Your name</span>
+          <label className="join-card__name">
+            <span className="jd-label">Your name</span>
+            <span className="join-card__row">
+              <Token avatar={avatar} size={52} />
               <input
                 className="jd-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={20}
-                placeholder="e.g. Bran"
+                placeholder="e.g. Jackdaw"
                 autoComplete="nickname"
                 onKeyDown={(e) => e.key === 'Enter' && join()}
               />
-            </label>
-          </div>
-          <fieldset className="join-card__pick">
-            <legend className="jd-label">Your crest</legend>
-            <div className="join-card__crests">
-              {CREST_CHOICES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className="join-card__crest"
-                  aria-pressed={avatar.crest === c}
-                  disabled={crestTaken.has(c)}
-                  aria-label={`${c}${crestTaken.has(c) ? ', taken' : ''}`}
-                  onClick={() => setAvatar({ ...avatar, crest: c })}
-                  style={{ '--c': `var(--tint-${avatar.tint})` } as React.CSSProperties}
-                >
-                  <Crest id={c} />
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset className="join-card__pick">
-            <legend className="jd-label">Your colour</legend>
-            <div className="join-card__tints">
-              {TINT_CHOICES.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className="join-card__tint"
-                  aria-pressed={avatar.tint === t}
-                  disabled={tintTaken.has(t)}
-                  aria-label={`${t}${tintTaken.has(t) ? ', taken' : ''}`}
-                  onClick={() => setAvatar({ ...avatar, tint: t })}
-                  style={{ '--c': `var(--tint-${t})` } as React.CSSProperties}
-                />
-              ))}
-            </div>
-          </fieldset>
+            </span>
+          </label>
+          <AvatarPicker
+            value={avatar}
+            onChange={setAvatar}
+            takenBy={takenAvatars(snapshot.players)}
+          />
           <Plaque go onClick={join} disabled={busy || full}>
             {full
               ? 'This lobby is full'

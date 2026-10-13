@@ -35,14 +35,29 @@ export function Chat({
       <h2 className="jd-display chat__title">Table talk</h2>
       <ol ref={list} className="chat__list" aria-live="polite">
         {s.chat.length === 0 && <li className="chat__empty">Nothing said yet. Say hello.</li>}
-        {s.chat.map((m) => {
+        {s.chat.map((m, i) => {
           const p = byId.get(m.playerId);
+          // Back-to-back messages from one person share a single name line.
+          const more = s.chat[i - 1]?.playerId === m.playerId;
           return (
-            <li key={m.id} className={m.playerId === s.me ? 'mine' : undefined}>
-              {p && <Token avatar={p.avatar} size={22} />}
-              <span>
-                <b>{p?.name ?? 'Someone'}</b> {m.text}
-              </span>
+            <li
+              key={m.id}
+              className={['chat__msg', more && 'more', m.playerId === s.me && 'mine']
+                .filter(Boolean)
+                .join(' ')}
+              style={
+                p ? ({ '--c': `var(--tint-${p.avatar.tint})` } as React.CSSProperties) : undefined
+              }
+            >
+              {!more && (
+                <>
+                  <span className="chat__token">
+                    {p ? <Token avatar={p.avatar} size={30} /> : null}
+                  </span>
+                  <b className="chat__who">{p?.name ?? 'Someone'}</b>
+                </>
+              )}
+              <span className="chat__text">{m.text}</span>
             </li>
           );
         })}

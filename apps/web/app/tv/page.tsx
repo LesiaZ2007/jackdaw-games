@@ -25,7 +25,7 @@ export default function TvEntry() {
           Type the four letters from any phone in the lobby. This screen shows the table for
           everyone; it takes no seat and never sees anyone&apos;s secrets.
         </p>
-        <CodeInput value={code} onChange={setCode} onEnter={show} size={84} />
+        <CodeInput value={code} onChange={setCode} onEnter={show} size="min(84px, 18vw)" />
         {error && (
           <p role="alert" className="tv-entry__error">
             {error}

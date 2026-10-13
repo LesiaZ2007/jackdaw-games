@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useSyncExternalStore } from 'react';
-import type { LobbySnapshot, Reaction } from '@jackdaw/engine';
+import type { LobbySnapshot } from '@jackdaw/engine';
 import { BirdMark, BoxLid, Chits, SeatTrack, type ScreenPlayer, type Seat } from '@jackdaw/ui';
 import { catalogEntry, gameUis } from '@/lib/catalog';
 import { QrCode } from '@/lib/qr-code';
@@ -12,9 +12,8 @@ import { NightHint, TvNight } from './tv-night';
 import { TvResults } from './tv-results';
 import { TvStage, useWakeLock } from './tv-stage';
 
-// Filled in by the platform work for Avalon: server-corrected clock and live reactions.
+// Device time for now; a server-corrected clock comes with the first timed game.
 const clock = () => Date.now();
-const NO_REACTIONS: Reaction[] = [];
 
 const noSubscribe = () => () => {};
 const serverSiteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '');
@@ -129,7 +128,7 @@ export function TvLobby({ code }: { code: string }) {
                 tableView={snapshot.tableView}
                 players={players}
                 now={clock}
-                reactions={NO_REACTIONS}
+                reactions={snapshot.reactions}
               />
             ) : (
               <p className="tv-closed__finding">This game has no TV screen yet.</p>
@@ -192,7 +191,7 @@ export function TvLobby({ code }: { code: string }) {
           )}
         </section>
 
-        <SeatTrack seats={seats} cols={15} className="tv-track" />
+        <SeatTrack seats={seats} cols={15} className="tv-track" reactions={snapshot.reactions} />
         {snapshot.historyCount > 0 && <NightHint />}
       </div>
     </TvStage>

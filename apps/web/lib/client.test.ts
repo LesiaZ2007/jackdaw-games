@@ -51,6 +51,7 @@ const snapshot = (over: Partial<LobbySnapshot> = {}): LobbySnapshot => ({
   historyCount: 0,
   scores: {},
   chat: [],
+  reactions: [],
   me: 'p1',
   session: null,
   ...over,

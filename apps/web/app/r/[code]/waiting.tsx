@@ -7,6 +7,7 @@ import {
   AvatarButton,
   Icon,
   Plaque,
+  ReactionBar,
   SeatTrack,
   Sheet,
   Token,
@@ -108,6 +109,7 @@ export function Waiting({
         <SeatTrack
           seats={seats}
           onSeat={(id) => (id === s.me ? onOpen('me') : isHost && setTapped(id))}
+          reactions={s.reactions}
         />
         {mine && (
           <div className="you-strip">
@@ -126,6 +128,12 @@ export function Waiting({
               </button>
             )}
           </div>
+        )}
+        {mine && (
+          <ReactionBar
+            className="waiting__react"
+            onReact={(kind) => void send({ type: 'react', kind })}
+          />
         )}
       </section>
 

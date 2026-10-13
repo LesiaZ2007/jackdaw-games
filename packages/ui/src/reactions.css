@@ -1,0 +1,125 @@
+/* Quick reactions: the row of six buttons and the bubble that pops over a seat. Tokens only. */
+
+.jd-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.jd-reactions__btn {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 7px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 2px 0 var(--shadow);
+  cursor: pointer;
+  transition:
+    transform 120ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.jd-reactions__btn svg {
+  width: 100%;
+  height: 100%;
+}
+.jd-reactions__btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0 var(--shadow);
+}
+.jd-reactions__btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 var(--shadow);
+}
+.jd-reactions__btn:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+.jd-reactions__btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* A printed round counter with a little tail, rising off the seat and fading */
+.jd-bubble {
+  --b: clamp(30px, calc(100cqi / var(--cols, 5) * 0.4), 72px);
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 50%;
+  width: var(--b);
+  height: var(--b);
+  padding: calc(var(--b) * 0.14);
+  display: grid;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--shadow);
+  pointer-events: none;
+  translate: -50% -42%;
+  animation: jd-bubble 3.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.jd-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: var(--paper);
+  border-right: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  transform: translateX(-50%) rotate(45deg);
+}
+.jd-bubble svg {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes jd-bubble {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.3);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.12);
+  }
+  22% {
+    transform: translateY(0) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.96);
+  }
+}
+
+@keyframes jd-bubble-still {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jd-reactions__btn {
+    transition: none;
+  }
+  .jd-bubble {
+    animation-name: jd-bubble-still;
+    animation-timing-function: linear;
+  }
+}

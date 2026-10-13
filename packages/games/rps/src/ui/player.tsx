@@ -2,6 +2,7 @@
 
 import {
   OutcomeChip,
+  PlayerReaction,
   Tally,
   Token,
   useMoment,
@@ -10,6 +11,7 @@ import {
   type Outcome,
   type ScreenPlayer,
 } from '@jackdaw/ui';
+import type { Reaction } from '@jackdaw/engine';
 import { describeRound, roundOutcome, roundWinners } from '../outcome';
 import { PICKS, type Pick, type RpsAction, type RpsPlayerView, type RpsTableView } from '../rules';
 import './rps-player.css';
@@ -56,7 +58,13 @@ const LABEL: Record<Pick, string> = { rock: 'Rock', paper: 'Paper', scissors: 'S
  * Rock Paper Scissors on a phone: the whole public table (round, who has thrown, scores, the last
  * reveal) plus this player's three throws at the bottom, within thumb reach.
  */
-export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, me, players, sendAction }) => {
+export const PlayerScreen: GameUi['PlayerScreen'] = ({
+  view,
+  me,
+  players,
+  sendAction,
+  reactions,
+}) => {
   const v = view as RpsPlayerView;
   return (
     <RpsTable
@@ -64,6 +72,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, me, players, sendAc
       me={me}
       players={players}
       mine={v.myPick}
+      reactions={reactions}
       onPick={(pick) => sendAction({ type: 'pick', pick } satisfies RpsAction)}
     />
   );
@@ -76,12 +85,14 @@ export function RpsTable({
   players,
   mine,
   onPick,
+  reactions,
 }: {
   table: RpsTableView;
   me?: string;
   players: ScreenPlayer[];
   mine?: Pick | null;
   onPick?: (p: Pick) => void;
+  reactions?: Reaction[];
 }) {
   const byId = new Map(players.map((p) => [p.id, p]));
   const name = (id: string) => byId.get(id)?.name ?? 'Someone';
@@ -117,7 +128,10 @@ export function RpsTable({
             const thrown = table.picked.includes(id);
             return (
               <li key={id} className={id === me ? 'me' : undefined}>
-                {p && <Token avatar={p.avatar} size={34} away={!p.online} />}
+                <span className="rps__tok">
+                  {p && <Token avatar={p.avatar} size={34} away={!p.online} />}
+                  <PlayerReaction reactions={reactions} playerId={id} name={name(id)} size={34} />
+                </span>
                 <span className="rps__name">
                   {name(id)}
                   {id === me && <small> (you)</small>}

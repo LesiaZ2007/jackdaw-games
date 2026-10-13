@@ -1,13 +1,12 @@
 'use client';
 
 import { useCallback } from 'react';
-import type { ClientMessage, LobbySnapshot, Reaction } from '@jackdaw/engine';
+import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
 import type { ScreenPlayer } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 
-// Filled in by the platform work for Avalon: server-corrected clock and live reactions.
+// Device time for now; a server-corrected clock comes with the first timed game.
 const clock = () => Date.now();
-const NO_REACTIONS: Reaction[] = [];
 
 /**
  * Runs the chosen game's own screen. Seated players get their private view plus the public
@@ -48,7 +47,7 @@ export function GameShell({
           You&rsquo;re watching this round of {entry.meta.name}. You&rsquo;ll be seated in the next
           game.
         </p>
-        <Tv tableView={s.tableView} players={players} now={clock} reactions={NO_REACTIONS} />
+        <Tv tableView={s.tableView} players={players} now={clock} reactions={s.reactions} />
       </div>
     );
   }
@@ -63,7 +62,7 @@ export function GameShell({
         players={players}
         sendAction={sendAction}
         now={clock}
-        reactions={NO_REACTIONS}
+        reactions={s.reactions}
       />
     </div>
   );

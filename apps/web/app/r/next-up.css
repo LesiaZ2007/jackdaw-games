@@ -1,0 +1,173 @@
+/* The lobby's game choice: the picker shelf of covers, and the Next up row that opens up. */
+
+.picker {
+  display: grid;
+  gap: var(--space-3);
+}
+.picker__grid {
+  list-style: none;
+  margin: 0;
+  /* room for the covers' box edges */
+  padding: 4px 8px 8px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
+  gap: var(--space-4);
+}
+.picker__grid li {
+  min-width: 0;
+}
+.picker__grid .jd-cover__name {
+  font-size: 1.4rem;
+}
+.picker__grid .jd-cover__tag {
+  font-size: 15px;
+}
+@media (max-width: 479.98px) {
+  .picker__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .picker__grid .jd-cover__tag,
+  .picker__grid .jd-cover__kind {
+    display: none;
+  }
+  .picker__grid .jd-cover__plate {
+    padding: 10px;
+  }
+}
+.picker__hint {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+/* Next up */
+.next-up {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+.next-up__row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-2);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  /* a band of the game's own colour down the left edge */
+  border-left: 8px solid var(--band);
+}
+.next-up__what {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.next-up__name {
+  font-size: var(--step-2);
+  line-height: 0.95;
+}
+.next-up__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  font: 700 15px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+}
+.next-up__facts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.next-up__facts svg {
+  width: 16px;
+  height: 16px;
+}
+.next-up__summary {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.next-up__why {
+  font: 800 14px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--danger);
+}
+.next-up__toggle svg {
+  transition: transform 220ms var(--ease-out);
+}
+.next-up--open .next-up__toggle svg {
+  transform: rotate(180deg);
+}
+.next-up__body {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(0, 1fr);
+  grid-template-areas: 'cover blurb' 'more more';
+  gap: var(--space-4);
+  align-items: start;
+  animation: next-up-open 280ms var(--ease-out) both;
+}
+.next-up__blurb {
+  grid-area: blurb;
+  margin: 0;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+@keyframes next-up-open {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+.next-up__cover {
+  grid-area: cover;
+  padding: 0 8px 8px 0;
+}
+/* the plate repeats the row above, so the opened box shows just its lid and name */
+.next-up__cover .jd-cover__side,
+.next-up__cover .jd-cover__tag,
+.next-up__cover .jd-cover__kind {
+  display: none;
+}
+.next-up__cover .jd-cover__name {
+  font-size: 1.3rem;
+}
+.next-up__more {
+  grid-area: more;
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.next-up__how {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+.next-up__how ol {
+  margin: 0;
+  padding-left: 1.3em;
+  display: grid;
+  gap: 4px;
+  line-height: 1.4;
+}
+.next-up__how .home-link {
+  padding-block: 4px;
+}
+@media (min-width: 1100px) {
+  .next-up__body {
+    grid-template-columns: minmax(0, 170px) minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .next-up__body {
+    animation: none;
+  }
+  .next-up__toggle svg {
+    transition: none;
+  }
+}

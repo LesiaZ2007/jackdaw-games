@@ -6,3 +6,4 @@ export * from './avatars';
 export * from './overlays';
 export * from './avatar-picker';
 export * from './theme';
+export * from './cover';

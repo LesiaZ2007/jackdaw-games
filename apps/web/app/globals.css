@@ -55,3 +55,185 @@ a {
   text-underline-offset: 4px;
   text-decoration-color: var(--rule);
 }
+
+/* The welcome fills the first screen; the game shelves start just below it */
+.home-hero {
+  min-height: 100svh;
+  display: grid;
+  align-items: center;
+}
+.home-hero__inner {
+  display: grid;
+  gap: var(--space-5);
+  align-items: center;
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+  padding: var(--space-5) var(--gutter) var(--space-6);
+}
+.home-start {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.home-who {
+  display: grid;
+  gap: 6px;
+}
+/* the token sits level with the name field itself, not with the label above it */
+.home-who__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.home-who__row .jd-avatar-btn {
+  margin-left: -6px;
+}
+.home-join {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.home-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px var(--space-5);
+  margin-top: var(--space-2);
+}
+.home-nav__browse {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.home-nav__browse svg {
+  width: 18px;
+  height: 18px;
+}
+.home-token {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.home-token .jd-token {
+  --ring-bg: var(--paper);
+}
+.home-token p {
+  margin: 0;
+  color: var(--ink-2);
+}
+@media (min-width: 600px) and (max-width: 959.98px) {
+  .home-hero__inner {
+    max-width: 560px;
+  }
+}
+@media (min-width: 960px) {
+  .home-hero__inner {
+    grid-template-columns: 1.1fr 1fr;
+    column-gap: var(--space-7);
+    padding-inline: var(--space-6);
+  }
+  .home-start {
+    max-width: 460px;
+  }
+}
+@media (min-width: 1024px) {
+  .home-nav {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: var(--space-4);
+    white-space: nowrap;
+  }
+}
+
+/* Shelves: carousels of game covers */
+.home-shelves {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-6) 0 var(--space-7);
+  border-top: 2px solid var(--ink);
+  background: var(--table-2);
+}
+.home-shelves__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+.home-shelves__head h2 {
+  font-size: var(--step-4);
+}
+.shelf-row {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 1180px;
+  margin-inline: auto;
+}
+.shelf-row__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-inline: var(--gutter);
+}
+.shelf-row__title {
+  font-size: var(--step-2);
+}
+.shelf-row__blurb {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+}
+.shelf-row__pager {
+  display: none;
+  gap: 6px;
+}
+.shelf-row__pager .jd-iconbtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.shelf-row__next svg {
+  transform: scaleX(-1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .shelf-row__pager {
+    display: flex;
+  }
+}
+.shelf-row__track {
+  list-style: none;
+  margin: 0;
+  display: flex;
+  gap: var(--space-5);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--gutter);
+  /* room for the covers' box edges and lift, which would otherwise be clipped */
+  padding: 6px var(--gutter) 16px;
+  scrollbar-width: none;
+}
+.shelf-row__track::-webkit-scrollbar {
+  display: none;
+}
+.shelf-row__track li {
+  flex: none;
+  width: clamp(190px, 52vw, 236px);
+  scroll-snap-align: start;
+}
+@media (min-width: 1240px) {
+  .shelf-row__track,
+  .shelf-row__head,
+  .home-shelves__head {
+    padding-inline: var(--space-6);
+  }
+  .shelf-row__track {
+    scroll-padding-inline: var(--space-6);
+  }
+}

@@ -1,0 +1,202 @@
+/*
+ * Game covers: a boxed set seen from the front. The lid carries the game's heraldic field and
+ * emblem; a paper plate below it carries the name; the box's side and bottom edge (in a darker
+ * shade of the game's colour) give it depth. Imported by cover.tsx.
+ */
+.jd-cover {
+  --edge: 7px;
+  --box-side: color-mix(in srgb, var(--band) 62%, #000);
+  appearance: none;
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  text-align: left;
+  text-decoration: none;
+  color: var(--ink);
+  font: inherit;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  /* the box's right side and bottom edge, printed in the game's own colour */
+  box-shadow:
+    1px 1px 0 0 var(--ink),
+    var(--edge) var(--edge) 0 -1px var(--box-side),
+    var(--edge) var(--edge) 0 1px var(--ink);
+  cursor: pointer;
+  transition:
+    transform 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out);
+}
+.jd-cover:disabled {
+  cursor: default;
+}
+@media (hover: hover) and (pointer: fine) {
+  a.jd-cover:hover,
+  button.jd-cover:not(:disabled):hover {
+    transform: translate(-2px, -3px);
+    --edge: 10px;
+  }
+}
+.jd-cover:active {
+  transform: translate(2px, 2px);
+  --edge: 4px;
+}
+.jd-cover:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 4px;
+}
+
+/* The lid: field pattern behind a roundel with the emblem */
+.jd-cover__lid {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 5 / 4;
+  overflow: hidden;
+  color: var(--on-fill);
+  background-color: var(--band);
+  background-image: var(--field);
+  border-bottom: 2px solid var(--ink);
+}
+.jd-cover__lid::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(246, 240, 225, 0.6);
+  pointer-events: none;
+}
+.jd-cover__dev {
+  width: 52%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--band);
+  box-shadow:
+    0 0 0 3px rgba(246, 240, 225, 0.85),
+    0 0 0 7px var(--band),
+    0 0 0 8px rgba(246, 240, 225, 0.45);
+}
+.jd-cover__dev svg {
+  width: 64%;
+  height: 64%;
+}
+.jd-cover__kind {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 1;
+  padding: 4px 7px 3px;
+  font: 800 12px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+}
+/* "Coming soon": a paper sash across the top-right corner */
+.jd-cover__sash {
+  position: absolute;
+  top: 22px;
+  right: -38px;
+  z-index: 1;
+  width: 150px;
+  padding: 5px 0 4px;
+  rotate: 38deg;
+  text-align: center;
+  font: 800 12px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  background: var(--paper);
+  border-block: 1.5px solid var(--ink);
+}
+
+/* The plate: name and box-side facts */
+.jd-cover__plate {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 12px 14px 14px;
+  min-width: 0;
+}
+.jd-cover__name {
+  font: 800 clamp(1.5rem, 1.3rem + 0.6vw, 1.85rem) / 0.95 var(--font-display);
+  text-wrap: balance;
+}
+.jd-cover__side {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  font: 700 15px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+}
+.jd-cover__side span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.jd-cover__side svg {
+  width: 16px;
+  height: 16px;
+}
+.jd-cover__tag {
+  font-size: 16px;
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+.jd-cover__why {
+  font: 800 14px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--danger);
+}
+
+.jd-cover--soon .jd-cover__lid {
+  filter: saturate(0.6);
+}
+.jd-cover--unfit {
+  opacity: 0.62;
+}
+.jd-cover--unfit .jd-cover__lid {
+  filter: grayscale(0.85);
+}
+.jd-cover--selected {
+  outline: 3px solid var(--or);
+  outline-offset: 4px;
+}
+
+/* A small emblem tile for compact rows */
+.jd-tile {
+  --s: 56px;
+  position: relative;
+  flex: none;
+  width: var(--s);
+  height: var(--s);
+  display: grid;
+  place-items: center;
+  color: var(--on-fill);
+  background-color: var(--band);
+  background-image: var(--field);
+  border: 2px solid var(--ink);
+}
+.jd-tile::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(246, 240, 225, 0.55);
+}
+.jd-tile svg {
+  width: 62%;
+  height: 62%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jd-cover {
+    transition: none;
+  }
+}

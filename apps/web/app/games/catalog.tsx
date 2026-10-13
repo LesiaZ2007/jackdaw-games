@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { GameCategory } from '@jackdaw/engine';
-import { BirdMark, BoxLid } from '@jackdaw/ui';
+import { BirdMark, GameCover } from '@jackdaw/ui';
 import {
   catalog,
   catalogEntry,
@@ -109,23 +109,27 @@ export function Catalog() {
             {shown.map((e) => {
               const unfit = filters.players ? unfitReason(e.meta, filters.players) : null;
               return (
-                <li key={e.meta.id} className={e.playable ? undefined : 'cat-soon'}>
-                  <BoxLid
+                <li key={e.meta.id}>
+                  <GameCover
                     name={e.meta.name}
                     art={e.art}
                     players={[e.meta.minPlayers, e.meta.maxPlayers]}
                     minutes={e.meta.minutes}
                     tagline={e.meta.tagline}
+                    kind={CATEGORY_LABEL[e.meta.category]}
+                    soon={!e.playable}
                     unfit={unfit}
                     selected={e.meta.id === selected?.meta.id}
                     onClick={() => open(e.meta.id)}
                   />
-                  {!e.playable && <span className="cat-soon__stamp">Coming soon</span>}
                 </li>
               );
             })}
           </ul>
         )}
+        <p className="cat-foot">
+          <Link href="/about">About Jackdaw and credits</Link>
+        </p>
       </main>
 
       {selected && (

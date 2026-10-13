@@ -140,3 +140,21 @@ Additions approved by Lesia:
   the lobby and hands the table over. See `docs/avalon/LINK.md`. Each game's lobby keeps
   Jackdaw's frame but has its own unique look (Avalon: its round table and shields, styled
   just like the real Avalon lobby).
+- **Linked games** (2026-10-13, for Avalon): a module sets `linked: true`, and the server
+  registers a `GameLink` for it with the room runtime (`links` in `createRoomRuntime`, wired in
+  `apps/web/lib/runtime.ts` from `AVALON_URL` and `JACKDAW_LINK_SECRET`). The lobby machine
+  stays pure; the runtime does the network calls:
+  - `link.start(ctx)` runs on Start and Play again, outside the lock and before the session
+    exists. It gets the lobby code, host, seated players, parsed options, the `returnUrl`
+    (`NEXT_PUBLIC_SITE_URL` or the request origin) and the starter's `look` (light/dark, sent
+    with `start` / `playAgain`). What it returns reaches `setup` as `ctx.linked`. If it throws,
+    nothing changes and the host sees the message. If the table changed meanwhile, Start is
+    refused ("Press Start again"). A linked game without a registered link can't start
+    ("… isn't set up on this server yet").
+  - `link.check(state)` runs on reads, at most every 5s per session per instance, and returns
+    `{over:false}`, `{over:true, result}` (finishes as usual: history, scores, results) or
+    `{over:true, abandoned:true}` (back to waiting, nothing recorded). The pure
+    `settleLinked(lobby, sessionId, status, ctx)` applies it. A failed check waits for the next.
+- **`GameUi.Lobby`** draws a game's own lobby centre (players, options, Start) inside Jackdaw's
+  frame. It gets the code, players, options, `start()`, `onSeat(id)` (own seat opens your look;
+  the host's tap opens remove / make host) and `changeGame` for the host.

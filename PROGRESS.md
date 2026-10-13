@@ -97,6 +97,13 @@ Lesia's feedback on the first preview, all done:
 
 ## Decided
 
+- **Avalon is linked, not ported** (Lesia, 2026-10-13; `docs/avalon/LINK.md`). Branch
+  `feat/avalon-link` has Jackdaw's side: linked games in the contract and runtime (CLAUDE.md),
+  `packages/games/avalon`, Avalon's own lobby, the hand-off screens and an e2e against a fake
+  Avalon. It needs `AVALON_URL` and `JACKDAW_LINK_SECRET` on Vercel (Preview and Production)
+  and Avalon's `feat/jackdaw-link` deployed. Every game's lobby has its own centre in
+  Jackdaw's frame (STYLE_GUIDE.md, "Each game's lobby").
+
 - In dark mode Avalon switches to its own Night look; every game follows the shell's day/dark
   choice through `useTheme()` (Lesia, 2026-10-12).
 - Every game celebrates results with the kit's outcome moments (`celebrate.tsx`); see CLAUDE.md,

@@ -160,7 +160,33 @@ describe('room runtime', () => {
       ),
     );
     const s = await snap(runtime.poll(code, { token: TOKENS.ana }));
-    expect(s.chat).toHaveLength(8);
+    expect(s.chat.filter((m) => !m.system)).toHaveLength(8);
+  });
+
+  it('refuses a taken name, carries reactions to the TV, and lets the host end a game', async () => {
+    const { runtime, code } = await threePlayerLobby();
+    await expect(
+      runtime.post(code, 'token-dee-0123456789', { type: 'join', name: 'ben' }),
+    ).rejects.toMatchObject({ code: 'NAME_TAKEN' });
+
+    await runtime.post(code, TOKENS.ben, { type: 'react', kind: 'haha' });
+    await expect(
+      runtime.post(code, TOKENS.ben, { type: 'react', kind: 'not-a-reaction' }),
+    ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+    const tv = await snap(runtime.poll(code, { displayId: 'tv-1' }));
+    expect(tv.reactions.map((r) => r.kind)).toEqual(['haha']);
+
+    await runtime.post(code, TOKENS.ana, { type: 'start' });
+    await expect(runtime.post(code, TOKENS.ben, { type: 'endGame' })).rejects.toMatchObject({
+      code: 'NOT_HOST',
+    });
+    const ended = await runtime.post(code, TOKENS.ana, { type: 'endGame' });
+    expect(ended.status).toBe('waiting');
+    expect(ended.historyCount).toBe(0);
+    expect(ended.chat.at(-1)).toMatchObject({
+      system: true,
+      text: 'The host ended the game early.',
+    });
   });
 
   it('moves a seat to a new device with a rejoin code', async () => {

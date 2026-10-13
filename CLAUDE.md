@@ -30,7 +30,7 @@ implementation and the first game to move in.
 apps/web              Next.js 16 (App Router): pages, API routes that mount the room runtime
 packages/engine       GameModule contract, lobby state machine, protocol + Zod schemas, Rng
 packages/server       RoomStorage (memory, Upstash REST), lobby room runtime, polling protocol
-packages/ui           Design tokens (CSS) and the shared game kit
+packages/ui           tokens.css, kit.css, kit pieces (Lid, Plaque, Chits, Token, SeatTrack, BoxLid), crests, icons, GameUi types
 packages/games/<id>   One package per game: src/meta.ts, src/rules.ts, src/ui/, tests
 docs/                 BUILD_PLAN.md and design notes
 mockups/              Static HTML design mockups (not shipped)
@@ -43,7 +43,7 @@ Next compiles them through `transpilePackages`, so they have no build step.
 
 Run all of these from the repo root:
 
-- `pnpm dev` starts the web app on :3000. Pass `-- -p 3011` to use another port, since other sessions often hold 3000.
+- `pnpm dev` starts the web app on :3000. Other sessions often hold 3000–3010, so use `pnpm --filter @jackdaw/web exec next dev -p 3021` for another port (`pnpm dev -- -p` passes the `--` through and fails). Kill the whole process tree when done.
 - `pnpm test` runs all Vitest projects. `pnpm vitest run packages/engine` runs one project.
 - `pnpm lint`, `pnpm typecheck` and `pnpm format` (Prettier).
 - `pnpm build` is the production build. `pnpm build:check` builds into `.next-check` and is safe while dev is running.

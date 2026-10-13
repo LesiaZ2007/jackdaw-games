@@ -186,5 +186,13 @@ export function createAvalonLink(config: AvalonLinkConfig): GameLink<AvalonState
       if (body.endedEarly || !body.winner) return { over: true, abandoned: true };
       return { over: true, result: resultFrom(body) };
     },
+
+    async end(state) {
+      const res = await doFetch(`${baseUrl}/api/jackdaw/rooms/${state.avalonCode}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (!res.ok && res.status !== 404) throw new Error(`Avalon end ${res.status}`);
+    },
   };
 }

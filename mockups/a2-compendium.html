@@ -1,0 +1,715 @@
+<title>Compendium Mockups, Round Two</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=Alegreya+SC:wght@500;700&family=Big+Shoulders+Display:wght@600;700;800;900&family=Grenze:wght@700;800&family=Grenze+Gotisch:wght@600;700;800&family=Uncial+Antiqua&display=swap" rel="stylesheet">
+<style>
+/* Compendium, round two. Jackdaw is a boxed compendium of games from a small printer whose
+   device is a jackdaw holding a stolen ring. Pieces are printed card: chamfered letter chits,
+   punch-out tokens, a 15-space seat track, box lids patterned with heraldic fields.
+   Display face from Belfry (Grenze Gotisch); plaques and body shared with Avalon.
+   When a game is chosen, its own world unfolds inside the Jackdaw frame. */
+:root {
+  --card: #ebe2cc;  --card-2: #ddd2b7;  --paper: #f6f0e1;
+  --ink: #24211e;   --ink-2: #5d564b;   --rule: #a59b87;
+  --slate: #8d979c; --iris: #eef2f3;    --bird: #24211e; --bird-edge: transparent; --seal: #f6f0e1;
+  --gules: #a63a30; --azure: #2b5683;   --vert: #30634a; --sable: #3a3d42; --purpure: #6a3f74; --tenne: #9a5a22;
+  --or: #a77d2c;    --on-fill: #f6f0e1;
+  --shadow: rgba(36, 33, 30, .28);
+  --font-display: 'Grenze Gotisch', 'Georgia', serif;
+  --font-plaque: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+  --font-body: 'Alegreya Sans', 'Segoe UI', sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --card: #1c1e20; --card-2: #25282b; --paper: #2b2f32; --ink: #ede5d3; --ink-2: #aeb5b8;
+    --rule: #4f5559; --bird: #121314; --bird-edge: #9aa4a9; --or: #d2aa5c; --shadow: rgba(0,0,0,.55); color-scheme: dark; }
+}
+:root[data-theme="dark"] { --card: #1c1e20; --card-2: #25282b; --paper: #2b2f32; --ink: #ede5d3; --ink-2: #aeb5b8;
+  --rule: #4f5559; --bird: #121314; --bird-edge: #9aa4a9; --or: #d2aa5c; --shadow: rgba(0,0,0,.55); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--card-2); color: var(--ink); font-family: var(--font-body); }
+
+/* ── Review chrome ──────────────────────────────────────────────────────── */
+.review-bar { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; padding: 18px 16px; max-width: 1500px; margin: 0 auto; }
+.review-bar h1 { margin: 0; font: 800 40px/1 var(--font-display); }
+.review-bar p { margin: 4px 0 0; color: var(--ink-2); max-width: 70ch; }
+.toggle { font: 800 16px var(--font-plaque); text-transform: uppercase; letter-spacing: .04em; color: var(--ink); background: var(--paper); border: 2px solid var(--ink); padding: 10px 16px; cursor: pointer; }
+.stage { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; padding: 8px 16px 48px; max-width: 1500px; margin: 0 auto; }
+.frame { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.frame figcaption { font: 700 15px var(--font-plaque); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); max-width: 390px; }
+.device { overflow: hidden; border: 1px solid var(--rule); box-shadow: 0 20px 50px -24px var(--shadow); position: relative; }
+.phone .device { width: 390px; height: 844px; border-radius: 28px; max-width: calc(100vw - 32px); }
+.tv { flex-basis: 100%; }
+.tv figcaption { max-width: none; }
+.tv .device { width: 100%; aspect-ratio: 16 / 9; }
+.tv .device > .screen { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; transform-origin: 0 0; transform: scale(var(--s, .5)); }
+body.solo .review-bar, body.solo figcaption { display: none; }
+body.solo .stage { padding: 0; display: block; max-width: none; margin: 0; }
+body.solo .frame { display: none; }
+body.solo .frame.show { display: block; }
+body.solo .device { border: 0; border-radius: 0; box-shadow: none; max-width: none; }
+body.solo .tv .device { width: 1920px; height: 1080px; aspect-ratio: auto; }
+body.solo .tv .device > .screen { transform: none; }
+
+/* ── The table ──────────────────────────────────────────────────────────── */
+.screen { position: relative; height: 100%; overflow: hidden; background-color: var(--card);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cg fill='none' stroke='%23a59b87' stroke-opacity='.32' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M30 40l0-9M30 40l-5-6M30 40l5-6M30 40l0 4'/%3E%3Cpath d='M52 30l0-9M52 30l-5-6M52 30l5-6M52 30l0 4'/%3E%3Cpath d='M118 128l0-9M118 128l-5-6M118 128l5-6M118 128l0 4'/%3E%3Cpath d='M140 118l0-9M140 118l-5-6M140 118l5-6M140 118l0 4'/%3E%3C/g%3E%3C/svg%3E"); }
+.screen::before { content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .55 0 0 0 0 .5 0 0 0 0 .42 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.screen > * { position: relative; }
+
+/* Printed frames: a double rule with fleuron corners */
+.lid { background: var(--paper); border: 2px solid var(--ink); outline: 1px solid var(--ink); outline-offset: -7px; position: relative; }
+.lid > .corner { position: absolute; width: 22px; height: 22px; color: var(--ink); }
+.lid > .corner.tl { top: 3px; left: 3px; } .lid > .corner.tr { top: 3px; right: 3px; transform: scaleX(-1); }
+.lid > .corner.bl { bottom: 3px; left: 3px; transform: scaleY(-1); } .lid > .corner.br { bottom: 3px; right: 3px; transform: scale(-1); }
+
+/* Letter chits: chamfered card, printed in a heraldic tint, letters in the display face */
+.chits { display: flex; gap: var(--cg, 6px); }
+.chit { --t: 44px; width: var(--t); height: calc(var(--t) * 1.12); position: relative; display: grid; place-items: center;
+  background: var(--fill, var(--paper)); color: var(--on-fill);
+  clip-path: polygon(16% 0, 84% 0, 100% 14%, 100% 86%, 84% 100%, 16% 100%, 0 86%, 0 14%);
+  font: 800 calc(var(--t) * .7)/1 'Grenze', var(--font-display); padding-bottom: calc(var(--t) * .06); }
+.chit::before { content: ''; position: absolute; inset: calc(var(--t) * .07); border: 1px solid rgba(246, 240, 225, .55);
+  clip-path: polygon(14% 0, 86% 0, 100% 12%, 100% 88%, 86% 100%, 14% 100%, 0 88%, 0 12%); }
+.chit.blank { --fill: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.chit.blank::before { border-color: var(--rule); }
+.chit.slot { --fill: transparent; color: var(--ink-2); }
+.chit.slot::before { inset: 0; border: 2px dashed var(--rule); }
+.chit.slot.caret::after { content: ''; width: 2px; height: 42%; background: var(--ink); animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.chit-row { display: flex; gap: 0; filter: drop-shadow(0 calc(var(--t, 44px) * .05) 0 var(--shadow)); }
+
+/* Plaques */
+.plaque { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 20px;
+  font: 800 21px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .03em; color: var(--ink);
+  background: var(--paper); border: 2px solid var(--ink); outline: 1px solid var(--ink); outline-offset: -6px; }
+.plaque.go { background: var(--vert); color: var(--on-fill); outline-color: var(--on-fill); border-color: var(--ink); }
+.plaque.small { min-height: 44px; font-size: 17px; padding: 0 14px; }
+.plaque svg { width: 20px; height: 20px; }
+.label { font: 700 13px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .12em; color: var(--ink-2); }
+.iconbtn { width: 44px; height: 44px; border: 2px solid var(--ink); background: var(--paper); display: grid; place-items: center; color: var(--ink); flex: none; }
+.iconbtn svg { width: 22px; height: 22px; }
+
+/* Tokens */
+.token { --z: 46px; width: var(--z); height: var(--z); border-radius: 50%; position: relative; flex: none; background: var(--c); color: var(--on-fill); display: grid; place-items: center;
+  box-shadow: 0 0 0 3px var(--ring-bg, var(--card)), 0 0 0 4.5px var(--rule), 0 3px 6px var(--shadow); }
+.token::before, .token::after { content: ''; position: absolute; width: 5px; height: 4px; background: var(--ring-bg, var(--card)); top: 50%; translate: 0 -50%; }
+.token::before { left: -6px; } .token::after { right: -6px; }
+.token svg { width: 58%; height: 58%; }
+.token.away { filter: grayscale(1); opacity: .45; }
+.token .host { position: absolute; top: -8px; right: -9px; width: 21px; height: 21px; border-radius: 50%; background: var(--or); box-shadow: 0 0 0 2px var(--ring-bg, var(--card)); display: grid; place-items: center; color: #24211e; }
+.token .host svg { width: 13px; height: 13px; }
+
+/* Seat track */
+.track { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.space { aspect-ratio: 1 / 1.08; border: 1.5px solid var(--ink); background: var(--paper); position: relative; display: grid; place-items: center; align-content: center; gap: 6px; padding-top: 4px; --ring-bg: var(--paper); }
+.space:nth-child(even) { background: color-mix(in srgb, var(--paper) 84%, var(--card-2)); --ring-bg: color-mix(in srgb, var(--paper) 84%, var(--card-2)); }
+.space .n { position: absolute; top: 3px; left: 5px; font: 700 12px var(--font-plaque); color: var(--ink-2); }
+.space .who { font: 800 13px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .03em; max-width: 92%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.space.free .n { font: 600 22px var(--font-display); position: static; color: var(--rule); }
+.track .token { --z: 34px; box-shadow: 0 0 0 2.5px var(--ring-bg), 0 0 0 3.5px var(--rule), 0 2px 4px var(--shadow); }
+.track .token::before, .track .token::after { width: 4px; } .track .token::before { left: -5px; } .track .token::after { right: -5px; }
+.track .token .host { width: 17px; height: 17px; top: -7px; right: -8px; } .track .token .host svg { width: 11px; height: 11px; }
+
+/* Box lids, with heraldic field patterns behind each game's device */
+.box { background: var(--paper); border: 2px solid var(--ink); display: grid; grid-template-columns: 92px 1fr; position: relative; }
+.box .art { background-color: var(--band); background-image: var(--field); display: grid; place-items: center; color: var(--on-fill); border-right: 2px solid var(--ink); position: relative; min-height: 104px; }
+.box .art::after { content: ''; position: absolute; inset: 5px; border: 1px solid rgba(246,240,225,.6); }
+.box .art .dev { width: 58px; height: 58px; border-radius: 50%; background: var(--band); display: grid; place-items: center; box-shadow: 0 0 0 2px rgba(246,240,225,.75); }
+.box .art .dev svg { width: 40px; height: 40px; }
+.box .body { padding: 10px 12px; display: grid; gap: 4px; align-content: center; min-width: 0; }
+.box h3 { margin: 0; font: 800 30px/0.95 var(--font-display); }
+.side { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 700 14px var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); }
+.side span { display: inline-flex; align-items: center; gap: 4px; }
+.side svg { width: 15px; height: 15px; }
+.box p { margin: 0; font-size: 15px; color: var(--ink-2); line-height: 1.3; }
+.box.unfit { opacity: .55; }
+.box.unfit .art { filter: grayscale(.85); }
+.box .why { font: 800 14px var(--font-plaque); text-transform: uppercase; letter-spacing: .04em; color: var(--gules); }
+.box.selected { outline: 3px solid var(--or); outline-offset: 2px; }
+.f-wavy   { --field: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='14'%3E%3Cpath d='M0 10c4.7-5 9.3-5 14 0s9.3 5 14 0' fill='none' stroke='%23f6f0e1' stroke-opacity='.28' stroke-width='3'/%3E%3C/svg%3E"); }
+.f-lozengy{ --field: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='28'%3E%3Cpath d='M10 0L20 14L10 28L0 14Z' fill='none' stroke='%23f6f0e1' stroke-opacity='.3' stroke-width='1.6'/%3E%3C/svg%3E"); }
+.f-checky { --field: conic-gradient(rgba(246,240,225,.18) 25%, transparent 0 50%, rgba(246,240,225,.18) 0 75%, transparent 0) 0 0 / 22px 22px; }
+.f-semee  { --field: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26'%3E%3Cpath d='M6 2l1.2 3.2L10.5 5.5 7.8 7.4 8.7 10.6 6 8.7 3.3 10.6 4.2 7.4 1.5 5.5 4.8 5.2zM19 15l1.2 3.2 3.3.3-2.7 1.9.9 3.2-2.7-1.9-2.7 1.9.9-3.2-2.7-1.9 3.3-.3z' fill='%23f6f0e1' fill-opacity='.3'/%3E%3C/svg%3E"); }
+.f-fretty { --field: repeating-linear-gradient(45deg, transparent 0 9px, rgba(246,240,225,.25) 9px 11px), repeating-linear-gradient(-45deg, transparent 0 9px, rgba(246,240,225,.25) 9px 11px); }
+.f-paly   { --field: repeating-linear-gradient(90deg, transparent 0 9px, rgba(246,240,225,.2) 9px 18px); }
+
+.seal-svg { filter: drop-shadow(0 2px 2px var(--shadow)); }
+
+/* ── Phone: home ────────────────────────────────────────────────────────── */
+.home { display: flex; flex-direction: column; padding: 18px 16px 20px; gap: 16px; }
+.home .hero { padding: 22px 18px 18px; display: grid; justify-items: center; text-align: center; gap: 4px; }
+.home .hero .seal-svg { width: 132px; height: 132px; }
+.home h2 { margin: 6px 0 0; font: 800 66px/0.86 var(--font-display); letter-spacing: .005em; }
+.home .strap { font: 800 15px/1.2 var(--font-plaque); text-transform: uppercase; letter-spacing: .1em; color: var(--ink-2); margin-top: 6px; }
+.home .hero p { margin: 8px 0 0; font-size: 17px; line-height: 1.45; color: var(--ink-2); max-width: 30ch; }
+.fan { position: relative; height: 112px; }
+.mini { position: absolute; left: 50%; top: 4px; width: 74px; height: 98px; margin-left: -37px; background-color: var(--band); background-image: var(--field); border: 2px solid var(--ink);
+  color: var(--on-fill); display: grid; place-items: center; transform: translateX(var(--x)) rotate(var(--r)); transform-origin: 50% 140%; box-shadow: 0 8px 12px -6px var(--shadow); }
+.mini::after { content: ''; position: absolute; inset: 4px; border: 1px solid rgba(246,240,225,.55); }
+.mini svg { width: 36px; height: 36px; }
+.actions { margin-top: auto; display: grid; gap: 12px; }
+.name-row { display: flex; gap: 14px; align-items: center; }
+.field { flex: 1; display: grid; gap: 6px; }
+.input { height: 50px; border: 2px solid var(--ink); background: var(--paper); display: flex; align-items: center; padding: 0 14px; font-size: 18px; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--ink-2); font: 700 14px var(--font-plaque); letter-spacing: .14em; text-transform: uppercase; }
+.or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+.join-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.join-row .chit { --t: 50px; }
+.browse { display: flex; justify-content: center; font: 700 17px var(--font-body); color: var(--ink); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--rule); padding: 6px; }
+
+/* ── Phone: shell frame (lobby, waiting room, stats) ───────────────────── */
+.shell { display: flex; flex-direction: column; height: 100%; }
+.bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px 10px; }
+.bar .seal-svg { width: 46px; height: 46px; flex: none; }
+.bar .code { display: flex; align-items: center; gap: 8px; margin-right: auto; }
+.bar .chit { --t: 30px; }
+.lobby-body { display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 18px; flex: 1; min-height: 0; }
+.head { display: flex; justify-content: space-between; align-items: baseline; }
+.head h2 { margin: 0; font: 800 30px/1 var(--font-display); }
+.head span { color: var(--ink-2); font-size: 15px; }
+.shelf { display: grid; gap: 8px; }
+.shelf .box { grid-template-columns: 72px 1fr; }
+.shelf .box .art { min-height: 76px; }
+.shelf .box .art .dev { width: 44px; height: 44px; } .shelf .box .art .dev svg { width: 30px; height: 30px; }
+.shelf .box h3 { font-size: 25px; }
+.dock { margin-top: auto; display: grid; gap: 10px; }
+.dock .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dock .note { text-align: center; font-size: 15px; color: var(--ink-2); margin: 0; }
+
+/* ── Avalon's own world, unfolded inside the frame (its real Parchment look) ── */
+.avalon { --p-card: #f1e9d6; --p-card-2: #e5dbc3; --p-page: #ddd2b8; --p-ink: #2b2825; --p-ink-2: #5a544b; --p-rule: #a59b89;
+  --p-azure: #2d5b8a; --p-azure-pale: #bcd3e8; --p-gules: #a63c33; --p-gules-pale: #efc3b4; --p-vert: #35664a; --p-or: #a77d2c;
+  color: var(--p-ink); background-color: var(--p-page);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cpath d='M0 32L32 0L64 32L32 64Z' fill='none' stroke='%23a59b89' stroke-opacity='.35'/%3E%3Cpath d='M32 26c-2 3-5 4-5 7 0 2 2 3 3 2-1 2-2 3-4 3h12c-2 0-3-1-4-3 1 1 3 0 3-2 0-3-3-4-5-7z' fill='%23a59b89' fill-opacity='.35'/%3E%3C/svg%3E");
+  border-top: 3px solid var(--ink); position: relative; }
+.avalon .gamebar { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: var(--ink); color: var(--card); }
+.avalon .gamebar b { font: 400 22px/1 'Uncial Antiqua', serif; color: #f1e9d6; }
+.avalon .gamebar span { font: 800 14px var(--font-plaque); text-transform: uppercase; letter-spacing: .08em; color: #f1e9d6; text-decoration: underline; text-underline-offset: 3px; }
+.roundtable { position: relative; width: 250px; height: 250px; margin: 12px auto 22px; }
+.roundtable .board { position: absolute; inset: 34px; border-radius: 50%; background: var(--p-card); border: 7px solid var(--p-ink);
+  box-shadow: inset 0 0 0 3px var(--p-card), inset 0 0 0 4.5px var(--p-ink), 0 12px 24px -12px rgba(0,0,0,.5); display: grid; place-items: center; text-align: center; }
+.roundtable .board::before { content: ''; position: absolute; inset: 10px; border-radius: 50%; border: 2px dashed var(--p-rule); }
+.roundtable .board small { font: 700 11px var(--font-plaque); letter-spacing: .14em; text-transform: uppercase; color: var(--p-ink-2); display: block; }
+.roundtable .board b { font: 900 30px/1 var(--font-plaque); text-transform: uppercase; display: block; }
+.roundtable .board em { font: 400 13px var(--font-body); font-style: normal; color: var(--p-ink-2); }
+.seat { position: absolute; width: 56px; display: grid; justify-items: center; gap: 2px; translate: -50% -50%; }
+.shield { width: 38px; height: 44px; background: var(--c); border: 2px solid var(--p-ink); border-radius: 3px 3px 50% 50% / 3px 3px 42% 42%; display: grid; place-items: center; color: #f1e9d6;
+  font: 800 16px var(--font-plaque); box-shadow: 0 3px 4px rgba(0,0,0,.2); position: relative; }
+.shield .crown { position: absolute; top: -12px; width: 20px; height: 12px; color: var(--p-or); }
+.plate { background: var(--p-card); border: 1.5px solid var(--p-ink); padding: 2px 4px; font: 800 11px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.av-card { margin: 0 12px; background: var(--p-card); border: 2px solid var(--p-ink); outline: 1px solid var(--p-ink); outline-offset: -6px; padding: 14px 14px 12px; display: grid; gap: 8px; text-align: center;
+  position: relative; isolation: isolate; }
+.av-card::before { content: ''; position: absolute; inset: -7px; z-index: -1; /* perforated stamp edge */
+  background: radial-gradient(circle at 5px 5px, var(--p-page) 2.6px, var(--p-card) 3px) 0 0 / 10px 10px; }
+.av-card .over { font: 700 12px var(--font-plaque); letter-spacing: .14em; text-transform: uppercase; color: var(--p-ink-2); }
+.av-card h3 { margin: 0; font: 900 25px/1 var(--font-plaque); text-transform: uppercase; }
+.rolefan { display: flex; justify-content: center; height: 76px; margin-top: 2px; }
+.role { width: 48px; height: 68px; border: 1.5px solid var(--p-ink); border-radius: 3px; display: grid; place-items: center; align-content: center; gap: 2px; margin: 0 -6px; rotate: var(--r); translate: 0 var(--y);
+  font: 800 8px/1 var(--font-plaque); text-transform: uppercase; box-shadow: 0 3px 4px rgba(0,0,0,.15); }
+.role svg { width: 22px; height: 22px; }
+.role.good { background: var(--p-azure-pale); color: var(--p-azure); } .role.evil { background: var(--p-gules-pale); color: var(--p-gules); }
+.av-card .deal { font-size: 14px; color: var(--p-ink-2); margin: 0; } .av-card .deal b { color: var(--p-azure); } .av-card .deal i { font-style: normal; font-weight: 700; color: var(--p-gules); }
+.av-settings { display: grid; gap: 6px; text-align: left; border-top: 1px solid var(--p-rule); padding-top: 8px; }
+.av-settings .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 15px; }
+.av-settings .row b { font-weight: 700; }
+.av-select { border: 2px solid var(--p-ink); background: #f7f0de; padding: 6px 10px; font: 700 14px var(--font-body); display: inline-flex; gap: 8px; align-items: center; min-height: 36px; }
+.av-toggle { width: 44px; height: 26px; border: 2px solid var(--p-ink); background: var(--p-vert); position: relative; }
+.av-toggle::after { content: ''; position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: #f1e9d6; border: 1.5px solid var(--p-ink); }
+.av-rules { margin: 10px 12px 0; display: grid; gap: 4px; font-size: 14px; line-height: 1.35; color: var(--p-ink); }
+.av-rules summary { font: 800 15px var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; list-style: none; }
+.av-dock { padding: 10px 12px 14px; display: grid; gap: 8px; }
+.av-go { display: grid; place-items: center; min-height: 52px; background: var(--p-vert); color: #f1e9d6; border: 2px solid var(--p-ink); outline: 1px solid #f1e9d6; outline-offset: -6px;
+  font: 800 21px var(--font-plaque); text-transform: uppercase; letter-spacing: .03em; }
+
+/* ── Phone: stats as a score pad ───────────────────────────────────────── */
+.pad { margin: 0 12px; flex: 1; min-height: 0; background: var(--paper); border: 2px solid var(--ink); display: flex; flex-direction: column; position: relative; }
+.pad::before { content: ''; position: absolute; left: 0; right: 0; top: -2px; height: 10px; /* torn-off perforation */
+  background: radial-gradient(circle at 5px 0, var(--card) 3.2px, transparent 3.6px) 0 0 / 10px 10px repeat-x; }
+.pad header { padding: 18px 14px 8px; display: grid; gap: 8px; }
+.pad h2 { margin: 0; font: 800 34px/1 var(--font-display); }
+.tabs { display: flex; gap: 0; border-bottom: 2px solid var(--ink); }
+.tabs span { padding: 8px 12px; font: 800 15px var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); border: 2px solid transparent; border-bottom: 0; margin-bottom: -2px; }
+.tabs span.on { color: var(--ink); border-color: var(--ink); background: var(--paper); }
+.sheet { width: 100%; border-collapse: collapse; font-size: 15px; font-variant-numeric: tabular-nums; }
+.sheet th { font: 700 12px var(--font-plaque); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); text-align: right; padding: 6px 6px; border-bottom: 1.5px solid var(--ink); }
+.sheet th:first-child, .sheet td:first-child { text-align: left; padding-left: 14px; }
+.sheet td { padding: 6px; border-bottom: 1px solid var(--rule); text-align: right; }
+.sheet td:last-child, .sheet th:last-child { padding-right: 14px; }
+.sheet .who { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.sheet .token { --z: 26px; --ring-bg: var(--paper); box-shadow: 0 0 0 2px var(--paper), 0 0 0 3px var(--rule); }
+.sheet .token::before, .sheet .token::after { display: none; }
+.sheet tr.open td { border-bottom: 0; background: color-mix(in srgb, var(--paper) 80%, var(--card-2)); }
+.sheet tr.detail td { text-align: left; padding: 2px 14px 10px 50px; background: color-mix(in srgb, var(--paper) 80%, var(--card-2)); font-size: 14px; color: var(--ink-2); line-height: 1.45; }
+.sheet tr.detail b { color: var(--ink); }
+.bar-w { display: inline-block; width: 46px; height: 8px; background: var(--card-2); vertical-align: middle; position: relative; }
+.bar-w i { position: absolute; inset: 0 auto 0 0; background: var(--vert); }
+.log { padding: 10px 14px 14px; display: grid; gap: 6px; border-top: 2px solid var(--ink); margin-top: auto; }
+.log h3 { margin: 0; font: 800 22px/1 var(--font-display); }
+.log .entry { display: grid; grid-template-columns: 44px 1fr; gap: 8px; font-size: 14px; align-items: baseline; }
+.log .entry time { font: 700 13px var(--font-plaque); color: var(--ink-2); letter-spacing: .04em; }
+.log .entry b { font-weight: 700; }
+
+/* ── Phone: catalog ─────────────────────────────────────────────────────── */
+.catalog { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 16px; }
+.filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.filter { border: 2px solid var(--ink); background: var(--paper); min-height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; gap: 8px; }
+.filter .label { font-size: 12px; }
+.filter b { font: 800 17px var(--font-plaque); text-transform: uppercase; letter-spacing: .03em; }
+.stepper { grid-column: 1 / -1; }
+.stepper .ctl { display: flex; align-items: center; gap: 4px; }
+.stepper .ctl span { width: 36px; height: 36px; border: 2px solid var(--ink); display: grid; place-items: center; font: 800 22px var(--font-plaque); }
+.stepper .ctl b { min-width: 36px; text-align: center; font: 800 26px var(--font-display); }
+.catalog .shelf .box { grid-template-columns: 84px 1fr; }
+.catalog .shelf .box .art { min-height: 96px; }
+
+/* ── TV ─────────────────────────────────────────────────────────────────── */
+.tvl { display: grid; grid-template-columns: 1fr 620px; grid-template-rows: auto 1fr auto; gap: 30px 80px; padding: 56px 88px 60px; }
+.tvl .top { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; }
+.tvl .brand { display: flex; align-items: center; gap: 20px; }
+.tvl .brand .seal-svg { width: 104px; height: 104px; }
+.tvl .brand h2 { margin: 0; font: 800 76px/1 var(--font-display); }
+.tvl .count { font: 800 34px var(--font-plaque); text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); }
+.tvl .join { display: grid; gap: 26px; align-content: center; }
+.tvl .join .label { font-size: 26px; }
+.tvl .join .url { font: 700 54px/1 var(--font-body); }
+.tvl .join .chits { --cg: 22px; }
+.tvl .join .chit { --t: 190px; }
+.tvl .qrline { display: flex; gap: 28px; align-items: center; }
+.qr { width: 190px; height: 190px; background: #f6f0e1; padding: 10px; border: 2px solid var(--ink); flex: none; }
+.tvl .qrline p { margin: 0; font-size: 30px; line-height: 1.35; color: var(--ink-2); max-width: 22ch; }
+.tvl .next { align-self: center; display: grid; gap: 18px; }
+.tvl .next .label { font-size: 26px; }
+.tvl .next .shelf .box { grid-template-columns: 140px 1fr; }
+.tvl .next .shelf .box .art { min-height: 140px; }
+.tvl .next .shelf .box .art .dev { width: 92px; height: 92px; } .tvl .next .shelf .box .art .dev svg { width: 62px; height: 62px; }
+.tvl .next .shelf .box h3 { font-size: 54px; }
+.tvl .next .side { font-size: 22px; } .tvl .next .side svg { width: 22px; height: 22px; }
+.tvl .next .waiting { font: 800 30px var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; }
+.tvl .tvtrack { grid-column: 1 / -1; grid-template-columns: repeat(15, 1fr); gap: 8px; }
+.tvl .tvtrack .space { aspect-ratio: 1 / 1.25; gap: 12px; }
+.tvl .tvtrack .space .n { font-size: 18px; top: 6px; left: 9px; }
+.tvl .tvtrack .space.free .n { font-size: 44px; }
+.tvl .tvtrack .space .who { font-size: 22px; }
+.tvl .tvtrack .token { --z: 70px; box-shadow: 0 0 0 4px var(--ring-bg), 0 0 0 6px var(--rule), 0 5px 10px var(--shadow); }
+.tvl .tvtrack .token::before, .tvl .tvtrack .token::after { width: 7px; height: 6px; } .tvl .tvtrack .token::before { left: -9px; } .tvl .tvtrack .token::after { right: -9px; }
+.tvl .tvtrack .token .host { width: 32px; height: 32px; top: -12px; right: -12px; } .tvl .tvtrack .token .host svg { width: 20px; height: 20px; }
+.tvl .landing .token { animation: place 900ms cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes place { 0% { translate: 0 -120px; scale: 1.35; rotate: -14deg; opacity: 0; } 60% { translate: 0 6px; scale: .96; opacity: 1; } 100% { translate: 0 0; scale: 1; rotate: 0deg; } }
+
+/* TV: Avalon's waiting room, with a slim Jackdaw strip for joining */
+.tvav { display: grid; grid-template-rows: auto 1fr; }
+.tvav .strip { display: flex; align-items: center; gap: 26px; padding: 18px 60px; background: var(--card); border-bottom: 3px solid var(--ink); }
+.tvav .strip .seal-svg { width: 70px; height: 70px; }
+.tvav .strip .join-at { font: 800 28px var(--font-plaque); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); }
+.tvav .strip .url { font: 700 40px var(--font-body); }
+.tvav .strip .chit { --t: 64px; }
+.tvav .strip .qr { width: 96px; height: 96px; padding: 5px; margin-left: auto; }
+.tvav .avalon { border-top: 0; display: grid; grid-template-columns: 1fr 760px; align-items: center; padding: 0 100px 0 60px; }
+.tvav .roundtable { width: 760px; height: 760px; margin: 0; }
+.tvav .roundtable .board { inset: 110px; border-width: 14px; }
+.tvav .roundtable .board small { font-size: 22px; } .tvav .roundtable .board b { font-size: 92px; } .tvav .roundtable .board em { font-size: 26px; }
+.tvav .seat { width: 140px; gap: 6px; }
+.tvav .shield { width: 92px; height: 106px; font-size: 38px; border-width: 3px; }
+.tvav .shield .crown { width: 44px; height: 28px; top: -28px; }
+.tvav .plate { font-size: 24px; padding: 4px 10px; border-width: 2px; }
+.tvav .side-col { display: grid; gap: 28px; }
+.tvav .side-col .wm { font: 400 96px/1 'Uncial Antiqua', serif; }
+.tvav .side-col h3 { margin: 0; font: 900 80px/0.95 var(--font-plaque); text-transform: uppercase; }
+.tvav .side-col ol { margin: 0; padding: 0 0 0 1.1em; font-size: 30px; line-height: 1.4; display: grid; gap: 10px; }
+.tvav .side-col .rolefan { height: 150px; justify-content: flex-start; padding-left: 14px; }
+.tvav .side-col .role { width: 96px; height: 134px; font-size: 14px; margin: 0 -10px; border-width: 2.5px; }
+.tvav .side-col .role svg { width: 44px; height: 44px; }
+.tvav .side-col .waiting { font: 800 32px var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; color: var(--p-ink-2); }
+/* ── Avalon role reveal in stained glass ── */
+.reveal { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 14px 16px 16px; text-align: center; }
+.reveal .over { font: 700 13px var(--font-plaque); letter-spacing: .14em; text-transform: uppercase; color: var(--p-ink-2); }
+.window { --arch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200' preserveAspectRatio='none'%3E%3Cpath d='M0 200V58A62 62 0 0 1 50 0a62 62 0 0 1 50 58v142z'/%3E%3C/svg%3E");
+  width: 210px; height: 360px; position: relative; padding: 7px; background: #1d1b19; filter: drop-shadow(0 0 26px rgba(120, 170, 235, .55)) drop-shadow(0 14px 20px rgba(0,0,0,.35));
+  -webkit-mask: var(--arch) 0 0 / 100% 100% no-repeat; mask: var(--arch) 0 0 / 100% 100% no-repeat; }
+.window > div { height: 100%; position: relative; overflow: hidden; -webkit-mask: var(--arch) 0 0 / 100% 100% no-repeat; mask: var(--arch) 0 0 / 100% 100% no-repeat;
+  background:
+    linear-gradient(transparent 0 0),
+    repeating-linear-gradient(0deg, #1d1b19 0 2px, transparent 2px 44px),
+    linear-gradient(90deg, #c8952c 0 11px, #1d1b19 11px 13px, transparent 13px calc(100% - 13px), #1d1b19 calc(100% - 13px) calc(100% - 11px), #c8952c calc(100% - 11px)),
+    repeating-linear-gradient(60deg, transparent 0 25px, #1d1b19 25px 27px), repeating-linear-gradient(-60deg, transparent 0 25px, #1d1b19 25px 27px),
+    radial-gradient(ellipse at 50% 30%, #9cc0ee, #3d6fb8 55%, #23477f); }
+.window > div::after { content: ''; position: absolute; inset: -40% -60%; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.45) 50%, transparent 60%); animation: glint 3.2s 600ms cubic-bezier(.22,1,.36,1) both; }
+@keyframes glint { from { translate: -60% 0; } to { translate: 60% 0; } }
+.window .medal { position: absolute; left: 50%; top: 44%; translate: -50% -50%; width: 132px; height: 132px; border-radius: 50%; border: 6px solid #1d1b19; display: grid; place-items: center;
+  background: conic-gradient(from 0deg, #1d1b19 0 .7%, transparent .7% 12.5%, #1d1b19 12.5% 13.2%, transparent 13.2% 25%, #1d1b19 25% 25.7%, transparent 25.7% 37.5%, #1d1b19 37.5% 38.2%, transparent 38.2% 50%, #1d1b19 50% 50.7%, transparent 50.7% 62.5%, #1d1b19 62.5% 63.2%, transparent 63.2% 75%, #1d1b19 75% 75.7%, transparent 75.7% 87.5%, #1d1b19 87.5% 88.2%, transparent 88.2%),
+    radial-gradient(circle, #f6e9c4 0 46%, #1d1b19 46% 49%, #6e4fa8 49%); }
+.window .medal svg { width: 62px; height: 62px; color: #1d1b19; position: relative; z-index: 1; }
+.window .name { position: absolute; left: 12px; right: 12px; bottom: 26px; padding: 8px 4px; background: #f3e7c6; border: 4px solid #1d1b19; font: 800 26px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .04em; color: #23477f; }
+.reveal .team { font: 800 18px var(--font-plaque); text-transform: uppercase; letter-spacing: .06em; color: var(--p-azure); }
+.reveal .know { background: var(--p-card); border: 2px solid var(--p-ink); outline: 1px solid var(--p-ink); outline-offset: -6px; padding: 12px 14px; font-size: 16px; line-height: 1.4; text-align: left; width: 100%; }
+.reveal .know b { color: var(--p-gules); }
+.reveal .hide { margin-top: auto; width: 100%; display: grid; place-items: center; min-height: 48px; border: 2px solid var(--p-ink); background: var(--p-card); outline: 1px solid var(--p-ink); outline-offset: -6px; font: 800 18px var(--font-plaque); text-transform: uppercase; letter-spacing: .04em; }
+@media (prefers-reduced-motion: reduce) { .window > div::after { animation: none; opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tvl .landing .token, .chit.slot.caret::after { animation: none; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="jackdaw" viewBox="0 0 120 100">
+      <path d="M71 60 L107 82.5 C109.5 84.5 107.5 88 104.5 87 L65.5 73 Z" fill="var(--bird)"/>
+      <path d="M27 22 C29 16.5 35 15 41 16 C47 17 50.5 21.5 52.5 26.5 C62.5 32.5 74.5 43.5 80.5 55.5 C84.5 64 80.5 72.5 70 74.5 C58 76.5 46 70.5 39 61 C33 53 29 43 27 34 Z" fill="var(--bird)"/>
+      <path d="M42 16.6 C47.5 17.4 51 21.5 52.5 26.5 C56.5 30.5 58 38 55 45.5 C50.5 40.5 46 34 43.8 27.5 C42.6 23.5 41.9 19.8 42 16.6 Z" fill="var(--slate)"/>
+      <path d="M27.6 23.3 C23 23.9 18.6 26.2 14.6 30.2 L27.8 33.8 Z" fill="var(--bird)"/>
+      <g fill="none" stroke="var(--seal)" stroke-width="1.5" stroke-linecap="round" opacity=".9">
+        <path d="M46.5 50.5 C57 48 69 53 78.5 63.5"/><path d="M60.5 58.5 C66.5 60 71.5 64 75 68.5"/><path d="M56 63 C62 64.5 67 68 70.5 72"/><path d="M76 70.5 L100 84.5"/>
+      </g>
+      <circle cx="34.6" cy="24.2" r="3.4" fill="var(--iris)"/><circle cx="34.2" cy="24.2" r="1.4" fill="var(--bird)"/>
+      <path d="M53 73.5 L52 86 M52 86 L47.5 88.3 M52 86 L56.3 88.3 M60 74 L60.5 86 M60.5 86 L56 88.3 M60.5 86 L65 88.3" stroke="var(--bird)" stroke-width="2.1" stroke-linecap="round" fill="none"/>
+      <circle cx="16.2" cy="35.6" r="4.3" fill="none" stroke="#a77d2c" stroke-width="2.1"/><path d="M14.4 31.4 L16.2 29.4 L18 31.4 L16.2 32.6 Z" fill="#a77d2c"/>
+    </symbol>
+    <symbol id="seal" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="96" fill="var(--seal)" stroke="#24211e" stroke-width="3"/>
+      <circle cx="100" cy="100" r="89" fill="none" stroke="#24211e" stroke-width="1.2"/>
+      <circle cx="100" cy="100" r="67" fill="none" stroke="#24211e" stroke-width="1.2"/>
+      <path id="legend" d="M100 100 m-77.5 0 a77.5 77.5 0 1 1 155 0 a77.5 77.5 0 1 1 -155 0" fill="none"/>
+      <text font-family="Big Shoulders Display, sans-serif" font-weight="800" font-size="17" letter-spacing="5.4" fill="#24211e" dominant-baseline="middle"><textPath href="#legend">JACKDAW ✦ GAMES ✦ JACKDAW ✦ GAMES ✦</textPath></text>
+      <use href="#jackdaw" x="34" y="44" width="132" height="110" style="--bird:#24211e"/>
+      <path d="M66 141 H138" stroke="#24211e" stroke-width="2.6" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="fleuron" viewBox="0 0 22 22"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 19V9c0-3 3-6 6-6h10"/><path d="M7 15c0-4 4-8 8-8"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></g></symbol>
+    <symbol id="c-tower" viewBox="0 0 32 32"><path d="M10 28V13h12v15M8 13V7h3.5v3h3V7h3v3h3V7H24v6M14 28v-5a2 2 0 0 1 4 0v5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></symbol>
+    <symbol id="c-key" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="10" cy="10" r="5"/><path d="M13.5 13.5L26 26M22 22l3-3M18.5 18.5l2.5-2.5"/></g></symbol>
+    <symbol id="c-ring" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><circle cx="16" cy="20" r="7.5"/><path d="M12.5 9L16 4.5 19.5 9 16 12.5z"/></g></symbol>
+    <symbol id="c-crown" viewBox="0 0 32 32"><path d="M6 24L7.5 10l5.5 7 3-9 3 9 5.5-7L26 24z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></symbol>
+    <symbol id="c-feather" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M25 5C15 7 9 15 7.5 27M7.5 27C17 25 24 16 25 5M11 21l5.5-1M13.5 15.5l5-1"/></g></symbol>
+    <symbol id="c-acorn" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M9 14h14a7 7 0 0 0-14 0zM10.5 14c0 7 3 11.5 5.5 13 2.5-1.5 5.5-6 5.5-13M16 4v3"/></g></symbol>
+    <symbol id="c-moon" viewBox="0 0 32 32"><path d="M20 5a11 11 0 1 0 7 17 9 9 0 1 1-7-17z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/></symbol>
+    <symbol id="c-bell" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 24h16M10.5 24c0-8 .5-14 5.5-14s5.5 6 5.5 14M16 10V6.5M14 27.5h4"/></g></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-4 3.3-6 6.5-6s5.7 2 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.5c1.6.9 2.6 2.7 3 5.5"/></g></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></g></symbol>
+    <symbol id="i-tv" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="1"/><path d="M8 21h8M12 17v4"/></g></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H10l-5 4v-4H4z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><path d="M14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"/></g></symbol>
+    <symbol id="i-stats" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></g></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="g-avalon" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M32 5l3.2 5V38h-6.4V10z"/><path d="M22 38h20M32 38v7"/><circle cx="32" cy="47.5" r="2.6"/><path d="M8 51c4-3 8-3 12 0s8 3 12 0 8-3 12 0 8 3 12 0M14 58c3-2.2 6-2.2 9 0s6 2.2 9 0 6-2.2 9 0 6 2.2 9 0"/></g></symbol>
+    <symbol id="g-ballot" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 30h44v26H10zM20 30V10h24v20M26 18h12M26 24h8M24 38h16"/></g></symbol>
+    <symbol id="g-grid" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"><path d="M8 8h14v14H8zM25 8h14v14H25zM42 8h14v14H42zM8 25h14v14H8zM42 25h14v14H42zM8 42h14v14H8zM25 42h14v14H25zM42 42h14v14H42z"/><path d="M25 25h14v14H25z" fill="currentColor"/></g></symbol>
+    <symbol id="g-wolf" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M40 8a20 20 0 1 0 16 30A16 16 0 0 1 40 8z"/><path d="M14 56l6-14 4 5 4-9 4 9 4-5 6 14"/></g></symbol>
+    <symbol id="g-spy" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><circle cx="27" cy="27" r="15"/><path d="M38 38l16 16M20 24c2-4 6-6 10-5"/></g></symbol>
+    <symbol id="g-rps" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="22" r="10"/><path d="M38 12h16v20H38z"/><path d="M24 40l20 16M24 56l20-16"/><circle cx="21" cy="40" r="4"/><circle cx="21" cy="56" r="4"/></g></symbol>
+    <symbol id="g-dial" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"><path d="M8 46a24 24 0 0 1 48 0"/><path d="M32 46l12-16"/><circle cx="32" cy="46" r="3"/></g></symbol>
+    <!-- Avalon role art in its house line -->
+    <symbol id="r-wizard" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 26h16M10 26l6-21 6 21"/><path d="M14 16l2 2 2-2"/></g></symbol>
+    <symbol id="r-shield" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h20v9c0 7-10 12-10 12S6 22 6 15z"/><path d="M16 10v12M11 15h10"/></g></symbol>
+    <symbol id="r-sword" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l2 3v14h-4V6z"/><path d="M10 20h12M16 20v6"/></g></symbol>
+    <symbol id="r-dagger" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 5l2 2-11 11-2-2z"/><path d="M10 16l6 6M9 23l3-3"/><path d="M8 27.5c.8-1.3 1.6-1.3 2.4 0" /></g></symbol>
+    <symbol id="r-hood" viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 27c0-12 3-21 8-21s8 9 8 21z"/><path d="M12 18c1-3 2.5-4.5 4-4.5s3 1.5 4 4.5"/></g></symbol>
+  </defs>
+</svg>
+
+<div class="review-bar">
+  <div>
+    <h1>Compendium, round two</h1>
+    <p>Less Scrabble, more character: Belfry's display face, chamfered letter chits instead of tiles, a printer's seal with a heraldic jackdaw holding the stolen ring, and box lids patterned with heraldic fields. Avalon's waiting room shows how a chosen game unfolds its own world inside the Jackdaw frame.</p>
+  </div>
+  <button class="toggle" id="theme-toggle" type="button">Switch to dark</button>
+</div>
+
+<main class="stage">
+  <!-- 1. Home -->
+  <figure class="frame phone" id="f-home">
+    <div class="device"><div class="screen home">
+      <section class="hero lid">
+        <svg class="corner tl"><use href="#fleuron"/></svg><svg class="corner tr"><use href="#fleuron"/></svg><svg class="corner bl"><use href="#fleuron"/></svg><svg class="corner br"><use href="#fleuron"/></svg>
+        <svg class="seal-svg" viewBox="0 0 200 200" aria-hidden="true"><use href="#seal"/></svg>
+        <h2>Jackdaw</h2>
+        <div class="strap">A compendium of games for 2 to 15</div>
+        <p>Everyone plays on their own phone. Put the table on a TV if you have one.</p>
+      </section>
+      <div class="fan" aria-label="Some of the games inside">
+        <span class="mini f-semee" style="--band: var(--sable); --x: -124px; --r: -15deg"><svg><use href="#g-wolf"/></svg></span>
+        <span class="mini f-checky" style="--band: var(--vert); --x: -62px; --r: -7deg"><svg><use href="#g-grid"/></svg></span>
+        <span class="mini f-wavy" style="--band: var(--azure); --x: 0px; --r: 0deg"><svg><use href="#g-avalon"/></svg></span>
+        <span class="mini f-lozengy" style="--band: var(--gules); --x: 62px; --r: 7deg"><svg><use href="#g-ballot"/></svg></span>
+        <span class="mini f-fretty" style="--band: var(--tenne); --x: 124px; --r: 15deg"><svg><use href="#g-spy"/></svg></span>
+      </div>
+      <section class="actions">
+        <div class="name-row">
+          <span class="token" style="--c: var(--azure)"><svg><use href="#c-feather"/></svg></span>
+          <label class="field"><span class="label">Your name</span><span class="input">the owner</span></label>
+        </div>
+        <span class="plaque go">Create a lobby</span>
+        <div class="or">or join one</div>
+        <div class="join-row">
+          <div class="chits"><span class="chit blank">C</span><span class="chit blank">A</span><span class="chit slot caret"></span><span class="chit slot"></span></div>
+          <span class="plaque small">Join</span>
+        </div>
+        <a class="browse" href="#">Browse the games</a>
+      </section>
+    </div></div>
+    <figcaption>Home</figcaption>
+  </figure>
+
+  <!-- 2. Lobby, no game picked yet -->
+  <figure class="frame phone" id="f-lobby">
+    <div class="device"><div class="screen shell">
+      <div class="bar">
+        <svg class="seal-svg" viewBox="0 0 200 200" aria-label="Jackdaw"><use href="#seal"/></svg>
+        <div class="code"><span class="label">Lobby</span><div class="chits" style="--cg:3px"><span class="chit" style="--fill: var(--gules)">C</span><span class="chit" style="--fill: var(--azure)">A</span><span class="chit" style="--fill: var(--vert)">W</span><span class="chit" style="--fill: var(--sable)">S</span></div></div>
+        <span class="iconbtn" aria-label="Share"><svg><use href="#i-share"/></svg></span>
+      </div>
+      <div class="lobby-body">
+        <div class="head"><h2>At the table</h2><span>4 of 15 seats</span></div>
+        <div class="track">
+          <div class="space"><span class="n">1</span><span class="token" style="--c: var(--azure)"><svg><use href="#c-feather"/></svg><span class="host"><svg><use href="#c-ring"/></svg></span></span><span class="who">the owner</span></div>
+          <div class="space"><span class="n">2</span><span class="token" style="--c: var(--gules)"><svg><use href="#c-tower"/></svg></span><span class="who">Bran</span></div>
+          <div class="space"><span class="n">3</span><span class="token" style="--c: var(--vert)"><svg><use href="#c-acorn"/></svg></span><span class="who">Cerys</span></div>
+          <div class="space"><span class="n">4</span><span class="token" style="--c: var(--purpure)"><svg><use href="#c-moon"/></svg></span><span class="who">Dafydd</span></div>
+          <div class="space free"><span class="n">5</span></div>
+          <div class="space free"><span class="n">6</span></div><div class="space free"><span class="n">7</span></div><div class="space free"><span class="n">8</span></div><div class="space free"><span class="n">9</span></div><div class="space free"><span class="n">10</span></div>
+        </div>
+        <div class="head"><h2>Pick a game</h2><span>Host chooses</span></div>
+        <div class="shelf">
+          <div class="box"><div class="art f-checky" style="--band: var(--vert)"><span class="dev"><svg><use href="#g-grid"/></svg></span></div><div class="body"><h3>Codenames</h3><div class="side"><span><svg><use href="#i-people"/></svg>4–15</span><span><svg><use href="#i-clock"/></svg>15–30 min</span></div></div></div>
+          <div class="box"><div class="art f-paly" style="--band: var(--tenne)"><span class="dev"><svg><use href="#g-rps"/></svg></span></div><div class="body"><h3>Rock Paper Scissors</h3><div class="side"><span><svg><use href="#i-people"/></svg>2–10</span><span><svg><use href="#i-clock"/></svg>2–5 min</span></div></div></div>
+          <div class="box unfit"><div class="art f-wavy" style="--band: var(--azure)"><span class="dev"><svg><use href="#g-avalon"/></svg></span></div><div class="body"><h3>Avalon</h3><span class="why">Needs 5 to 15 players</span></div></div>
+          <div class="box unfit"><div class="art f-semee" style="--band: var(--sable)"><span class="dev"><svg><use href="#g-wolf"/></svg></span></div><div class="body"><h3>Werewolf</h3><span class="why">Needs 6 to 15 players</span></div></div>
+        </div>
+        <div class="dock">
+          <div class="row"><span class="plaque small"><svg><use href="#i-tv"/></svg>Show on TV</span><span class="plaque small"><svg><use href="#i-stats"/></svg>Game stats</span></div>
+        </div>
+      </div>
+    </div></div>
+    <figcaption>Lobby before a game is picked: games that don't fit 4 players are greyed with the reason</figcaption>
+  </figure>
+
+  <!-- 3. Avalon's waiting room inside the Jackdaw frame -->
+  <figure class="frame phone" id="f-avalon">
+    <div class="device"><div class="screen shell">
+      <div class="bar">
+        <svg class="seal-svg" viewBox="0 0 200 200" aria-label="Jackdaw"><use href="#seal"/></svg>
+        <div class="code"><div class="chits" style="--cg:3px"><span class="chit" style="--fill: var(--gules)">C</span><span class="chit" style="--fill: var(--azure)">A</span><span class="chit" style="--fill: var(--vert)">W</span><span class="chit" style="--fill: var(--sable)">S</span></div></div>
+        <span class="iconbtn" aria-label="Game stats"><svg><use href="#i-stats"/></svg></span>
+        <span class="iconbtn" aria-label="Chat"><svg><use href="#i-chat"/></svg></span>
+      </div>
+      <div class="avalon" style="flex:1; display:flex; flex-direction:column">
+        <div class="gamebar"><b>Avalon</b><span>Change game</span></div>
+        <div class="roundtable" id="rt-phone">
+          <div class="board"><div><small>Round table</small><b>6</b><em>seated, ready</em></div></div>
+        </div>
+        <div class="av-card">
+          <div class="over">Gathering at the round table</div>
+          <h3>Ready when you are</h3>
+          <div class="rolefan">
+            <span class="role good" style="--r:-12deg;--y:8px"><svg><use href="#r-wizard"/></svg>Merlin</span>
+            <span class="role good" style="--r:-6deg;--y:2px"><svg><use href="#r-sword"/></svg>Loyal</span>
+            <span class="role good" style="--r:0deg;--y:0px"><svg><use href="#r-sword"/></svg>Loyal</span>
+            <span class="role good" style="--r:5deg;--y:1px"><svg><use href="#r-sword"/></svg>Loyal</span>
+            <span class="role evil" style="--r:10deg;--y:5px"><svg><use href="#r-dagger"/></svg>Assassin</span>
+            <span class="role evil" style="--r:15deg;--y:11px"><svg><use href="#r-hood"/></svg>Minion</span>
+          </div>
+          <p class="deal">The deal for 6: <b>4 loyal</b> against <i>2 evil</i>.</p>
+          <div class="av-settings">
+            <div class="row"><b>Roles</b><span class="av-select">Merlin &amp; Assassin<svg width="16" height="16"><use href="#i-down"/></svg></span></div>
+            <div class="row"><b>Lady of the Lake</b><span class="av-toggle" aria-label="On"></span></div>
+          </div>
+        </div>
+        <details class="av-rules" open><summary>How Avalon plays</summary>
+          <span>Leaders propose teams; everyone votes. Teams secretly play Success or Fail. Three failed quests and evil wins; three successes and the Assassin gets one guess at Merlin.</span></details>
+        <div class="av-dock" style="margin-top:auto"><span class="av-go">Start Avalon</span></div>
+      </div>
+    </div></div>
+    <figcaption>Avalon chosen: the lobby becomes Avalon's round table (its own Parchment look) inside the Jackdaw frame. Code, stats and chat stay put.</figcaption>
+  </figure>
+
+  <!-- 3b. Avalon role reveal in stained glass -->
+  <figure class="frame phone" id="f-reveal">
+    <div class="device"><div class="screen shell">
+      <div class="bar">
+        <svg class="seal-svg" viewBox="0 0 200 200" aria-label="Jackdaw"><use href="#seal"/></svg>
+        <div class="code"><div class="chits" style="--cg:3px"><span class="chit" style="--fill: var(--gules)">C</span><span class="chit" style="--fill: var(--azure)">A</span><span class="chit" style="--fill: var(--vert)">W</span><span class="chit" style="--fill: var(--sable)">S</span></div></div>
+        <span class="iconbtn" aria-label="Chat"><svg><use href="#i-chat"/></svg></span>
+      </div>
+      <div class="avalon" style="flex:1; display:flex; flex-direction:column">
+        <div class="gamebar"><b>Avalon</b><span style="text-decoration:none">Quest 1</span></div>
+        <div class="reveal">
+          <div class="over">Your role, for your eyes only</div>
+          <div class="window"><div><span class="medal"><svg><use href="#r-wizard"/></svg></span><span class="name">Merlin</span></div></div>
+          <div class="team">Loyal to Arthur</div>
+          <div class="know">You see evil: <b>Bran</b> and <b>Elin</b>. Mordred, if in play, is hidden from you. Keep it quiet: the Assassin is hunting you.</div>
+          <div class="hide">Hide my role</div>
+        </div>
+      </div>
+    </div></div>
+    <figcaption>Stained glass for Avalon's big moments: your role is revealed in a lit window (light glints across it once)</figcaption>
+  </figure>
+
+  <!-- 4. Game stats -->
+  <figure class="frame phone" id="f-stats">
+    <div class="device"><div class="screen shell">
+      <div class="bar">
+        <span class="iconbtn" aria-label="Back"><svg><use href="#i-back"/></svg></span>
+        <div class="code"><span class="label">Lobby CAWS</span></div>
+      </div>
+      <div class="pad">
+        <header>
+          <h2>Game stats</h2>
+          <div class="tabs"><span class="on">Players</span><span>By game</span><span>Tonight</span></div>
+        </header>
+        <table class="sheet">
+          <thead><tr><th>Player</th><th>Played</th><th>Won</th><th>Lost</th><th>Win rate</th></tr></thead>
+          <tbody>
+            <tr class="open"><td><span class="who"><span class="token" style="--c: var(--azure)"><svg><use href="#c-feather"/></svg></span>the owner</span></td><td>6</td><td>4</td><td>2</td><td><span class="bar-w"><i style="width:67%"></i></span></td></tr>
+            <tr class="detail"><td colspan="5"><b>Avalon</b> 4 played, 3 won. Good 2–1, Evil 1–0. Merlin twice.<br><b>Secret Hitler</b> 2 played, 1 won. Liberal 1–1.</td></tr>
+            <tr><td><span class="who"><span class="token" style="--c: var(--gules)"><svg><use href="#c-tower"/></svg></span>Bran</span></td><td>6</td><td>3</td><td>3</td><td><span class="bar-w"><i style="width:50%"></i></span></td></tr>
+            <tr><td><span class="who"><span class="token" style="--c: var(--vert)"><svg><use href="#c-acorn"/></svg></span>Cerys</span></td><td>6</td><td>2</td><td>4</td><td><span class="bar-w"><i style="width:33%"></i></span></td></tr>
+            <tr><td><span class="who"><span class="token" style="--c: var(--purpure)"><svg><use href="#c-moon"/></svg></span>Dafydd</span></td><td>5</td><td>3</td><td>2</td><td><span class="bar-w"><i style="width:60%"></i></span></td></tr>
+            <tr><td><span class="who"><span class="token" style="--c: var(--tenne)"><svg><use href="#c-key"/></svg></span>Elin</span></td><td>4</td><td>1</td><td>3</td><td><span class="bar-w"><i style="width:25%"></i></span></td></tr>
+            <tr><td><span class="who"><span class="token" style="--c: var(--sable)"><svg><use href="#c-bell"/></svg></span>Fen</span></td><td>2</td><td>2</td><td>0</td><td><span class="bar-w"><i style="width:100%"></i></span></td></tr>
+          </tbody>
+        </table>
+        <div class="log">
+          <h3>Tonight</h3>
+          <div class="entry"><time>22:41</time><span><b>Avalon</b>: Evil won. The Assassin found Merlin.</span></div>
+          <div class="entry"><time>22:02</time><span><b>Avalon</b>: Good won with three quests.</span></div>
+          <div class="entry"><time>21:20</time><span><b>Secret Hitler</b>: Liberals won with five policies.</span></div>
+        </div>
+      </div>
+      <div style="height:16px"></div>
+    </div></div>
+    <figcaption>Game stats, kept on a score pad: tap a player for their record by game, team and role</figcaption>
+  </figure>
+
+  <!-- 5. Catalog -->
+  <figure class="frame phone" id="f-catalog">
+    <div class="device"><div class="screen shell">
+      <div class="bar">
+        <span class="iconbtn" aria-label="Back"><svg><use href="#i-back"/></svg></span>
+        <div class="code"><span class="label">The games</span></div>
+        <svg class="seal-svg" viewBox="0 0 200 200" aria-label="Jackdaw"><use href="#seal"/></svg>
+      </div>
+      <div class="catalog">
+        <div class="filters">
+          <div class="filter stepper"><span class="label">Players</span><span class="ctl"><span>−</span><b>6</b><span>+</span></span></div>
+          <div class="filter"><span class="label">Kind</span><b>Any</b></div>
+          <div class="filter"><span class="label">Length</span><b>Any</b></div>
+        </div>
+        <div class="shelf">
+          <div class="box"><div class="art f-wavy" style="--band: var(--azure)"><span class="dev"><svg><use href="#g-avalon"/></svg></span></div><div class="body"><h3>Avalon</h3><div class="side"><span><svg><use href="#i-people"/></svg>5–15</span><span><svg><use href="#i-clock"/></svg>30–60 min</span></div><p>Loyal knights and hidden traitors.</p></div></div>
+          <div class="box"><div class="art f-lozengy" style="--band: var(--gules)"><span class="dev"><svg><use href="#g-ballot"/></svg></span></div><div class="body"><h3>Secret Hitler</h3><div class="side"><span><svg><use href="#i-people"/></svg>5–15</span><span><svg><use href="#i-clock"/></svg>45 min</span></div><p>Elect a government. Find the fascists.</p></div></div>
+          <div class="box"><div class="art f-checky" style="--band: var(--vert)"><span class="dev"><svg><use href="#g-grid"/></svg></span></div><div class="body"><h3>Codenames</h3><div class="side"><span><svg><use href="#i-people"/></svg>4–15</span><span><svg><use href="#i-clock"/></svg>15–30 min</span></div><p>One-word clues, two rival spymasters.</p></div></div>
+          <div class="box"><div class="art f-semee" style="--band: var(--sable)"><span class="dev"><svg><use href="#g-wolf"/></svg></span></div><div class="body"><h3>Werewolf</h3><div class="side"><span><svg><use href="#i-people"/></svg>6–15</span><span><svg><use href="#i-clock"/></svg>30 min</span></div><p>The app narrates. Nobody sits out.</p></div></div>
+          <div class="box"><div class="art f-fretty" style="--band: var(--tenne)"><span class="dev"><svg><use href="#g-spy"/></svg></span></div><div class="body"><h3>Spyfall</h3><div class="side"><span><svg><use href="#i-people"/></svg>3–15</span><span><svg><use href="#i-clock"/></svg>10 min</span></div><p>Everyone knows where you are. Except one.</p></div></div>
+        </div>
+      </div>
+    </div></div>
+    <figcaption>Catalog: filters for players, kind and length; each game is a box lid with its own heraldic field</figcaption>
+  </figure>
+
+  <!-- 6. TV lobby -->
+  <figure class="frame tv" id="f-tv">
+    <div class="device"><div class="screen tvl">
+      <div class="top">
+        <div class="brand"><svg class="seal-svg" viewBox="0 0 200 200"><use href="#seal"/></svg><h2>Jackdaw</h2></div>
+        <span class="count">6 at the table</span>
+      </div>
+      <div class="join">
+        <span class="label">Join at</span>
+        <span class="url">jackdaw.games</span>
+        <div class="chits"><span class="chit" style="--fill: var(--gules)">C</span><span class="chit" style="--fill: var(--azure)">A</span><span class="chit" style="--fill: var(--vert)">W</span><span class="chit" style="--fill: var(--sable)">S</span></div>
+        <div class="qrline">
+          <svg class="qr" viewBox="-2 -2 33 33" shape-rendering="crispEdges" aria-label="QR code"><path fill="#24211e" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM8 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM14 0h1v1h-1zM18 0h1v1h-1zM20 0h1v1h-1zM22 0h1v1h-1zM23 0h1v1h-1zM24 0h1v1h-1zM25 0h1v1h-1zM26 0h1v1h-1zM27 0h1v1h-1zM28 0h1v1h-1zM0 1h1v1h-1zM6 1h1v1h-1zM9 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM14 1h1v1h-1zM15 1h1v1h-1zM16 1h1v1h-1zM19 1h1v1h-1zM22 1h1v1h-1zM28 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM6 2h1v1h-1zM8 2h1v1h-1zM9 2h1v1h-1zM10 2h1v1h-1zM13 2h1v1h-1zM16 2h1v1h-1zM20 2h1v1h-1zM22 2h1v1h-1zM24 2h1v1h-1zM25 2h1v1h-1zM26 2h1v1h-1zM28 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM6 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM14 3h1v1h-1zM16 3h1v1h-1zM18 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM25 3h1v1h-1zM26 3h1v1h-1zM28 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM17 4h1v1h-1zM19 4h1v1h-1zM20 4h1v1h-1zM22 4h1v1h-1zM24 4h1v1h-1zM25 4h1v1h-1zM26 4h1v1h-1zM28 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM11 5h1v1h-1zM15 5h1v1h-1zM16 5h1v1h-1zM18 5h1v1h-1zM22 5h1v1h-1zM28 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM25 6h1v1h-1zM26 6h1v1h-1zM27 6h1v1h-1zM28 6h1v1h-1zM9 7h1v1h-1zM11 7h1v1h-1zM13 7h1v1h-1zM16 7h1v1h-1zM18 7h1v1h-1zM19 7h1v1h-1zM1 8h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM11 8h1v1h-1zM13 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM19 8h1v1h-1zM21 8h1v1h-1zM24 8h1v1h-1zM26 8h1v1h-1zM28 8h1v1h-1zM0 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM15 9h1v1h-1zM17 9h1v1h-1zM20 9h1v1h-1zM22 9h1v1h-1zM23 9h1v1h-1zM26 9h1v1h-1zM27 9h1v1h-1zM28 9h1v1h-1zM1 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM11 10h1v1h-1zM13 10h1v1h-1zM15 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM23 10h1v1h-1zM24 10h1v1h-1zM25 10h1v1h-1zM26 10h1v1h-1zM0 11h1v1h-1zM1 11h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM7 11h1v1h-1zM9 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM14 11h1v1h-1zM15 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM19 11h1v1h-1zM20 11h1v1h-1zM21 11h1v1h-1zM24 11h1v1h-1zM27 11h1v1h-1zM0 12h1v1h-1zM2 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM9 12h1v1h-1zM11 12h1v1h-1zM16 12h1v1h-1zM17 12h1v1h-1zM19 12h1v1h-1zM22 12h1v1h-1zM23 12h1v1h-1zM25 12h1v1h-1zM26 12h1v1h-1zM28 12h1v1h-1zM0 13h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM10 13h1v1h-1zM13 13h1v1h-1zM15 13h1v1h-1zM18 13h1v1h-1zM21 13h1v1h-1zM23 13h1v1h-1zM27 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM16 14h1v1h-1zM17 14h1v1h-1zM22 14h1v1h-1zM23 14h1v1h-1zM24 14h1v1h-1zM25 14h1v1h-1zM27 14h1v1h-1zM1 15h1v1h-1zM3 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM16 15h1v1h-1zM17 15h1v1h-1zM19 15h1v1h-1zM21 15h1v1h-1zM22 15h1v1h-1zM24 15h1v1h-1zM25 15h1v1h-1zM27 15h1v1h-1zM0 16h1v1h-1zM1 16h1v1h-1zM2 16h1v1h-1zM6 16h1v1h-1zM7 16h1v1h-1zM12 16h1v1h-1zM13 16h1v1h-1zM14 16h1v1h-1zM15 16h1v1h-1zM20 16h1v1h-1zM21 16h1v1h-1zM22 16h1v1h-1zM23 16h1v1h-1zM28 16h1v1h-1zM4 17h1v1h-1zM7 17h1v1h-1zM9 17h1v1h-1zM10 17h1v1h-1zM11 17h1v1h-1zM13 17h1v1h-1zM15 17h1v1h-1zM17 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM21 17h1v1h-1zM22 17h1v1h-1zM23 17h1v1h-1zM26 17h1v1h-1zM2 18h1v1h-1zM4 18h1v1h-1zM5 18h1v1h-1zM6 18h1v1h-1zM7 18h1v1h-1zM10 18h1v1h-1zM11 18h1v1h-1zM14 18h1v1h-1zM15 18h1v1h-1zM17 18h1v1h-1zM19 18h1v1h-1zM21 18h1v1h-1zM22 18h1v1h-1zM23 18h1v1h-1zM24 18h1v1h-1zM0 19h1v1h-1zM1 19h1v1h-1zM2 19h1v1h-1zM4 19h1v1h-1zM5 19h1v1h-1zM11 19h1v1h-1zM15 19h1v1h-1zM16 19h1v1h-1zM19 19h1v1h-1zM21 19h1v1h-1zM22 19h1v1h-1zM26 19h1v1h-1zM27 19h1v1h-1zM28 19h1v1h-1zM1 20h1v1h-1zM4 20h1v1h-1zM5 20h1v1h-1zM6 20h1v1h-1zM9 20h1v1h-1zM11 20h1v1h-1zM12 20h1v1h-1zM13 20h1v1h-1zM15 20h1v1h-1zM16 20h1v1h-1zM17 20h1v1h-1zM20 20h1v1h-1zM21 20h1v1h-1zM22 20h1v1h-1zM23 20h1v1h-1zM24 20h1v1h-1zM25 20h1v1h-1zM26 20h1v1h-1zM27 20h1v1h-1zM28 20h1v1h-1zM9 21h1v1h-1zM10 21h1v1h-1zM11 21h1v1h-1zM12 21h1v1h-1zM13 21h1v1h-1zM16 21h1v1h-1zM18 21h1v1h-1zM20 21h1v1h-1zM24 21h1v1h-1zM25 21h1v1h-1zM0 22h1v1h-1zM1 22h1v1h-1zM2 22h1v1h-1zM3 22h1v1h-1zM4 22h1v1h-1zM5 22h1v1h-1zM6 22h1v1h-1zM9 22h1v1h-1zM10 22h1v1h-1zM12 22h1v1h-1zM13 22h1v1h-1zM14 22h1v1h-1zM16 22h1v1h-1zM17 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM20 22h1v1h-1zM22 22h1v1h-1zM24 22h1v1h-1zM27 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM10 23h1v1h-1zM11 23h1v1h-1zM14 23h1v1h-1zM15 23h1v1h-1zM18 23h1v1h-1zM19 23h1v1h-1zM20 23h1v1h-1zM24 23h1v1h-1zM25 23h1v1h-1zM26 23h1v1h-1zM27 23h1v1h-1zM0 24h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM6 24h1v1h-1zM8 24h1v1h-1zM11 24h1v1h-1zM18 24h1v1h-1zM20 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM23 24h1v1h-1zM24 24h1v1h-1zM25 24h1v1h-1zM26 24h1v1h-1zM27 24h1v1h-1zM0 25h1v1h-1zM2 25h1v1h-1zM3 25h1v1h-1zM4 25h1v1h-1zM6 25h1v1h-1zM9 25h1v1h-1zM12 25h1v1h-1zM13 25h1v1h-1zM14 25h1v1h-1zM15 25h1v1h-1zM16 25h1v1h-1zM17 25h1v1h-1zM19 25h1v1h-1zM22 25h1v1h-1zM23 25h1v1h-1zM26 25h1v1h-1zM0 26h1v1h-1zM2 26h1v1h-1zM3 26h1v1h-1zM4 26h1v1h-1zM6 26h1v1h-1zM10 26h1v1h-1zM17 26h1v1h-1zM21 26h1v1h-1zM25 26h1v1h-1zM0 27h1v1h-1zM6 27h1v1h-1zM8 27h1v1h-1zM10 27h1v1h-1zM11 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM15 27h1v1h-1zM16 27h1v1h-1zM18 27h1v1h-1zM19 27h1v1h-1zM21 27h1v1h-1zM22 27h1v1h-1zM23 27h1v1h-1zM24 27h1v1h-1zM27 27h1v1h-1zM28 27h1v1h-1zM0 28h1v1h-1zM1 28h1v1h-1zM2 28h1v1h-1zM3 28h1v1h-1zM4 28h1v1h-1zM5 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM10 28h1v1h-1zM12 28h1v1h-1zM13 28h1v1h-1zM14 28h1v1h-1zM16 28h1v1h-1zM17 28h1v1h-1zM18 28h1v1h-1zM21 28h1v1h-1zM22 28h1v1h-1zM26 28h1v1h-1zM28 28h1v1h-1z"/></svg>
+          <p>Scan to join, or type the four letters on your phone.</p>
+        </div>
+      </div>
+      <div class="next">
+        <span class="label">Next up</span>
+        <div class="shelf"><div class="box"><div class="art f-checky" style="--band: var(--vert)"><span class="dev"><svg><use href="#g-grid"/></svg></span></div><div class="body"><h3>Codenames</h3><div class="side"><span><svg><use href="#i-people"/></svg>4–15 players</span><span><svg><use href="#i-clock"/></svg>15–30 min</span></div></div></div></div>
+        <div class="waiting">Waiting for the owner to start</div>
+      </div>
+      <div class="track tvtrack">
+        <div class="space"><span class="n">1</span><span class="token" style="--c: var(--azure)"><svg><use href="#c-feather"/></svg><span class="host"><svg><use href="#c-ring"/></svg></span></span><span class="who">the owner</span></div>
+        <div class="space"><span class="n">2</span><span class="token" style="--c: var(--gules)"><svg><use href="#c-tower"/></svg></span><span class="who">Bran</span></div>
+        <div class="space"><span class="n">3</span><span class="token" style="--c: var(--vert)"><svg><use href="#c-acorn"/></svg></span><span class="who">Cerys</span></div>
+        <div class="space"><span class="n">4</span><span class="token" style="--c: var(--purpure)"><svg><use href="#c-moon"/></svg></span><span class="who">Dafydd</span></div>
+        <div class="space"><span class="n">5</span><span class="token away" style="--c: var(--tenne)"><svg><use href="#c-key"/></svg></span><span class="who">Elin</span></div>
+        <div class="space landing"><span class="n">6</span><span class="token" style="--c: var(--sable)"><svg><use href="#c-bell"/></svg></span><span class="who">Fen</span></div>
+        <div class="space free"><span class="n">7</span></div><div class="space free"><span class="n">8</span></div><div class="space free"><span class="n">9</span></div><div class="space free"><span class="n">10</span></div>
+        <div class="space free"><span class="n">11</span></div><div class="space free"><span class="n">12</span></div><div class="space free"><span class="n">13</span></div><div class="space free"><span class="n">14</span></div><div class="space free"><span class="n">15</span></div>
+      </div>
+    </div></div>
+    <figcaption>TV lobby with a game that has no themed room yet</figcaption>
+  </figure>
+
+  <!-- 7. TV Avalon waiting room -->
+  <figure class="frame tv" id="f-tvav">
+    <div class="device"><div class="screen tvav">
+      <div class="strip">
+        <svg class="seal-svg" viewBox="0 0 200 200"><use href="#seal"/></svg>
+        <span class="join-at">Join at</span><span class="url">jackdaw.games</span>
+        <div class="chits"><span class="chit" style="--fill: var(--gules)">C</span><span class="chit" style="--fill: var(--azure)">A</span><span class="chit" style="--fill: var(--vert)">W</span><span class="chit" style="--fill: var(--sable)">S</span></div>
+        <svg class="qr" viewBox="-2 -2 33 33" shape-rendering="crispEdges" aria-label="QR code"><path fill="#24211e" d="M0 0h1v1h-1zM1 0h1v1h-1zM2 0h1v1h-1zM3 0h1v1h-1zM4 0h1v1h-1zM5 0h1v1h-1zM6 0h1v1h-1zM8 0h1v1h-1zM10 0h1v1h-1zM11 0h1v1h-1zM12 0h1v1h-1zM13 0h1v1h-1zM14 0h1v1h-1zM18 0h1v1h-1zM20 0h1v1h-1zM22 0h1v1h-1zM23 0h1v1h-1zM24 0h1v1h-1zM25 0h1v1h-1zM26 0h1v1h-1zM27 0h1v1h-1zM28 0h1v1h-1zM0 1h1v1h-1zM6 1h1v1h-1zM9 1h1v1h-1zM11 1h1v1h-1zM12 1h1v1h-1zM14 1h1v1h-1zM15 1h1v1h-1zM16 1h1v1h-1zM19 1h1v1h-1zM22 1h1v1h-1zM28 1h1v1h-1zM0 2h1v1h-1zM2 2h1v1h-1zM3 2h1v1h-1zM4 2h1v1h-1zM6 2h1v1h-1zM8 2h1v1h-1zM9 2h1v1h-1zM10 2h1v1h-1zM13 2h1v1h-1zM16 2h1v1h-1zM20 2h1v1h-1zM22 2h1v1h-1zM24 2h1v1h-1zM25 2h1v1h-1zM26 2h1v1h-1zM28 2h1v1h-1zM0 3h1v1h-1zM2 3h1v1h-1zM3 3h1v1h-1zM4 3h1v1h-1zM6 3h1v1h-1zM9 3h1v1h-1zM10 3h1v1h-1zM11 3h1v1h-1zM14 3h1v1h-1zM16 3h1v1h-1zM18 3h1v1h-1zM22 3h1v1h-1zM24 3h1v1h-1zM25 3h1v1h-1zM26 3h1v1h-1zM28 3h1v1h-1zM0 4h1v1h-1zM2 4h1v1h-1zM3 4h1v1h-1zM4 4h1v1h-1zM6 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM11 4h1v1h-1zM12 4h1v1h-1zM13 4h1v1h-1zM14 4h1v1h-1zM17 4h1v1h-1zM19 4h1v1h-1zM20 4h1v1h-1zM22 4h1v1h-1zM24 4h1v1h-1zM25 4h1v1h-1zM26 4h1v1h-1zM28 4h1v1h-1zM0 5h1v1h-1zM6 5h1v1h-1zM9 5h1v1h-1zM11 5h1v1h-1zM15 5h1v1h-1zM16 5h1v1h-1zM18 5h1v1h-1zM22 5h1v1h-1zM28 5h1v1h-1zM0 6h1v1h-1zM1 6h1v1h-1zM2 6h1v1h-1zM3 6h1v1h-1zM4 6h1v1h-1zM5 6h1v1h-1zM6 6h1v1h-1zM8 6h1v1h-1zM10 6h1v1h-1zM12 6h1v1h-1zM14 6h1v1h-1zM16 6h1v1h-1zM18 6h1v1h-1zM20 6h1v1h-1zM22 6h1v1h-1zM23 6h1v1h-1zM24 6h1v1h-1zM25 6h1v1h-1zM26 6h1v1h-1zM27 6h1v1h-1zM28 6h1v1h-1zM9 7h1v1h-1zM11 7h1v1h-1zM13 7h1v1h-1zM16 7h1v1h-1zM18 7h1v1h-1zM19 7h1v1h-1zM1 8h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM11 8h1v1h-1zM13 8h1v1h-1zM14 8h1v1h-1zM16 8h1v1h-1zM19 8h1v1h-1zM21 8h1v1h-1zM24 8h1v1h-1zM26 8h1v1h-1zM28 8h1v1h-1zM0 9h1v1h-1zM3 9h1v1h-1zM4 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM11 9h1v1h-1zM12 9h1v1h-1zM15 9h1v1h-1zM17 9h1v1h-1zM20 9h1v1h-1zM22 9h1v1h-1zM23 9h1v1h-1zM26 9h1v1h-1zM27 9h1v1h-1zM28 9h1v1h-1zM1 10h1v1h-1zM5 10h1v1h-1zM6 10h1v1h-1zM7 10h1v1h-1zM9 10h1v1h-1zM10 10h1v1h-1zM11 10h1v1h-1zM13 10h1v1h-1zM15 10h1v1h-1zM16 10h1v1h-1zM18 10h1v1h-1zM20 10h1v1h-1zM23 10h1v1h-1zM24 10h1v1h-1zM25 10h1v1h-1zM26 10h1v1h-1zM0 11h1v1h-1zM1 11h1v1h-1zM3 11h1v1h-1zM4 11h1v1h-1zM7 11h1v1h-1zM9 11h1v1h-1zM11 11h1v1h-1zM12 11h1v1h-1zM14 11h1v1h-1zM15 11h1v1h-1zM16 11h1v1h-1zM18 11h1v1h-1zM19 11h1v1h-1zM20 11h1v1h-1zM21 11h1v1h-1zM24 11h1v1h-1zM27 11h1v1h-1zM0 12h1v1h-1zM2 12h1v1h-1zM4 12h1v1h-1zM5 12h1v1h-1zM6 12h1v1h-1zM9 12h1v1h-1zM11 12h1v1h-1zM16 12h1v1h-1zM17 12h1v1h-1zM19 12h1v1h-1zM22 12h1v1h-1zM23 12h1v1h-1zM25 12h1v1h-1zM26 12h1v1h-1zM28 12h1v1h-1zM0 13h1v1h-1zM2 13h1v1h-1zM3 13h1v1h-1zM5 13h1v1h-1zM7 13h1v1h-1zM10 13h1v1h-1zM13 13h1v1h-1zM15 13h1v1h-1zM18 13h1v1h-1zM21 13h1v1h-1zM23 13h1v1h-1zM27 13h1v1h-1zM1 14h1v1h-1zM2 14h1v1h-1zM3 14h1v1h-1zM4 14h1v1h-1zM6 14h1v1h-1zM7 14h1v1h-1zM8 14h1v1h-1zM9 14h1v1h-1zM14 14h1v1h-1zM15 14h1v1h-1zM16 14h1v1h-1zM17 14h1v1h-1zM22 14h1v1h-1zM23 14h1v1h-1zM24 14h1v1h-1zM25 14h1v1h-1zM27 14h1v1h-1zM1 15h1v1h-1zM3 15h1v1h-1zM8 15h1v1h-1zM9 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM14 15h1v1h-1zM16 15h1v1h-1zM17 15h1v1h-1zM19 15h1v1h-1zM21 15h1v1h-1zM22 15h1v1h-1zM24 15h1v1h-1zM25 15h1v1h-1zM27 15h1v1h-1zM0 16h1v1h-1zM1 16h1v1h-1zM2 16h1v1h-1zM6 16h1v1h-1zM7 16h1v1h-1zM12 16h1v1h-1zM13 16h1v1h-1zM14 16h1v1h-1zM15 16h1v1h-1zM20 16h1v1h-1zM21 16h1v1h-1zM22 16h1v1h-1zM23 16h1v1h-1zM28 16h1v1h-1zM4 17h1v1h-1zM7 17h1v1h-1zM9 17h1v1h-1zM10 17h1v1h-1zM11 17h1v1h-1zM13 17h1v1h-1zM15 17h1v1h-1zM17 17h1v1h-1zM18 17h1v1h-1zM19 17h1v1h-1zM21 17h1v1h-1zM22 17h1v1h-1zM23 17h1v1h-1zM26 17h1v1h-1zM2 18h1v1h-1zM4 18h1v1h-1zM5 18h1v1h-1zM6 18h1v1h-1zM7 18h1v1h-1zM10 18h1v1h-1zM11 18h1v1h-1zM14 18h1v1h-1zM15 18h1v1h-1zM17 18h1v1h-1zM19 18h1v1h-1zM21 18h1v1h-1zM22 18h1v1h-1zM23 18h1v1h-1zM24 18h1v1h-1zM0 19h1v1h-1zM1 19h1v1h-1zM2 19h1v1h-1zM4 19h1v1h-1zM5 19h1v1h-1zM11 19h1v1h-1zM15 19h1v1h-1zM16 19h1v1h-1zM19 19h1v1h-1zM21 19h1v1h-1zM22 19h1v1h-1zM26 19h1v1h-1zM27 19h1v1h-1zM28 19h1v1h-1zM1 20h1v1h-1zM4 20h1v1h-1zM5 20h1v1h-1zM6 20h1v1h-1zM9 20h1v1h-1zM11 20h1v1h-1zM12 20h1v1h-1zM13 20h1v1h-1zM15 20h1v1h-1zM16 20h1v1h-1zM17 20h1v1h-1zM20 20h1v1h-1zM21 20h1v1h-1zM22 20h1v1h-1zM23 20h1v1h-1zM24 20h1v1h-1zM25 20h1v1h-1zM26 20h1v1h-1zM27 20h1v1h-1zM28 20h1v1h-1zM9 21h1v1h-1zM10 21h1v1h-1zM11 21h1v1h-1zM12 21h1v1h-1zM13 21h1v1h-1zM16 21h1v1h-1zM18 21h1v1h-1zM20 21h1v1h-1zM24 21h1v1h-1zM25 21h1v1h-1zM0 22h1v1h-1zM1 22h1v1h-1zM2 22h1v1h-1zM3 22h1v1h-1zM4 22h1v1h-1zM5 22h1v1h-1zM6 22h1v1h-1zM9 22h1v1h-1zM10 22h1v1h-1zM12 22h1v1h-1zM13 22h1v1h-1zM14 22h1v1h-1zM16 22h1v1h-1zM17 22h1v1h-1zM18 22h1v1h-1zM19 22h1v1h-1zM20 22h1v1h-1zM22 22h1v1h-1zM24 22h1v1h-1zM27 22h1v1h-1zM0 23h1v1h-1zM6 23h1v1h-1zM10 23h1v1h-1zM11 23h1v1h-1zM14 23h1v1h-1zM15 23h1v1h-1zM18 23h1v1h-1zM19 23h1v1h-1zM20 23h1v1h-1zM24 23h1v1h-1zM25 23h1v1h-1zM26 23h1v1h-1zM27 23h1v1h-1zM0 24h1v1h-1zM2 24h1v1h-1zM3 24h1v1h-1zM4 24h1v1h-1zM6 24h1v1h-1zM8 24h1v1h-1zM11 24h1v1h-1zM18 24h1v1h-1zM20 24h1v1h-1zM21 24h1v1h-1zM22 24h1v1h-1zM23 24h1v1h-1zM24 24h1v1h-1zM25 24h1v1h-1zM26 24h1v1h-1zM27 24h1v1h-1zM0 25h1v1h-1zM2 25h1v1h-1zM3 25h1v1h-1zM4 25h1v1h-1zM6 25h1v1h-1zM9 25h1v1h-1zM12 25h1v1h-1zM13 25h1v1h-1zM14 25h1v1h-1zM15 25h1v1h-1zM16 25h1v1h-1zM17 25h1v1h-1zM19 25h1v1h-1zM22 25h1v1h-1zM23 25h1v1h-1zM26 25h1v1h-1zM0 26h1v1h-1zM2 26h1v1h-1zM3 26h1v1h-1zM4 26h1v1h-1zM6 26h1v1h-1zM10 26h1v1h-1zM17 26h1v1h-1zM21 26h1v1h-1zM25 26h1v1h-1zM0 27h1v1h-1zM6 27h1v1h-1zM8 27h1v1h-1zM10 27h1v1h-1zM11 27h1v1h-1zM12 27h1v1h-1zM14 27h1v1h-1zM15 27h1v1h-1zM16 27h1v1h-1zM18 27h1v1h-1zM19 27h1v1h-1zM21 27h1v1h-1zM22 27h1v1h-1zM23 27h1v1h-1zM24 27h1v1h-1zM27 27h1v1h-1zM28 27h1v1h-1zM0 28h1v1h-1zM1 28h1v1h-1zM2 28h1v1h-1zM3 28h1v1h-1zM4 28h1v1h-1zM5 28h1v1h-1zM6 28h1v1h-1zM9 28h1v1h-1zM10 28h1v1h-1zM12 28h1v1h-1zM13 28h1v1h-1zM14 28h1v1h-1zM16 28h1v1h-1zM17 28h1v1h-1zM18 28h1v1h-1zM21 28h1v1h-1zM22 28h1v1h-1zM26 28h1v1h-1zM28 28h1v1h-1z"/></svg>
+      </div>
+      <div class="avalon">
+        <div class="side-col">
+          <div class="wm">Avalon</div>
+          <h3>Ready to deal</h3>
+          <div class="rolefan">
+            <span class="role good" style="--r:-12deg;--y:14px"><svg><use href="#r-wizard"/></svg>Merlin</span>
+            <span class="role good" style="--r:-6deg;--y:4px"><svg><use href="#r-sword"/></svg>Loyal</span>
+            <span class="role good" style="--r:0deg;--y:0px"><svg><use href="#r-sword"/></svg>Loyal</span>
+            <span class="role good" style="--r:5deg;--y:2px"><svg><use href="#r-sword"/></svg>Loyal</span>
+            <span class="role evil" style="--r:10deg;--y:9px"><svg><use href="#r-dagger"/></svg>Assassin</span>
+            <span class="role evil" style="--r:15deg;--y:20px"><svg><use href="#r-hood"/></svg>Minion</span>
+          </div>
+          <ol>
+            <li>The leader picks a team; everyone votes on it.</li>
+            <li>The team secretly plays Success or Fail.</li>
+            <li>Three fails and evil wins. Three successes, and the Assassin gets one guess at Merlin.</li>
+          </ol>
+          <div class="waiting">Waiting for the owner to start</div>
+        </div>
+        <div class="roundtable" id="rt-tv">
+          <div class="board"><div><small>Round table</small><b>6</b><em>seated, ready</em></div></div>
+        </div>
+      </div>
+    </div></div>
+    <figcaption>TV with Avalon chosen: the round table, the deal and the rules in brief; the Jackdaw strip keeps the join code on screen</figcaption>
+  </figure>
+</main>
+
+<script>
+(() => {
+  const players = [
+    ['LZ', 'Wren', '#4d6b4d', true], ['B', 'Bran', '#4b4d86'], ['C', 'Cerys', '#566271'],
+    ['D', 'Dafydd', '#5f6b3d'], ['E', 'Elin', '#6f4b7a'], ['F', 'Fen', '#8a5a33'],
+  ];
+  const crown = '<svg class="crown" viewBox="0 0 32 20"><path d="M3 18L5 4l6 7 5-9 5 9 6-7 2 14z" fill="currentColor" stroke="#2b2825" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+  for (const id of ['rt-phone', 'rt-tv']) {
+    const table = document.getElementById(id);
+    if (!table) continue;
+    players.forEach(([ini, name, colour, host], i) => {
+      const a = -Math.PI / 2 + (i / players.length) * Math.PI * 2;
+      const seat = document.createElement('div');
+      seat.className = 'seat';
+      seat.style.left = 50 + Math.cos(a) * 41 + '%';
+      seat.style.top = 50 + Math.sin(a) * 41 + '%';
+      seat.innerHTML = `<span class="shield" style="--c:${colour}">${host ? crown : ''}${ini}</span><span class="plate">${name}</span>`;
+      table.appendChild(seat);
+    });
+  }
+  const root = document.documentElement;
+  const btn = document.getElementById('theme-toggle');
+  const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  const label = () => { btn.textContent = isDark() ? 'Switch to day' : 'Switch to dark'; };
+  btn.addEventListener('click', () => { root.dataset.theme = isDark() ? 'light' : 'dark'; label(); });
+  label();
+  const [solo, dark] = location.hash.slice(1).split('-');
+  const ids = { home: 'f-home', lobby: 'f-lobby', avalon: 'f-avalon', reveal: 'f-reveal', stats: 'f-stats', catalog: 'f-catalog', tv: 'f-tv', tvav: 'f-tvav' };
+  if (ids[solo]) { document.body.classList.add('solo'); document.getElementById(ids[solo]).classList.add('show'); }
+  if (dark === 'dark') root.dataset.theme = 'dark';
+  const fit = () => document.querySelectorAll('.tv .device').forEach((d) => d.style.setProperty('--s', d.clientWidth / 1920));
+  addEventListener('resize', fit); fit();
+})();
+</script>

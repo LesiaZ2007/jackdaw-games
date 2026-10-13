@@ -74,6 +74,14 @@ describe('room runtime', () => {
     expect(final.results?.winners).toEqual([started.players[0]!.id]);
     expect(final.history[0]?.gameId).toBe('rps');
 
+    // The full record and stats come from their own endpoint.
+    const { stats, history } = await runtime.stats(code);
+    expect(history).toHaveLength(1);
+    expect(history[0]?.names[started.players[0]!.id]).toBe('Ana');
+    expect(stats.totalGames).toBe(1);
+    expect(stats.players[0]).toMatchObject({ name: 'Ana', played: 1, wins: 1, losses: 0 });
+    expect(stats.games).toEqual([{ gameId: 'rps', played: 1, lastPlayedAt: expect.any(Number) }]);
+
     const again = await runtime.post(code, TOKENS.ana, { type: 'playAgain' });
     expect(again.status).toBe('in_game');
     expect(again.selectedGameId).toBe('rps');
@@ -231,6 +239,10 @@ describe('http handlers', () => {
       code,
     );
     expect(noToken.status).toBe(401);
+    const stats = await http.getStats(new Request(`http://x/api/lobby/${code}/stats`), code);
+    expect(stats.status).toBe(200);
+    expect(await stats.json()).toMatchObject({ stats: { totalGames: 0 }, history: [] });
+
     const badCode = await http.getLobby(new Request('http://x/api/lobby/12'), '12');
     expect(badCode.status).toBe(404);
     const badJson = await http.postLobby(

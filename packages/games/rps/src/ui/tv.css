@@ -1,0 +1,187 @@
+/* Rock Paper Scissors on the TV, in TV pixels (the stage is 1920×1080, this fills below the strip). */
+.rps-tv {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 440px 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'round now'
+    'board last';
+  gap: 28px 72px;
+  padding: 36px 80px 40px;
+}
+.rps-tv__heading {
+  margin: 0 0 14px;
+  font: 800 40px/1 var(--font-display);
+}
+.rps-tv__round {
+  grid-area: round;
+  display: grid;
+  justify-items: start;
+  align-content: start;
+}
+.rps-tv__label {
+  font: 700 26px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-2);
+}
+.rps-tv__num {
+  font: 800 200px/0.85 var(--font-code);
+}
+.rps-tv__of {
+  font: 800 40px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+.rps-tv__status {
+  margin: 18px 0 0;
+  font: 800 30px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rps-tv__board {
+  grid-area: board;
+  min-height: 0;
+}
+.rps-tv__board ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.rps-tv__board li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 110px 48px;
+  align-items: center;
+  gap: 16px;
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+.rps-tv__board b {
+  font: 800 34px/1 var(--font-code);
+  text-align: right;
+}
+.rps-tv__who {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rps-tv__bar {
+  height: 12px;
+  background: var(--table-2);
+  position: relative;
+}
+.rps-tv__bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--vert);
+}
+
+.rps-tv__now {
+  grid-area: now;
+}
+.rps-tv__seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 18px 16px;
+}
+.rps-tv__seats li {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 18px 8px 14px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  --ring-bg: var(--paper);
+}
+.rps-tv__seat-name {
+  max-width: 100%;
+  font: 800 24px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rps-tv__state {
+  font: 800 20px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 6px 12px;
+}
+.rps-tv__seats .is-picked .rps-tv__state {
+  background: var(--vert);
+  color: var(--on-fill);
+}
+.rps-tv__seats .is-thinking .rps-tv__state {
+  color: var(--ink-2);
+  border: 1.5px dashed var(--rule);
+  animation: rps-tv-think 1.6s ease-in-out infinite;
+}
+@keyframes rps-tv-think {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.rps-tv__last {
+  grid-area: last;
+  min-height: 0;
+}
+.rps-tv__throws {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+.rps-tv__throws li {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px 6px 12px;
+  border: 1.5px solid var(--ink);
+  background: color-mix(in srgb, var(--paper) 70%, transparent);
+}
+.rps-tv__throw-name {
+  font: 800 22px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+.rps-tv__pts {
+  font: 800 32px/1 var(--font-code);
+  color: var(--ink-2);
+}
+.rps-tv__pts--won {
+  color: var(--vert);
+}
+:root[data-theme='dark'] .rps-tv__pts--won {
+  color: #6aa685;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .rps-tv__pts--won {
+    color: #6aa685;
+  }
+}
+.rps-tv__empty {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 28px;
+  color: var(--ink-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rps-tv__seats .is-thinking .rps-tv__state {
+    animation: none;
+  }
+}

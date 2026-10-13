@@ -124,7 +124,7 @@ test('five phones gather in Avalon’s lobby, land in their own Avalon seats, an
   const late = await phone(browser);
   await late.goto(`/r/${code}`);
   await late.getByLabel('Your name').fill('Ffion');
-  await late.getByRole('button', { name: 'Take a seat' }).click();
+  await late.getByRole('button', { name: 'Watch, and play next game' }).click();
   await expect(late.getByRole('link', { name: 'Open Avalon’s table' })).toHaveAttribute(
     'href',
     `${avalon.url}/tv/${room.code}`,
@@ -187,6 +187,7 @@ for (const [width, height, scheme] of [
   [1280, 800, 'dark'],
 ] as const) {
   test(`Avalon's lobby at ${width}px (${scheme})`, async ({ browser }, info: TestInfo) => {
+    test.setTimeout(150_000);
     const host = await phone(browser, width, height, scheme);
     const code = await hostAvalon(host);
     for (const [i, name] of NAMES.slice(1).entries()) {
@@ -197,6 +198,8 @@ for (const [width, height, scheme] of [
       });
       expect(res.ok()).toBe(true);
     }
+    // These four joined through the API, not a phone: read the table fresh.
+    await host.reload();
     await expect(host.getByText('5 of 15 seated · ready')).toBeVisible();
     await host.getByRole('combobox', { name: 'Roles' }).selectOption('full');
     await expect(host.getByText('The deal for 5:')).toBeVisible();

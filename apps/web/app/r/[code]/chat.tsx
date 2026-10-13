@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
-import { Plaque, Token, type ScreenPlayer } from '@jackdaw/ui';
+import { Plaque, type ScreenPlayer } from '@jackdaw/ui';
 
 /** Table talk: docked beside the game on wide screens, a sheet on phones. */
 export function Chat({
@@ -37,7 +37,7 @@ export function Chat({
         {s.chat.length === 0 && <li className="chat__empty">Nothing said yet. Say hello.</li>}
         {s.chat.map((m, i) => {
           const p = byId.get(m.playerId);
-          // Back-to-back messages from one person share a single name line.
+          // Back-to-back messages from one person show the name once.
           const more = s.chat[i - 1]?.playerId === m.playerId;
           return (
             <li
@@ -49,14 +49,8 @@ export function Chat({
                 p ? ({ '--c': `var(--tint-${p.avatar.tint})` } as React.CSSProperties) : undefined
               }
             >
-              {!more && (
-                <>
-                  <span className="chat__token">
-                    {p ? <Token avatar={p.avatar} size={30} /> : null}
-                  </span>
-                  <b className="chat__who">{p?.name ?? 'Someone'}</b>
-                </>
-              )}
+              {/* Back-to-back messages leave the name column empty; screen readers still hear it. */}
+              <b className={more ? 'chat__who sr-only' : 'chat__who'}>{p?.name ?? 'Someone'}</b>
               <span className="chat__text">{m.text}</span>
             </li>
           );

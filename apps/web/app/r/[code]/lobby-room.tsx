@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { LobbySnapshot } from '@jackdaw/engine';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import type { ChatMessage, LobbySnapshot } from '@jackdaw/engine';
 import { BirdMark, Lid, Plaque, Toast, type ScreenPlayer } from '@jackdaw/ui';
 import { forgetSeat, rememberedSeat, rememberSeat } from '@/lib/identity';
+import { readSeen, unreadCount, writeSeen } from '@/lib/unread';
 import { useLobby } from '@/lib/use-lobby';
 import { LobbyBar, type Panel } from './bar';
 import { Chat } from './chat';
@@ -17,6 +18,36 @@ import { ShareSheet } from './share-sheet';
 import { StatsSheet } from './stats-sheet';
 import { Waiting } from './waiting';
 import '../lobby.css';
+
+const WIDE = '(min-width: 1024px)';
+/** True when chat is docked beside the game (laptops), so it is always on screen. */
+function useChatDocked(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(WIDE);
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(WIDE).matches,
+    () => false,
+  );
+}
+
+/**
+ * The time of the last chat message this tab has seen. It starts at the newest message on the
+ * first snapshot (or where this tab left off before a refresh) and catches up whenever the chat
+ * is on screen.
+ */
+function useChatSeen(code: string, chat: ChatMessage[] | undefined, onScreen: boolean) {
+  const latest = chat?.[chat.length - 1]?.at ?? 0;
+  const [seen, setSeen] = useState<number | null>(null);
+  if (seen === null && chat) setSeen(readSeen(code) ?? latest);
+  if (onScreen && seen !== null && seen < latest) setSeen(latest);
+  useEffect(() => {
+    if (seen !== null) writeSeen(code, seen);
+  }, [code, seen]);
+  return seen ?? latest;
+}
 
 export function screenPlayers(s: LobbySnapshot): ScreenPlayer[] {
   return s.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, online: p.online }));
@@ -45,6 +76,8 @@ export function LobbyRoom({ code }: { code: string }) {
   const close = useCallback(() => setPanel(null), []);
 
   const players = useMemo(() => (snapshot ? screenPlayers(snapshot) : []), [snapshot]);
+  const docked = useChatDocked();
+  const seenAt = useChatSeen(code, snapshot?.chat, docked || panel === 'chat');
 
   if (missing) {
     return (
@@ -97,11 +130,11 @@ export function LobbyRoom({ code }: { code: string }) {
 
   const me = snapshot.me;
   const isHost = snapshot.hostId === me;
-  const unread = snapshot.chat.length;
+  const unread = unreadCount(snapshot.chat, me, seenAt);
 
   return (
     <div className="lobby-page">
-      <LobbyBar code={code} status={snapshot.status} onOpen={setPanel} chatCount={unread} />
+      <LobbyBar code={code} status={snapshot.status} onOpen={setPanel} unread={unread} />
       <div className="lobby-layout">
         <main className="lobby-main">
           {snapshot.status === 'waiting' && (

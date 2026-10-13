@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import {
   Tally,
+  PlayerReaction,
   Token,
   useMoment,
   VerdictMoment,
@@ -59,7 +60,7 @@ function Throw({ pick, size = 64 }: { pick: Pick; size?: number }) {
  * Rock Paper Scissors on the TV: the round, who has picked (never what), the last round's
  * throws once everyone revealed, and the scoreboard. Readable from across a room.
  */
-export const TvScreen: GameUi['TvScreen'] = ({ tableView, players }) => {
+export const TvScreen: GameUi['TvScreen'] = ({ tableView, players, reactions }) => {
   const view = tableView as RpsTableView;
   const byId = new Map((players as ScreenPlayer[]).map((p) => [p.id, p] as const));
   const name = (id: string) => byId.get(id)?.name ?? 'Left the lobby';
@@ -118,7 +119,10 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players }) => {
             const done = picked.has(id);
             return (
               <li key={id} className={done ? 'is-picked' : 'is-thinking'}>
-                {p && <Token avatar={p.avatar} size={92} away={!p.online} />}
+                <span className="rps-tv__tok">
+                  {p && <Token avatar={p.avatar} size={92} away={!p.online} />}
+                  <PlayerReaction reactions={reactions} playerId={id} name={name(id)} size={64} />
+                </span>
                 <span className="rps-tv__seat-name">{name(id)}</span>
                 <span className="rps-tv__state">{done ? 'Picked' : 'Thinking'}</span>
               </li>

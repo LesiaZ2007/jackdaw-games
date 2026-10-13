@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react';
  * Day or dark, as chosen in the Jackdaw shell. A manual choice lives on `<html data-theme>`
  * (and in localStorage, applied before first paint by the app layout); with no choice the device
  * setting decides. Every game follows this: a game with its own looks maps day and dark onto
- * them (Avalon: day is its Day look, dark is its Night look) by calling `useTheme()`.
+ * them (Avalon: day is its Parchment look, dark is its Night look) by calling `useTheme()`.
  */
 export type Theme = 'light' | 'dark';
 

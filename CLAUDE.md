@@ -92,7 +92,7 @@ Git Bash, run `export PATH="$HOME/.local/bin:$PATH"`. In PowerShell 5.1, chain w
   Per-row results use `OutcomeChip`; running scores use `Tally`. The end-of-game results screen
   gives everyone their own `Verdict` already. See the doc comment in `packages/ui/src/game-ui.ts`.
 - **Day and dark follow the shell.** Every game follows the day/dark choice through `useTheme()`
-  (`packages/ui/src/theme.ts`). A game with its own looks maps onto them: Avalon's day is its Day
+  (`packages/ui/src/theme.ts`). A game with its own looks maps onto them: Avalon's day is its Parchment
   look and dark is its Night look.
 
 ## Architecture (polling on Vercel)

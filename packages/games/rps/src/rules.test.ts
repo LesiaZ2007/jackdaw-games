@@ -4,9 +4,9 @@ import { PICKS, rps, scoreRound, type Pick, type RpsState } from './rules';
 
 const ids = ['a', 'b', 'c'];
 const fresh = (rounds = 3, players = ids) =>
-  rps.setup({ playerIds: players, options: { rounds }, rng: createRng(1) });
+  rps.setup({ playerIds: players, options: { rounds }, rng: createRng(1), now: 0 });
 const pick = (s: RpsState, id: string, p: Pick) =>
-  rps.applyAction(s, id, { type: 'pick', pick: p }, createRng(1));
+  rps.applyAction(s, id, { type: 'pick', pick: p }, createRng(1), 0);
 const playRound = (s: RpsState, picks: Record<string, Pick>) =>
   Object.entries(picks).reduce((st, [id, p]) => pick(st, id, p), s);
 
@@ -76,10 +76,10 @@ describe('rounds', () => {
   it('is deterministic: same seed and actions give the same state', () => {
     const run = (seed: number) => {
       const rng = createRng(seed);
-      let s = rps.setup({ playerIds: ids, options: { rounds: 3 }, rng });
+      let s = rps.setup({ playerIds: ids, options: { rounds: 3 }, rng, now: 0 });
       while (!rps.getResult(s)) {
         for (const id of ids)
-          s = rps.applyAction(s, id, { type: 'pick', pick: rng.pick(PICKS) }, rng);
+          s = rps.applyAction(s, id, { type: 'pick', pick: rng.pick(PICKS) }, rng, 0);
       }
       return s;
     };
@@ -96,7 +96,7 @@ describe('hidden information', () => {
     const rng = createRng(2024);
     const players = ['a', 'b', 'c', 'd'];
     for (let game = 0; game < 20; game++) {
-      let s = rps.setup({ playerIds: players, options: { rounds: 3 }, rng });
+      let s = rps.setup({ playerIds: players, options: { rounds: 3 }, rng, now: 0 });
       while (!rps.getResult(s)) {
         for (const x of Object.keys(s.picks)) {
           for (const alt of PICKS) {
@@ -108,7 +108,7 @@ describe('hidden information', () => {
           }
         }
         const who = rng.pick(players.filter((p) => !(p in s.picks)));
-        s = rps.applyAction(s, who, { type: 'pick', pick: rng.pick(PICKS) }, rng);
+        s = rps.applyAction(s, who, { type: 'pick', pick: rng.pick(PICKS) }, rng, 0);
       }
     }
   });

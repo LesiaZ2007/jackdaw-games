@@ -17,7 +17,7 @@ import type { GameArt } from './pieces';
  *   and running scores use `Tally` so they pop when they go up. The end-of-game results screen
  *   already gives each player their `Verdict`; a game's `Reveal` sits under it.
  * - **Day and dark.** Screens follow the shell's choice via `useTheme()` (`theme.ts`). A game
- *   with its own looks maps day and dark onto them (Avalon: day is its Day look, dark its Night).
+ *   with its own looks maps day and dark onto them (Avalon: day is its Parchment look, dark its Night).
  */
 export interface GameAbout {
   /** A short paragraph: what it's like to play. */

@@ -28,7 +28,22 @@ export interface SetupContext<Options> {
   options: Options;
   /** Seeded and injected so tests are deterministic. */
   rng: Rng;
+  /** Server time in ms. Rules never read the clock themselves (approved by Lesia, 2026-10-13). */
+  now: number;
 }
+
+/** A timer a game wants fired: `onTimer(state, id, now)` runs once server time reaches `at`. */
+export interface GameTimer {
+  id: string;
+  /** Server time in ms. */
+  at: number;
+}
+
+/**
+ * A line the platform posts in chat on a game's behalf, e.g. "Roles are dealt." Write players as
+ * `{playerId}`; the platform swaps in their current name.
+ */
+export type Announcement = string;
 
 /**
  * One entry in a game's recap timeline. Games append these to their own state as they go, so the
@@ -88,13 +103,26 @@ export interface GameModule<State, Action, View, TableView, Options> {
   getPlayerView(state: State, playerId: string): View;
   /** Public-only view: the TV and every phone render this. Must contain no secrets at all. */
   getTableView(state: State): TableView;
-  /** Returns the next state, or throws GameError if the action is illegal. Must not mutate. */
-  applyAction(state: State, playerId: string, action: Action, rng: Rng): State;
+  /**
+   * Returns the next state, or throws GameError if the action is illegal. Must not mutate.
+   * `now` is server time in ms, for timed phases.
+   */
+  applyAction(state: State, playerId: string, action: Action, rng: Rng, now: number): State;
   /** Null while the game is in progress. */
   getResult(state: State): GameResult | null;
 
-  /** Optional, for timed phases. How timers are scheduled is decided with the first timed game. */
-  onTimer?(state: State, timerId: string): State;
+  /**
+   * Optional, for timed phases. The platform checks `nextTimer` lazily on every read and write
+   * (there are no alarms on Vercel) and calls `onTimer` once `now >= at`. Must not mutate.
+   */
+  nextTimer?(state: State): GameTimer | null;
+  onTimer?(state: State, timerId: string, rng: Rng, now: number): State;
+
+  /**
+   * Optional chat lines for what just happened (prev is null right after setup). Public facts
+   * only: everyone in the lobby reads them.
+   */
+  announce?(prev: State | null, next: State): Announcement[];
 }
 
 /** A module with its type parameters erased, as the platform sees it. */
@@ -111,11 +139,29 @@ export interface PlayerScreenProps<View, TableView, Action> {
   /** This player's id. */
   me: string;
   players: { id: string; name: string }[];
-  sendAction(action: Action): void;
+  /** Resolves true once the move is saved, false if it was refused (the platform shows why). */
+  sendAction(action: Action): Promise<boolean>;
+  /** Server time in ms, corrected for this device's clock drift. */
+  now(): number;
+  /** Reactions from the last few seconds, for the game to draw over its own seats. */
+  reactions: Reaction[];
 }
 
 /** Props for a game's TV screen. It only ever gets the public table view. */
 export interface TvScreenProps<TableView> {
   tableView: TableView;
   players: { id: string; name: string }[];
+  /** Server time in ms, corrected for this device's clock drift. */
+  now(): number;
+  reactions: Reaction[];
+}
+
+/** A short-lived pop-up over a player's seat (Avalon's six reactions, offered to every game). */
+export interface Reaction {
+  id: string;
+  playerId: string;
+  /** One of REACTIONS, in packages/engine/src/protocol.ts. */
+  kind: string;
+  /** Server time in ms. */
+  at: number;
 }

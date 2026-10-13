@@ -73,10 +73,16 @@ waiting for Lesia's playtest and review before it's merged to `main`.
    - Port the UI unchanged, using the `GameUi.Lobby` hook for Avalon's round-table waiting room.
    - Extract the kit pieces, then write GAME_KIT.md.
 
+## Decided
+
+- In dark mode Avalon switches to its own Night look; every game follows the shell's day/dark
+  choice through `useTheme()` (Lesia, 2026-10-12).
+- Every game celebrates results with the kit's outcome moments (`celebrate.tsx`); see CLAUDE.md,
+  "Every game" (Lesia, 2026-10-12).
+
 ## Open questions
 
 - Should `actionSchema` stay on the game contract? It was added so every incoming action is checked with Zod.
 - The plan's strict "reject stale seq" would reject simultaneous votes. Actions are currently rejected only when they come from an earlier game or claim a future seq. Ordering within a game is left to the rules.
 - Timers (`onTimer`) are not scheduled yet. That will be decided with the first timed game. On Vercel they'll be evaluated lazily on each poll.
-- In dark mode, should Avalon switch to its own Night look?
 - Secret Hitler house rules for 11 to 15 players still need confirming with the group (Phase 3).

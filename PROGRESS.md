@@ -5,21 +5,22 @@ Read this first. CLAUDE.md has the decisions and rules, STYLE_GUIDE.md has the l
 
 ## Where we are (2026-10-12)
 
-**Phase 0 is done**, with the design signed off. **Phase 1 is built** on `feat/phase-1` and
-waiting for Lesia's playtest and review before it's merged to `main`.
+**Phase 0 is done**, with the design signed off. **Phase 1 is built** on `feat/phase-1`, and
+Lesia's first playtest feedback is done (see "Playtest round 1" below). It's waiting for the
+next playtest and review before it's merged to `main`.
 
 ### Branches
 
-| Branch         | State                                                                                                                                                                                   |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `main`         | Only the initial workspace commit. Lesia merges.                                                                                                                                        |
-| `feat/phase-1` | **The working branch.** It holds Phase 0 and all of Phase 1. The fork branches `feat/phase-1-backend`, `feat/stats`, `feat/catalog`, `feat/lobby` and `feat/tv` are all merged into it. |
+| Branch         | State                                                                                                                                                                                                                                               |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `main`         | Only the initial workspace commit. Lesia merges.                                                                                                                                                                                                    |
+| `feat/phase-1` | **The working branch.** It holds Phase 0 and all of Phase 1. The fork branches `feat/phase-1-backend`, `feat/stats`, `feat/catalog`, `feat/lobby`, `feat/tv`, `feat/home-shelves`, `feat/lobby-people` and `feat/celebrate` are all merged into it. |
 
 ### Deployed
 
 - The Vercel project `jackdaw-games` (team lesia-s-projects) has root `apps/web` and is linked to GitHub, so every push gets a preview. Production follows `main`.
 - Storage is the shared Upstash store `upstash-kv-carmine-bucket`, also used by Avalon and notes-app. Every Jackdaw key is prefixed `jackdaw:`.
-- Preview deployments sit behind Vercel Authentication. Scripts can get past it with the project's protection-bypass secret, sent as the `x-vercel-protection-bypass` header.
+- **Deployment protection is off** for the whole project (Lesia, 2026-10-12), so friends can open previews to playtest. Turn it back on before anything private goes out.
 - **Phase 0 acceptance passed:** the deployed page reached the room server and got its message echoed back.
 
 ### Phase 1, built
@@ -49,12 +50,33 @@ waiting for Lesia's playtest and review before it's merged to `main`.
   - `/tv` and `/tv/[code]` are TV mode: the TV lobby, a slim join strip over the game's TV screen during a game, and the end-of-game reveal.
 - **Rock Paper Scissors** (`packages/games/rps`): the test game, with rules, tests, a phone screen, a TV screen and catalog pictures.
 - **Tests:**
-  - 67 Vitest unit tests.
-  - Playwright (`pnpm test:e2e`) covers two things:
-    - three phones create and join a lobby, play a round, a phone refreshes and gets its seat back, and Play again keeps the game;
+  - 77 Vitest unit tests.
+  - Playwright (`pnpm test:e2e`, 45 tests) covers:
+    - three phones create and join a lobby, change their look, play a round, a phone refreshes and gets its seat back, and Play again keeps the game;
+    - home: typing a code, picking a crest, Browse scrolling to the shelves;
+    - round and game verdicts on phones and the TV;
     - every page has no sideways scrolling at 375, 768, 1280 and 1920, in light and dark.
   - CI runs everything, and the end-to-end job uploads the Playwright report as an artifact.
 - `.claude/agents/`: repo-explorer, rules-tester, hidden-info-auditor and ui-reviewer.
+
+### Playtest round 1 (2026-10-13)
+
+Lesia's feedback on the first preview, all done:
+
+- The example name is "e.g. Jackdaw". The code boxes on home can be typed into.
+- You can change your crest and colour on home (tap your token) and your name, crest and colour
+  in the lobby (the "You" strip or the menu). Taken ones are greyed out with who has them.
+- The crest and colour picker (`AvatarPicker`) fits at 375px with room between items.
+- Bigger type everywhere. Chat is 18px with names in each player's colour. Tokens line up with
+  their names.
+- The seat track is bigger on laptops and your own seat is marked. The TV track is bigger too.
+- Home: the nav is one row on laptops (About moved to the /games footer). "Browse the games"
+  scrolls to shelves of `GameCover`s (Ready to play, Hidden roles, Quick games, Fine with three,
+  Coming soon). In the lobby, Next up is a small row that expands to options and rules.
+- Results you can feel: the kit's `VerdictMoment` for every round in RPS (phones and TV), and
+  your own verdict plus coloured standings on the results screens.
+- Every game follows the day/dark choice (`useTheme()`).
+- Fixed along the way: quick taps on an option stepper used to lose all but the first.
 
 ### Design (signed off)
 

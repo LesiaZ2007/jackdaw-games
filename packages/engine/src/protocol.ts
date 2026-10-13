@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { GameResult, Standing } from './contract';
+import type { GameResult, Reaction, Standing } from './contract';
 
 /**
  * Wire protocol shared by web and server. Changing message shapes affects every client: ask
@@ -32,6 +32,21 @@ export const MAX_PLAYERS = 15;
 export const CHAT_LIMIT = 120;
 export const REJOIN_CODE_ALPHABET = CODE_ALPHABET;
 
+/** Quick reactions that pop over a player's seat, as in Avalon. */
+export const REACTIONS = ['up', 'down', 'hmm', 'sus', 'wow', 'haha'] as const;
+export type ReactionKind = (typeof REACTIONS)[number];
+export const REACTION_NAMES: Record<ReactionKind, string> = {
+  up: 'Thumbs up',
+  down: 'Thumbs down',
+  hmm: 'Hmm',
+  sus: 'Suspicious',
+  wow: 'Shocked',
+  haha: 'Laughing',
+};
+/** How long a reaction stays on the table, and how often one player may send one. */
+export const REACTION_MS = 6_000;
+export const REACTION_GAP_MS = 800;
+
 /** Messages a client can send. `type` is the discriminator. */
 export const ClientMessage = z.discriminatedUnion('type', [
   z.object({ type: z.literal('join'), name: PlayerName, avatar: Avatar.optional() }),
@@ -58,6 +73,9 @@ export const ClientMessage = z.discriminatedUnion('type', [
   z.object({ type: z.literal('chat'), text: z.string().trim().min(1).max(280) }),
   z.object({ type: z.literal('createRejoinCode') }),
   z.object({ type: z.literal('resetScores') }),
+  // Added 2026-10-13 with the owner's approval: platform features for every game.
+  z.object({ type: z.literal('endGame') }),
+  z.object({ type: z.literal('react'), kind: z.enum(REACTIONS) }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
@@ -90,11 +108,27 @@ export interface PublicPlayer {
   seated: boolean;
 }
 
+/**
+ * A chat line. Players write ones with a `playerId`; the platform and games post `system` lines
+ * ("{p1} joined.") where `{playerId}` stands for that player's name, filled in when shown.
+ */
 export interface ChatMessage {
   id: string;
-  playerId: string;
+  /** Who wrote it. Absent on system lines. */
+  playerId?: string;
+  system?: true;
   text: string;
   at: number;
+  /** System lines only: names when it was posted, for players who have since left. */
+  names?: Record<string, string>;
+}
+
+/** A system line's text with each `{playerId}` replaced by that player's name. */
+export function systemText(message: ChatMessage, names: Record<string, string>): string {
+  return message.text.replace(
+    /\{([A-Za-z0-9_-]+)\}/g,
+    (whole, id: string) => names[id] ?? message.names?.[id] ?? whole,
+  );
 }
 
 /** One finished game. The lobby's history is the source of truth for stats. */
@@ -135,6 +169,8 @@ export interface LobbySnapshot {
   historyCount: number;
   scores: Record<string, ScoreLine>;
   chat: ChatMessage[];
+  /** Reactions from the last few seconds, oldest first. */
+  reactions: Reaction[];
   /** The caller's player id, or null for a TV display. */
   me: string | null;
   session: { id: string; gameId: string; seq: number; startedAt: number } | null;
@@ -161,6 +197,7 @@ export type ErrorCode =
   | 'BAD_OPTIONS'
   | 'STALE'
   | 'AVATAR_TAKEN'
+  | 'NAME_TAKEN'
   | 'RATE_LIMITED'
   | 'REJOIN_INVALID'
   // Game modules add their own codes, e.g. NOT_YOUR_TURN.

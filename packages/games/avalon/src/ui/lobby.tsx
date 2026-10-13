@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, type CSSProperties, type ReactNode } from 'react';
+import { REACTIONS, REACTION_NAMES, type Reaction, type ReactionKind } from '@jackdaw/engine';
 import {
   CREST_CHOICES,
   Crest,
+  ReactionIcon,
+  reactionOf,
   useTheme,
   type GameLobbyProps,
   type ScreenPlayer,
@@ -92,6 +95,7 @@ function RoundTable({
   canInspect,
   inspectLabel,
   onInspect,
+  reactions,
 }: {
   players: ScreenPlayer[];
   me: string | null;
@@ -100,6 +104,7 @@ function RoundTable({
   canInspect: (id: string) => boolean;
   inspectLabel: (p: ScreenPlayer) => string;
   onInspect: (id: string) => void;
+  reactions: Reaction[];
 }) {
   const n = players.length;
   const radius = n <= 6 ? 37 : n <= 10 ? 39.5 : 41;
@@ -121,6 +126,7 @@ function RoundTable({
         const y = 50 - radius * Math.cos(angle);
         const clickable = canInspect(p.id);
         const you = p.id === me;
+        const reaction = reactionOf(reactions, p.id);
         return (
           <button
             key={p.id}
@@ -140,6 +146,16 @@ function RoundTable({
                 </span>
               )}
             </Avatar>
+            {reaction && (
+              <span
+                key={reaction.id}
+                className="bubble"
+                role="img"
+                aria-label={`${p.name}: ${REACTION_NAMES[reaction.kind as ReactionKind] ?? 'reacted'}`}
+              >
+                <ReactionIcon kind={reaction.kind} />
+              </span>
+            )}
             <span className="seat-name">
               {p.name}
               {you && <span className="seat-you"> (you)</span>}
@@ -148,6 +164,34 @@ function RoundTable({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** Avalon's band of six reactions under the table, with its short cool-down. */
+function ReactionBar({ onReact }: { onReact: (kind: ReactionKind) => void }) {
+  const [cooling, setCooling] = useState(false);
+  function send(kind: ReactionKind) {
+    if (cooling) return;
+    setCooling(true);
+    onReact(kind);
+    setTimeout(() => setCooling(false), 900);
+  }
+  return (
+    <div className="reaction-bar" role="group" aria-label="React to the table">
+      {REACTIONS.map((kind) => (
+        <button
+          key={kind}
+          type="button"
+          className="reaction"
+          onClick={() => send(kind)}
+          disabled={cooling}
+          aria-label={REACTION_NAMES[kind]}
+          title={REACTION_NAMES[kind]}
+        >
+          <ReactionIcon kind={kind} />
+        </button>
+      ))}
     </div>
   );
 }
@@ -209,6 +253,8 @@ export function AvalonLobby({
   start,
   onSeat,
   changeGame,
+  reactions,
+  react,
 }: GameLobbyProps) {
   const look = useTheme();
   const parsed = optionsSchema.safeParse({ ...defaultOptions(), ...raw });
@@ -262,7 +308,9 @@ export function AvalonLobby({
                 </span>
               </>
             }
+            reactions={reactions}
           />
+          {me && <ReactionBar onReact={react} />}
         </div>
 
         <section className="hand" aria-label="Avalon lobby">

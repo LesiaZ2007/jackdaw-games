@@ -8,12 +8,14 @@ import {
   chat,
   createLobby,
   createRejoinCode,
+  endGameEarly,
   join,
   kick,
   leave,
   playAgain,
   playerIdForToken,
   randomSeed,
+  react,
   reassignHostIfAway,
   redeemRejoinCode,
   rename,
@@ -406,6 +408,10 @@ export function createRoomRuntime(opts: RuntimeOptions) {
         return createRejoinCode(lobby, me, randomString(6, CODE_ALPHABET), c);
       case 'resetScores':
         return resetScores(lobby, me, c);
+      case 'endGame':
+        return endGameEarly(lobby, me, c);
+      case 'react':
+        return react(lobby, me, msg.kind, randomString(10, ID_ALPHABET), c);
     }
   }
 

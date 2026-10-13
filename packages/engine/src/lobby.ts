@@ -1,13 +1,23 @@
-import type { AnyGameModule, GameRegistry, GameResult, LinkStatus, Standing } from './contract';
+import type {
+  AnyGameModule,
+  GameRegistry,
+  GameResult,
+  LinkStatus,
+  Reaction,
+  Standing,
+} from './contract';
 import { GameError } from './errors';
 import {
   CHAT_LIMIT,
   MAX_PLAYERS,
+  REACTION_GAP_MS,
+  REACTION_MS,
   type Avatar,
   type ChatMessage,
   type HistoryEntry,
   type LobbySnapshot,
   type LobbyStatus,
+  type ReactionKind,
   type ScoreLine,
 } from './protocol';
 import { createRng } from './rng';
@@ -58,6 +68,8 @@ export interface Lobby {
   history: HistoryEntry[];
   scores: Record<string, ScoreLine>;
   chat: ChatMessage[];
+  /** Recent reactions, at most one per player. Older lobby documents may not have it. */
+  reactions?: Reaction[];
   /** Secret: rejoin code → whose seat it moves, and when it expires. */
   rejoinCodes: Record<string, { playerId: string; expiresAt: number }>;
 }
@@ -83,6 +95,50 @@ const fail = (code: string, message: string): never => {
 
 function touch(lobby: Lobby, now: number): Lobby {
   return { ...lobby, version: lobby.version + 1, lastActivityAt: now };
+}
+
+/**
+ * Posts system lines in chat. Write players as `{playerId}`; their names now are kept with the
+ * line so it still reads right after they leave. Ids are unique: the version only grows, and
+ * within one version the chat only grows.
+ */
+function say(lobby: Lobby, lines: string[], now: number): Lobby {
+  if (lines.length === 0) return lobby;
+  const known = new Map(lobby.players.map((p) => [p.id, p.name]));
+  const messages = lines.map((text, i): ChatMessage => {
+    const names: Record<string, string> = {};
+    for (const [, id] of text.matchAll(/\{([A-Za-z0-9_-]+)\}/g)) {
+      const name = known.get(id!);
+      if (name) names[id!] = name;
+    }
+    return {
+      id: `sys-${lobby.version}-${lobby.chat.length + i}`,
+      system: true,
+      text,
+      at: now,
+      ...(Object.keys(names).length > 0 ? { names } : {}),
+    };
+  });
+  return { ...lobby, chat: [...lobby.chat, ...messages].slice(-CHAT_LIMIT) };
+}
+
+/**
+ * Why this name can't be used, or null if it can: someone other than `playerId` already has it,
+ * ignoring case and spacing. Screens use it to explain before sending.
+ */
+export function nameClash(
+  players: { id: string; name: string }[],
+  name: string,
+  playerId?: string | null,
+): string | null {
+  const wanted = name.replace(/\s+/g, ' ').trim().toLowerCase();
+  const clash = players.find((p) => p.id !== playerId && p.name.toLowerCase() === wanted);
+  return clash ? `Someone at the table is already called ${clash.name}.` : null;
+}
+
+function requireFreeName(lobby: Lobby, name: string, playerId?: string) {
+  const why = nameClash(lobby.players, name, playerId);
+  if (why) fail('NAME_TAKEN', why);
 }
 
 function requireHost(lobby: Lobby, playerId: string) {
@@ -182,6 +238,7 @@ export function join(lobby: Lobby, input: JoinInput, ctx: Ctx): { lobby: Lobby; 
   if (existing) return { lobby, playerId: existing };
   if (lobby.players.length >= MAX_PLAYERS)
     fail('LOBBY_FULL', `This lobby is full (${MAX_PLAYERS} players).`);
+  requireFreeName(lobby, input.name);
   const player: Player = {
     id: input.newPlayerId,
     name: input.name,
@@ -196,7 +253,7 @@ export function join(lobby: Lobby, input: JoinInput, ctx: Ctx): { lobby: Lobby; 
     },
     ctx.now,
   );
-  return { lobby: next, playerId: player.id };
+  return { lobby: say(next, [`{${player.id}} joined.`], ctx.now), playerId: player.id };
 }
 
 /** Remove a player outright (leave or kick). Only outside games, so no game loses a seat. */
@@ -218,7 +275,10 @@ export function leave(lobby: Lobby, playerId: string, ctx: Ctx): Lobby {
   if (lobby.status === 'in_game' && lobby.session?.playerIds.includes(playerId)) {
     fail('WRONG_STATUS', 'You can leave once this game ends. Closing the tab keeps your seat.');
   }
-  return removePlayer(lobby, playerId, ctx);
+  const after = removePlayer(say(lobby, [`{${playerId}} left.`], ctx.now), playerId, ctx);
+  return after.hostId !== lobby.hostId && after.players.length > 0
+    ? say(after, [`{${after.hostId}} is now the host.`], ctx.now)
+    : after;
 }
 
 export function kick(lobby: Lobby, hostId: string, playerId: string, ctx: Ctx): Lobby {
@@ -228,14 +288,22 @@ export function kick(lobby: Lobby, hostId: string, playerId: string, ctx: Ctx): 
   if (lobby.status === 'in_game' && lobby.session?.playerIds.includes(playerId)) {
     fail('WRONG_STATUS', 'Players in the current game can be removed once it ends.');
   }
-  return removePlayer(lobby, playerId, ctx);
+  return removePlayer(
+    say(lobby, [`{${playerId}} was removed by the host.`], ctx.now),
+    playerId,
+    ctx,
+  );
 }
 
 export function transferHost(lobby: Lobby, hostId: string, playerId: string, ctx: Ctx): Lobby {
   requireHost(lobby, hostId);
   requirePlayer(lobby, playerId);
   if (playerId === hostId) return lobby;
-  return touch({ ...lobby, hostId: playerId }, ctx.now);
+  return say(
+    touch({ ...lobby, hostId: playerId }, ctx.now),
+    [`{${playerId}} is now the host.`],
+    ctx.now,
+  );
 }
 
 /**
@@ -250,11 +318,16 @@ export function reassignHostIfAway(lobby: Lobby, presence: Presence, ctx: Ctx): 
   );
   if (online.length === 0) return lobby;
   const next = online.reduce((a, b) => (b.joinedAt < a.joinedAt ? b : a));
-  return touch({ ...lobby, hostId: next.id }, ctx.now);
+  return say(
+    touch({ ...lobby, hostId: next.id }, ctx.now),
+    [`{${next.id}} is now the host.`],
+    ctx.now,
+  );
 }
 
 export function rename(lobby: Lobby, playerId: string, name: string, ctx: Ctx): Lobby {
   requirePlayer(lobby, playerId);
+  requireFreeName(lobby, name, playerId);
   return touch(
     { ...lobby, players: lobby.players.map((p) => (p.id === playerId ? { ...p, name } : p)) },
     ctx.now,
@@ -303,6 +376,33 @@ export function createRejoinCode(lobby: Lobby, playerId: string, code: string, c
   return touch({ ...lobby, rejoinCodes }, ctx.now);
 }
 
+/** Reactions still on the table at `now`. */
+export function liveReactions(lobby: Lobby, now: number): Reaction[] {
+  return (lobby.reactions ?? []).filter((r) => now - r.at < REACTION_MS);
+}
+
+/**
+ * A quick reaction that pops over this player's seat for everyone. Each player has at most one
+ * on the table; sending again within 800ms is quietly ignored, as in Avalon.
+ */
+export function react(
+  lobby: Lobby,
+  playerId: string,
+  kind: ReactionKind,
+  reactionId: string,
+  ctx: Ctx,
+): Lobby {
+  requirePlayer(lobby, playerId);
+  const live = liveReactions(lobby, ctx.now);
+  const last = live.find((r) => r.playerId === playerId);
+  if (last && ctx.now - last.at < REACTION_GAP_MS) return lobby;
+  const reaction: Reaction = { id: reactionId, playerId, kind, at: ctx.now };
+  return touch(
+    { ...lobby, reactions: [...live.filter((r) => r.playerId !== playerId), reaction] },
+    ctx.now,
+  );
+}
+
 /** Moves the seat to `tokenKey`. The old device loses it. */
 export function redeemRejoinCode(
   lobby: Lobby,
@@ -319,7 +419,8 @@ export function redeemRejoinCode(
   seats[tokenKey] = playerId;
   const rejoinCodes = { ...lobby.rejoinCodes };
   delete rejoinCodes[code];
-  return { lobby: touch({ ...lobby, seats, rejoinCodes }, ctx.now), playerId };
+  const next = touch({ ...lobby, seats, rejoinCodes }, ctx.now);
+  return { lobby: say(next, [`{${playerId}} is back, on a new device.`], ctx.now), playerId };
 }
 
 // ── Choosing and running a game ─────────────────────────────────────────────────────────────
@@ -401,8 +502,13 @@ function beginSession(lobby: Lobby, input: StartInput, ctx: Ctx): Lobby {
     startedAt: ctx.now,
     rngState: rng.state,
   };
+  const started = say(
+    touch({ ...lobby, status: 'in_game', session, results: null }, ctx.now),
+    [`${game.meta.name} started.`, ...(game.announce?.(null, state) ?? [])],
+    ctx.now,
+  );
   // A game can be over immediately in principle; handle it the same way as after an action.
-  return finishIfOver(touch({ ...lobby, status: 'in_game', session, results: null }, ctx.now), ctx);
+  return finishIfOver(started, ctx);
 }
 
 export interface ActionInput {
@@ -437,8 +543,12 @@ export function applyGameAction(
   if (!parsed.success) fail('BAD_REQUEST', "That move isn't understood.");
   const rng = createRng(session.rngState);
   const state = game.applyAction(session.state, playerId, parsed.data, rng, ctx.now);
-  const next = touch(
-    { ...lobby, session: { ...session, state, seq: session.seq + 1, rngState: rng.state } },
+  const next = say(
+    touch(
+      { ...lobby, session: { ...session, state, seq: session.seq + 1, rngState: rng.state } },
+      ctx.now,
+    ),
+    game.announce?.(session.state, state) ?? [],
     ctx.now,
   );
   return finishIfOver(next, ctx);
@@ -490,7 +600,7 @@ export function endGame(lobby: Lobby, result: GameResult, ctx: Ctx): Lobby {
     names,
     standings,
   };
-  return touch(
+  const over = touch(
     {
       ...lobby,
       status: 'results',
@@ -501,6 +611,18 @@ export function endGame(lobby: Lobby, result: GameResult, ctx: Ctx): Lobby {
     },
     ctx.now,
   );
+  return say(over, [`Game over. ${result.summary}`], ctx.now);
+}
+
+/**
+ * The host stops the running game for everyone. Nothing is recorded: no history entry, no
+ * scores. The lobby goes back to waiting with the same game and options.
+ */
+export function endGameEarly(lobby: Lobby, hostId: string, ctx: Ctx): Lobby {
+  requireHost(lobby, hostId);
+  requireStatus(lobby, 'in_game');
+  const stopped = touch({ ...lobby, status: 'waiting', session: null, results: null }, ctx.now);
+  return say(stopped, ['The host ended the game early.'], ctx.now);
 }
 
 /**
@@ -537,7 +659,7 @@ export function playAgain(lobby: Lobby, hostId: string, input: StartInput, ctx: 
 
 export function resetScores(lobby: Lobby, hostId: string, ctx: Ctx): Lobby {
   requireHost(lobby, hostId);
-  return touch({ ...lobby, scores: {} }, ctx.now);
+  return say(touch({ ...lobby, scores: {} }, ctx.now), ['The host reset the scores.'], ctx.now);
 }
 
 // ── What each caller sees ───────────────────────────────────────────────────────────────────
@@ -579,6 +701,7 @@ export function snapshotFor(
     historyCount: lobby.history.length,
     scores: lobby.scores,
     chat: lobby.chat,
+    reactions: liveReactions(lobby, ctx.now),
     me: viewerId,
     session: session
       ? { id: session.id, gameId: session.gameId, seq: session.seq, startedAt: session.startedAt }

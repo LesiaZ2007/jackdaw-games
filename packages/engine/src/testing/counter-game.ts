@@ -54,6 +54,13 @@ export const counterGame: GameModule<
     if (s.players[s.turn] !== id) throw new GameError('NOT_YOUR_TURN', "It's not your turn.");
     return { ...s, count: s.count + 1, turn: (s.turn + 1) % s.players.length, log: [...s.log, id] };
   },
+  // Public facts only: everyone in the lobby reads these.
+  announce: (prev, next) =>
+    prev === null
+      ? [`{${next.players[0]!}} goes first.`]
+      : next.count > prev.count
+        ? [`{${next.log[next.log.length - 1]!}} added 1.`]
+        : [],
   getResult: (s) =>
     s.count >= s.target
       ? {

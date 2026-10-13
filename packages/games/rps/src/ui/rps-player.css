@@ -31,6 +31,11 @@
   gap: var(--space-3);
   padding: var(--space-2) var(--space-3);
 }
+/* Holds a token and any reaction popping over it */
+.rps__tok {
+  position: relative;
+  display: inline-grid;
+}
 .rps__board li + li {
   border-top: 1px solid var(--rule);
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { Plaque, Token, type GameLobbyProps } from '@jackdaw/ui';
+import { Plaque, PlayerReaction, ReactionBar, Token, type GameLobbyProps } from '@jackdaw/ui';
 import { PICKS } from '../rules';
 import { Throw } from './player';
 import './rps-lobby.css';
@@ -24,6 +24,8 @@ export function RpsLobby({
   start,
   onSeat,
   changeGame,
+  reactions,
+  react,
 }: GameLobbyProps) {
   const rounds = typeof options.rounds === 'number' ? options.rounds : 3;
   const n = players.length;
@@ -93,6 +95,7 @@ export function RpsLobby({
               })}
             >
               <Token avatar={p.avatar} host={p.id === hostId} away={!p.online} />
+              <PlayerReaction reactions={reactions} playerId={p.id} name={p.name} />
               <span className="rps-ring__fist" aria-hidden="true">
                 {PICKS.map((pick) => (
                   <span key={pick} className={`rps-ring__throw rps-ring__throw--${pick}`}>
@@ -105,6 +108,8 @@ export function RpsLobby({
           );
         })}
       </div>
+
+      {me && <ReactionBar onReact={react} />}
 
       <div className="rps-lobby__go">
         {isHost ? (

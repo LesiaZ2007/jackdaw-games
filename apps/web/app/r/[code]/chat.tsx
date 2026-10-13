@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
+import { systemText, type ClientMessage, type LobbySnapshot } from '@jackdaw/engine';
 import { Plaque, type ScreenPlayer } from '@jackdaw/ui';
 
 /** Table talk: docked beside the game on wide screens, a sheet on phones. */
@@ -17,6 +17,7 @@ export function Chat({
   const [text, setText] = useState('');
   const list = useRef<HTMLOListElement>(null);
   const byId = new Map(players.map((p) => [p.id, p]));
+  const names = Object.fromEntries(players.map((p) => [p.id, p.name]));
   const last = s.chat[s.chat.length - 1]?.id;
 
   useEffect(() => {
@@ -36,9 +37,17 @@ export function Chat({
       <ol ref={list} className="chat__list" aria-live="polite">
         {s.chat.length === 0 && <li className="chat__empty">Nothing said yet. Say hello.</li>}
         {s.chat.map((m, i) => {
-          const p = byId.get(m.playerId);
+          if (m.system) {
+            return (
+              <li key={m.id} className="chat__system">
+                {systemText(m, names)}
+              </li>
+            );
+          }
+          const p = m.playerId ? byId.get(m.playerId) : undefined;
           // Back-to-back messages from one person show the name once.
-          const more = s.chat[i - 1]?.playerId === m.playerId;
+          const prev = s.chat[i - 1];
+          const more = Boolean(prev && !prev.system && prev.playerId === m.playerId);
           return (
             <li
               key={m.id}

@@ -1,5 +1,12 @@
 import type { ComponentType } from 'react';
-import type { Avatar, GameResult, PlayerScreenProps, TvScreenProps } from '@jackdaw/engine';
+import type {
+  Avatar,
+  GameResult,
+  PlayerScreenProps,
+  Reaction,
+  ReactionKind,
+  TvScreenProps,
+} from '@jackdaw/engine';
 import type { GameArt } from './pieces';
 
 /**
@@ -80,4 +87,8 @@ export interface GameLobbyProps {
   onSeat: (playerId: string) => void;
   /** Host only: back to the list of games. */
   changeGame?: () => void;
+  /** Reactions from the last few seconds, to pop over the game's own seats. */
+  reactions: Reaction[];
+  /** Send a reaction (only offered to seated players: `me` is set). */
+  react: (kind: ReactionKind) => void;
 }

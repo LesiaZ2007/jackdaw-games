@@ -442,9 +442,53 @@
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
 }
 
-.avalon .bubble svg {
+.avalon .bubble svg,
+.avalon .reaction svg {
   width: 100%;
   height: 100%;
+}
+
+.avalon .reaction-bar {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(8, 14, 15, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.avalon .reaction {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 8px;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  transition:
+    transform 0.12s,
+    background 0.12s;
+}
+
+.avalon .reaction:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.15);
+  background: var(--raised);
+  color: var(--brass-hi);
+}
+
+.avalon .reaction:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.avalon .reaction:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .avalon .hand {
@@ -1090,4 +1134,25 @@
   background: var(--p-card);
   color: var(--p-ink);
   box-shadow: 0 4px 0 rgba(43, 40, 37, 0.25);
+}
+
+.avalon[data-printed] .reaction-bar {
+  border-color: var(--p-ink);
+  border-radius: 2px;
+  background: var(--p-ink);
+  box-shadow:
+    inset 0 0 0 3px var(--p-ink),
+    inset 0 0 0 4px rgba(241, 233, 214, 0.45);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.avalon[data-printed] .reaction {
+  border-radius: 2px;
+  color: var(--p-card);
+}
+
+.avalon[data-printed] .reaction:hover:not(:disabled) {
+  background: rgba(241, 233, 214, 0.14);
+  color: var(--p-card);
 }

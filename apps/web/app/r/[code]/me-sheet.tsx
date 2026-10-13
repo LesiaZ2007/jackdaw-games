@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { Avatar, ClientMessage, LobbySnapshot } from '@jackdaw/engine';
+import { nameClash, type Avatar, type ClientMessage, type LobbySnapshot } from '@jackdaw/engine';
 import { AvatarPicker, Plaque, Sheet, Token, takenAvatars } from '@jackdaw/ui';
 import { rememberAvatar, rememberName } from '@/lib/identity';
 
@@ -47,6 +47,8 @@ function MeForm({
 
   async function save() {
     if (!trimmed) return setError('Type a name, so the table knows who you are.');
+    const clash = changedName ? nameClash(s.players, trimmed, s.me) : null;
+    if (clash) return setError(clash);
     setBusy(true);
     setError(null);
     let ok = true;

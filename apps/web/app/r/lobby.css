@@ -497,7 +497,7 @@
   padding: 0 0 var(--space-2);
   display: grid;
   /* names in one column (as wide as the longest, up to a limit), messages beside them */
-  grid-template-columns: fit-content(8.5em) minmax(0, 1fr);
+  grid-template-columns: fit-content(6.5em) minmax(0, 1fr);
   align-content: start;
   column-gap: var(--space-3);
   row-gap: 2px;

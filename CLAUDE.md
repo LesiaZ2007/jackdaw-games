@@ -16,7 +16,7 @@ implementation and the first game to move in.
 | Hosting           | **Everything on Vercel for now**, not Cloudflare. Rooms use Avalon's proven approach: HTTP polling plus Upstash Redis. It's hidden behind `RoomTransport` (client) and `RoomStorage` (server) so a WebSocket/Durable Object backend can replace it later. |
 | Repo layout       | There's no `apps/server`. The room runtime is `packages/server` (web-standard APIs only), mounted by Next.js route handlers in `apps/web/app/api`. A Cloudflare Worker can mount the same runtime later.                                                  |
 | Wavelength        | **Paused** until there's a real-time transport, because the shared live dial needs it.                                                                                                                                                                    |
-| Avalon port       | Full parity with the current app: **5 to 15 players** (house rules above 10), the classic/full/custom/plain modes, Lady of the Lake, and all eight roles. The plan's "5 to 10" was wrong.                                                                 |
+| Avalon            | **Linked, not ported** (2026-10-13): Jackdaw hands the table to the live Avalon app (5 to 15 players, all modes) and gets the result back. See `docs/avalon/LINK.md`.                                                                                     |
 | Platform features | Chat, avatars/crests (adapted per game where needed), rejoin codes (move your seat to a new device) and a running per-lobby score tally all live in the platform, not in each game.                                                                       |
 | Game choice       | Only the host can change the game and options.                                                                                                                                                                                                            |
 | History           | Lobby history and scores live with the lobby and expire with it after 24h idle. There's no database.                                                                                                                                                      |
@@ -131,17 +131,12 @@ Additions approved by Lesia:
   - The lobby keeps 200 games of history. Each entry records the participants, their names at the time and their standings.
   - Polls carry the latest 10 entries plus `historyCount`.
   - `GET /api/lobby/:code/stats` returns the full history and `lobbyStats(history)`.
-- **For the Avalon port (2026-10-13)**, all from `docs/avalon/STATE.md` "Needs Lesia":
-  - **A clock.** `SetupContext.now` and `applyAction(..., rng, now)`. Timed phases expose
-    `nextTimer(state)`; the runtime calls `onTimer(state, id, rng, now)` lazily on reads and
-    writes. Screens get `now()`, server time corrected for the device's drift.
-  - **The host can end a game early.** It isn't scored and goes back to the lobby.
-  - **Rejoin codes for someone else**, with Avalon's rule: the host for anyone, anyone for a
-    player unseen for over a minute; only the maker sees the code.
-  - **`sendAction` resolves true/false** once the move is saved or refused.
-  - **Reactions** (Avalon's six, over seats) are a platform feature; screens get `reactions`.
-  - **Unique names** (case-insensitive) on join and rename.
-  - **System lines in chat**: the platform posts joins and leaves, and games add lines through
-    `announce(prev, next)`.
-  - **Avalon's recap records who played each Fail card**, shown only after the game.
-  - **Avalon's results** use its own good/evil celebration first, then the shared verdict seal.
+- **Platform additions (2026-10-13)**: reactions over seats, unique names (case-insensitive),
+  the host ending a game early (unscored), and system lines in chat (joins, leaves, game start
+  and end, plus a game's optional `announce`). The contract also carries `now`, `nextTimer`
+  and `onTimer` for future timed games, and `sendAction` resolves true/false once a move is
+  saved or refused.
+- **Avalon is linked, not ported (2026-10-13).** The live Avalon app stays the game; Jackdaw is
+  the lobby and hands the table over. See `docs/avalon/LINK.md`. Each game's lobby keeps
+  Jackdaw's frame but has its own unique look (Avalon: its round table and shields, styled
+  just like the real Avalon lobby).

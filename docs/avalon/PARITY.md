@@ -1,5 +1,8 @@
 # Avalon parity checklist
 
+> **Superseded (2026-10-13).** Lesia decided to link the live Avalon app instead of porting it;
+> see `LINK.md`. Kept as a map of the Avalon app's behaviour and source.
+
 "Full parity" for the Phase 2 port is judged against this list. It was written on 2026-10-13 by
 reading the current app's source at `C:\Users\KBITK\OneDrive\Desktop\avalon` (Next 15, plain JS),
 not from memory or the build plan. Every item names the file and lines it comes from. Paths are

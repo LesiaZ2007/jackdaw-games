@@ -1,5 +1,8 @@
 # Avalon in Jackdaw: state, actions and views
 
+> **Superseded (2026-10-13).** Lesia decided to link the live Avalon app instead of porting it;
+> see `LINK.md`. Kept as a map of the Avalon app's behaviour and source.
+
 A design for `packages/games/avalon`, mapped onto the game module contract in
 `packages/engine/src/contract.ts`. It implements everything in `PARITY.md`. This is a design
 document only; no code exists yet. Where a choice depends on a change Lesia hasn't approved, it is

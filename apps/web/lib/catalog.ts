@@ -1,4 +1,5 @@
 import type { GameCategory, GameMeta } from '@jackdaw/engine';
+import { avalonUi } from '@jackdaw/game-avalon/ui';
 import { rpsUi } from '@jackdaw/game-rps/ui';
 import type { GameAbout, GameUi } from '@jackdaw/ui';
 import { games } from './registry';
@@ -20,49 +21,11 @@ export interface CatalogEntry {
 
 /** Client UI modules for registered games, by id. Add a game's `./ui` export here. */
 export const gameUis: Record<string, GameUi> = {
+  avalon: avalonUi,
   rps: rpsUi,
 };
 
 const upcoming: Omit<CatalogEntry, 'playable'>[] = [
-  {
-    meta: {
-      id: 'avalon',
-      name: 'Avalon',
-      tagline: 'Loyal knights and hidden traitors.',
-      minPlayers: 5,
-      maxPlayers: 15,
-      category: 'social-deduction',
-      minutes: [30, 60],
-      complexity: 2,
-    },
-    art: { band: 'azure', field: 'wavy', glyph: 'avalon' },
-    about: {
-      description:
-        "Arthur's knights go on five quests, but a few of them secretly serve Mordred. Leaders pick teams, everyone votes, and each team plays Success or Fail in secret. Good wins three quests, unless the Assassin can name Merlin at the end.",
-      steps: [
-        'The leader proposes a team for the quest.',
-        'Everyone votes to approve or reject it, all at once.',
-        'An approved team secretly plays Success or Fail.',
-        'One Fail sinks the quest (two on quest 4 with 7 or more players).',
-      ],
-      credit: 'Based on The Resistance: Avalon by Don Eskridge.',
-      pictures: [
-        {
-          src: '/games/avalon/lobby-phone.png',
-          alt: 'Avalon lobby on a phone: the round table with six shields.',
-        },
-        {
-          src: '/games/avalon/game-phone.png',
-          alt: 'Avalon on a phone during Quest 1: the leader is choosing two knights.',
-        },
-        {
-          src: '/games/avalon/tv.png',
-          alt: 'Avalon on a TV: the round table and quest track, with whose turn it is.',
-          wide: true,
-        },
-      ],
-    },
-  },
   {
     meta: {
       id: 'secret-hitler',

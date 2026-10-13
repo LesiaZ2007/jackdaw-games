@@ -113,6 +113,14 @@ Git Bash, run `export PATH="$HOME/.local/bin:$PATH"`. In PowerShell 5.1, chain w
   server→client `lobby` / `view` / `results` / `error` messages are fields of one snapshot response
   (or a `{ error: { code, message } }` body), because polling returns everything at once.
 
+## Installable app (PWA)
+
+`app/manifest.ts` (name, icons in `public/icons/`, standalone), `public/sw.js` (registered in
+production only by `app/pwa.tsx`): pages always come from the network with `public/offline.html`
+as the fallback, hashed `/_next/static` assets are cached, and `/api` is never touched. Bump
+`CACHE` in sw.js when the offline page or precache list changes. `InstallButton` on the home page
+uses the browser's install prompt, or shows Add to Home Screen steps on iPhone and iPad.
+
 ## Game module contract
 
 Defined in `packages/engine/src/contract.ts`, and exactly as in the build plan:

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { GameResult } from './contract';
+import type { GameResult, Standing } from './contract';
 
 /**
  * Wire protocol shared by web and server. Changing message shapes affects every client: ask
@@ -96,15 +96,24 @@ export interface ChatMessage {
   at: number;
 }
 
+/** One finished game. The lobby's history is the source of truth for stats. */
 export interface HistoryEntry {
   gameId: string;
+  startedAt: number;
   endedAt: number;
   summary: string;
   winners: string[];
+  /** Everyone who played, in seat order. */
+  players: string[];
+  /** Names as they were at the time, so stats survive people leaving or renaming. */
+  names: Record<string, string>;
+  /** Every player's outcome (and team and role, when the game has them). */
+  standings: Standing[];
 }
 
 export interface ScoreLine {
   wins: number;
+  losses: number;
   played: number;
 }
 
@@ -119,7 +128,10 @@ export interface LobbySnapshot {
   displays: number;
   selectedGameId: string | null;
   gameOptions: Record<string, unknown>;
+  /** The latest games, newest first (at most 10). The full record comes from the stats endpoint. */
   history: HistoryEntry[];
+  /** How many games the lobby has recorded in total. */
+  historyCount: number;
   scores: Record<string, ScoreLine>;
   chat: ChatMessage[];
   /** The caller's player id, or null for a TV display. */

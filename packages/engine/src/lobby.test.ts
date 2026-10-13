@@ -276,3 +276,62 @@ describe('rejoin codes and chat', () => {
     expect(lobby.chat[0]?.text).toBe('m10');
   });
 });
+
+describe('history and standings', () => {
+  it('records participants, names at the time, and derived win/loss standings', () => {
+    const lobby = playOut(
+      start(lobbyWith(3, 'counter'), 'p1', { sessionId: 's1', seed: 3 }, ctx(500)),
+    );
+    const entry = lobby.history[0]!;
+    expect(entry.players).toEqual(['p1', 'p2', 'p3']);
+    expect(entry.names).toEqual({ p1: 'Ana', p2: 'P2', p3: 'P3' });
+    expect(entry.startedAt).toBe(500);
+    expect(entry.standings.map((s) => s.outcome).sort()).toEqual(['loss', 'loss', 'win']);
+    const winner = entry.winners[0]!;
+    expect(lobby.scores[winner]).toEqual({ wins: 1, losses: 0, played: 1 });
+    const loser = entry.players.find((id) => id !== winner)!;
+    expect(lobby.scores[loser]).toEqual({ wins: 0, losses: 1, played: 1 });
+  });
+
+  it("uses the game's own standings, filling in anyone it left out", () => {
+    const teamGame: typeof counterGame = {
+      ...counterGame,
+      getResult(s) {
+        const r = counterGame.getResult(s);
+        return (
+          r && {
+            ...r,
+            standings: [
+              { playerId: 'p1', outcome: 'draw', team: 'Red', role: 'Captain' },
+              { playerId: 'ghost', outcome: 'win' },
+            ],
+          }
+        );
+      },
+    };
+    const c: Ctx = { now: 1_000, games: { counter: teamGame } };
+    let lobby = start(lobbyWith(2, 'counter'), 'p1', { sessionId: 's1', seed: 3 }, c);
+    while (lobby.status === 'in_game') {
+      const s = lobby.session!;
+      const st = s.state as { players: string[]; turn: number };
+      const action = { sessionId: s.id, seq: s.seq, action: { type: 'add' } };
+      lobby = applyGameAction(lobby, st.players[st.turn]!, action, c);
+    }
+    const standings = lobby.history[0]!.standings;
+    expect(standings.map((s) => s.playerId)).toEqual(['p1', 'p2']);
+    expect(standings[0]).toEqual({ playerId: 'p1', outcome: 'draw', team: 'Red', role: 'Captain' });
+    expect(lobby.scores.p1).toEqual({ wins: 0, losses: 0, played: 1 });
+  });
+
+  it('sends only the latest 10 games in each snapshot', () => {
+    let lobby = lobbyWith(2, 'counter');
+    for (let i = 0; i < 12; i++) {
+      lobby = playOut(start(lobby, 'p1', { sessionId: `s${i}`, seed: i }, ctx()));
+      lobby = backToLobby(lobby, 'p1', ctx());
+    }
+    expect(lobby.history).toHaveLength(12);
+    const snap = snapshotFor(lobby, 'p1', {}, ctx());
+    expect(snap.history).toHaveLength(10);
+    expect(snap.historyCount).toBe(12);
+  });
+});

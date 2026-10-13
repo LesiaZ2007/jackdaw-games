@@ -35,9 +35,12 @@ const mySeat = (page: Page, name: string) =>
 
 async function hostAvalon(page: Page, name = 'Wren'): Promise<string> {
   await page.goto('/');
-  await page.getByLabel('Your name').fill(name);
-  await page.getByRole('button', { name: 'Create a lobby' }).click();
-  await page.waitForURL(/\/r\/[A-Z]{4}$/);
+  // A name typed before the page has loaded can be lost, so try again until the lobby opens.
+  await expect(async () => {
+    await page.getByLabel('Your name').fill(name);
+    await page.getByRole('button', { name: 'Create a lobby' }).click();
+    await page.waitForURL(/\/r\/[A-Z]{4}$/, { timeout: 5_000 });
+  }).toPass({ timeout: 60_000 });
   await page
     .getByRole('button', { name: /Avalon/ })
     .first()

@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { flushSync } from 'react-dom';
 import type { ChatMessage, LobbySnapshot } from '@jackdaw/engine';
 import { BirdMark, Lid, Plaque, Toast, type ScreenPlayer } from '@jackdaw/ui';
+import { catalogEntry } from '@/lib/catalog';
 import { forgetSeat, rememberedSeat, rememberSeat } from '@/lib/identity';
 import { readSeen, unreadCount, writeSeen } from '@/lib/unread';
 import { useLobby } from '@/lib/use-lobby';
@@ -31,6 +33,33 @@ function useChatDocked(): boolean {
     () => window.matchMedia(WIDE).matches,
     () => false,
   );
+}
+
+/**
+ * Switch between Jackdaw's lobby and a game's own lobby as a view transition: each player's crest
+ * and name fly from their seat on the track to their seat in the game's lobby (and back), and the
+ * rest cross-fades. Without View Transitions, or with reduced motion, it just switches.
+ */
+function useLobbySwitch(want: boolean, shown: boolean, setShown: (full: boolean) => void) {
+  const running = useRef(false);
+  useEffect(() => {
+    if (want === shown || running.current) return;
+    // Start from the top, where the seats are in both layouts (the game list sits lower down).
+    const swap = () => {
+      flushSync(() => setShown(want));
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (still || typeof document.startViewTransition !== 'function') {
+      swap();
+      return;
+    }
+    running.current = true;
+    const t = document.startViewTransition(swap);
+    void t.finished.finally(() => {
+      running.current = false;
+    });
+  }, [want, shown, setShown]);
 }
 
 /**
@@ -75,8 +104,19 @@ export function LobbyRoom({ code }: { code: string }) {
   const [info, setInfo] = useState<string | null>(null);
   const [lastStatus, setLastStatus] = useState(snapshot?.status ?? null);
   const status = snapshot?.status ?? null;
+  const [picking, setPicking] = useState(false);
+  // A game with its own lobby (Avalon's round table) takes the whole screen under the bar,
+  // with chat behind the bar's button, until the host goes back to the list of games.
+  const wantFull =
+    status === 'waiting' && !picking && Boolean(catalogEntry(snapshot?.selectedGameId)?.ui?.Lobby);
+  const [shownFull, setShownFull] = useState(wantFull);
   if (status !== lastStatus) {
     setLastStatus(status);
+    setPicking(false);
+    // Arriving in the waiting room: show the right lobby at once, with nothing to animate from.
+    setShownFull(
+      status === 'waiting' && Boolean(catalogEntry(snapshot?.selectedGameId)?.ui?.Lobby),
+    );
     const endedEarly = lastStatus === 'in_game' && status === 'waiting';
     if (endedEarly && snapshot?.me && snapshot.hostId !== snapshot.me)
       setInfo('The host ended the game. It won’t be scored.');
@@ -90,7 +130,9 @@ export function LobbyRoom({ code }: { code: string }) {
   const close = useCallback(() => setPanel(null), []);
 
   const players = useMemo(() => (snapshot ? screenPlayers(snapshot) : []), [snapshot]);
-  const docked = useChatDocked();
+  useLobbySwitch(wantFull, shownFull, setShownFull);
+  const full = status === 'waiting' && shownFull;
+  const docked = useChatDocked() && !full;
   const seenAt = useChatSeen(code, snapshot?.chat, docked || panel === 'chat');
 
   if (missing) {
@@ -147,7 +189,7 @@ export function LobbyRoom({ code }: { code: string }) {
   const unread = unreadCount(snapshot.chat, me, seenAt);
 
   return (
-    <div className="lobby-page">
+    <div className={full ? 'lobby-page lobby-page--full' : 'lobby-page'}>
       <LobbyBar code={code} status={snapshot.status} onOpen={setPanel} unread={unread} />
       <div className="lobby-layout">
         <main className="lobby-main">
@@ -158,6 +200,9 @@ export function LobbyRoom({ code }: { code: string }) {
               isHost={isHost}
               send={send}
               onOpen={setPanel}
+              picking={picking}
+              themed={full}
+              setPicking={setPicking}
             />
           )}
           {snapshot.status === 'in_game' && (
@@ -167,9 +212,11 @@ export function LobbyRoom({ code }: { code: string }) {
             <Results snapshot={snapshot} players={players} isHost={isHost} send={send} />
           )}
         </main>
-        <aside className="lobby-dock" aria-label="Chat">
-          <Chat snapshot={snapshot} players={players} send={send} />
-        </aside>
+        {!full && (
+          <aside className="lobby-dock" aria-label="Chat">
+            <Chat snapshot={snapshot} players={players} send={send} />
+          </aside>
+        )}
       </div>
 
       <ShareSheet open={panel === 'share'} onClose={close} code={code} />

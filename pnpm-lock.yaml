@@ -41,6 +41,9 @@ importers:
       '@jackdaw/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@jackdaw/game-avalon':
+        specifier: workspace:*
+        version: link:../../packages/games/avalon
       '@jackdaw/game-rps':
         specifier: workspace:*
         version: link:../../packages/games/rps

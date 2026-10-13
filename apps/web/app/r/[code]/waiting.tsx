@@ -10,6 +10,7 @@ import {
   SeatTrack,
   Sheet,
   Token,
+  useTheme,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
@@ -86,6 +87,12 @@ export function Waiting({
   const other = s.players.find((p) => p.id === tapped && p.id !== s.me);
   const mine = s.players.find((p) => p.id === s.me);
   const ThemedLobby = entry?.ui?.Lobby;
+  // A game with its own lobby (Avalon's round table) draws the players and the options itself,
+  // inside Jackdaw's frame. The host can still go back to the list of games.
+  const themed = Boolean(entry && ThemedLobby && !picking);
+  const look = useTheme();
+  const startGame = () => send({ type: 'start', look });
+  const onSeat = (id: string) => (id === s.me ? onOpen('me') : isHost && setTapped(id));
 
   async function choose(id: string) {
     if (!isHost) return;
@@ -94,70 +101,11 @@ export function Waiting({
   }
 
   return (
-    <div className="waiting">
-      <section className="waiting__table" aria-labelledby="at-table">
-        <div className="section-head">
-          <h2 id="at-table" className="jd-display">
-            At the table
-          </h2>
-          <span>
-            {count} of 15 seats
-            {s.displays > 0 && `, ${s.displays} TV`}
-          </span>
-        </div>
-        <SeatTrack
-          seats={seats}
-          onSeat={(id) => (id === s.me ? onOpen('me') : isHost && setTapped(id))}
-        />
-        {mine && (
-          <div className="you-strip">
-            <AvatarButton avatar={mine.avatar} size={44} onClick={() => onOpen('me')} />
-            <span className="you-strip__who">
-              <b>{mine.name}</b>
-              <span>That&rsquo;s you. Tap your token to change your name, crest or colour.</span>
-            </span>
-            {isHost && count > 1 && (
-              <button
-                type="button"
-                className="home-link waiting__manage"
-                onClick={() => setManaging(true)}
-              >
-                Manage players
-              </button>
-            )}
-          </div>
-        )}
-      </section>
-
-      <section className="waiting__game" aria-labelledby="next-game">
-        <div className="section-head">
-          <h2 id="next-game" className="jd-display">
-            {showPicker ? 'Pick a game' : 'Next up'}
-          </h2>
-          <span>
-            {isHost ? (
-              showPicker && entry ? (
-                <button type="button" className="home-link" onClick={() => setPicking(false)}>
-                  Keep {entry.meta.name}
-                </button>
-              ) : (
-                'You choose'
-              )
-            ) : (
-              `${host?.name ?? 'The host'} chooses`
-            )}
-          </span>
-        </div>
-
-        {showPicker ? (
-          <GamePicker
-            selectedId={s.selectedGameId}
-            count={count}
-            isHost={isHost}
-            onChoose={choose}
-          />
-        ) : entry && ThemedLobby ? (
+    <div className={themed ? 'waiting waiting--themed' : 'waiting'}>
+      {themed && entry && ThemedLobby && (
+        <section className="waiting__themed" aria-label={`${entry.meta.name} lobby`}>
           <ThemedLobby
+            code={s.code}
             players={players}
             me={s.me}
             hostId={s.hostId}
@@ -165,21 +113,88 @@ export function Waiting({
             options={s.gameOptions}
             setOptions={(o) => send({ type: 'setOptions', options: o })}
             blocker={blocker}
-            start={() => send({ type: 'start' })}
+            start={startGame}
+            onSeat={onSeat}
+            changeGame={isHost ? () => setPicking(true) : undefined}
           />
-        ) : (
-          entry && (
-            <NextUp
-              entry={entry}
+        </section>
+      )}
+
+      {!themed && (
+        <section className="waiting__table" aria-labelledby="at-table">
+          <div className="section-head">
+            <h2 id="at-table" className="jd-display">
+              At the table
+            </h2>
+            <span>
+              {count} of 15 seats
+              {s.displays > 0 && `, ${s.displays} TV`}
+            </span>
+          </div>
+          <SeatTrack seats={seats} onSeat={onSeat} />
+          {mine && (
+            <div className="you-strip">
+              <AvatarButton avatar={mine.avatar} size={44} onClick={() => onOpen('me')} />
+              <span className="you-strip__who">
+                <b>{mine.name}</b>
+                <span>That&rsquo;s you. Tap your token to change your name, crest or colour.</span>
+              </span>
+              {isHost && count > 1 && (
+                <button
+                  type="button"
+                  className="home-link waiting__manage"
+                  onClick={() => setManaging(true)}
+                >
+                  Manage players
+                </button>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {!themed && (
+        <section className="waiting__game" aria-labelledby="next-game">
+          <div className="section-head">
+            <h2 id="next-game" className="jd-display">
+              {showPicker ? 'Pick a game' : 'Next up'}
+            </h2>
+            <span>
+              {isHost ? (
+                showPicker && entry ? (
+                  <button type="button" className="home-link" onClick={() => setPicking(false)}>
+                    Keep {entry.meta.name}
+                  </button>
+                ) : (
+                  'You choose'
+                )
+              ) : (
+                `${host?.name ?? 'The host'} chooses`
+              )}
+            </span>
+          </div>
+
+          {showPicker ? (
+            <GamePicker
+              selectedId={s.selectedGameId}
               count={count}
               isHost={isHost}
-              options={s.gameOptions}
-              onOptions={(o) => send({ type: 'setOptions', options: o })}
-              onChange={() => setPicking(true)}
+              onChoose={choose}
             />
-          )
-        )}
-      </section>
+          ) : (
+            entry && (
+              <NextUp
+                entry={entry}
+                count={count}
+                isHost={isHost}
+                options={s.gameOptions}
+                onOptions={(o) => send({ type: 'setOptions', options: o })}
+                onChange={() => setPicking(true)}
+              />
+            )
+          )}
+        </section>
+      )}
 
       {s.history.length > 0 && (
         <section className="waiting__history" aria-label="Recent games">
@@ -200,7 +215,20 @@ export function Waiting({
         </section>
       )}
 
-      {!ThemedLobby && (
+      {themed ? (
+        <div className="dock dock--themed">
+          <div className="dock__row">
+            <Link className="jd-plaque jd-plaque--small" href={`/tv/${s.code}`} target="_blank">
+              <Icon.tv />
+              Show on TV
+            </Link>
+            <Plaque small onClick={() => onOpen('stats')}>
+              <Icon.stats />
+              Game stats
+            </Plaque>
+          </div>
+        </div>
+      ) : (
         <div className="dock">
           {isHost ? (
             <>
@@ -208,7 +236,7 @@ export function Waiting({
                 go
                 disabled={Boolean(blocker)}
                 aria-disabled={Boolean(blocker)}
-                onClick={() => send({ type: 'start' })}
+                onClick={startGame}
               >
                 {entry ? `Start ${entry.meta.name}` : 'Start'}
               </Plaque>

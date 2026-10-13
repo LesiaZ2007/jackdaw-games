@@ -352,13 +352,15 @@
 
 /* ── Seat track ──────────────────────────────────────────────────────────── */
 .jd-track {
+  /* tokens and names size to the track, so a wide table gets big tokens */
+  container-type: inline-size;
   display: grid;
-  grid-template-columns: repeat(var(--cols, 5), 1fr);
+  grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr));
   gap: 4px;
 }
 .jd-space {
   --ring-bg: var(--paper);
-  aspect-ratio: 1 / 1.08;
+  aspect-ratio: 1 / 1.12;
   position: relative;
   display: grid;
   place-items: center;
@@ -374,7 +376,7 @@
   background: var(--ring-bg);
 }
 .jd-space .jd-token {
-  --z: 34px;
+  --z: var(--seat-z, clamp(30px, calc(100cqi / var(--cols, 5) * 0.56), 120px));
 }
 .jd-space .jd-n {
   position: absolute;
@@ -388,13 +390,32 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 800 15px/1 var(--font-plaque);
+  font: 800 clamp(14px, calc(100cqi / var(--cols, 5) * 0.165), 28px) / 1.05 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
+/* this device's own seat */
+.jd-space--me {
+  box-shadow: inset 0 0 0 3px var(--or);
+}
+/* "You" takes the place of the seat number, clear of the host's crown */
+.jd-space--me .jd-n {
+  visibility: hidden;
+}
+.jd-space .jd-you {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 3px 6px 4px;
+  background: var(--or);
+  color: #24211e;
+  font: 800 11px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 .jd-space--free .jd-n {
   position: static;
-  font: 600 22px var(--font-display);
+  font: 600 clamp(20px, calc(100cqi / var(--cols, 5) * 0.3), 44px) var(--font-display);
   color: var(--rule);
 }
 .jd-space--landing .jd-token {

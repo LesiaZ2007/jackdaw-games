@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
-import { AvatarButton, Chits, Plaque, Sheet } from '@jackdaw/ui';
+import { AvatarButton, Chits, Plaque, ReactionBar, Sheet } from '@jackdaw/ui';
 import { forgetSeat } from '@/lib/identity';
 import { ThemeToggle } from '../../theme-toggle';
 
@@ -82,6 +82,19 @@ export function MenuSheet({
               Change
             </Plaque>
           </div>
+        </section>
+      )}
+
+      {me && s.status !== 'waiting' && (
+        <section className="menu__block">
+          <h3 className="jd-label">React</h3>
+          <p>Pops up over your seat for everyone at the table.</p>
+          <ReactionBar
+            onReact={(kind) => {
+              void send({ type: 'react', kind });
+              onClose();
+            }}
+          />
         </section>
       )}
 

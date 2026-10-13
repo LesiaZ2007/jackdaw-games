@@ -160,16 +160,31 @@
   font-size: 28px;
   color: var(--ink-2);
 }
-.tv-track {
+/*
+ * One row of 15 along the bottom. Taken seats get more than twice the width of open ones, so
+ * with a few players the tokens are big enough to find yourself from the sofa.
+ */
+.jd-track.tv-track {
   grid-column: 1 / -1;
+  display: flex;
   gap: 8px;
 }
 .tv-track .jd-space {
-  aspect-ratio: 1 / 1.25;
-  gap: 12px;
+  flex: 1 1 0;
+  aspect-ratio: auto;
+  height: 210px;
+  gap: 14px;
+  /* each seat sizes its own token */
+  container-type: inline-size;
+}
+.tv-track .jd-space:not(.jd-space--free) {
+  flex-grow: 2.2;
+}
+.tv-track .jd-space .jd-token {
+  --z: min(62cqi, 116px);
 }
 .tv-track .jd-n {
-  font-size: 18px;
+  font-size: 20px;
   top: 6px;
   left: 9px;
 }
@@ -177,7 +192,7 @@
   font-size: 44px;
 }
 .tv-track .jd-who {
-  font-size: 22px;
+  font-size: 26px;
 }
 
 /* ── In a game: a slim Jackdaw strip, then the game's own table ───────────── */

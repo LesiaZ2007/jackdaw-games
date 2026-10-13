@@ -14,8 +14,8 @@ source references are still the best map of the Avalon app.
 1. **Jackdaw lobby, Avalon chosen.** The waiting room looks like Avalon's own lobby: the round
    table with shields, Avalon's settings (Classic / Full / Custom / Plain, the custom role
    toggles, Lady of the Lake, talk and vote timers) and the deal preview, in Avalon's Parchment
-   look by day and Night look in dark mode. Jackdaw's frame stays around it: the bar with the
-   code chits, chat, stats and the TV. Only the host changes settings.
+   look by day and Night look in dark mode. It fills the screen under Jackdaw's bar (code chits,
+   invite and TV, stats, chat, menu). Only the host changes settings.
 2. **Start Avalon.** Jackdaw's server creates the Avalon room with everyone seated (their names,
    crests and colours), the settings applied and the roles dealt. Each phone is taken to its own
    seat in Avalon; the TV is taken to Avalon's TV screen. Nobody types a code.

@@ -155,6 +155,6 @@ Additions approved by Lesia:
     `{over:false}`, `{over:true, result}` (finishes as usual: history, scores, results) or
     `{over:true, abandoned:true}` (back to waiting, nothing recorded). The pure
     `settleLinked(lobby, sessionId, status, ctx)` applies it. A failed check waits for the next.
-- **`GameUi.Lobby`** draws a game's own lobby centre (players, options, Start) inside Jackdaw's
-  frame. It gets the code, players, options, `start()`, `onSeat(id)` (own seat opens your look;
+- **`GameUi.Lobby`** (optional) draws a game's own lobby (players, options, Start), full screen
+  under Jackdaw's bar; games without one use Jackdaw's lobby. Only Avalon has one. It gets the code, players, options, `start()`, `onSeat(id)` (own seat opens your look;
   the host's tap opens remove / make host) and `changeGame` for the host.

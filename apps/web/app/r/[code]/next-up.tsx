@@ -83,7 +83,7 @@ export function NextUp({
   count: number;
   isHost: boolean;
   options: Record<string, unknown>;
-  onOptions: (o: Record<string, unknown>) => void;
+  onOptions: (o: Record<string, unknown>) => unknown;
   onChange: () => void;
 }) {
   const [open, setOpen] = useState(false);

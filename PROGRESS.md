@@ -121,6 +121,13 @@ Approved by Lesia for every game:
    - Port the UI unchanged, using the `GameUi.Lobby` hook for Avalon's round-table waiting room.
    - Extract the kit pieces, then write GAME_KIT.md.
 
+## Ideas for later
+
+- **Short room links** (Lesia, 2026-10-13). `jackdaw-games.vercel.app/QGYR` going straight to the
+  room works on Vercel today (a `/[code]` route that redirects to `/r/[code]`). A really short
+  address needs a short domain bought and added to the Vercel project; that's not tied to
+  Cloudflare either.
+
 ## Decided
 
 - **Avalon is linked, not ported** (Lesia, 2026-10-13; `docs/avalon/LINK.md`). Branch

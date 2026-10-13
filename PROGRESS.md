@@ -126,8 +126,12 @@ Approved by Lesia for every game:
 - **Avalon is linked, not ported** (Lesia, 2026-10-13; `docs/avalon/LINK.md`). Branch
   `feat/avalon-link` has Jackdaw's side: linked games in the contract and runtime (CLAUDE.md),
   `packages/games/avalon`, Avalon's own lobby, the hand-off screens and an e2e against a fake
-  Avalon. It needs `AVALON_URL` and `JACKDAW_LINK_SECRET` on Vercel (Preview and Production)
-  and Avalon's `feat/jackdaw-link` deployed. Avalon's lobby fills the screen under Jackdaw's
+  Avalon. Vercel is set up (2026-10-13): `JACKDAW_LINK_SECRET` on both projects (Preview and
+  Production); Jackdaw's `AVALON_URL` is play-avalon.vercel.app for Production and the Avalon
+  `feat/jackdaw-link` preview for Preview; Avalon's previews are public. A live game through both
+  previews worked end to end (seated, played, back to Jackdaw, scored). Production needs Lesia to
+  merge Avalon's `feat/jackdaw-link`; after that, point Jackdaw's Preview `AVALON_URL` at
+  play-avalon.vercel.app too. Avalon's lobby fills the screen under Jackdaw's
   bar; Rock Paper Scissors went back to Jackdaw's lobby (STYLE_GUIDE.md, "Each game's lobby").
 
 - In dark mode Avalon switches to its own Night look; every game follows the shell's day/dark

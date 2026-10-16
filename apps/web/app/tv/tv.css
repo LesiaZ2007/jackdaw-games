@@ -518,6 +518,15 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   min-height: 0;
   position: relative;
 }
+/* How to join, stacked, wherever it's placed (a game's own TV lobby places it itself). */
+.tv-join-panel {
+  display: grid;
+  gap: 18px;
+  justify-items: start;
+}
+.tv-join > .tv-join-panel {
+  display: contents;
+}
 /* A game's own TV lobby takes the first screen. */
 .tv-own-lobby {
   position: relative;

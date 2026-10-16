@@ -1,5 +1,6 @@
 import type { GameMeta, GameRegistry } from '@jackdaw/engine';
 import { avalon } from '@jackdaw/game-avalon';
+import { codenames } from '@jackdaw/game-codenames';
 import { rps } from '@jackdaw/game-rps';
 
 /**
@@ -9,6 +10,7 @@ import { rps } from '@jackdaw/game-rps';
  */
 export const games: GameRegistry = {
   [avalon.meta.id]: avalon,
+  [codenames.meta.id]: codenames,
   [rps.meta.id]: rps,
 };
 

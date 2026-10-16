@@ -3,11 +3,12 @@
 import type { Reaction } from '@jackdaw/engine';
 import { PlayerReaction, Token, useTheme, type ScreenPlayer } from '@jackdaw/ui';
 import type { ReactNode } from 'react';
-import { HITLER_ZONE, VETO_AT, type Policy } from '../lineup';
+import { HITLER_ZONE, VETO_AT, type Policy, type Role } from '../lineup';
 import { POWER_LABEL, lastVoted } from '../moments';
-import type { ShTableView } from '../rules';
-import { BALLOT, PolicyEmblem, PowerIcon } from './art';
+import { roleName, type ShTableView } from '../rules';
+import { BALLOT, PolicyEmblem, PowerIcon, RoleEmblem } from './art';
 import './sh.css';
+import './status.css';
 
 const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
 
@@ -56,7 +57,7 @@ export function Tracks({ t, tv = false }: { t: ShTableView; tv?: boolean }) {
           {Array.from({ length: 5 }, (_, i) => (
             <li key={i} className={cx('sh-slot', i < t.liberal && 'is-filled')}>
               {i < t.liberal ? (
-                <PolicyCard policy="liberal" size={tv ? 'md' : 'sm'} />
+                <PolicyCard policy="liberal" size={tv ? 'lg' : 'sm'} />
               ) : i === 4 ? (
                 <span className="sh-slot__mark">
                   <PowerIcon power="win" size={tv ? 34 : 20} />
@@ -84,7 +85,7 @@ export function Tracks({ t, tv = false }: { t: ShTableView; tv?: boolean }) {
                 )}
               >
                 {i < t.fascist ? (
-                  <PolicyCard policy="fascist" size={tv ? 'md' : 'sm'} />
+                  <PolicyCard policy="fascist" size={tv ? 'lg' : 'sm'} />
                 ) : i === 5 ? (
                   <span className="sh-slot__mark">
                     <PowerIcon power="win" size={tv ? 34 : 20} />
@@ -114,78 +115,128 @@ export function Tracks({ t, tv = false }: { t: ShTableView; tv?: boolean }) {
             <li key={i} className={i < t.tracker ? 'is-on' : undefined} />
           ))}
         </ol>
-        <span className="sh-tracker__piles">
-          <span>Deck {t.deckCount}</span>
-          <span>Discard {t.discardCount}</span>
-        </span>
       </div>
     </section>
   );
 }
 
+/** A pile of face-down policies with its count: the draw deck or the discards. */
+function Pile({ label, count, tv }: { label: string; count: number; tv: boolean }) {
+  return (
+    <div className={cx('sh-pile', tv && 'sh-pile--tv')} aria-label={`${label}: ${count}`}>
+      <span className="sh-pile__stack" aria-hidden="true">
+        <span />
+        <span />
+        <span className="sh-pile__count">{count}</span>
+      </span>
+      <span className="sh-pile__label">{label}</span>
+    </div>
+  );
+}
+
+/** The board as on the printed game: draw pile, the two tracks and the tracker, discard pile. */
+export function Board({ t, tv = false }: { t: ShTableView; tv?: boolean }) {
+  return (
+    <section className={cx('sh-board', tv && 'sh-board--tv')} aria-label="The board">
+      <Pile label="Draw" count={t.deckCount} tv={tv} />
+      <Tracks t={t} tv={tv} />
+      <Pile label="Discard" count={t.discardCount} tv={tv} />
+    </section>
+  );
+}
+
+/** A small turning hourglass: the game is waiting on this player. */
+export function Hourglass({ size = 18 }: { size?: number }) {
+  return (
+    <svg className="sh-hourglass" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true">
+      <path d="M6 3h12M6 21h12" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+      <path
+        d="M7.5 3.5c0 4.5 4.5 6 4.5 8.5s-4.5 4-4.5 8.5h9c0-4.5-4.5-6-4.5-8.5s4.5-4 4.5-8.5z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M9.5 18.5h5L12 15.5z" fill="currentColor" />
+    </svg>
+  );
+}
+
 /**
- * The players as name placards around the table: who is president and chancellor, who has voted
- * (not how) during a vote, and everyone's Ja or Nein once the vote is counted.
+ * Everyone in one strip, as at the top of secret-hitler.online: portrait and name, an office
+ * placard for the president and chancellor, an hourglass on exactly the players the game is
+ * waiting on, their Ja or Nein once a vote is counted, roles you know, and executed players
+ * greyed out. When it's your pick (nominate, investigate...), the cards you can choose are buttons.
  */
-export function Placards({
+export function PlayerStrip({
   t,
   players,
   me,
   reactions,
-  onPick,
+  busy,
+  known = {},
   pickable,
+  selected,
+  onPick,
   tv = false,
 }: {
   t: ShTableView;
   players: ScreenPlayer[];
   me?: string | null;
   reactions?: Reaction[];
-  /** Tap a placard to choose that player (nominate, investigate, execute...). */
-  onPick?: (id: string) => void;
+  busy: string[];
+  /** Roles this viewer knows (their own, their team's, or everyone's once the game is over). */
+  known?: Record<string, Role>;
   pickable?: string[];
+  selected?: string | null;
+  onPick?: (id: string) => void;
   tv?: boolean;
 }) {
   const byId = new Map(players.map((p) => [p.id, p]));
   const shown = t.phase !== 'vote' ? lastVoted(t) : undefined;
-  // Only the vote that just happened shows its ballots, until the next one starts.
   const fresh = shown && t.governments[t.governments.length - 1]?.n === shown.n ? shown : undefined;
+  const size = tv ? 76 : 40;
   return (
-    <ol className={cx('sh-placards', tv && 'sh-placards--tv')} aria-label="The table">
+    <ol className={cx('sh-strip', tv && 'sh-strip--tv')} aria-label="The table">
       {t.players.map((id) => {
         const p = byId.get(id);
         const dead = t.dead.includes(id);
         const president = id === t.president && t.phase !== 'over';
-        const chancellor = id === t.nominee && t.phase !== 'nominate' && t.phase !== 'over';
+        const chancellor =
+          id === t.nominee && t.phase !== 'nominate' && t.phase !== 'over' && !president;
+        const waiting = busy.includes(id);
         const ballot = fresh?.votes[id];
         const canPick = Boolean(onPick && pickable?.includes(id));
+        const role = known[id];
         const body = (
           <>
-            <span className="sh-placard__tok">
-              {p && <Token avatar={p.avatar} size={tv ? 64 : 38} away={!p.online} />}
-              <PlayerReaction
-                reactions={reactions}
-                playerId={id}
-                name={p?.name}
-                size={tv ? 64 : 38}
-              />
+            <span className="sh-pcard__tok">
+              {p && <Token avatar={p.avatar} size={size} away={!p.online} />}
+              <PlayerReaction reactions={reactions} playerId={id} name={p?.name} size={size} />
+              {waiting && (
+                <span className="sh-pcard__busy" title="Waiting on this player">
+                  <Hourglass size={tv ? 30 : 16} />
+                </span>
+              )}
+              {role && (
+                <span className={cx('sh-pcard__role', `is-${role}`)} title={roleName(role)}>
+                  <RoleEmblem role={role} size={tv ? 34 : 19} />
+                </span>
+              )}
             </span>
-            <span className="sh-placard__name">
-              {p?.name ?? 'Someone'}
-              {id === me && <small> (you)</small>}
-            </span>
-            {(president || chancellor) && (
-              <span className={cx('sh-office', president ? 'is-president' : 'is-chancellor')}>
-                {president ? 'President' : t.phase === 'vote' ? 'Nominee' : 'Chancellor'}
+            <span className="sh-pcard__name">{id === me ? 'You' : (p?.name ?? 'Someone')}</span>
+            {president && <span className="sh-office is-president">President</span>}
+            {chancellor && (
+              <span className="sh-office is-chancellor">
+                {t.phase === 'vote' ? 'Nominee' : 'Chancellor'}
               </span>
             )}
-            {!president && !chancellor && (id === t.lastPresident || id === t.lastChancellor) && (
-              <span className="sh-office is-limited">Term-limited</span>
-            )}
-            {t.phase === 'vote' && !dead && (
-              <span className={cx('sh-voted', t.voted.includes(id) && 'is-in')}>
-                {t.voted.includes(id) ? 'Voted' : 'Thinking'}
-              </span>
-            )}
+            {!president &&
+              !chancellor &&
+              !dead &&
+              (id === t.lastPresident || id === t.lastChancellor) && (
+                <span className="sh-office is-limited">Term-limited</span>
+              )}
             {ballot !== undefined && (
               <span className={cx('sh-ballot-chip', ballot ? 'is-ja' : 'is-nein')}>
                 {ballot ? BALLOT.ja : BALLOT.nein}
@@ -195,23 +246,35 @@ export function Placards({
             {dead && <span className="sh-dead">Executed</span>}
           </>
         );
+        const label = `${p?.name ?? 'Someone'}${id === me ? ' (you)' : ''}${president ? ', president' : ''}${chancellor ? ', chancellor' : ''}${waiting ? ', the game is waiting on them' : ''}${dead ? ', executed' : ''}`;
         return (
           <li
             key={id}
             className={cx(
-              'sh-placard',
+              'sh-pcard',
               dead && 'is-dead',
               id === me && 'is-me',
+              waiting && 'is-busy',
               president && 'is-president',
               chancellor && 'is-chancellor',
+              canPick && 'is-pickable',
+              selected === id && 'is-selected',
             )}
           >
             {canPick ? (
-              <button type="button" className="sh-placard__pick" onClick={() => onPick!(id)}>
+              <button
+                type="button"
+                className="sh-pcard__body"
+                aria-pressed={selected === id}
+                aria-label={label}
+                onClick={() => onPick!(id)}
+              >
                 {body}
               </button>
             ) : (
-              <div className="sh-placard__body">{body}</div>
+              <div className="sh-pcard__body" aria-label={label}>
+                {body}
+              </div>
             )}
           </li>
         );

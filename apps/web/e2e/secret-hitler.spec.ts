@@ -3,10 +3,10 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 // Secret Hitler: five phones play one round through the real screens (nominate, Ja!, discard,
 // enact), then the rest of the game is driven through the lobby API to a win. The TV and every
 // public read must never carry a role, a hand or a ballot. SHOTS=1 adds the screens at 375, 768,
-// 1280 and 1920 in day and dark, saved to the scratchpad folder named below.
+// phase by phase at 375 and 1280 in day and dark, plus the TV, saved to the folder named below.
 
 const OUT =
-  'C:/Users/KBITK/AppData/Local/Temp/claude/C--Users-KBITK/4ffaaec6-f727-4d5a-9191-6931b76e2e79/scratchpad/secret-hitler';
+  'C:/Users/KBITK/AppData/Local/Temp/claude/C--Users-KBITK/4ffaaec6-f727-4d5a-9191-6931b76e2e79/scratchpad/secret-hitler-status';
 const NAMES = ['Lesia', 'Bran', 'Cerys', 'Dafydd', 'Elin'];
 
 type Scheme = 'light' | 'dark';
@@ -42,10 +42,20 @@ async function join(page: Page, code: string, name: string) {
 
 const token = (page: Page) => page.evaluate(() => localStorage.getItem('jackdaw:token')!);
 
-/** The lobby rate-limits fast clients, so a scripted player backs off and tries again. */
+/**
+ * The lobby rate-limits fast clients, so a scripted player backs off and tries again. The dev
+ * server also drops idle keep-alive connections now and then, which a retry covers too.
+ */
 async function call(page: Page, send: () => Promise<{ status(): number; json(): Promise<Snap> }>) {
   for (let attempt = 0; ; attempt++) {
-    const res = await send();
+    let res;
+    try {
+      res = await send();
+    } catch (e) {
+      if (attempt >= 5 || !/ECONNRESET|socket hang up/.test(String(e))) throw e;
+      await page.waitForTimeout(300);
+      continue;
+    }
     if (res.status() !== 429 || attempt >= 20) return res;
     await page.waitForTimeout(400 + attempt * 200);
   }
@@ -152,9 +162,10 @@ test('five phones play Secret Hitler: one real round, then on to a win, with not
 
   // Everyone's secret role is face down until they tap it.
   const first = pages[1]!;
-  await expect(first.getByText('Tap to look')).toBeVisible();
-  await first.getByRole('button', { name: /Your secret role/ }).click();
+  await expect(first.locator('.sh-role__card')).toHaveCount(0);
+  await first.getByRole('button', { name: 'Your secret role' }).click();
   await expect(first.locator('.sh-role__name')).toHaveText(/Liberal|Fascist|Hitler/);
+  await first.getByRole('button', { name: 'Hide', exact: true }).click();
 
   // The TV, and a read with no seat, get only the public table.
   const tvRead = await (
@@ -164,17 +175,24 @@ test('five phones play Secret Hitler: one real round, then on to a win, with not
   const tv = await phone(browser, 1920, 1080);
   await tv.goto(`/tv/${code}`);
   await expect(tv.getByText('Failed elections')).toBeVisible();
-  await expect(tv.locator('.sh-role')).toHaveCount(0);
+  await expect(tv.locator('.sh-rolechip')).toHaveCount(0);
+  // The strip says who the game is waiting on: the president, and nobody else.
+  await expect(tv.locator('.sh-pcard.is-busy')).toHaveCount(1);
 
   // One full round through the screens.
   let s = await read(pages[0]!, code);
   const president = byId[s.tableView.president]!;
-  await president.locator('.sh-placard__pick').first().click();
+  await expect(president.locator('.sh-yourmove')).toContainText('Nominate a chancellor');
+  await expect(pages.find((p) => p !== president)!.locator('.sh-yourmove')).toHaveCount(0);
+  await president.locator('button.sh-pcard__body').first().click();
   await president.getByRole('button', { name: /^Nominate / }).click();
+  // Everyone is busy until they vote; the hourglass leaves each card as its vote comes in.
+  await expect(tv.locator('.sh-pcard.is-busy')).toHaveCount(5);
   for (const p of pages) {
     await dismiss(p);
     await p.getByRole('radio', { name: 'Ja!' }).click();
   }
+  await expect(pages[3]!.locator('.sh-statusbar__tally')).toContainText('Ja 5 – Nein 0: elected');
   await expect(president.getByRole('radiogroup', { name: 'Your policies' })).toBeVisible();
   await dismiss(president);
   // Only the president holds cards now.
@@ -221,80 +239,132 @@ test('five phones play Secret Hitler: one real round, then on to a win, with not
 });
 
 for (const scheme of ['light', 'dark'] as const) {
-  test(`Secret Hitler screens at every width (${scheme})`, async ({ browser }) => {
+  test(`Secret Hitler, phase by phase (${scheme})`, async ({ browser }) => {
     test.skip(!process.env.SHOTS, 'screenshots only');
     test.setTimeout(900_000);
-    const shot = (p: Page, name: string) =>
-      p.screenshot({ path: `${OUT}/${name}-${scheme}.png`, fullPage: false });
+    /** Shoot `page` at each width, then put it back to a phone. */
+    const at = async (
+      page: Page,
+      name: string,
+      widths: [number, number][] = [
+        [375, 812],
+        [1280, 800],
+      ],
+    ) => {
+      for (const [w, h] of widths) {
+        await page.setViewportSize({ width: w, height: h });
+        await page.waitForTimeout(700);
+        await page.screenshot({ path: `${OUT}/${name}-${w}-${scheme}.png` });
+      }
+      await page.setViewportSize({ width: 375, height: 812 });
+    };
+    /** Wait until any moment and phase banner have cleared. */
+    const settle = async (page: Page) => {
+      await expect(async () => {
+        if (await page.locator('.jd-moment').count()) await page.keyboard.press('Escape');
+        await expect(page.locator('.jd-moment')).toHaveCount(0, { timeout: 500 });
+        await expect(page.locator('.sh-banner')).toHaveCount(0, { timeout: 500 });
+      }).toPass({ timeout: 20_000 });
+    };
     const { code, pages, byId } = await table(browser, scheme, 375, 812);
-    const lead = pages[0]!;
     const tv = await phone(browser, 1920, 1080, scheme);
+    await pages[0]!.getByRole('button', { name: 'Deal the roles: start Secret Hitler' }).click();
     await tv.goto(`/tv/${code}`);
-    await expect(tv.getByText('The cabinet is gathering')).toBeVisible();
-    await tv.waitForTimeout(800);
-    await shot(tv, 'tv-lobby-1920');
+    await expect(tv.getByText('Failed elections')).toBeVisible();
 
-    for (const [w, h] of [
-      [375, 812],
-      [768, 1024],
-      [1280, 800],
-      [1920, 1080],
-    ] as const) {
-      await lead.setViewportSize({ width: w, height: h });
-      await lead.waitForTimeout(500);
-      await shot(lead, `lobby-${w}`);
-    }
-    await lead.getByRole('button', { name: 'Deal the roles: start Secret Hitler' }).click();
-    await expect(lead.getByText('Failed elections')).toBeVisible();
+    let s = await read(pages[0]!, code);
+    const pres = () => byId[s.tableView.president]!;
+    const onlooker = () =>
+      byId[
+        s.tableView.players.find(
+          (id: string) => id !== s.tableView.president && id !== s.tableView.nominee,
+        )
+      ]!;
 
-    // A vote in progress, with the role card open.
-    let s = await read(lead, code);
-    await act(byId[s.tableView.president]!, code, {
-      type: 'nominate',
-      chancellor: s.tableView.eligible[0],
-    });
+    // Nominate: the president's move, and everyone else waiting on them.
+    await settle(pres());
+    await at(pres(), 'nominate-president');
+    await at(onlooker(), 'nominate-other', [[375, 812]]);
+    await tv.waitForTimeout(500);
+    await tv.screenshot({ path: `${OUT}/tv-nominate-${scheme}.png` });
+
+    // The vote: two have voted; the banner sweeps in on the phone just as it starts.
+    await act(pres(), code, { type: 'nominate', chancellor: s.tableView.eligible[0] });
+    s = await read(pages[0]!, code);
+    const watcher = onlooker();
+    await expect(watcher.locator('.sh-banner')).toHaveCount(1, { timeout: 10_000 });
+    await watcher.waitForTimeout(450);
+    await watcher.screenshot({ path: `${OUT}/banner-375-${scheme}.png` });
     for (const id of s.tableView.players.slice(0, 2))
-      await act(byId[id]!, code, { type: 'vote', ja: true });
-    await lead.getByRole('button', { name: /Your secret role/ }).click();
-    for (const [w, h] of [
-      [375, 812],
-      [768, 1024],
-      [1280, 800],
-      [1920, 1080],
-    ] as const) {
-      await lead.setViewportSize({ width: w, height: h });
-      await lead.waitForTimeout(500);
-      await shot(lead, `game-vote-${w}`);
-    }
-    await tv.waitForTimeout(2500);
-    await shot(tv, 'tv-vote-1920');
+      await act(byId[id]!, code, { type: 'vote', ja: id !== s.tableView.players[1] });
+    await settle(watcher);
+    await at(watcher, 'vote');
+    await tv.waitForTimeout(1500);
+    await tv.screenshot({ path: `${OUT}/tv-vote-${scheme}.png` });
 
-    // Finish the vote: the president's hand of three.
-    s = await read(lead, code);
+    // The rest vote: the tally, then the president's three cards.
+    s = await read(pages[0]!, code);
     for (const id of s.tableView.players.filter((p: string) => !s.tableView.voted.includes(p)))
       await act(byId[id]!, code, { type: 'vote', ja: true });
-    const pres = byId[s.tableView.president]!;
-    await pres.setViewportSize({ width: 375, height: 812 });
-    await pres.waitForTimeout(4200);
-    await shot(pres, 'game-hand-375');
-    await tv.waitForTimeout(1500);
-    await shot(tv, 'tv-legislate-1920');
+    s = await read(pages[0]!, code);
+    if (s.tableView.phase !== 'president') throw new Error('expected an elected government');
+    const chancellor = byId[s.tableView.nominee]!;
+    const other = onlooker();
+    await expect(other.locator('.jd-moment')).toHaveCount(1, { timeout: 10_000 });
+    await other.screenshot({ path: `${OUT}/vote-moment-375-${scheme}.png` });
+    await settle(pres());
+    await at(pres(), 'legislate-president');
+    await settle(other);
+    await at(other, 'legislate-other');
+    await tv.waitForTimeout(2500);
+    await tv.screenshot({ path: `${OUT}/tv-legislate-${scheme}.png` });
+    const hand = (await read(pres(), code)).view.hand;
+    await act(pres(), code, { type: 'discard', policy: hand[0] });
+    await expect(chancellor.locator('.sh-yourmove')).toContainText('Enact', { timeout: 10_000 });
+    await settle(chancellor);
+    await at(chancellor, 'legislate-chancellor');
 
-    await playOut(code, byId);
-    await tv.setViewportSize({ width: 1280, height: 800 });
-    await tv.waitForTimeout(3000);
-    await shot(tv, 'tv-results-1280');
-    for (const [w, h] of [
-      [375, 812],
-      [1280, 800],
-    ] as const) {
-      await lead.setViewportSize({ width: w, height: h });
-      await expect(lead.getByText('Secret Hitler is over')).toBeVisible({ timeout: 20_000 });
-      await lead.waitForTimeout(1200);
-      await shot(lead, `results-${w}`);
-      await lead.getByText('Who was who').scrollIntoViewIfNeeded();
-      await lead.waitForTimeout(300);
-      await shot(lead, `recap-${w}`);
+    // On to the first presidential power (the peek at the third Fascist policy, at five).
+    for (let step = 0; step < 200; step++) {
+      s = await read(pages[0]!, code);
+      const t = s.tableView;
+      if (t.phase === 'power' || s.status !== 'in_game') break;
+      if (t.phase === 'nominate')
+        await act(byId[t.president]!, code, { type: 'nominate', chancellor: t.eligible[0] });
+      else if (t.phase === 'vote') {
+        for (const id of t.players.filter(
+          (p: string) => !t.dead.includes(p) && !t.voted.includes(p),
+        ))
+          await act(byId[id]!, code, { type: 'vote', ja: true });
+      } else if (t.phase === 'president') {
+        const v = (await read(byId[t.president]!, code)).view;
+        await act(byId[t.president]!, code, {
+          type: 'discard',
+          policy: v.hand.includes('liberal') ? 'liberal' : v.hand[0],
+        });
+      } else if (t.phase === 'chancellor') {
+        const v = (await read(byId[t.nominee]!, code)).view;
+        await act(byId[t.nominee]!, code, {
+          type: 'enact',
+          policy: v.hand.includes('fascist') ? 'fascist' : v.hand[0],
+        });
+      } else if (t.phase === 'veto')
+        await act(byId[t.president]!, code, { type: 'vetoReply', accept: false });
     }
+    if (s.tableView.phase === 'power') {
+      await settle(pres());
+      await at(pres(), 'power-president');
+      await tv.waitForTimeout(2500);
+      await tv.screenshot({ path: `${OUT}/tv-power-${scheme}.png` });
+    }
+
+    // Game over.
+    await playOut(code, byId);
+    const lead = pages[0]!;
+    await expect(lead.getByText('Secret Hitler is over')).toBeVisible({ timeout: 20_000 });
+    await at(lead, 'over');
+    await lead.getByText('Who was who').scrollIntoViewIfNeeded();
+    await lead.waitForTimeout(400);
+    await lead.screenshot({ path: `${OUT}/recap-375-${scheme}.png` });
   });
 }

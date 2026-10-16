@@ -147,6 +147,10 @@ Approved by Lesia for every game:
   powers), the TV, and a recap of every government with the policies really drawn, discarded
   and enacted, every vote, investigations and executions, and everyone's role.
 - Not built: turn timers (no timer runtime yet).
+- 2026-10-16 (`feat/sh-status`): the status display rebuilt after secret-hitler.online (player
+  strip with busy hourglasses, a named status line with "Your move", the vote tally, the board
+  with its piles, and a phase banner), and new filled emblems. `src/status.ts` has the busy set
+  and the wording, with unit tests.
 
 ## Next
 

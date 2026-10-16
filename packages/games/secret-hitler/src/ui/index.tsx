@@ -5,6 +5,7 @@ import { ShLobby } from './lobby';
 import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
 import { TvScreen } from './tv';
+import { ShTvLobby } from './tv-lobby';
 
 /** Secret Hitler: catalog art, detail page, its own lobby, and the screens. */
 export const secretHitlerUi: GameUi = {
@@ -25,4 +26,5 @@ export const secretHitlerUi: GameUi = {
   TvScreen,
   Reveal,
   Lobby: ShLobby,
+  TvLobby: ShTvLobby,
 };

@@ -8,7 +8,9 @@ import {
   seatTransition,
   Token,
   type GameLobbyProps,
+  type ScreenPlayer,
 } from '@jackdaw/ui';
+import type { Reaction } from '@jackdaw/engine';
 import {
   HOUSE_TEAM,
   OFFICIAL_MAX,
@@ -23,6 +25,87 @@ import { PowerIcon, RoleEmblem } from './art';
 import { ShFrame } from './board';
 
 const vars = (v: Record<string, string | number>) => v as CSSProperties;
+
+/**
+ * The long cabinet table, seen from above, with everyone's placard round it, clockwise from the
+ * head. The lobby makes seats tappable (your own, or anyone's for the host); the TV doesn't.
+ */
+export function Cabinet({
+  code,
+  players,
+  me,
+  hostId,
+  isHost = false,
+  onSeat,
+  reactions,
+  tv = false,
+}: {
+  code: string;
+  players: ScreenPlayer[];
+  me: string | null;
+  hostId: string;
+  isHost?: boolean;
+  onSeat?: (id: string) => void;
+  reactions: Reaction[];
+  tv?: boolean;
+}) {
+  const n = players.length;
+  const needed = Math.max(0, meta.minPlayers - n);
+  const seat = (i: number) => {
+    const a = (i / Math.max(n, 1)) * Math.PI * 2;
+    return { left: `${50 + 41 * Math.sin(a)}%`, top: `${50 - 43 * Math.cos(a)}%` };
+  };
+  return (
+    <div className={`sh-cabinet__room${tv ? ' sh-cabinet__room--tv' : ''}`} data-count={n}>
+      <div className="sh-cabinet__table">
+        <span className="sh-cabinet__kicker">Lobby</span>
+        <span className="sh-cabinet__code">{code}</span>
+        <span className="sh-cabinet__line">
+          {n} of {meta.maxPlayers} seated
+          {needed ? `, ${needed} more needed` : ''}
+        </span>
+      </div>
+      {players.map((p, i) => {
+        const you = p.id === me;
+        const tappable = Boolean(onSeat) && (you || isHost);
+        return (
+          <button
+            key={p.id}
+            type="button"
+            className={`sh-seat${you ? ' is-you' : ''}${p.online ? '' : ' is-away'}`}
+            style={vars(seat(i))}
+            disabled={!tappable}
+            onClick={tappable ? () => onSeat!(p.id) : undefined}
+            aria-label={
+              !tappable
+                ? p.name
+                : you
+                  ? `${p.name} (you): change your name, crest or colour`
+                  : `${p.name}: remove or make host`
+            }
+          >
+            <span className="sh-seat__tok">
+              <Token
+                avatar={p.avatar}
+                host={p.id === hostId}
+                away={!p.online}
+                transitionName={tv ? undefined : seatTransition(p.id).token}
+              />
+              <PlayerReaction reactions={reactions} playerId={p.id} name={p.name} />
+            </span>
+            <span
+              className="sh-seat__name"
+              style={tv ? undefined : { viewTransitionName: seatTransition(p.id).name }}
+            >
+              {p.name}
+              {you && <small> (you)</small>}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 /**
  * Secret Hitler's own lobby: the players as name placards around a long cabinet table (seen from
@@ -63,11 +146,6 @@ export function ShLobby({
     }
   }
 
-  // Seats run clockwise round the table from the head, on an oval just outside it.
-  const seat = (i: number) => {
-    const a = (i / Math.max(n, 1)) * Math.PI * 2;
-    return { left: `${50 + 41 * Math.sin(a)}%`, top: `${50 - 43 * Math.cos(a)}%` };
-  };
   const team = deal.fascists + 1;
 
   return (
@@ -75,54 +153,15 @@ export function ShLobby({
       <div className="sh-lobby__frame">
         <div className="sh-lobby__stage">
           <section className="sh-cabinet" aria-label="The table">
-            <div className="sh-cabinet__room" data-count={n}>
-              <div className="sh-cabinet__table">
-                <span className="sh-cabinet__kicker">Lobby</span>
-                <span className="sh-cabinet__code">{code}</span>
-                <span className="sh-cabinet__line">
-                  {n} of {meta.maxPlayers} seated
-                  {needed ? `, ${needed} more needed` : ''}
-                </span>
-              </div>
-              {players.map((p, i) => {
-                const you = p.id === me;
-                const tappable = you || isHost;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className={`sh-seat${you ? ' is-you' : ''}${p.online ? '' : ' is-away'}`}
-                    style={vars(seat(i))}
-                    disabled={!tappable}
-                    onClick={tappable ? () => onSeat(p.id) : undefined}
-                    aria-label={
-                      you
-                        ? `${p.name} (you): change your name, crest or colour`
-                        : isHost
-                          ? `${p.name}: remove or make host`
-                          : p.name
-                    }
-                  >
-                    <span className="sh-seat__tok">
-                      <Token
-                        avatar={p.avatar}
-                        host={p.id === hostId}
-                        away={!p.online}
-                        transitionName={seatTransition(p.id).token}
-                      />
-                      <PlayerReaction reactions={reactions} playerId={p.id} name={p.name} />
-                    </span>
-                    <span
-                      className="sh-seat__name"
-                      style={{ viewTransitionName: seatTransition(p.id).name }}
-                    >
-                      {p.name}
-                      {you && <small> (you)</small>}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+            <Cabinet
+              code={code}
+              players={players}
+              me={me}
+              hostId={hostId}
+              isHost={isHost}
+              onSeat={onSeat}
+              reactions={reactions}
+            />
             {me && <ReactionBar className="sh-react" onReact={react} />}
           </section>
 

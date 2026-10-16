@@ -20,6 +20,9 @@
   --sh-fas-soft: #ebc6b6;
   --sh-trim: #8a6a2c;
   --sh-on: #f5ecd8;
+  /* The cabinet table stays dark wood in both looks. */
+  --sh-wood: #2b241d;
+  --sh-on-wood: #f2e7d0;
   --sh-shadow: rgba(37, 33, 28, 0.32);
   --sh-scrim: rgba(37, 33, 28, 0.5);
 
@@ -49,6 +52,8 @@
   --sh-fas-soft: #4b2419;
   --sh-trim: #c5a35f;
   --sh-on: #121518;
+  --sh-wood: #3a2c20;
+  --sh-on-wood: #efe3c8;
   --sh-shadow: rgba(0, 0, 0, 0.55);
   --sh-scrim: rgba(0, 0, 0, 0.6);
 }
@@ -173,7 +178,7 @@
   font-size: 11px;
 }
 .sh-policy--lg {
-  width: 88px;
+  width: min(88px, 22vw);
   gap: 6px;
 }
 .sh-policy--lg .sh-policy__name {
@@ -422,6 +427,7 @@
 /* ── Phone game ─────────────────────────────────────────────────────────── */
 .sh-game {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   padding-bottom: 12px;
 }
@@ -520,10 +526,11 @@
 .sh-hand__cards {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
+  min-width: 0;
 }
 .sh-hand__card {
-  padding: 6px;
+  padding: 4px;
   border: 2px solid transparent;
   background: none;
   cursor: pointer;
@@ -732,10 +739,10 @@
   justify-items: center;
   gap: 4px;
   border-radius: 999px;
-  background: var(--sh-ink);
-  color: var(--sh-on);
+  background: var(--sh-wood);
+  color: var(--sh-on-wood);
   box-shadow:
-    inset 0 0 0 6px var(--sh-ink),
+    inset 0 0 0 6px var(--sh-wood),
     inset 0 0 0 8px var(--sh-trim),
     0 14px 30px var(--sh-shadow);
   text-align: center;
@@ -1041,6 +1048,83 @@
   .sh-lobby {
     padding: 28px 32px 40px;
   }
+}
+
+/* ── The TV's lobby (TV pixels: the stage is at least 1920×1080) ──────────── */
+.sh-tvlobby {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 640px;
+  gap: 56px;
+  align-items: center;
+  padding: 48px 72px;
+  background:
+    repeating-conic-gradient(from 0deg at 36% 50%, var(--sh-ray) 0deg 3deg, transparent 3deg 9deg),
+    var(--sh-ground);
+}
+.sh-tvlobby__table {
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+.sh-cabinet__room--tv {
+  width: auto;
+  height: min(100%, 960px);
+  container-type: size;
+}
+.sh-cabinet__room--tv .sh-seat .jd-token {
+  --z: 11cqh;
+}
+.sh-cabinet__room--tv .sh-seat__name {
+  font-size: 2.4cqh;
+}
+.sh-cabinet__room--tv .sh-cabinet__code {
+  font-size: 14cqh;
+}
+.sh-cabinet__room--tv .sh-cabinet__kicker,
+.sh-cabinet__room--tv .sh-cabinet__line {
+  font-size: 2.6cqh;
+}
+.sh-tvlobby__side {
+  display: grid;
+  gap: 22px;
+  align-content: center;
+}
+.sh-tvlobby__join {
+  padding: 24px 28px;
+  background: var(--sh-card);
+  border: 3px solid var(--sh-rule);
+}
+.sh-dossier--tv {
+  gap: 16px;
+  padding: 26px 30px;
+}
+.sh-dossier--tv .sh-dossier__kicker {
+  font-size: 24px;
+}
+.sh-dossier--tv .sh-dossier__title {
+  font-size: 44px;
+}
+.sh-dossier--tv .sh-deal__card b {
+  font-size: 44px;
+}
+.sh-dossier--tv .sh-deal__card span {
+  font-size: 22px;
+}
+.sh-dossier--tv .sh-powers {
+  font-size: 26px;
+}
+.sh-dossier--tv .sh-powers li {
+  grid-template-columns: 40px 34px 1fr;
+  min-height: 48px;
+}
+.sh-dossier--tv .sh-powers__n {
+  width: 36px;
+  height: 36px;
+  font-size: 22px;
+}
+.sh-dossier--tv .sh-dossier__small {
+  font-size: 22px;
 }
 
 /* ── Recap ──────────────────────────────────────────────────────────────── */

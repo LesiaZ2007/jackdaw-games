@@ -23,6 +23,9 @@
   /* The cabinet table stays dark wood in both looks. */
   --sh-wood: #2b241d;
   --sh-on-wood: #f2e7d0;
+  /* "Your move" and busy markers: an action colour that belongs to neither side. */
+  --sh-act: #2f6b4a;
+  --sh-on-act: #f5ecd8;
   --sh-shadow: rgba(37, 33, 28, 0.32);
   --sh-scrim: rgba(37, 33, 28, 0.5);
 
@@ -54,6 +57,8 @@
   --sh-on: #121518;
   --sh-wood: #3a2c20;
   --sh-on-wood: #efe3c8;
+  --sh-act: #6cb38a;
+  --sh-on-act: #121518;
   --sh-shadow: rgba(0, 0, 0, 0.55);
   --sh-scrim: rgba(0, 0, 0, 0.6);
 }
@@ -316,79 +321,7 @@
   background: var(--sh-fas);
   border-color: var(--sh-fas);
 }
-.sh-tracker__piles {
-  display: flex;
-  gap: 12px;
-  margin-left: auto;
-  color: var(--sh-ink-2);
-}
-
 /* ── The table: name placards ───────────────────────────────────────────── */
-.sh-placards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.sh-placard {
-  position: relative;
-  min-width: 0;
-}
-.sh-placard__body,
-.sh-placard__pick {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  width: 100%;
-  min-height: 100%;
-  padding: 10px 4px 8px;
-  border: 1.5px solid var(--sh-faint);
-  background: var(--sh-paper);
-  text-align: center;
-}
-.sh-placard__pick {
-  border: 2px solid var(--sh-rule);
-  background: var(--sh-card);
-  cursor: pointer;
-}
-.sh-placard__pick:hover {
-  background: var(--sh-paper);
-}
-.sh-placard.is-president .sh-placard__body,
-.sh-placard.is-chancellor .sh-placard__body {
-  border: 2px solid var(--sh-rule);
-  background: var(--sh-card);
-}
-.sh-placard.is-me .sh-placard__body {
-  box-shadow: inset 0 0 0 2px var(--sh-trim);
-}
-.sh-placard.is-dead {
-  opacity: 0.5;
-}
-.sh-placard.is-dead .sh-placard__name {
-  text-decoration: line-through;
-}
-.sh-placard__tok {
-  position: relative;
-  display: grid;
-}
-.sh-placard__name {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font: 800 15px/1.1 var(--font-plaque);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.sh-placard__name small {
-  font-weight: 500;
-  text-transform: none;
-  color: var(--sh-ink-2);
-}
 .sh-office,
 .sh-voted,
 .sh-cleared,
@@ -419,10 +352,6 @@
 .sh-dead {
   color: var(--sh-fas);
 }
-.sh-picked {
-  margin: 0;
-  font-size: 16px;
-}
 
 /* ── Phone game ─────────────────────────────────────────────────────────── */
 .sh-game {
@@ -430,13 +359,6 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   padding-bottom: 12px;
-}
-.sh-status__line {
-  margin: 0;
-  padding: 10px 14px;
-  background: var(--sh-ink);
-  color: var(--sh-on);
-  font: 700 18px/1.3 var(--font-body);
 }
 .sh-role__card {
   display: flex;
@@ -481,13 +403,6 @@
 .sh-role__line {
   font-size: 15px;
   line-height: 1.35;
-}
-.sh-role__known {
-  padding: 8px 4px 0;
-  font-size: 16px;
-}
-.sh-role__known p {
-  margin: 0 0 4px;
 }
 .sh-panel {
   display: grid;
@@ -570,44 +485,7 @@
   outline-offset: 3px;
   transform: translateY(-4px);
 }
-
 /* ── TV ─────────────────────────────────────────────────────────────────── */
-.sh-tv {
-  position: relative;
-  height: 100%;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 28px;
-  padding: 36px 64px 40px;
-  background:
-    repeating-conic-gradient(from 0deg at 50% 120%, var(--sh-ray) 0deg 3deg, transparent 3deg 9deg),
-    var(--sh-ground);
-}
-.sh-tv__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 40px;
-}
-.sh-tv__status {
-  margin: 0;
-  font: 800 46px/1.1 var(--font-plaque);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-.sh-tv__count {
-  margin: 0;
-  font: 700 34px var(--font-plaque);
-  color: var(--sh-ink-2);
-  white-space: nowrap;
-}
-.sh-tv__main {
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 40px;
-  align-items: start;
-  min-height: 0;
-}
 .sh-tracks--tv {
   gap: 20px;
 }
@@ -635,70 +513,6 @@
   width: 30px;
   height: 30px;
   border-width: 3px;
-}
-.sh-tv__gov {
-  display: grid;
-  gap: 18px;
-}
-.sh-tv__office,
-.sh-tv__power,
-.sh-tv__lastvote,
-.sh-tv__enacted {
-  display: grid;
-  gap: 4px;
-  padding: 18px 22px;
-  background: var(--sh-card);
-  border: 3px solid var(--sh-rule);
-  box-shadow:
-    inset 0 0 0 5px var(--sh-card),
-    inset 0 0 0 7px var(--sh-rule);
-}
-.sh-tv__office b {
-  font: 800 48px/1.05 var(--font-plaque);
-  text-transform: uppercase;
-  overflow-wrap: anywhere;
-}
-.sh-tv__label {
-  font: 700 22px var(--font-plaque);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--sh-ink-2);
-}
-.sh-tv__power {
-  grid-auto-flow: column;
-  justify-content: start;
-  align-items: center;
-  gap: 16px;
-  background: var(--sh-fas);
-  color: var(--sh-on);
-  box-shadow:
-    inset 0 0 0 5px var(--sh-fas),
-    inset 0 0 0 7px var(--sh-on);
-  font: 800 36px var(--font-plaque);
-  text-transform: uppercase;
-}
-.sh-tv__lastvote b {
-  font: 800 40px var(--font-plaque);
-}
-.sh-tv__lastvote span:last-child {
-  font-size: 24px;
-}
-.sh-placards--tv {
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-}
-.sh-placards--tv .sh-placard__name {
-  font-size: 24px;
-}
-.sh-placards--tv .sh-office,
-.sh-placards--tv .sh-voted,
-.sh-placards--tv .sh-cleared,
-.sh-placards--tv .sh-dead {
-  font-size: 17px;
-}
-.sh-placards--tv .sh-ballot-chip {
-  font-size: 28px;
-  padding: 2px 14px 4px;
 }
 
 /* ── Lobby ──────────────────────────────────────────────────────────────── */

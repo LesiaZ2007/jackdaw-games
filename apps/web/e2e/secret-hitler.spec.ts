@@ -42,20 +42,35 @@ async function join(page: Page, code: string, name: string) {
 
 const token = (page: Page) => page.evaluate(() => localStorage.getItem('jackdaw:token')!);
 
+/** The lobby rate-limits fast clients, so a scripted player backs off and tries again. */
+async function call(page: Page, send: () => Promise<{ status(): number; json(): Promise<Snap> }>) {
+  for (let attempt = 0; ; attempt++) {
+    const res = await send();
+    if (res.status() !== 429 || attempt >= 20) return res;
+    await page.waitForTimeout(400 + attempt * 200);
+  }
+}
+
 async function read(page: Page, code: string): Promise<Snap> {
-  const res = await page.request.get(`/api/lobby/${code}`, {
-    headers: { 'x-player-token': await token(page) },
-  });
-  return res.json();
+  const key = await token(page);
+  const res = await call(page, () =>
+    page.request.get(`/api/lobby/${code}`, { headers: { 'x-player-token': key } }),
+  );
+  const body = await res.json();
+  expect(res.status(), JSON.stringify(body)).toBe(200);
+  return body;
 }
 
 async function act(page: Page, code: string, action: object) {
   const s = await read(page, code);
-  const res = await page.request.post(`/api/lobby/${code}`, {
-    headers: { 'x-player-token': await token(page), 'content-type': 'application/json' },
-    data: { type: 'action', sessionId: s.session.id, seq: s.session.seq, action },
-  });
-  expect(res.ok(), JSON.stringify(await res.json())).toBe(true);
+  const key = await token(page);
+  const res = await call(page, () =>
+    page.request.post(`/api/lobby/${code}`, {
+      headers: { 'x-player-token': key, 'content-type': 'application/json' },
+      data: { type: 'action', sessionId: s.session.id, seq: s.session.seq, action },
+    }),
+  );
+  expect(res.status(), JSON.stringify(await res.json())).toBe(200);
 }
 
 /** Put a moment away (it also clears itself after a few seconds). */
@@ -142,7 +157,9 @@ test('five phones play Secret Hitler: one real round, then on to a win, with not
   await expect(first.locator('.sh-role__name')).toHaveText(/Liberal|Fascist|Hitler/);
 
   // The TV, and a read with no seat, get only the public table.
-  const tvRead = await (await pages[0]!.request.get(`/api/lobby/${code}`)).json();
+  const tvRead = await (
+    await call(pages[0]!, () => pages[0]!.request.get(`/api/lobby/${code}`))
+  ).json();
   expectPublic(tvRead);
   const tv = await phone(browser, 1920, 1080);
   await tv.goto(`/tv/${code}`);
@@ -183,7 +200,9 @@ test('five phones play Secret Hitler: one real round, then on to a win, with not
   expect((await read(pages[0]!, code)).tableView.enactedCount).toBe(1);
 
   // The rest of the game through the API, checking the public read as it goes.
-  expectPublic(await (await pages[0]!.request.get(`/api/lobby/${code}`)).json());
+  expectPublic(
+    await (await call(pages[0]!, () => pages[0]!.request.get(`/api/lobby/${code}`))).json(),
+  );
   const end = await playOut(code, byId);
   expect(end.status).toBe('results');
   for (const p of pages) {

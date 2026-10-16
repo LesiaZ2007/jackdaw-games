@@ -16,6 +16,7 @@
     "@jackdaw/game-avalon": "workspace:*",
     "@jackdaw/game-codenames": "workspace:*",
     "@jackdaw/game-rps": "workspace:*",
+    "@jackdaw/game-secret-hitler": "workspace:*",
     "@jackdaw/server": "workspace:*",
     "@jackdaw/ui": "workspace:*",
     "next": "16.4.0",

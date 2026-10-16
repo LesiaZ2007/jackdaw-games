@@ -1,0 +1,1259 @@
+/*
+ * Secret Hitler's own look, scoped under .sh. Day is 1930s print: cream card stock, charcoal ink,
+ * double-ruled frames, condensed capital plaques and blackletter ballots. Dark is its noir: the
+ * same print reversed out of a night-blue ground. Liberal steel blue, Fascist red-orange, a thin
+ * brass trim and nothing else. Every colour is a token here; the rules below only use them.
+ */
+
+.sh {
+  --sh-ground: #d6c39c;
+  --sh-paper: #ebdec2;
+  --sh-card: #f5ecd8;
+  --sh-ink: #25211c;
+  --sh-ink-2: #5e5549;
+  --sh-rule: #2f2a24;
+  --sh-faint: rgba(47, 42, 36, 0.14);
+  --sh-ray: rgba(47, 42, 36, 0.07);
+  --sh-lib: #2c5878;
+  --sh-lib-soft: #c7d4dc;
+  --sh-fas: #b0422a;
+  --sh-fas-soft: #ebc6b6;
+  --sh-trim: #8a6a2c;
+  --sh-on: #f5ecd8;
+  /* The cabinet table stays dark wood in both looks. */
+  --sh-wood: #2b241d;
+  --sh-on-wood: #f2e7d0;
+  --sh-shadow: rgba(37, 33, 28, 0.32);
+  --sh-scrim: rgba(37, 33, 28, 0.5);
+
+  /* The kit's Table talk, in this look. */
+  --lc-bg: var(--sh-card);
+  --lc-ink: var(--sh-ink);
+  --lc-dim: var(--sh-ink-2);
+  --lc-rule: var(--sh-rule);
+  --lc-field: var(--sh-paper);
+  --lc-title-font: var(--font-plaque);
+
+  color: var(--sh-ink);
+  font-family: var(--font-body);
+}
+.sh[data-noir] {
+  --sh-ground: #121518;
+  --sh-paper: #1b2025;
+  --sh-card: #242a31;
+  --sh-ink: #e9dfc8;
+  --sh-ink-2: #a89f8d;
+  --sh-rule: #d6c9ab;
+  --sh-faint: rgba(214, 201, 171, 0.16);
+  --sh-ray: rgba(214, 201, 171, 0.05);
+  --sh-lib: #7aa7cc;
+  --sh-lib-soft: #22384a;
+  --sh-fas: #e2714b;
+  --sh-fas-soft: #4b2419;
+  --sh-trim: #c5a35f;
+  --sh-on: #121518;
+  --sh-wood: #3a2c20;
+  --sh-on-wood: #efe3c8;
+  --sh-shadow: rgba(0, 0, 0, 0.55);
+  --sh-scrim: rgba(0, 0, 0, 0.6);
+}
+
+.sh :focus-visible {
+  outline: 3px solid var(--sh-trim);
+  outline-offset: 2px;
+}
+:where(.sh) button {
+  font: inherit;
+  color: inherit;
+}
+
+/* ── Shared pieces ──────────────────────────────────────────────────────── */
+
+/* Double-ruled printed frame, as on the game's cards. */
+.sh-frame,
+.sh-panel,
+.sh-dossier,
+.sh-track,
+.sh-role__card,
+.sh-gov {
+  background: var(--sh-card);
+  border: 2px solid var(--sh-rule);
+  box-shadow:
+    inset 0 0 0 4px var(--sh-card),
+    inset 0 0 0 5px var(--sh-rule);
+}
+
+.sh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 2px solid var(--sh-rule);
+  background: var(--sh-card);
+  font: 800 17px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.sh-btn--go {
+  background: var(--sh-ink);
+  color: var(--sh-on);
+  box-shadow:
+    inset 0 0 0 3px var(--sh-ink),
+    inset 0 0 0 4px var(--sh-on);
+}
+.sh-btn--danger {
+  background: var(--sh-fas);
+  border-color: var(--sh-fas);
+  box-shadow:
+    inset 0 0 0 3px var(--sh-fas),
+    inset 0 0 0 4px var(--sh-on);
+}
+.sh-btn--big {
+  min-height: 58px;
+  width: 100%;
+  font-size: 22px;
+}
+.sh-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sh-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.sh-link {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+/* A policy: a printed card in its side's colour, emblem over a condensed caps name. */
+.sh-policy {
+  display: inline-grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  width: 44px;
+  aspect-ratio: 5 / 7;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 2px var(--sh-on);
+  color: var(--sh-on);
+}
+.sh-policy--liberal {
+  background: var(--sh-lib);
+  color: var(--sh-on);
+  border-color: var(--sh-lib);
+}
+.sh-policy--fascist {
+  background: var(--sh-fas);
+  color: var(--sh-on);
+  border-color: var(--sh-fas);
+}
+.sh-policy__name {
+  font: 800 9px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sh-policy--sm {
+  width: 30px;
+}
+.sh-policy--sm .sh-policy__name {
+  display: none;
+}
+.sh-policy--md {
+  width: 56px;
+}
+.sh-policy--md .sh-policy__name {
+  font-size: 11px;
+}
+.sh-policy--lg {
+  width: min(88px, 22vw);
+  gap: 6px;
+}
+.sh-policy--lg .sh-policy__name {
+  font-size: 15px;
+}
+.sh-policy.is-tossed {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+/* Ja! and Nein in blackletter, as on the printed ballots. */
+.sh-ballot-chip {
+  display: inline-block;
+  padding: 1px 8px 2px;
+  border: 1.5px solid currentColor;
+  font: 400 15px/1.2 var(--font-display);
+}
+.sh-ballot-chip.is-ja {
+  color: var(--sh-ink);
+  background: var(--sh-card);
+}
+.sh-ballot-chip.is-nein {
+  color: var(--sh-on);
+  background: var(--sh-ink);
+  border-color: var(--sh-ink);
+}
+
+/* ── Tracks ─────────────────────────────────────────────────────────────── */
+.sh-tracks {
+  display: grid;
+  gap: 10px;
+}
+.sh-track {
+  padding: 12px 12px 10px;
+}
+.sh-track--liberal {
+  background: var(--sh-lib-soft);
+  box-shadow:
+    inset 0 0 0 4px var(--sh-lib-soft),
+    inset 0 0 0 5px var(--sh-rule);
+}
+.sh-track--fascist {
+  background: var(--sh-fas-soft);
+  box-shadow:
+    inset 0 0 0 4px var(--sh-fas-soft),
+    inset 0 0 0 5px var(--sh-rule);
+}
+.sh-track__title {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 8px;
+  font: 800 18px/1 var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.sh-track__title span {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--sh-ink-2);
+}
+.sh-track__slots {
+  display: grid;
+  grid-template-columns: repeat(var(--slots, 5), minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-track--fascist .sh-track__slots {
+  --slots: 6;
+}
+.sh-slot {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 5 / 7;
+  border: 1.5px dashed var(--sh-rule);
+  background: var(--sh-card);
+  min-width: 0;
+}
+.sh-slot.is-danger:not(.is-filled) {
+  border-style: solid;
+  border-color: var(--sh-fas);
+}
+.sh-slot.is-filled {
+  border: 0;
+  background: none;
+}
+.sh-slot.is-filled .sh-policy {
+  width: 100%;
+}
+.sh-slot__mark {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 2px;
+  color: var(--sh-ink-2);
+  text-align: center;
+}
+.sh-slot__mark small {
+  font: 700 9px/1.05 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.sh-track__note {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--sh-ink-2);
+}
+.sh-tracker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 2px 4px;
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sh-tracker ol {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-tracker li {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--sh-rule);
+  border-radius: 50%;
+}
+.sh-tracker li.is-on {
+  background: var(--sh-fas);
+  border-color: var(--sh-fas);
+}
+.sh-tracker__piles {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+  color: var(--sh-ink-2);
+}
+
+/* ── The table: name placards ───────────────────────────────────────────── */
+.sh-placards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-placard {
+  position: relative;
+  min-width: 0;
+}
+.sh-placard__body,
+.sh-placard__pick {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 100%;
+  padding: 10px 4px 8px;
+  border: 1.5px solid var(--sh-faint);
+  background: var(--sh-paper);
+  text-align: center;
+}
+.sh-placard__pick {
+  border: 2px solid var(--sh-rule);
+  background: var(--sh-card);
+  cursor: pointer;
+}
+.sh-placard__pick:hover {
+  background: var(--sh-paper);
+}
+.sh-placard.is-president .sh-placard__body,
+.sh-placard.is-chancellor .sh-placard__body {
+  border: 2px solid var(--sh-rule);
+  background: var(--sh-card);
+}
+.sh-placard.is-me .sh-placard__body {
+  box-shadow: inset 0 0 0 2px var(--sh-trim);
+}
+.sh-placard.is-dead {
+  opacity: 0.5;
+}
+.sh-placard.is-dead .sh-placard__name {
+  text-decoration: line-through;
+}
+.sh-placard__tok {
+  position: relative;
+  display: grid;
+}
+.sh-placard__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 15px/1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sh-placard__name small {
+  font-weight: 500;
+  text-transform: none;
+  color: var(--sh-ink-2);
+}
+.sh-office,
+.sh-voted,
+.sh-cleared,
+.sh-dead {
+  padding: 1px 6px;
+  font: 800 11px/1.4 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sh-office.is-president {
+  background: var(--sh-ink);
+  color: var(--sh-on);
+}
+.sh-office.is-chancellor {
+  border: 1.5px solid var(--sh-ink);
+}
+.sh-office.is-limited,
+.sh-voted {
+  color: var(--sh-ink-2);
+}
+.sh-voted.is-in {
+  color: var(--sh-ink);
+  border-bottom: 2px solid var(--sh-trim);
+}
+.sh-cleared {
+  color: var(--sh-lib);
+}
+.sh-dead {
+  color: var(--sh-fas);
+}
+.sh-picked {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* ── Phone game ─────────────────────────────────────────────────────────── */
+.sh-game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding-bottom: 12px;
+}
+.sh-status__line {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--sh-ink);
+  color: var(--sh-on);
+  font: 700 18px/1.3 var(--font-body);
+}
+.sh-role__card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 84px;
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+}
+.sh-role__card--liberal {
+  background: var(--sh-lib);
+  color: var(--sh-on);
+  box-shadow:
+    inset 0 0 0 4px var(--sh-lib),
+    inset 0 0 0 5px var(--sh-on);
+}
+.sh-role__card--fascist,
+.sh-role__card--hitler {
+  background: var(--sh-fas);
+  color: var(--sh-on);
+  box-shadow:
+    inset 0 0 0 4px var(--sh-fas),
+    inset 0 0 0 5px var(--sh-on);
+}
+.sh-role__text {
+  display: grid;
+  gap: 2px;
+}
+.sh-role__kicker {
+  font: 700 12px var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.sh-role__name {
+  font: 800 28px/1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.sh-role__line {
+  font-size: 15px;
+  line-height: 1.35;
+}
+.sh-role__known {
+  padding: 8px 4px 0;
+  font-size: 16px;
+}
+.sh-role__known p {
+  margin: 0 0 4px;
+}
+.sh-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+.sh-panel__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: 800 22px/1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sh-panel__hint,
+.sh-hand__hint {
+  margin: 0;
+  color: var(--sh-ink-2);
+  font-size: 16px;
+  line-height: 1.4;
+}
+.sh-wait {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1.5px dashed var(--sh-rule);
+  font-size: 17px;
+}
+.sh-hand {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  background: var(--sh-paper);
+  border: 2px solid var(--sh-rule);
+}
+.sh-hand__cards {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+.sh-hand__card {
+  padding: 4px;
+  border: 2px solid transparent;
+  background: none;
+  cursor: pointer;
+  transition: transform 160ms var(--ease-out);
+}
+.sh-hand__card.is-picked {
+  border-color: var(--sh-ink);
+  transform: translateY(-8px);
+}
+.sh-ballots {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.sh-ballot {
+  min-height: 96px;
+  border: 2px solid var(--sh-rule);
+  font: 400 44px/1 var(--font-display);
+  cursor: pointer;
+  transition: transform 160ms var(--ease-out);
+}
+.sh-ballot.is-ja {
+  background: var(--sh-card);
+  box-shadow:
+    inset 0 0 0 4px var(--sh-card),
+    inset 0 0 0 5px var(--sh-rule);
+}
+.sh-ballot.is-nein {
+  background: var(--sh-ink);
+  color: var(--sh-on);
+  box-shadow:
+    inset 0 0 0 4px var(--sh-ink),
+    inset 0 0 0 5px var(--sh-on);
+}
+.sh-ballot.is-cast {
+  outline: 4px solid var(--sh-trim);
+  outline-offset: 3px;
+  transform: translateY(-4px);
+}
+
+/* ── TV ─────────────────────────────────────────────────────────────────── */
+.sh-tv {
+  position: relative;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 28px;
+  padding: 36px 64px 40px;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 120%, var(--sh-ray) 0deg 3deg, transparent 3deg 9deg),
+    var(--sh-ground);
+}
+.sh-tv__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 40px;
+}
+.sh-tv__status {
+  margin: 0;
+  font: 800 46px/1.1 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.sh-tv__count {
+  margin: 0;
+  font: 700 34px var(--font-plaque);
+  color: var(--sh-ink-2);
+  white-space: nowrap;
+}
+.sh-tv__main {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 40px;
+  align-items: start;
+  min-height: 0;
+}
+.sh-tracks--tv {
+  gap: 20px;
+}
+.sh-tracks--tv .sh-track {
+  padding: 22px 26px 18px;
+}
+.sh-tracks--tv .sh-track__title {
+  font-size: 34px;
+  margin-bottom: 14px;
+}
+.sh-tracks--tv .sh-track__title span {
+  font-size: 26px;
+}
+.sh-tracks--tv .sh-track__slots {
+  gap: 14px;
+}
+.sh-tracks--tv .sh-slot__mark small {
+  font-size: 17px;
+}
+.sh-tracks--tv .sh-track__note,
+.sh-tracks--tv .sh-tracker {
+  font-size: 24px;
+}
+.sh-tracks--tv .sh-tracker li {
+  width: 30px;
+  height: 30px;
+  border-width: 3px;
+}
+.sh-tv__gov {
+  display: grid;
+  gap: 18px;
+}
+.sh-tv__office,
+.sh-tv__power,
+.sh-tv__lastvote,
+.sh-tv__enacted {
+  display: grid;
+  gap: 4px;
+  padding: 18px 22px;
+  background: var(--sh-card);
+  border: 3px solid var(--sh-rule);
+  box-shadow:
+    inset 0 0 0 5px var(--sh-card),
+    inset 0 0 0 7px var(--sh-rule);
+}
+.sh-tv__office b {
+  font: 800 48px/1.05 var(--font-plaque);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.sh-tv__label {
+  font: 700 22px var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sh-ink-2);
+}
+.sh-tv__power {
+  grid-auto-flow: column;
+  justify-content: start;
+  align-items: center;
+  gap: 16px;
+  background: var(--sh-fas);
+  color: var(--sh-on);
+  box-shadow:
+    inset 0 0 0 5px var(--sh-fas),
+    inset 0 0 0 7px var(--sh-on);
+  font: 800 36px var(--font-plaque);
+  text-transform: uppercase;
+}
+.sh-tv__lastvote b {
+  font: 800 40px var(--font-plaque);
+}
+.sh-tv__lastvote span:last-child {
+  font-size: 24px;
+}
+.sh-placards--tv {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.sh-placards--tv .sh-placard__name {
+  font-size: 24px;
+}
+.sh-placards--tv .sh-office,
+.sh-placards--tv .sh-voted,
+.sh-placards--tv .sh-cleared,
+.sh-placards--tv .sh-dead {
+  font-size: 17px;
+}
+.sh-placards--tv .sh-ballot-chip {
+  font-size: 28px;
+  padding: 2px 14px 4px;
+}
+
+/* ── Lobby ──────────────────────────────────────────────────────────────── */
+.sh-lobby {
+  position: relative;
+  min-height: 100%;
+  padding: 18px 16px 32px;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 22%, var(--sh-ray) 0deg 3deg, transparent 3deg 9deg),
+    var(--sh-ground);
+}
+.sh-lobby__frame {
+  container: sh-lobby / inline-size;
+  min-width: 0;
+}
+.sh-lobby__stage {
+  display: grid;
+  gap: 18px;
+  max-width: 1240px;
+  margin-inline: auto;
+}
+.sh-cabinet {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+.sh-cabinet__room {
+  position: relative;
+  width: min(100%, 560px);
+  aspect-ratio: 1 / 1.08;
+}
+/* The long cabinet table, seen from above: a stadium of dark wood ruled in brass. */
+.sh-cabinet__table {
+  position: absolute;
+  inset: 17% 24%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  background: var(--sh-wood);
+  color: var(--sh-on-wood);
+  box-shadow:
+    inset 0 0 0 6px var(--sh-wood),
+    inset 0 0 0 8px var(--sh-trim),
+    0 14px 30px var(--sh-shadow);
+  text-align: center;
+}
+.sh-cabinet__kicker {
+  font: 700 13px var(--font-plaque);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sh-trim);
+}
+.sh-cabinet__code {
+  font: 800 clamp(40px, 11cqw, 64px) / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+}
+.sh-cabinet__line {
+  max-width: 16ch;
+  font-size: 14px;
+  line-height: 1.3;
+  opacity: 0.85;
+}
+.sh-seat {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 21%;
+  min-width: 64px;
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+.sh-seat:disabled {
+  cursor: default;
+}
+.sh-seat .jd-token {
+  --z: clamp(40px, 11cqw, 64px);
+}
+.sh-seat__tok {
+  position: relative;
+  display: grid;
+}
+.sh-seat__name {
+  max-width: 100%;
+  padding: 2px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--sh-card);
+  border: 1.5px solid var(--sh-rule);
+  font: 800 13px/1.3 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sh-seat__name small {
+  font-weight: 500;
+  text-transform: none;
+}
+.sh-seat.is-you .sh-seat__name {
+  background: var(--sh-ink);
+  color: var(--sh-on);
+}
+.sh-seat.is-away {
+  opacity: 0.6;
+}
+.sh-cabinet__room[data-count='11'] .sh-seat,
+.sh-cabinet__room[data-count='12'] .sh-seat,
+.sh-cabinet__room[data-count='13'] .sh-seat,
+.sh-cabinet__room[data-count='14'] .sh-seat,
+.sh-cabinet__room[data-count='15'] .sh-seat {
+  width: 17%;
+}
+.sh-react .jd-reactions__btn {
+  background: var(--sh-card);
+  border-color: var(--sh-rule);
+  color: var(--sh-ink);
+}
+
+.sh-dossier {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 22px 20px;
+}
+.sh-dossier__kicker {
+  margin: 0;
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sh-ink-2);
+}
+.sh-dossier__title {
+  margin: 0;
+  font: 800 32px/1.05 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.sh-dossier__text {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+}
+.sh-dossier__small {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--sh-ink-2);
+}
+.sh-deal {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-deal__card {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 14px 6px 12px;
+  color: var(--sh-on);
+  text-align: center;
+}
+.sh-deal__card b {
+  font: 800 34px/1 var(--font-plaque);
+}
+.sh-deal__card span {
+  font: 700 13px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.sh-deal__card--liberal {
+  background: var(--sh-lib);
+  box-shadow:
+    inset 0 0 0 4px var(--sh-lib),
+    inset 0 0 0 5px var(--sh-on);
+}
+.sh-deal__card--fascist {
+  background: var(--sh-fas);
+  box-shadow:
+    inset 0 0 0 4px var(--sh-fas),
+    inset 0 0 0 5px var(--sh-on);
+}
+.sh-deal__card--hitler {
+  background: var(--sh-ink);
+  box-shadow:
+    inset 0 0 0 4px var(--sh-ink),
+    inset 0 0 0 5px var(--sh-fas);
+}
+.sh-powers {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+}
+.sh-powers li {
+  display: grid;
+  grid-template-columns: 28px 22px 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--sh-faint);
+  color: var(--sh-ink-2);
+}
+.sh-powers li.has-power {
+  color: var(--sh-ink);
+}
+.sh-powers li:not(.has-power) span:last-child {
+  grid-column: 2 / -1;
+}
+.sh-powers__n {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  background: var(--sh-fas);
+  color: var(--sh-on);
+  font: 800 14px var(--font-plaque);
+}
+.sh-house {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1.5px dashed var(--sh-rule);
+}
+.sh-house__note {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.sh-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+}
+.sh-setting__label {
+  font-weight: 700;
+}
+.sh-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.sh-stepper button {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--sh-rule);
+  background: var(--sh-card);
+  font: 800 22px var(--font-plaque);
+  cursor: pointer;
+}
+.sh-stepper button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.sh-stepper b {
+  min-width: 2ch;
+  text-align: center;
+  font: 800 24px var(--font-plaque);
+}
+.sh-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px 0 6px;
+  border: 2px solid var(--sh-rule);
+  background: var(--sh-card);
+  font-weight: 700;
+  cursor: pointer;
+}
+.sh-switch__knob {
+  width: 34px;
+  height: 20px;
+  border: 2px solid var(--sh-rule);
+  border-radius: 999px;
+  background: var(--sh-paper);
+  position: relative;
+}
+.sh-switch__knob::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--sh-rule);
+  transition: transform 160ms var(--ease-out);
+}
+.sh-switch[aria-checked='true'] .sh-switch__knob {
+  background: var(--sh-ink);
+}
+.sh-switch[aria-checked='true'] .sh-switch__knob::after {
+  background: var(--sh-on);
+  transform: translateX(14px);
+}
+.sh-blocker {
+  margin: 0;
+  color: var(--sh-fas);
+  font-weight: 700;
+}
+
+/* Laptops: the dossier beside the table. */
+@container sh-lobby (min-width: 820px) {
+  .sh-lobby__stage {
+    grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
+    grid-template-areas: 'dossier table';
+    gap: 28px;
+    align-items: start;
+  }
+  .sh-dossier {
+    grid-area: dossier;
+    position: sticky;
+    top: 84px;
+  }
+  .sh-cabinet {
+    grid-area: table;
+  }
+  .sh-cabinet__room {
+    width: min(100%, max(460px, calc(100dvh - 230px)));
+  }
+}
+/* Wide screens: Table talk docked on the right, as in Avalon. */
+@media (min-width: 1240px) {
+  .sh-lobby {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+    align-items: start;
+    padding: 28px 32px 40px;
+  }
+}
+@media (min-width: 768px) and (max-width: 1239.98px) {
+  .sh-lobby {
+    padding: 28px 32px 40px;
+  }
+}
+
+/* ── The TV's lobby (TV pixels: the stage is at least 1920×1080) ──────────── */
+.sh-tvlobby {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 640px;
+  gap: 56px;
+  align-items: center;
+  padding: 48px 72px;
+  background:
+    repeating-conic-gradient(from 0deg at 36% 50%, var(--sh-ray) 0deg 3deg, transparent 3deg 9deg),
+    var(--sh-ground);
+}
+.sh-tvlobby__table {
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+.sh-cabinet__room--tv {
+  width: auto;
+  height: min(100%, 960px);
+  container-type: size;
+}
+.sh-cabinet__room--tv .sh-seat .jd-token {
+  --z: 11cqh;
+}
+.sh-cabinet__room--tv .sh-seat__name {
+  font-size: 2.4cqh;
+}
+.sh-cabinet__room--tv .sh-cabinet__code {
+  font-size: 14cqh;
+}
+.sh-cabinet__room--tv .sh-cabinet__kicker,
+.sh-cabinet__room--tv .sh-cabinet__line {
+  font-size: 2.6cqh;
+}
+.sh-tvlobby__side {
+  display: grid;
+  gap: 22px;
+  align-content: center;
+}
+.sh-tvlobby__join {
+  padding: 24px 28px;
+  background: var(--sh-card);
+  border: 3px solid var(--sh-rule);
+}
+.sh-dossier--tv {
+  gap: 16px;
+  padding: 26px 30px;
+}
+.sh-dossier--tv .sh-dossier__kicker {
+  font-size: 24px;
+}
+.sh-dossier--tv .sh-dossier__title {
+  font-size: 44px;
+}
+.sh-dossier--tv .sh-deal__card b {
+  font-size: 44px;
+}
+.sh-dossier--tv .sh-deal__card span {
+  font-size: 22px;
+}
+.sh-dossier--tv .sh-powers {
+  font-size: 26px;
+}
+.sh-dossier--tv .sh-powers li {
+  grid-template-columns: 40px 34px 1fr;
+  min-height: 48px;
+}
+.sh-dossier--tv .sh-powers__n {
+  width: 36px;
+  height: 36px;
+  font-size: 22px;
+}
+.sh-dossier--tv .sh-dossier__small {
+  font-size: 22px;
+}
+
+/* ── Recap ──────────────────────────────────────────────────────────────── */
+.sh-reveal {
+  display: grid;
+  gap: 18px;
+  padding: 16px;
+  background: var(--sh-ground);
+}
+.sh-reveal__title {
+  margin: 0 0 8px;
+  font: 800 20px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sh-roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-roles__item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 8px;
+  background: var(--sh-card);
+  border-left: 6px solid var(--sh-lib);
+}
+.sh-roles__item.is-fascist {
+  border-left-color: var(--sh-fas);
+}
+.sh-roles__item > :first-child {
+  grid-row: span 2;
+}
+.sh-roles__name {
+  font-weight: 700;
+}
+.sh-roles__role {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sh-govs {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-gov {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  font-size: 15px;
+}
+.sh-gov.is-failed {
+  background: var(--sh-paper);
+}
+.sh-gov.is-chaos {
+  border-style: dashed;
+  box-shadow: none;
+}
+.sh-gov__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.sh-gov__n {
+  font: 800 22px var(--font-plaque);
+  color: var(--sh-ink-2);
+}
+.sh-gov__who {
+  flex: 1;
+}
+.sh-gov__result {
+  font: 800 13px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sh-gov__votes {
+  margin: 0;
+  line-height: 1.8;
+}
+.sh-gov__gap {
+  display: inline-block;
+  width: 14px;
+}
+.sh-gov__cards {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.sh-gov__label {
+  color: var(--sh-ink-2);
+}
+.sh-gov__hand {
+  display: inline-flex;
+  gap: 4px;
+}
+.sh-gov__power {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-weight: 700;
+}
+.sh-gov__power.is-end {
+  color: var(--sh-fas);
+}
+
+@media (min-width: 768px) {
+  .sh-tracks {
+    grid-template-columns: 5fr 6fr;
+  }
+  .sh-tracker {
+    grid-column: 1 / -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sh * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -910,6 +910,23 @@ button.cn-card {
 .cn-agent--spy .cn-agent__tok {
   grid-row: 1 / span 2;
 }
+/* Narrow folders: the spymaster stacks like the operatives, so the name and badge keep room. */
+@media (max-width: 560px) {
+  .cn-agent--spy {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
+  .cn-agent--spy .cn-agent__tok {
+    grid-row: auto;
+  }
+  .cn-agent--spy .cn-agent__name {
+    font-size: 16px;
+  }
+  .cn-agent__badge {
+    font-size: 13px;
+  }
+}
 .cn-agent__tok {
   position: relative;
   display: inline-grid;

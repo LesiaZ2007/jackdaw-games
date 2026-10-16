@@ -237,3 +237,12 @@ a {
     scroll-padding-inline: var(--space-6);
   }
 }
+
+/* Add to Home Screen steps (iPhone and iPad), in the install sheet. */
+.install-steps {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding-left: 1.4em;
+  font-size: var(--step-0);
+}

@@ -1,0 +1,1127 @@
+/* Codenames: a case file on the table. Index cards for the 25 words, an agent's ink stamp that
+   flips over a word once it's uncovered, manila folders for the two teams. Day is kraft and
+   manila; dark is night ops. Every colour is a token in this first block. */
+
+.cn {
+  --cn-desk: #c9b48a;
+  --cn-desk-line: #b29c6c;
+  --cn-panel: #ebe1c8;
+  --cn-panel-edge: #c4b085;
+  --cn-text: #22201c;
+  --cn-text-2: #5d5544;
+  --cn-line: #8c7a54;
+  --cn-card: #f7f6f1;
+  --cn-card-ink: #22201c;
+  --cn-card-rule: #c4574f;
+  --cn-red: #a8322b;
+  --cn-red-wash: #f0d2cd;
+  --cn-blue: #2b4f7c;
+  --cn-blue-wash: #d2deec;
+  --cn-by: #cfc09a;
+  --cn-by-ink: #4a4334;
+  --cn-ass: #1f1d1b;
+  --cn-on: #f6f1e4;
+  --cn-go: #30634a;
+  --cn-shadow: rgba(40, 30, 10, 0.28);
+  color: var(--cn-text);
+  font-family: var(--font-body);
+}
+.cn[data-look='dark'] {
+  --cn-desk: #20272d;
+  --cn-desk-line: #2b343b;
+  --cn-panel: #2a333a;
+  --cn-panel-edge: #3d4952;
+  --cn-text: #e9e3d3;
+  --cn-text-2: #aeb4b4;
+  --cn-line: #56636c;
+  --cn-card: #dcd8cc;
+  --cn-card-rule: #b2524a;
+  --cn-red: #c4493f;
+  --cn-red-wash: #e5c1bb;
+  --cn-blue: #5b8cc4;
+  --cn-blue-wash: #c3d1e2;
+  --cn-by: #8a7f63;
+  --cn-by-ink: #f1ead8;
+  --cn-ass: #0f0e0d;
+  --cn-go: #3f8a63;
+  --cn-shadow: rgba(0, 0, 0, 0.5);
+  /* Chat names at night: lighter versions of each player's colour. */
+  --lc-name-slate: #8fc0d8;
+  --lc-name-plum: #b9a3dc;
+  --lc-name-moss: #a7c79a;
+  --lc-name-umber: #d6bf8e;
+  --lc-name-teal: #8fcbc0;
+  --lc-name-mauve: #d79fb4;
+  --lc-name-indigo: #a3b0e3;
+  --lc-name-olive: #c4cc86;
+  --lc-name-pewter: #b0bccb;
+  --lc-name-rust: #d8ad8f;
+  --lc-name-ochre: #dccb8a;
+  --lc-name-pine: #94cdb0;
+  --lc-name-violet: #b0aee6;
+  --lc-name-orchid: #d3a6dc;
+  --lc-name-lagoon: #8ccfdb;
+}
+/* In play on a phone the shell's own ground shows; only the folders and cards are Codenames'. */
+.cn-play,
+.cn-reveal {
+  --cn-text: var(--ink);
+  --cn-text-2: var(--ink-2);
+}
+.cn :focus-visible {
+  outline: 3px solid var(--cn-blue);
+  outline-offset: 2px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.cn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--tap);
+  padding: 0 16px;
+  border: 2px solid var(--cn-text);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--cn-text);
+  font: 800 16px/1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.cn-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.cn-btn--go {
+  border-color: var(--cn-go);
+  background: var(--cn-go);
+  color: var(--cn-on);
+}
+.cn-btn--red {
+  border-color: var(--cn-red);
+  color: var(--cn-red);
+}
+.cn-btn--blue {
+  border-color: var(--cn-blue);
+  color: var(--cn-blue);
+}
+.cn-btn--quiet {
+  border-style: dashed;
+}
+.cn-btn--big {
+  min-height: 56px;
+  padding: 0 28px;
+  font-size: 20px;
+}
+.cn-link {
+  justify-self: start;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cn-text-2);
+  font: 600 16px var(--font-body);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ── The board: 25 index cards ───────────────────────────────────────────── */
+.cn-board {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  --cn-word-max: 21px;
+}
+.cn-cell {
+  min-width: 0;
+}
+.cn-card {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1.42;
+  padding: 18% 4% 8%;
+  overflow: hidden;
+  container-type: inline-size;
+  border: 0;
+  border-radius: 3px;
+  background:
+    linear-gradient(var(--cn-card-rule), var(--cn-card-rule)) 0 22% / 100% 1.5px no-repeat,
+    var(--cn-card);
+  box-shadow:
+    0 1px 0 var(--cn-panel-edge),
+    0 2px 4px var(--cn-shadow);
+  color: var(--cn-card-ink);
+  font: inherit;
+  text-align: center;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+button.cn-card {
+  cursor: pointer;
+}
+.cn-card__word {
+  position: relative;
+  z-index: 1;
+  display: block;
+  max-width: 100%;
+  font: 800 clamp(9px, calc(150cqw / var(--len)), var(--cn-word-max)) / 1 var(--font-plaque);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+/* A spymaster's key: the card washed in its colour, with a corner tab. */
+.cn-card__key {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 26%;
+  aspect-ratio: 1;
+  background: var(--cn-key);
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+.cn-card.key-red {
+  --cn-key: var(--cn-red);
+  background-color: var(--cn-red-wash);
+}
+.cn-card.key-blue {
+  --cn-key: var(--cn-blue);
+  background-color: var(--cn-blue-wash);
+}
+.cn-card.key-bystander {
+  --cn-key: var(--cn-by);
+}
+.cn-card.key-assassin {
+  --cn-key: var(--cn-ass);
+  background-color: var(--cn-by);
+  color: var(--cn-ass);
+  outline: 3px solid var(--cn-ass);
+  outline-offset: -3px;
+}
+/* Suggestions: a dashed ring in the colour of the team in play, with the suggesters' tokens. */
+.cn-card.is-suggested {
+  outline: 2px dashed var(--cn-text-2);
+  outline-offset: -4px;
+}
+.cn-card.is-focus {
+  outline: 3px solid var(--cn-go);
+  outline-offset: -3px;
+}
+.cn-card__votes {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 2;
+  display: flex;
+  gap: 1px;
+}
+.cn-card__hold {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 18%;
+  z-index: 3;
+  background: var(--cn-go);
+  transform-origin: left;
+  animation: cn-hold 650ms linear forwards;
+}
+@keyframes cn-hold {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+/* Uncovered: the agent's stamp in the team's ink, flipped down over the card. */
+.cn-card__cover {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2%;
+  padding: 6%;
+  background: var(--cn-cover);
+  color: var(--cn-cover-ink, var(--cn-on));
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--cn-cover-ink, var(--cn-on)) 30%, transparent);
+}
+.cn-card.is-red {
+  --cn-cover: var(--cn-red);
+}
+.cn-card.is-blue {
+  --cn-cover: var(--cn-blue);
+}
+.cn-card.is-bystander {
+  --cn-cover: var(--cn-by);
+  --cn-cover-ink: var(--cn-by-ink);
+}
+.cn-card.is-assassin {
+  --cn-cover: var(--cn-ass);
+}
+.cn-card__covered-word {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 700 clamp(7px, 9cqw, 15px) / 1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+.cn-card__cover--fresh {
+  transform-origin: top;
+  animation: cn-flip 560ms var(--ease-out) both;
+}
+@keyframes cn-flip {
+  from {
+    transform: perspective(500px) rotateX(-95deg);
+    opacity: 0.2;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.cn-board--final .cn-card.is-missed {
+  opacity: 0.6;
+}
+.cn-board--tv {
+  gap: 16px;
+  height: 100%;
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  --cn-word-max: 50px;
+}
+.cn-board--tv .cn-card {
+  aspect-ratio: auto;
+  height: 100%;
+  border-radius: 6px;
+  box-shadow:
+    0 2px 0 var(--cn-panel-edge),
+    0 6px 14px var(--cn-shadow);
+}
+.cn-board--tv .cn-card__covered-word {
+  font-size: 22px;
+}
+.cn-board--small {
+  gap: 4px;
+  --cn-word-max: 15px;
+}
+
+/* ── Whose turn, and the clue stamp ──────────────────────────────────────── */
+.cn-turn {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px 12px;
+}
+.cn-turn__team {
+  font: 800 26px/1 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--cn-turn);
+}
+.cn-turn--red {
+  --cn-turn: var(--cn-red);
+}
+.cn-turn--blue {
+  --cn-turn: var(--cn-blue);
+}
+.cn-turn__line,
+.cn-turn__flag {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 17px;
+  color: var(--cn-text-2);
+}
+.cn-turn__flag {
+  font-weight: 700;
+  color: var(--cn-text);
+}
+.cn-stamp {
+  justify-self: end;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 14px 4px;
+  border: 3px solid currentColor;
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 2px var(--cn-card),
+    inset 0 0 0 4px currentColor;
+  background: var(--cn-card);
+  color: var(--cn-stamp);
+  font: 800 30px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: rotate(-2.5deg);
+  animation: cn-stamp 380ms var(--ease-out) both;
+}
+.cn-stamp--red {
+  --cn-stamp: var(--cn-red);
+}
+.cn-stamp--blue {
+  --cn-stamp: var(--cn-blue);
+}
+.cn-stamp__count {
+  padding-left: 10px;
+  border-left: 2px solid currentColor;
+}
+@keyframes cn-stamp {
+  from {
+    transform: rotate(-2.5deg) scale(1.6);
+    opacity: 0;
+  }
+  60% {
+    transform: rotate(-2.5deg) scale(0.94);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(-2.5deg) scale(1);
+  }
+}
+
+/* ── The two team folders ────────────────────────────────────────────────── */
+.cn-files {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.cn-file {
+  position: relative;
+  min-width: 0;
+  padding: 10px 10px 12px;
+  border: 2px solid var(--cn-panel-edge);
+  border-top: 6px solid var(--cn-team);
+  border-radius: 2px 6px 4px 4px;
+  background: var(--cn-panel);
+  color: var(--cn-text);
+}
+.cn-play .cn-file,
+.cn-reveal .cn-file {
+  color: var(--cn-ink-on-panel, var(--cn-text));
+}
+.cn-file--red {
+  --cn-team: var(--cn-red);
+}
+.cn-file--blue {
+  --cn-team: var(--cn-blue);
+}
+.cn-file.is-turn {
+  box-shadow: 0 0 0 3px var(--cn-team);
+}
+.cn-file.is-lost {
+  opacity: 0.75;
+}
+.cn-file__tab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cn-file__tab h3 {
+  margin: 0;
+  color: var(--cn-team);
+  font: 800 22px/1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.cn-file__left {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font: 700 15px/1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cn-text-2);
+}
+.cn-file__left .jd-tally {
+  font-size: 24px;
+  color: var(--cn-team);
+}
+.cn-file__people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.cn-file__people li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.cn-file__people li.is-me .cn-file__name {
+  font-weight: 800;
+}
+.cn-file__tok {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+}
+.cn-file__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+}
+.cn-file__name small {
+  color: var(--cn-text-2);
+}
+.cn-file__spy {
+  display: inline-flex;
+  flex: none;
+  color: var(--cn-team);
+}
+/* Phone: the folders in play could be a wall of names, so keep them to tokens beside a count. */
+@media (max-width: 520px) {
+  .cn-play .cn-file__people {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .cn-play .cn-file__name {
+    display: none;
+  }
+  .cn-play .cn-file__people li.is-me .cn-file__tok {
+    outline: 2px solid var(--cn-team);
+    outline-offset: 1px;
+    border-radius: 50%;
+  }
+  .cn-play .cn-file__spy {
+    margin-left: -12px;
+    align-self: flex-end;
+  }
+}
+
+/* ── Phone in play ───────────────────────────────────────────────────────── */
+.cn-play {
+  display: grid;
+  gap: 12px;
+}
+.cn-act {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 2px solid var(--rule);
+  background: var(--paper);
+}
+.cn-act__wait {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+.cn-act__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cn-act__row .cn-btn--go {
+  flex: 1;
+}
+.cn-loupe {
+  display: grid;
+  margin: 0;
+  color: var(--ink);
+  font: 800 clamp(28px, 9vw, 44px) / 1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cn-loupe small {
+  margin-top: 4px;
+  font: 500 16px var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-2);
+}
+.cn-clue {
+  display: grid;
+  grid-template-columns: 1fr 88px;
+  gap: 8px;
+  align-items: end;
+}
+.cn-clue label {
+  display: grid;
+  gap: 4px;
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.cn-clue input,
+.cn-clue select {
+  min-height: 52px;
+  padding: 0 12px;
+  border: 2px solid var(--ink);
+  border-radius: 3px;
+  background: var(--table);
+  color: var(--ink);
+  font: 800 24px var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cn-clue input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+.cn-clue .cn-btn {
+  grid-column: 1 / -1;
+  min-height: 52px;
+  font-size: 19px;
+}
+.cn-clue__note {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 16px;
+  color: var(--ink-2);
+}
+.cn-clue__note[role='alert'] {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* ── Clue log ────────────────────────────────────────────────────────────── */
+.cn-log__title {
+  margin: 0 0 8px;
+  font: 800 20px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cn-log ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.cn-log__row {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) 1fr;
+  align-items: start;
+  gap: 10px;
+  padding: 6px 0 6px 10px;
+  border-left: 4px solid var(--cn-team);
+}
+.cn-log__row--red {
+  --cn-team: var(--cn-red);
+}
+.cn-log__row--blue {
+  --cn-team: var(--cn-blue);
+}
+.cn-log__clue {
+  display: grid;
+  font: 800 18px/1.1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  color: var(--cn-team);
+}
+.cn-log__clue small {
+  font: 500 14px var(--font-body);
+  letter-spacing: 0;
+  color: var(--cn-text-2);
+}
+.cn-log__guesses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.cn-log__none {
+  color: var(--cn-text-2);
+}
+.cn-chip {
+  padding: 3px 7px 2px;
+  border-radius: 2px;
+  font: 700 14px/1.2 var(--font-plaque);
+  letter-spacing: 0.06em;
+  background: var(--cn-chip);
+  color: var(--cn-chip-ink, var(--cn-on));
+}
+.cn-chip.is-red {
+  --cn-chip: var(--cn-red);
+}
+.cn-chip.is-blue {
+  --cn-chip: var(--cn-blue);
+}
+.cn-chip.is-bystander {
+  --cn-chip: var(--cn-by);
+  --cn-chip-ink: var(--cn-by-ink);
+}
+.cn-chip.is-assassin {
+  --cn-chip: var(--cn-ass);
+}
+
+/* ── TV (in TV pixels; the stage is at least 1920×1080) ──────────────────── */
+.cn-tv {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 540px;
+  gap: 40px;
+  padding: 32px 48px 36px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 47px, var(--cn-desk-line) 47px 48px),
+    var(--cn-desk);
+}
+.cn-tv__board {
+  min-height: 0;
+}
+.cn-tv__side {
+  display: grid;
+  align-content: start;
+  gap: 28px;
+  min-height: 0;
+  overflow: hidden;
+}
+.cn-turn--tv .cn-turn__team {
+  font-size: 54px;
+}
+.cn-turn--tv .cn-turn__line,
+.cn-turn--tv .cn-turn__flag {
+  font-size: 28px;
+}
+.cn-stamp--tv {
+  font-size: 58px;
+  padding: 10px 22px 6px;
+  border-width: 5px;
+}
+.cn-files--tv {
+  grid-template-columns: 1fr;
+  gap: 18px;
+}
+.cn-files--tv .cn-file {
+  padding: 14px 18px 18px;
+  border-top-width: 10px;
+}
+.cn-files--tv .cn-file__tab h3 {
+  font-size: 40px;
+}
+.cn-files--tv .cn-file__left {
+  font-size: 24px;
+}
+.cn-files--tv .cn-file__left .jd-tally {
+  font-size: 46px;
+}
+.cn-files--tv .cn-file__people {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+.cn-files--tv .cn-file__name {
+  font-size: 26px;
+}
+.cn-log--tv .cn-log__title {
+  font-size: 30px;
+}
+.cn-log--tv .cn-log__clue {
+  font-size: 30px;
+}
+.cn-log--tv .cn-log__clue small {
+  font-size: 20px;
+}
+.cn-log--tv .cn-chip {
+  font-size: 22px;
+  padding: 5px 10px 3px;
+}
+
+/* ── Results ─────────────────────────────────────────────────────────────── */
+.cn-reveal {
+  display: grid;
+  gap: 18px;
+}
+.cn-reveal__note {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: var(--cn-text-2);
+}
+
+/* ── Lobby: the case files, full screen under Jackdaw's bar ──────────────── */
+.cn-lobby {
+  min-height: 100%;
+  padding: 18px 16px 32px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 31px, var(--cn-desk-line) 31px 32px),
+    var(--cn-desk);
+}
+.cn-lobby__main {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  width: 100%;
+  max-width: 980px;
+  margin-inline: auto;
+}
+.cn-lobby__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cn-lobby__mark {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 4px;
+  background: var(--cn-red);
+  color: var(--cn-on);
+  transform: rotate(-4deg);
+  box-shadow: 0 3px 6px var(--cn-shadow);
+}
+.cn-lobby__title {
+  margin: 0;
+  font: 800 clamp(34px, 7vw, 52px) / 0.95 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cn-lobby__sub {
+  margin: 4px 0 0;
+  font-size: 17px;
+  color: var(--cn-text-2);
+}
+.cn-tray {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 2px dashed var(--cn-line);
+  border-radius: 4px;
+}
+.cn-tray__title {
+  margin: 0;
+  font: 800 18px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cn-tray__people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cn-tray__note {
+  margin: 0;
+  font-size: 15px;
+  color: var(--cn-text-2);
+}
+.cn-move {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px solid var(--cn-text);
+  border-radius: 4px;
+  background: var(--cn-panel);
+  box-shadow: 0 4px 10px var(--cn-shadow);
+}
+.cn-move__who {
+  flex-basis: 100%;
+  margin: 0;
+  font: 800 18px var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cn-files--lobby .cn-file {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 14px 12px;
+}
+.cn-file__spyslot {
+  display: grid;
+  min-height: 82px;
+  padding: 8px;
+  border: 2px solid color-mix(in srgb, var(--cn-team) 55%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--cn-team) 10%, var(--cn-panel));
+}
+.cn-file__ops {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 6px;
+}
+.cn-file__empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 15px;
+  color: var(--cn-text-2);
+}
+.cn-file__drop {
+  min-height: var(--tap);
+  border: 2px dashed currentColor;
+  border-radius: 3px;
+  background: none;
+  color: var(--cn-team);
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.cn-agent {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  min-width: 72px;
+  min-height: var(--tap);
+  padding: 6px 4px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.cn-agent:disabled {
+  cursor: default;
+}
+.cn-agent.is-picked {
+  border-color: var(--cn-go);
+  background: color-mix(in srgb, var(--cn-go) 14%, transparent);
+}
+.cn-agent.is-away {
+  opacity: 0.7;
+}
+.cn-agent--spy {
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  justify-items: start;
+  align-items: center;
+  column-gap: 8px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+.cn-agent--spy .cn-agent__name,
+.cn-agent--spy .cn-agent__badge {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.cn-agent--spy .cn-agent__tok {
+  grid-row: 1 / span 2;
+}
+/* Narrow folders: the spymaster stacks like the operatives, so the name and badge keep room. */
+@media (max-width: 560px) {
+  .cn-agent--spy {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
+  .cn-agent--spy .cn-agent__tok {
+    grid-row: auto;
+  }
+  .cn-agent--spy .cn-agent__name {
+    font-size: 16px;
+  }
+  .cn-agent__badge {
+    font-size: 13px;
+  }
+}
+.cn-agent__tok {
+  position: relative;
+  display: inline-grid;
+}
+.cn-agent__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 15px/1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cn-agent--spy .cn-agent__name {
+  font-size: 19px;
+}
+.cn-agent__name small {
+  font: 500 13px var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cn-text-2);
+}
+.cn-agent__badge {
+  display: inline-flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 4px;
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cn-team);
+}
+.cn-react {
+  justify-content: center;
+}
+.cn-brief {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 2px solid var(--cn-panel-edge);
+  border-radius: 4px;
+  background: var(--cn-panel);
+}
+.cn-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: var(--tap);
+  cursor: pointer;
+}
+.cn-toggle input {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin: 2px 0 0;
+  accent-color: var(--cn-go);
+}
+.cn-toggle span {
+  display: grid;
+  gap: 2px;
+}
+.cn-toggle b {
+  font: 800 18px var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cn-toggle small {
+  font-size: 15px;
+  color: var(--cn-text-2);
+}
+.cn-brief__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.cn-brief__actions .cn-btn--big {
+  flex: 1;
+}
+.cn-brief__blocker,
+.cn-brief__note {
+  margin: 0;
+  font-size: 16px;
+  color: var(--cn-text-2);
+}
+.cn-brief__blocker {
+  color: var(--cn-red);
+  font-weight: 700;
+}
+.cn-chat {
+  --lc-bg: var(--cn-panel);
+  --lc-ink: var(--cn-text);
+  --lc-dim: var(--cn-text-2);
+  --lc-rule: var(--cn-panel-edge);
+  --lc-radius: 4px;
+  --lc-title-font: var(--font-plaque);
+}
+.cn-chat .jd-lchat__title {
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+@media (min-width: 768px) {
+  .cn-lobby {
+    padding: 28px 32px 40px;
+  }
+  .cn-files {
+    gap: 16px;
+  }
+}
+@media (min-width: 1240px) {
+  .cn-lobby {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 28px;
+    align-items: start;
+  }
+}
+
+/* ── TV lobby (in TV pixels) ─────────────────────────────────────────────── */
+.cn-tvlobby {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 660px;
+  gap: 72px;
+  align-items: center;
+  padding: 52px 88px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 47px, var(--cn-desk-line) 47px 48px),
+    var(--cn-desk);
+}
+.cn-tvlobby__main {
+  display: grid;
+  align-content: center;
+  gap: 32px;
+  min-width: 0;
+}
+.cn-tvlobby .cn-lobby__mark {
+  width: 96px;
+  height: 96px;
+}
+.cn-tvlobby .cn-lobby__title {
+  font-size: 104px;
+}
+.cn-tvlobby .cn-lobby__sub {
+  font-size: 32px;
+}
+.cn-tvlobby .cn-files--tv {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.cn-tray--tv {
+  padding: 18px 22px;
+}
+.cn-tray--tv .cn-tray__title {
+  font-size: 30px;
+}
+.cn-tray--tv .cn-tray__people {
+  gap: 24px;
+}
+.cn-tray__agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 28px;
+}
+.cn-tvlobby__side {
+  display: grid;
+  gap: 32px;
+  align-content: center;
+}
+.cn-tvlobby__join {
+  display: grid;
+  gap: 18px;
+  justify-items: start;
+}
+.cn-tvlobby__status {
+  margin: 0;
+  font: 800 44px/1.05 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.cn-tvlobby__rules {
+  margin: 0;
+  max-width: 28ch;
+  font-size: 28px;
+  line-height: 1.4;
+  color: var(--cn-text-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cn *,
+  .cn *::before,
+  .cn *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

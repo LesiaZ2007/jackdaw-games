@@ -1,0 +1,26 @@
+{
+  "name": "@jackdaw/game-codenames",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Codenames: two teams, one-word clues, 25 words, one assassin",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jackdaw/engine": "workspace:*",
+    "@jackdaw/ui": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.0"
+  }
+}

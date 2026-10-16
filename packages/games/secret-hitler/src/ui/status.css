@@ -1,0 +1,444 @@
+/*
+ * Where the game stands, after secret-hitler.online: the player strip at the top, the status bar
+ * under it, the board with its piles, and the phase banner. Uses the tokens at the top of sh.css.
+ */
+
+/* ── Header, role chip ───────────────────────────────────────────────────── */
+.sh-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sh-head__title {
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sh-ink-2);
+}
+.sh-rolechip__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px 0 6px;
+  border: 2px solid var(--sh-rule);
+  background: var(--sh-card);
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.sh-rolechip__seal {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--sh-ink);
+  color: var(--sh-on);
+  font: 800 17px var(--font-plaque);
+}
+.sh-rolechip .sh-role__card {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  flex-wrap: wrap;
+  width: min(360px, calc(100vw - 32px));
+  cursor: default;
+  box-shadow:
+    inset 0 0 0 4px var(--c, var(--sh-card)),
+    inset 0 0 0 5px var(--sh-on),
+    0 18px 40px var(--sh-shadow);
+}
+.sh-role__card--liberal {
+  --c: var(--sh-lib);
+}
+.sh-role__card--fascist,
+.sh-role__card--hitler {
+  --c: var(--sh-fas);
+}
+.sh-role__hide {
+  margin-left: auto;
+  background: var(--sh-on);
+  color: var(--sh-ink);
+}
+
+/* ── The player strip (everyone at the top) ─────────────────────────────── */
+.sh-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sh-pcard {
+  flex: 1 1 62px;
+  min-width: 62px;
+  max-width: 100px;
+}
+.sh-pcard__body {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+  padding: 8px 3px 6px;
+  border: 1.5px solid var(--sh-faint);
+  background: var(--sh-paper);
+  text-align: center;
+}
+button.sh-pcard__body {
+  border: 2px solid var(--sh-rule);
+  background: var(--sh-card);
+  cursor: pointer;
+}
+.sh-pcard.is-president .sh-pcard__body,
+.sh-pcard.is-chancellor .sh-pcard__body {
+  border: 2px solid var(--sh-rule);
+  background: var(--sh-card);
+}
+.sh-pcard.is-busy .sh-pcard__body {
+  box-shadow: inset 0 -4px 0 var(--sh-act);
+}
+.sh-pcard.is-me .sh-pcard__body {
+  outline: 2px solid var(--sh-trim);
+  outline-offset: -5px;
+}
+.sh-pcard.is-selected .sh-pcard__body {
+  background: var(--sh-ink);
+  color: var(--sh-on);
+}
+.sh-pcard.is-dead {
+  opacity: 0.45;
+}
+.sh-pcard.is-dead .sh-pcard__name {
+  text-decoration: line-through;
+}
+.sh-pcard__tok {
+  position: relative;
+  display: grid;
+}
+.sh-pcard__busy,
+.sh-pcard__role {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+.sh-pcard__busy {
+  right: -7px;
+  bottom: -5px;
+  background: var(--sh-act);
+  color: var(--sh-on-act);
+}
+.sh-pcard__role {
+  top: -5px;
+  left: -7px;
+  background: var(--sh-card);
+  color: var(--sh-lib);
+  box-shadow: 0 0 0 1.5px currentColor;
+}
+.sh-pcard__role.is-fascist,
+.sh-pcard__role.is-hitler {
+  color: var(--sh-fas);
+}
+.sh-pcard__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 13px/1.15 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sh-pcard .sh-office,
+.sh-pcard .sh-cleared,
+.sh-pcard .sh-dead {
+  max-width: 100%;
+  padding: 0 3px;
+  overflow: hidden;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.sh-pcard .sh-ballot-chip {
+  font-size: 14px;
+}
+.sh-hourglass {
+  animation: sh-turn 2.4s var(--ease-out) infinite;
+}
+@keyframes sh-turn {
+  0%,
+  40% {
+    transform: rotate(0deg);
+  }
+  50%,
+  90% {
+    transform: rotate(180deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Status bar (right under the players) ───────────────────────────────── */
+.sh-statusbar {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px 14px;
+  background: var(--sh-ink);
+  color: var(--sh-on);
+}
+.sh-statusbar.is-yours {
+  padding-left: 20px;
+  box-shadow: inset 6px 0 0 var(--sh-act);
+}
+.sh-statusbar__phase {
+  font: 700 12px var(--font-plaque);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--sh-trim);
+}
+.sh-statusbar__line {
+  margin: 0;
+  font: 700 20px/1.3 var(--font-body);
+  animation: sh-fade 420ms var(--ease-out);
+}
+.sh-statusbar__tally {
+  margin: 0;
+  font: 800 18px var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sh-trim);
+}
+.sh-yourmove {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0;
+  font: 800 22px/1.15 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sh-yourmove__tag {
+  padding: 2px 10px;
+  background: var(--sh-act);
+  color: var(--sh-on-act);
+}
+.sh-panel__hint--power {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@keyframes sh-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ── The board: draw pile | tracks | discard pile ───────────────────────── */
+.sh-board {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  gap: 8px;
+  align-items: center;
+}
+.sh-pile {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+.sh-pile__stack {
+  position: relative;
+  width: 34px;
+  aspect-ratio: 5 / 7;
+}
+.sh-pile__stack > span {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--sh-rule);
+  background:
+    repeating-linear-gradient(45deg, var(--sh-faint) 0 3px, transparent 3px 7px), var(--sh-card);
+}
+.sh-pile__stack > span:nth-child(1) {
+  transform: translate(4px, 4px);
+}
+.sh-pile__stack > span:nth-child(2) {
+  transform: translate(2px, 2px);
+}
+.sh-pile__stack > .sh-pile__count {
+  display: grid;
+  place-items: center;
+  background: var(--sh-card);
+  font: 800 17px var(--font-plaque);
+}
+.sh-pile__label {
+  font: 700 10px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sh-ink-2);
+}
+
+/* ── The phase banner: a printed band that sweeps across, then leaves ───── */
+.sh-banner {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  align-items: center;
+  pointer-events: none;
+}
+.sh-banner__band {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-block: 4px double var(--sh-trim);
+  background: var(--sh-ink);
+  color: var(--sh-on);
+  box-shadow: 0 16px 40px var(--sh-shadow);
+  animation: sh-band 2.2s var(--ease-out) both;
+}
+.sh-banner__title {
+  font: 800 clamp(26px, 8vw, 48px) / 1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.sh-banner__rule {
+  flex: 1;
+  height: 2px;
+  background: var(--sh-trim);
+}
+@keyframes sh-band {
+  0% {
+    transform: translateX(-100%);
+  }
+  16%,
+  82% {
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(60%);
+    opacity: 0;
+  }
+}
+@keyframes sh-band-fade {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
+  }
+}
+
+/* ── TV: the strip, the status line and the board, big (TV pixels) ──────── */
+.sh-tv {
+  position: relative;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 26px;
+  padding: 34px 56px 40px;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 120%, var(--sh-ray) 0deg 3deg, transparent 3deg 9deg),
+    var(--sh-ground);
+}
+.sh-strip--tv {
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 12px;
+}
+.sh-strip--tv .sh-pcard {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 230px;
+}
+.sh-strip--tv .sh-pcard__body {
+  gap: 6px;
+  padding: 14px 6px 12px;
+}
+.sh-strip--tv .sh-pcard__name {
+  font-size: 26px;
+}
+.sh-strip--tv .sh-pcard .sh-office,
+.sh-strip--tv .sh-pcard .sh-cleared,
+.sh-strip--tv .sh-pcard .sh-dead {
+  padding: 1px 8px;
+  font-size: 18px;
+}
+.sh-strip--tv .sh-pcard .sh-ballot-chip {
+  padding: 2px 14px 4px;
+  font-size: 30px;
+}
+.sh-strip--tv .sh-pcard__busy,
+.sh-strip--tv .sh-pcard__role {
+  width: 46px;
+  height: 46px;
+}
+.sh-board--tv .sh-slot.is-filled .sh-policy__name {
+  font-size: 18px;
+}
+.sh-strip--tv .sh-pcard.is-busy .sh-pcard__body {
+  box-shadow: inset 0 -8px 0 var(--sh-act);
+}
+.sh-statusbar--tv {
+  gap: 10px;
+  padding: 24px 36px 26px;
+}
+.sh-statusbar--tv .sh-statusbar__phase {
+  font-size: 24px;
+}
+.sh-statusbar--tv .sh-statusbar__line {
+  font-size: 48px;
+  line-height: 1.15;
+}
+.sh-statusbar--tv .sh-statusbar__tally {
+  font-size: 36px;
+}
+.sh-board--tv {
+  grid-template-columns: 130px minmax(0, 1fr) 130px;
+  gap: 28px;
+}
+.sh-board--tv .sh-pile__stack {
+  width: 104px;
+}
+.sh-board--tv .sh-pile__stack > span {
+  border-width: 3px;
+}
+.sh-board--tv .sh-pile__count {
+  font-size: 48px;
+}
+.sh-board--tv .sh-pile__label {
+  font-size: 22px;
+}
+.sh-banner--tv .sh-banner__band {
+  gap: 40px;
+  padding: 44px 60px;
+  border-block-width: 10px;
+}
+.sh-banner--tv .sh-banner__title {
+  font-size: 110px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sh .sh-banner__band {
+    animation: sh-band-fade 2.2s linear both !important;
+  }
+  .sh .sh-hourglass,
+  .sh .sh-statusbar__line {
+    animation: none !important;
+  }
+}

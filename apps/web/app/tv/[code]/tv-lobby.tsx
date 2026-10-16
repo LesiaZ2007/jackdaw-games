@@ -165,7 +165,7 @@ export function TvLobby({ code }: { code: string }) {
   const next = catalogEntry(snapshot.selectedGameId);
   const count = snapshot.players.length;
   const join = (
-    <>
+    <div className="tv-join-panel">
       <span className="jd-label tv-join__label">Join at</span>
       <span className="tv-join__url">{host}</span>
       <Chits code={snapshot.code} size={next?.ui?.TvLobby ? 120 : 190} flip />
@@ -173,7 +173,7 @@ export function TvLobby({ code }: { code: string }) {
         <QrCode text={joinUrl} size={196} label={`QR code to join lobby ${snapshot.code}`} />
         <p>Scan to join, or type the four letters on your phone.</p>
       </div>
-    </>
+    </div>
   );
 
   // A game with its own TV lobby (Avalon's round table) takes the first screen.

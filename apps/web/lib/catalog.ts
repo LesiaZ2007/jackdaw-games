@@ -1,5 +1,6 @@
 import type { GameCategory, GameMeta } from '@jackdaw/engine';
 import { avalonUi } from '@jackdaw/game-avalon/ui';
+import { codenamesUi } from '@jackdaw/game-codenames/ui';
 import { rpsUi } from '@jackdaw/game-rps/ui';
 import type { GameAbout, GameUi } from '@jackdaw/ui';
 import { games } from './registry';
@@ -22,6 +23,7 @@ export interface CatalogEntry {
 /** Client UI modules for registered games, by id. Add a game's `./ui` export here. */
 export const gameUis: Record<string, GameUi> = {
   avalon: avalonUi,
+  codenames: codenamesUi,
   rps: rpsUi,
 };
 
@@ -48,30 +50,6 @@ const upcoming: Omit<CatalogEntry, 'playable'>[] = [
         'Fascist policies unlock presidential powers: peek, investigate, execute.',
       ],
       credit: 'Secret Hitler by Goat, Wolf & Cabbage, used under CC BY-NC-SA 4.0.',
-    },
-  },
-  {
-    meta: {
-      id: 'codenames',
-      name: 'Codenames',
-      tagline: 'One-word clues, two rival spymasters.',
-      minPlayers: 4,
-      maxPlayers: 15,
-      category: 'word',
-      minutes: [15, 30],
-      complexity: 1,
-    },
-    art: { band: 'vert', field: 'checky', glyph: 'grid' },
-    about: {
-      description:
-        'Two teams race to find their agents among 25 words. Only the spymasters see the key, and they may give one word and one number per turn. Guess the assassin and you lose on the spot.',
-      steps: [
-        'The spymaster gives a one-word clue and a number.',
-        'Teammates tap words to guess, up to the number plus one.',
-        'A wrong colour ends the turn.',
-        'First team to find all its words wins.',
-      ],
-      credit: 'Based on Codenames by Vlaada Chvátil. Original word list.',
     },
   },
   {

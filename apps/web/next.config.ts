@@ -15,6 +15,18 @@ const config: NextConfig = {
   htmlLimitedBots: /.*/,
   // Keep the dev-mode badge out of screenshots.
   devIndicators: false,
+  // The service worker must always be fetched fresh, or an old one keeps serving.
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        ],
+      },
+    ];
+  },
 };
 
 export default config;

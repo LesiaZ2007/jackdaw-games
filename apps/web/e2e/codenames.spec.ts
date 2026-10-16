@@ -48,11 +48,14 @@ async function open(
 async function hostCodenames(page: Page, name = 'Wren'): Promise<string> {
   await page.goto('/');
   // A name typed before the page has loaded can be lost, so try again until the lobby opens.
+  const inLobby = /\/r\/[A-Z]{4}$/;
   await expect(async () => {
-    await page.getByLabel('Your name').fill(name);
-    await page.getByRole('button', { name: 'Create a lobby' }).click();
-    await page.waitForURL(/\/r\/[A-Z]{4}$/, { timeout: 5_000 });
-  }).toPass({ timeout: 60_000 });
+    if (!inLobby.test(page.url())) {
+      await page.getByLabel('Your name').fill(name);
+      await page.getByRole('button', { name: 'Create a lobby' }).click();
+    }
+    await expect(page).toHaveURL(inLobby, { timeout: 10_000 });
+  }).toPass({ timeout: 90_000 });
   await page
     .getByRole('button', { name: /Codenames/ })
     .first()
@@ -186,10 +189,11 @@ test('a 4-player game: teams in the lobby, a real clue and guess, then to a win'
   expectNoHiddenColours(tvRead.tableView!, key);
 
   // The real UI: the spymaster gives a clue, the lone operative's tap is the whole team's say.
-  await spyPage.getByLabel('Your clue').fill('harbour');
+  await spyPage.getByLabel('Your clue').fill('seaside');
   await spyPage.getByLabel('Number').selectOption('1');
   await spyPage.getByRole('button', { name: 'Give clue' }).click();
-  await expect(opPage.getByText('HARBOUR', { exact: true })).toBeVisible();
+  // (SEASIDE isn't in the word list, so it can't be a card on the board.)
+  await expect(opPage.getByRole('status').getByText(/is guessing/)).toBeVisible();
   const target = key.findIndex((c) => c === team);
   const word = first.words[target]!;
   await opPage.getByRole('button', { name: new RegExp(`^${word}(,|$)`) }).click();
@@ -204,7 +208,7 @@ test('a 4-player game: teams in the lobby, a real clue and guess, then to a win'
   const done = await read(host.request, code, tokens[ids.the owner!]!);
   expect(done.status).toBe('results');
   await expect(host.getByRole('region', { name: 'The whole key' })).toBeVisible();
-  await expect(host.getByRole('region', { name: 'Clues so far' })).toContainText('HARBOUR');
+  await expect(host.getByRole('region', { name: 'Clues so far' })).toContainText('SEASIDE');
 });
 
 const WIDTHS = [
@@ -260,6 +264,15 @@ for (const scheme of ['light', 'dark'] as const) {
       await host.waitForTimeout(500);
       await shot(host, `lobby-${w}-${scheme}`);
     }
+    const tvLobby = await open(browser, 1920, 1080, scheme);
+    await tvLobby.goto(`/tv/${code}`);
+    await expect(tvLobby.getByRole('region', { name: 'Red team' })).toBeVisible();
+    await tvLobby.waitForTimeout(800);
+    await shot(tvLobby, `tv-lobby-1920-${scheme}`);
+    await tvLobby.setViewportSize({ width: 1280, height: 800 });
+    await tvLobby.waitForTimeout(500);
+    await shot(tvLobby, `tv-lobby-1280-${scheme}`);
+    await tvLobby.close();
     await post(host.request, code, hostToken, {
       type: 'setOptions',
       options: {

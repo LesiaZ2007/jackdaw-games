@@ -139,6 +139,18 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which Lesia prefers for 
   "Nein". Policy moments look the same on every phone (the policy's own colour), so a moment
   never gives away which side you're on; vote moments are personal because votes are public.
   Tokens are at the top of `packages/games/secret-hitler/src/ui/sh.css`, scoped under `.sh`.
+  - **Where the game stands** (Lesia, 2026-10-16: "base it on secret-hitler.online"): the
+    phone and TV run top to bottom as the strip of players (office placards, an hourglass on
+    exactly whoever the game is waiting on, Ja/Nein once a vote is counted, roles you know,
+    executed players greyed), the status bar (the phase, "Your move" in the action green when
+    it's you, one named line such as "Waiting for Lesia, the president, to nominate a
+    chancellor", and "Ja 3 – Nein 2: elected"), your prompt, then the board: draw pile, the
+    tracks and tracker, discard pile. A printed band sweeps across with the phase name
+    ("Legislative session") at each new phase; it never takes taps, waits for any outcome
+    moment, and only fades with reduced motion. The logic is in `src/status.ts`.
+  - **Emblems** are filled silhouettes that read at 24px: a dove in flight with an olive
+    sprig in a round seal (Liberal), an art-deco skull in an angular badge (Fascist), and the
+    badge printed solid with the skull and a crown knocked out (Hitler). Original art.
 - **Rock Paper Scissors** uses Jackdaw's lobby. Its own chalk-ring lobby was tried and dropped
   (Lesia, 2026-10-13: "the old rock paper scissors lobby was miles better").
 - A game that gets its own lobby scopes its look under the game's class, keeps the bar's pieces

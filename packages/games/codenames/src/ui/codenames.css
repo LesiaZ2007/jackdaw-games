@@ -1029,6 +1029,77 @@ button.cn-card {
   }
 }
 
+/* ── TV lobby (in TV pixels) ─────────────────────────────────────────────── */
+.cn-tvlobby {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 660px;
+  gap: 72px;
+  align-items: center;
+  padding: 52px 88px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 47px, var(--cn-desk-line) 47px 48px),
+    var(--cn-desk);
+}
+.cn-tvlobby__main {
+  display: grid;
+  align-content: center;
+  gap: 32px;
+  min-width: 0;
+}
+.cn-tvlobby .cn-lobby__mark {
+  width: 96px;
+  height: 96px;
+}
+.cn-tvlobby .cn-lobby__title {
+  font-size: 104px;
+}
+.cn-tvlobby .cn-lobby__sub {
+  font-size: 32px;
+}
+.cn-tvlobby .cn-files--tv {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.cn-tray--tv {
+  padding: 18px 22px;
+}
+.cn-tray--tv .cn-tray__title {
+  font-size: 30px;
+}
+.cn-tray--tv .cn-tray__people {
+  gap: 24px;
+}
+.cn-tray__agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 28px;
+}
+.cn-tvlobby__side {
+  display: grid;
+  gap: 32px;
+  align-content: center;
+}
+.cn-tvlobby__join {
+  display: grid;
+  gap: 18px;
+  justify-items: start;
+}
+.cn-tvlobby__status {
+  margin: 0;
+  font: 800 44px/1.05 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.cn-tvlobby__rules {
+  margin: 0;
+  max-width: 28ch;
+  font-size: 28px;
+  line-height: 1.4;
+  color: var(--cn-text-2);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cn *,
   .cn *::before,

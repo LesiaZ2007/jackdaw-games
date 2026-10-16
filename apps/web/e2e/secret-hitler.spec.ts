@@ -155,7 +155,9 @@ function expectPublic(s: Snap) {
 test('five phones play Secret Hitler: one real round, then on to a win, with nothing leaked', async ({
   browser,
 }) => {
-  test.setTimeout(240_000);
+  // Five phones and a whole game: alone it takes about a minute, but a loaded machine running the
+  // full suite can need several.
+  test.setTimeout(480_000);
   const { code, pages, byId } = await table(browser);
   await pages[0]!.getByRole('button', { name: 'Deal the roles: start Secret Hitler' }).click();
   for (const p of pages) await expect(p.getByText('Failed elections')).toBeVisible();

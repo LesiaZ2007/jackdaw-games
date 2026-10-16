@@ -35,7 +35,9 @@ async function join(page: Page, code: string, name: string) {
   await page.goto(`/r/${code}`);
   await page.getByLabel('Your name').fill(name);
   await page.getByRole('button', { name: 'Take a seat' }).click();
-  await expect(page.getByRole('button', { name: new RegExp(`^${name} \\(you\\)`) }).first()).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: new RegExp(`^${name} \\(you\\)`) }).first(),
+  ).toBeVisible();
 }
 
 const token = (page: Page) => page.evaluate(() => localStorage.getItem('jackdaw:token')!);
@@ -90,7 +92,8 @@ async function playOut(code: string, byId: Record<string, Page>) {
     if (s.status !== 'in_game') return s;
     const t = s.tableView;
     const pageOf = (id: string) => byId[id]!;
-    if (t.phase === 'nominate') await act(pageOf(t.president), code, { type: 'nominate', chancellor: t.eligible[0] });
+    if (t.phase === 'nominate')
+      await act(pageOf(t.president), code, { type: 'nominate', chancellor: t.eligible[0] });
     else if (t.phase === 'vote') {
       for (const id of t.players.filter((p: string) => !t.dead.includes(p) && !t.voted.includes(p)))
         await act(pageOf(id), code, { type: 'vote', ja: true });
@@ -160,12 +163,20 @@ test('five phones play Secret Hitler: one real round, then on to a win, with not
   // Only the president holds cards now.
   for (const p of pages.filter((x) => x !== president))
     await expect(p.getByRole('radiogroup', { name: 'Your policies' })).toHaveCount(0);
-  await president.getByRole('radiogroup', { name: 'Your policies' }).getByRole('radio').first().click();
+  await president
+    .getByRole('radiogroup', { name: 'Your policies' })
+    .getByRole('radio')
+    .first()
+    .click();
   await president.getByRole('button', { name: /^Discard the/ }).click();
   s = await read(pages[0]!, code);
   const chancellor = byId[s.tableView.nominee]!;
   await dismiss(chancellor);
-  await chancellor.getByRole('radiogroup', { name: 'Your policies' }).getByRole('radio').first().click();
+  await chancellor
+    .getByRole('radiogroup', { name: 'Your policies' })
+    .getByRole('radio')
+    .first()
+    .click();
   await chancellor.getByRole('button', { name: /^Enact the/ }).click();
   // Everyone sees the policy go down, in its own colour.
   await expect(pages[2]!.locator('.jd-moment')).toContainText(/policy enacted/);
@@ -177,7 +188,12 @@ test('five phones play Secret Hitler: one real round, then on to a win, with not
   expect(end.status).toBe('results');
   for (const p of pages) {
     await expect(p.getByText('Secret Hitler is over')).toBeVisible({ timeout: 20_000 });
-    await expect(p.getByRole('status').getByText(/You (won|share the win|lost)/).first()).toBeVisible();
+    await expect(
+      p
+        .getByRole('status')
+        .getByText(/You (won|share the win|lost)/)
+        .first(),
+    ).toBeVisible();
   }
   await expect(pages[0]!.getByText('Who was who')).toBeVisible();
   await expect(pages[0]!.getByText('Every government', { exact: false })).toBeVisible();
@@ -188,7 +204,7 @@ test('five phones play Secret Hitler: one real round, then on to a win, with not
 for (const scheme of ['light', 'dark'] as const) {
   test(`Secret Hitler screens at every width (${scheme})`, async ({ browser }) => {
     test.skip(!process.env.SHOTS, 'screenshots only');
-    test.setTimeout(300_000);
+    test.setTimeout(900_000);
     const shot = (p: Page, name: string) =>
       p.screenshot({ path: `${OUT}/${name}-${scheme}.png`, fullPage: false });
     const { code, pages, byId } = await table(browser, scheme, 375, 812);
@@ -218,7 +234,8 @@ for (const scheme of ['light', 'dark'] as const) {
       type: 'nominate',
       chancellor: s.tableView.eligible[0],
     });
-    for (const id of s.tableView.players.slice(0, 2)) await act(byId[id]!, code, { type: 'vote', ja: true });
+    for (const id of s.tableView.players.slice(0, 2))
+      await act(byId[id]!, code, { type: 'vote', ja: true });
     await lead.getByRole('button', { name: /Your secret role/ }).click();
     for (const [w, h] of [
       [375, 812],

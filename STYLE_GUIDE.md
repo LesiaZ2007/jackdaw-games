@@ -120,6 +120,15 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which Lesia prefers for 
   (discs at Night), the fanned deal, the settings rows and "Deal the roles". Parchment by day,
   Night in the dark. Its CSS is the app's, copied by `packages/games/avalon/scripts/copy-lobby-css.mjs`
   and scoped under `.avalon`, with Avalon's palette as local custom properties.
+- **Secret Hitler**: 1930s print, original art. The players are name placards round a long
+  cabinet table seen from above (dark wood ruled in brass), on an art-deco sunburst; beside it a
+  dossier with the deal as party cards (Liberal steel blue, Fascist red-orange, Hitler in black),
+  the powers on the Fascist track, the host's house rules for 11+ and "Deal the roles". Day is
+  cream card stock and charcoal ink with double-ruled frames and condensed caps (Big Shoulders);
+  dark is its noir, the same print reversed out of night blue. Ballots are blackletter "Ja!" and
+  "Nein". Policy moments look the same on every phone (the policy's own colour), so a moment
+  never gives away which side you're on; vote moments are personal because votes are public.
+  Tokens are at the top of `packages/games/secret-hitler/src/ui/sh.css`, scoped under `.sh`.
 - **Rock Paper Scissors** uses Jackdaw's lobby. Its own chalk-ring lobby was tried and dropped
   (Lesia, 2026-10-13: "the old rock paper scissors lobby was miles better").
 - A game that gets its own lobby scopes its look under the game's class, keeps the bar's pieces

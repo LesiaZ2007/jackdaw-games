@@ -189,11 +189,19 @@ test('a 4-player game: teams in the lobby, a real clue and guess, then to a win'
   expectNoHiddenColours(tvRead.tableView!, key);
 
   // The real UI: the spymaster gives a clue, the lone operative's tap is the whole team's say.
-  await spyPage.getByLabel('Your clue').fill('seaside');
-  await spyPage.getByLabel('Number').selectOption('1');
-  await spyPage.getByRole('button', { name: 'Give clue' }).click();
-  // (SEASIDE isn't in the word list, so it can't be a card on the board.)
-  await expect(opPage.getByRole('status').getByText(/is guessing/)).toBeVisible();
+  // (SEASIDE isn't in the word list, so it can't be a card on the board.) Once the clue is in,
+  // the spymaster's form goes away, so a retry here can't give a second clue.
+  await expect(async () => {
+    const field = spyPage.getByLabel('Your clue');
+    if (await field.isVisible()) {
+      await field.fill('seaside');
+      await spyPage.getByLabel('Number').selectOption('1');
+      await spyPage.getByRole('button', { name: 'Give clue' }).click();
+    }
+    await expect(opPage.getByRole('status').getByText(/is guessing/)).toBeVisible({
+      timeout: 10_000,
+    });
+  }).toPass({ timeout: 60_000 });
   const target = key.findIndex((c) => c === team);
   const word = first.words[target]!;
   await opPage.getByRole('button', { name: new RegExp(`^${word}(,|$)`) }).click();

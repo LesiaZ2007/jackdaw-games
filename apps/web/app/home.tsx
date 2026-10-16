@@ -21,6 +21,7 @@ import { rememberAvatar, rememberedAvatar, rememberedName, rememberName } from '
 import { shelvesFor } from '@/lib/shelves';
 import { createLobby } from '@/lib/use-lobby';
 import { ShelfRow } from './shelf-row';
+import { InstallButton } from './pwa';
 import { ThemeToggle } from './theme-toggle';
 
 const FALLBACK_AVATAR: Avatar = { crest: 'raven', tint: 'slate' };
@@ -164,6 +165,7 @@ export function Home() {
                 Show a lobby on a TV
               </Link>
               <ThemeToggle />
+              <InstallButton />
             </nav>
           </section>
         </div>

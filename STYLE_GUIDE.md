@@ -120,6 +120,15 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which Lesia prefers for 
   (discs at Night), the fanned deal, the settings rows and "Deal the roles". Parchment by day,
   Night in the dark. Its CSS is the app's, copied by `packages/games/avalon/scripts/copy-lobby-css.mjs`
   and scoped under `.avalon`, with Avalon's palette as local custom properties.
+- **Codenames**: a case file on the table. The lobby is the two team folders, Red and Blue, each
+  with its spymaster pinned in a slot (a magnifying glass marks them) and its operatives below;
+  anyone not placed waits in a dashed tray. The host taps a player, then where they play. In
+  play the 25 words are index cards (a red rule near the top, condensed caps); an uncovered word
+  gets its team's ink stamp flipping down over it (an agent in a hat, a bystander under an
+  umbrella, the assassin's crosshairs). The clue in play is a rubber stamp. Kraft and manila by
+  day, a slate night-ops desk in the dark; all colours are tokens at the top of
+  `packages/games/codenames/src/ui/codenames.css`. The TV lobby shows the folders beside the join
+  panel.
 - **Rock Paper Scissors** uses Jackdaw's lobby. Its own chalk-ring lobby was tried and dropped
   (Lesia, 2026-10-13: "the old rock paper scissors lobby was miles better").
 - A game that gets its own lobby scopes its look under the game's class, keeps the bar's pieces

@@ -109,6 +109,25 @@ Approved by Lesia for every game:
 - The review page is https://claude.ai/artifact/T8HQa4wn5a41g7Yj4GBwyC. The reference mockup is `mockups/a3-compendium.html`. STYLE_GUIDE.md is the source of truth.
 - **Avalon stays exactly as it is today**, in both gameplay and styling. There's no stained glass anywhere.
 
+### Codenames (2026-10-16, `feat/codenames`)
+
+- `packages/games/codenames`: rules (`rules.ts`), team placement (`teams.ts`), an original list
+  of 549 words (`words.ts`), and the screens: its own lobby (two case folders), the phone (board,
+  clue entry for spymasters, suggest/hold-to-guess for operatives), the TV, the TV lobby and the
+  end-of-game key.
+- Guessing: a tap suggests a word (everyone sees suggestions); it's guessed when most of the
+  team's operatives suggest it, or one of them holds it (or presses "Guess …"). "End our turn"
+  passes. Clues are one word plus 0–9 or ∞ (0 and ∞ allow unlimited guesses, otherwise the
+  number plus one); a clue that is a word on the board is allowed but flagged. Each clue also
+  goes in the chat.
+- Teams are part of the game's options, arranged by the host in the lobby (tap a player, then a
+  team or spymaster slot; Shuffle teams). Players who left are ignored; unplaced players join
+  the smaller team at the start; "Even teams" balances (never moving a chosen spymaster); every
+  team gets at least two players and a spymaster. "New spymasters each game" draws them at random
+  (a true rotation would need the lobby to remember past games).
+- Deferred: players choosing their own team (needs a platform addition: a per-player lobby
+  choice), and the optional turn timer (the runtime doesn't run game timers yet).
+
 ## Next
 
 1. Lesia reviews and playtests Phase 1 on the Vercel preview, then merges `feat/phase-1` to `main`. Production then serves it.

@@ -21,6 +21,17 @@ export const secretHitlerUi: GameUi = {
     ],
     credit:
       'Secret Hitler by Goat, Wolf & Cabbage (Mike Boxleiter, Tommy Maranges and Max Temkin), used under CC BY-NC-SA 4.0. Original art; not for sale.',
+    pictures: [
+      {
+        src: '/games/secret-hitler/lobby-phone.png',
+        alt: 'Secret Hitler’s lobby on a phone: name placards round the cabinet table, and the deal of three Liberals, one Fascist and Hitler.',
+      },
+      {
+        src: '/games/secret-hitler/tv.png',
+        alt: 'Secret Hitler on a TV: the Liberal and Fascist tracks, the president and chancellor, and everyone’s Ja! after a vote.',
+        wide: true,
+      },
+    ],
   },
   PlayerScreen,
   TvScreen,

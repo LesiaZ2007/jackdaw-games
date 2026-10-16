@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Offline · Jackdaw Games</title>
+    <style>
+      /* Served by the service worker when there's no connection, so it can't load the app's CSS.
+         Colours mirror packages/ui/src/tokens.css (day: Pebble; dark: the dark look). */
+      :root {
+        --table: #cfcecb;
+        --paper: #f7f7f5;
+        --ink: #1d1d1c;
+        --ink-2: #4a4947;
+        --vert: #30634a;
+        --on-fill: #f6f0e1;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --table: #1c1e20;
+          --paper: #2b2f32;
+          --ink: #ede5d3;
+          --ink-2: #aeb5b8;
+        }
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        box-sizing: border-box;
+        background: var(--table);
+        color: var(--ink);
+        font:
+          18px/1.5 'Alegreya Sans',
+          'Segoe UI',
+          system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 420px;
+        display: grid;
+        justify-items: center;
+        gap: 16px;
+        padding: 32px 24px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        text-align: center;
+      }
+      h1 {
+        margin: 0;
+        font:
+          700 32px/1.1 'Grenze Gotisch',
+          Georgia,
+          serif;
+      }
+      p {
+        margin: 0;
+        color: var(--ink-2);
+      }
+      button {
+        min-height: 48px;
+        padding: 0 24px;
+        border: 2px solid var(--ink);
+        background: var(--vert);
+        color: var(--on-fill);
+        font:
+          800 18px 'Big Shoulders',
+          'Arial Narrow',
+          sans-serif;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <svg width="72" height="72" viewBox="0 0 64 64" aria-hidden="true">
+        <g
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M32.625 55.625 L37 54" />
+          <path d="m31.625,40.875s8.375-1.875,11.375-11.875" />
+          <path
+            d="m41,22s3-9,11-4c0,0,8.25.75,8.625,3.375,0,0-7.625,1.625-9.625,5.625s3,7-5.125,15.625c0,0-3.875,4.375-9.875,4.375l-1,2,2,5,6,1"
+          />
+          <path
+            d="m10.125,46.875s24.875-22.875,32.875-21.875,2,13.25-5.5,17.625-27.375,4.25-27.375,4.25Z"
+          />
+        </g>
+      </svg>
+      <h1>No connection</h1>
+      <p>
+        Jackdaw needs the internet to reach your lobby. Your seat is kept, so once you're back
+        online you'll land right where you were.
+      </p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+    <script>
+      addEventListener('online', () => location.reload());
+    </script>
+  </body>
+</html>

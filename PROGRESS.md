@@ -128,6 +128,26 @@ Approved by Lesia for every game:
 - Deferred: players choosing their own team (needs a platform addition: a per-player lobby
   choice), and the optional turn timer (the runtime doesn't run game timers yet).
 
+### Secret Hitler (2026-10-13, branch `feat/secret-hitler`)
+
+- `packages/games/secret-hitler`: the official rules for 5–10 players (deal and knowledge, the
+  6+11 deck with reshuffles, term limits including the five-player exception, the election
+  tracker and top-decking, every power board, veto from five Fascist policies, every win), and
+  house rules for 11–15 as host options. Rules unit tests include leak checks and random full
+  games at 5, 8, 10, 12 and 15 players; `e2e/secret-hitler.spec.ts` plays a game on five phones.
+- **House rules to confirm with the group** (they're options, so they're easy to change):
+  - Fascist team (Fascists plus Hitler): 11→5, 12→5, 13→6, 14→6, 15→7. That carries on the
+    official pattern of just under half, so the Liberals always keep a clear majority. The host
+    can set 2 up to just under half.
+  - The 9–10 power board for every count above 10.
+  - A bigger deck (on by default): 7 Liberal + 12 Fascist at 11–12, 8 + 13 at 13–15. That keeps
+    the official third or so of Liberal cards but reshuffles less often at a big table.
+- Screens: its own lobby and TV lobby, the phone game (secret role card that's face down until
+  tapped, both tracks, the placards, nominate, Ja!/Nein, discard and enact with a confirm, veto,
+  powers), the TV, and a recap of every government with the policies really drawn, discarded
+  and enacted, every vote, investigations and executions, and everyone's role.
+- Not built: turn timers (no timer runtime yet).
+
 ## Next
 
 1. Lesia reviews and playtests Phase 1 on the Vercel preview, then merges `feat/phase-1` to `main`. Production then serves it.

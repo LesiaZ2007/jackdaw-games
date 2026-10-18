@@ -1,7 +1,8 @@
 /*
  * Jackdaw's frame around secret-hitler.online's pages. Everything inside comes from sho.css;
- * these rules only fit the pages into Jackdaw's layout (under the bar, beside the chat), and
- * style the few things Jackdaw adds (house rules, the TV lobby's join panel, table talk).
+ * these rules only fit the pages into Jackdaw's layout (under the bar, beside table talk, on one
+ * screen with no scrolling in the lobby), and style the few things Jackdaw adds: crests on the
+ * tiles, the invite line, house rules, table talk and the TV lobby's join panel.
  */
 
 /* The site's background is its html and body, so it reaches past the page to the window's edge. */
@@ -11,67 +12,219 @@ body:has(.sho-page),
   background-color: #4d4945;
 }
 
-/* The page fills its column. */
+/* The page fills its column, with table talk docked beside it from 1240px (a drawer below). */
 .sho.sho-page {
   min-height: 100%;
   width: 100%;
   min-width: 0;
-  /* secret-hitler.online's overlays sit over the whole page, as on the site. */
-  position: static;
   /* The site hides sideways overflow on its body; clip does the same here without making the
      page a scroll box of its own (which would unstick the docked chat). */
   overflow-x: clip;
 }
-
-/* The lobby: the page, with table talk docked beside it from 1240px (a drawer below that). */
-.sho-lobby {
+.sho.sho-frame {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
-@media (min-width: 1240px) {
-  .sho-lobby {
-    grid-template-columns: minmax(0, 1fr) 360px;
-  }
-  .sho-lobby .sho-chat {
-    position: sticky;
-    top: 66px;
-    height: calc(100dvh - 66px);
-  }
-}
-.sho-lobby__main {
+/* Popups centre on the game, not on the whole window, and stay under Jackdaw's bar, sheets and
+   table talk, so the chat and the menu still open while a popup waits for an answer. */
+.sho .sho-frame__main {
+  position: relative;
+  z-index: 0;
   min-width: 0;
-  padding-bottom: 24px;
+  min-height: 100%;
+  container-type: inline-size;
 }
-/* The tiles float in a row, as on the site; this keeps the buttons below them. */
-.sho #lobby-player-container::after {
-  content: '';
-  display: block;
-  clear: both;
+/* The popup layer covers the page from its top (on the site it starts under the header, and the
+   page scrolls anyway). */
+.sho .sho-frame__main #alert {
+  top: 0;
 }
 
-.sho .sho-chat {
-  --lc-bg: #141414;
-  --lc-ink: #ffffff;
-  --lc-dim: #bbbbbb;
-  --lc-rule: #4d4945;
-  --lc-field: #372e25;
-  --lc-radius: 10px;
-  --lc-title-font: var(--headerFont);
-  --lc-name-font: var(--textFont);
+/* On a landscape screen the two boards sit side by side under the decks, so the whole table fits
+   without shrinking it too far (the site stacks them and scrolls). */
+@media (min-aspect-ratio: 5/4) and (min-width: 700px) {
+  .sho #board-container {
+    flex-direction: row !important;
+    justify-content: center;
+  }
+  .sho #board-container #board {
+    min-width: 0;
+    width: min(90vmin, calc(50cqw - 32px));
+    max-width: none;
+  }
+}
+@media (min-width: 1240px) {
+  .sho.sho-frame:has(> .sho-chat) {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+  .sho.sho-frame > .sho-chat {
+    position: sticky;
+    top: 66px;
+    z-index: 1;
+    height: calc(100dvh - 66px);
+    max-height: none;
+  }
+}
+
+/* ── Crests, where the site has portraits ─────────────────────────────────── */
+.sho .sho-crest {
+  position: absolute;
+  left: 9%;
+  top: 6.3%;
+  width: 82%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 5.4%;
+  background: var(--sho-tint, #b3a995);
+  color: #f3e4c3;
+  box-shadow: inset 0 0 0 2px rgb(0 0 0 / 0.12);
+  --crest-accent: #ecd29b;
+}
+.sho .sho-crest > svg {
+  width: 74%;
+  height: 74%;
+}
+.sho .sho-crest.darken {
+  filter: brightness(calc(var(--playerBrightnessFilter) - 5%));
+}
+
+/* ── The lobby: one screen, no scrolling ─────────────────────────────────── */
+.sho.sho-lobby {
+  height: calc(100dvh - 66px - env(safe-area-inset-top, 0px));
+  min-height: 420px;
+}
+.sho.sho-lobby > .sho-frame__main {
+  height: 100%;
+}
+.sho .sho-lobby__page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.sho .sho-lobby__body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 20px 12px;
+  text-align: left;
+}
+.sho .sho-lobby__body h2 {
+  margin-block: 0.4em 0.2em;
+}
+.sho .sho-lobby__how {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+}
+/* The invite link, printed plainly on the dark band with the site's Copy button. */
+.sho .sho-lobby__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sho .sho-lobby__url {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background-color: var(--backgroundDark);
+  color: var(--textColorWhite);
+  font-family: var(--textFont);
+  font-weight: 700;
+  font-size: 15px;
+  user-select: all;
+}
+.sho .sho-lobby__link button {
+  flex: none;
+  margin: 0 0 5px;
+  padding: 8px 20px;
+  font-size: 20px;
+}
+.sho.sho-lobby #lobby-player-text-choose-container {
+  width: 100%;
+  max-width: none;
+  align-items: center;
+  margin-top: 6px;
+}
+.sho.sho-lobby #lobby-player-count-text {
+  margin: 6px 0;
+  font-size: 18px;
+}
+.sho.sho-lobby #lobby-change-icon-button {
+  margin: 6px 0 11px auto;
+  padding: 8px 18px;
+  font-size: 20px;
+}
+/* The tiles share whatever height is left, sized by useTileFit. */
+.sho .sho-lobby__tiles {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.sho.sho-lobby #lobby-player-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+}
+.sho.sho-lobby #player-container {
+  float: none;
+  margin: 0;
+}
+.sho.sho-lobby #player-image {
+  width: var(--sho-tile, 100px);
+  max-width: none;
+}
+.sho.sho-lobby #lobby-button-container {
+  display: block;
+  max-width: none;
+}
+.sho.sho-lobby #lobby-vip-text {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+.sho .sho-lobby__buttons {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+.sho .sho-lobby__buttons button {
+  margin: 10px 0 14px;
+  padding: 10px 16px;
+  font-size: 21px;
+  white-space: nowrap;
 }
 
 /* House rules past 10 players, in the site's own pieces. */
 .sho #sho-house {
-  max-width: 700px;
-  margin-top: 10px;
-  padding: 10px 16px;
+  margin-top: 8px;
+  padding: 4px 14px;
   background-color: var(--backgroundDark);
   border-radius: 10px;
   text-align: left;
 }
 .sho #sho-house p {
-  margin: 6px 0;
+  margin: 4px 0;
+  font-size: 14px;
+}
+.sho .sho-house__rows {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 20px;
+}
+.sho #sho-house .sho-house__title {
+  margin-bottom: 0;
 }
 .sho .sho-house__row {
   display: flex;
@@ -80,8 +233,98 @@ body:has(.sho-page),
   text-align: left;
 }
 .sho .sho-house__row button {
-  margin: 8px 10px;
-  padding: 6px 18px;
+  margin: 2px 6px 7px;
+  padding: 3px 12px;
+  font-size: 17px;
+}
+
+/* ── Table talk, in the site's colours and type ──────────────────────────── */
+.sho .sho-chat {
+  --lc-bg: var(--backgroundDark);
+  --lc-ink: #ffffff;
+  --lc-dim: var(--textColorOnDark);
+  --lc-rule: #4d4945;
+  --lc-field: #4d4945;
+  --lc-radius: 0;
+  --lc-title-font: var(--headerFont);
+  --lc-name-font: var(--textFont);
+  /* Players' colours, lifted to read on the dark panel. */
+  --lc-name-slate: #9fc0d2;
+  --lc-name-plum: #c3afd8;
+  --lc-name-moss: #b5cca8;
+  --lc-name-umber: #d8c09a;
+  --lc-name-teal: #9fcdc5;
+  --lc-name-mauve: #d8adbd;
+  --lc-name-indigo: #b0bde6;
+  --lc-name-olive: #cdd39c;
+  --lc-name-pewter: #bcc6d2;
+  --lc-name-rust: #e0b1a2;
+  --lc-name-ochre: #e6cf7c;
+  --lc-name-pine: #9fd0b5;
+  --lc-name-violet: #b9b6ef;
+  --lc-name-orchid: #dcaae2;
+  --lc-name-lagoon: #93ccd8;
+  border: 0;
+  font-family: var(--textFont);
+}
+.sho .sho-chat .jd-lchat__title {
+  font-size: 28px;
+  color: var(--textColorWhite);
+}
+.sho .sho-chat .jd-lchat__line {
+  font-family: var(--textFont);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--textColorWhite);
+}
+.sho .sho-chat .jd-lchat__name {
+  font: 700 13px/1.4 var(--textFont);
+  letter-spacing: 0.04em;
+}
+.sho .sho-chat .jd-lchat__line.is-system {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--textColorOnDark);
+  border-left-color: var(--textColorHighlight);
+}
+.sho .sho-chat .jd-lchat__close,
+.sho .sho-chat .jd-lchat__send {
+  border: 0;
+  border-radius: 10px;
+  background: var(--buttonFill);
+  box-shadow: 0 4px 0 var(--buttonShadowFill);
+  color: var(--headerTextColor);
+  font: 400 20px/1 var(--headerFont);
+  letter-spacing: normal;
+  text-transform: uppercase;
+}
+.sho .sho-chat .jd-lchat__close {
+  min-height: 40px;
+  padding: 0 16px;
+}
+.sho .sho-chat .jd-lchat__send {
+  min-height: 44px;
+  margin-bottom: 4px;
+}
+.sho .sho-chat .jd-lchat__close:hover,
+.sho .sho-chat .jd-lchat__send:hover:not(:disabled) {
+  background: var(--buttonHoverFill);
+}
+.sho .sho-chat .jd-lchat__send:disabled {
+  opacity: 1;
+  background: var(--buttonDisabledFill);
+  box-shadow: 0 4px 0 var(--buttonDisabledShadowFill);
+}
+.sho .sho-chat .jd-lchat__field {
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  font: 500 16px var(--textFont);
+  color: var(--textColorWhite);
+}
+.sho .sho-chat .jd-lchat__field::placeholder {
+  color: var(--textColorOnDark);
 }
 
 /* A screen that only watches (the TV, a phone that isn't seated): popups close themselves. */

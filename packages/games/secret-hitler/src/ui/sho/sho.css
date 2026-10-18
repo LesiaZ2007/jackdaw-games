@@ -1,0 +1,1600 @@
+/*
+ * secret-hitler.online's stylesheet, copied rule for rule in its original order, with every
+ * selector scoped under .sho and every animation renamed sho-*, so none of it reaches the rest
+ * of Jackdaw. Generated from ShrimpCryptid/Secret-Hitler-Online (frontend/src, CC BY-NC-SA 4.0).
+ */
+
+/*
+ * The site was built on the browser's own defaults (paragraph margins, inline images, a white
+ * text box, content-box sizing). Jackdaw's reset (Tailwind's preflight and globals.css) removes
+ * them, so inside .sho every element goes back to the browser's default first. :where() keeps
+ * this at the weakest specificity, so every rule below still wins.
+ *
+ * Jackdaw's own pieces inside these pages (table talk, and anything in .sho-jackdaw, such as the
+ * TV's join panel) are left out of every rule here, so they keep Jackdaw's look.
+ */
+.sho :where(*:not(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  all: revert;
+}
+
+/* index.css */
+.sho {
+  margin: 0;
+  font-family:
+    -apple-system, var(--ff-sho-text), 'Montserrat', BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--ff-sho-header), 'Germania One', cursive;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.sho code:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-family: var(--ff-sho-text), 'Montserrat', 'Courier New', monospace;
+}
+
+/* variables.css */
+.sho {
+  --headerFill: #e05b2b;
+  --headerTextColor: #ffffff;
+  --headerFont: var(--ff-sho-header), 'Germania One', cursive;
+  --backgroundLight: #4d4945;
+  --backgroundDark: #372e25;
+  --textFont: var(--ff-sho-text), Montserrat, sans-serif;
+  --textColorOnWhite: #69645e;
+  --textColorOnDark: #bbbbbb;
+  --textColorHighlight: var(--headerFill);
+  --textColorLiberal: #5a9ba6;
+  --textColorWhite: #ffffff;
+  --textShadowed: #141414;
+  --buttonFill: var(--headerFill);
+  --buttonShadowFill: #b4431a;
+  --buttonHoverFill: #e67a53;
+  --buttonDisabledFill: #928079;
+  --buttonDisabledShadowFill: #766058;
+  --buttonAltFill: var(--textColorLiberal);
+  --buttonAltHoverFill: #7abcca;
+  --buttonAltShadowFill: #386f8b;
+  --alertFill: #141414;
+  --alertOverlayOpacity: 0.8;
+  --playerBrightnessFilter: 40%;
+  --playerDisabledTextColor: #999999;
+  --selectionHover: rgba(246, 181, 63, 1);
+  --selectionPressed: rgba(205, 135, 9, 1);
+  --selectionSelected: rgba(228, 105, 73, 1);
+  --selectionNone: rgba(246, 181, 63, 0);
+  --eventBarIn: 1s;
+  --eventBarOut: 1s;
+  --eventBarOpacity: 0.9;
+  --statusBarColor: #141414;
+  --etOffset: 17.6%;
+  --etSpacing: 19.14%;
+  --etDuration: 1.5s;
+  --investigationWidth: 40vmin;
+  --deckPolicyLeft: 16%;
+}
+
+/* App.css */
+.sho {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: var(--backgroundLight);
+}
+
+.sho div:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  text-align: center;
+}
+
+.sho header:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background-color: #e05b2b;
+  min-height: 6vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: calc(1vh);
+  font-size: calc(12px + 4vmin);
+  font-family: var(--headerFont);
+  color: var(--headerTextColor);
+}
+
+.sho h1:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-size: calc(12px + 3.5vmin);
+  font-family: var(--headerFont);
+  color: var(--headerTextColor);
+  font-weight: normal;
+  font-style: italic;
+}
+
+.sho h2:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-size: calc(12px + 2vmin);
+  font-family: var(--headerFont);
+  color: var(--headerTextColor);
+  font-weight: normal;
+  font-style: normal;
+  margin-block-start: 0.5em;
+  margin-block-end: 0.5em;
+}
+
+.sho h5:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-family: var(--textFont);
+  font-weight: normal;
+  font-size: calc(8px + 2vmin);
+  color: var(--textColorOnDark);
+}
+
+.sho h6:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-family: var(--textFont);
+  font-weight: 700;
+  font-size: calc(4px + 2vmin);
+  color: var(--textColorHighlight);
+  margin: 3px;
+}
+
+.sho #errormessage:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-family: var(--textFont);
+  font-weight: 700;
+  font-size: calc(12px + 1vmin);
+  color: var(--textColorHighlight);
+  margin: 3px;
+}
+
+.sho p:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-family: var(--textFont);
+  font-weight: 700;
+  font-size: calc(12px + 1vmin);
+  color: var(--textColorOnDark);
+}
+
+.sho a:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-family: var(--textFont);
+  font-size: calc(12px + 1vmin);
+  color: var(--buttonHoverFill);
+}
+
+.sho .highlight:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  color: var(--textColorHighlight);
+}
+
+.sho .highlight-blue:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  color: var(--textColorLiberal);
+}
+
+.sho button:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background: transparent;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-size: calc(6px + 4vmin);
+  font-family: var(--headerFont);
+  color: var(--headerTextColor);
+  background: var(--buttonFill);
+  line-height: 1;
+  margin: 18px;
+  padding: 10px 25px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  outline: none;
+  position: relative;
+  border-radius: 10px;
+  top: 0;
+  -webkit-transition:
+    all 0.15s ease-in-out 0s,
+    visibility 0s;
+  -moz-transition:
+    all 0.15s ease-in-out 0s,
+    visibility 0s;
+  transition:
+    all 0.15s ease-in-out 0s,
+    visibility 0s;
+  box-shadow: 0 5px 0 var(--buttonShadowFill);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho button:hover:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)),
+.sho button:focus:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)),
+.sho button:focus-visible:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background: var(--buttonHoverFill);
+}
+
+.sho
+  button:not(:disabled):active:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  top: 5px;
+  background: var(--buttonFill);
+  box-shadow: 0 0 0 var(--buttonShadowFill);
+}
+
+.sho button:disabled:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  box-shadow: 0 5px 0 var(--buttonDisabledShadowFill);
+  background: var(--buttonDisabledFill);
+  cursor: not-allowed;
+}
+
+.sho input:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-family: var(--textFont);
+  width: 40vmin;
+  min-width: 20px;
+  font-size: calc(4px + 3vmin);
+  color: var(--textColorOnWhite);
+  border-radius: 5px;
+  padding: 5px;
+  border: 2px solid transparent;
+  outline: none;
+}
+
+.sho input:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *))::placeholder {
+  color: var(--textColorOnDark);
+}
+
+.sho textarea:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-family: var(--textFont);
+  width: 80vmin;
+  height: 5vmin;
+  min-height: 10px;
+  resize: none;
+  font-size: calc(2px + 2vmin);
+  -webkit-user-modify: read-only;
+  color: var(--textColorOnWhite);
+  border-radius: 5px;
+  padding: calc(5px + 1.5vmin) 5px 5px;
+  border: 2px solid transparent;
+  outline: none;
+}
+
+.sho #snackbar:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  visibility: hidden;
+  min-width: 30vw;
+  background-color: var(--alertFill);
+  display: inline-block;
+  color: var(--headerTextColor);
+  font-family: var(--textFont);
+  font-size: calc(2px + 2vmin);
+  border-radius: 10px;
+  padding: 16px;
+  position: fixed;
+  z-index: 100;
+  bottom: 30px;
+  transform: translateX(-50%);
+}
+
+.sho #snackbar.show:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  visibility: visible;
+  -webkit-animation:
+    sho-fadein 0.5s,
+    sho-fadeout 0.5s 2.5s;
+  animation:
+    sho-fadein 0.5s,
+    sho-fadeout 0.5s 2.5s;
+}
+
+@-webkit-keyframes sho-fadein {
+  from {
+    bottom: 0;
+    opacity: 0;
+    visibility: visible;
+  }
+  to {
+    bottom: 30px;
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+@keyframes sho-fadein {
+  from {
+    bottom: 0;
+    opacity: 0;
+    visibility: visible;
+  }
+  to {
+    bottom: 30px;
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+@-webkit-keyframes sho-fadeout {
+  from {
+    bottom: 30px;
+    opacity: 1;
+    visibility: visible;
+  }
+  to {
+    bottom: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes sho-fadeout {
+  from {
+    bottom: 30px;
+    opacity: 1;
+    visibility: visible;
+  }
+  to {
+    bottom: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.sho .removeTile:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  transition-timing-function: ease-in-out;
+  -webkit-animation: sho-slideOut 0.5s;
+  animation: sho-slideOut 0.5s;
+}
+
+@-webkit-keyframes sho-slideOut {
+  0% {
+    left: 0;
+    opacity: 1;
+  }
+  100% {
+    left: -100%;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes sho-slideOut {
+  0% {
+    left: 0;
+    opacity: 1;
+  }
+  100% {
+    left: -100%;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.sho #victory-header:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 100%;
+}
+
+/* Lobby.css */
+.sho #lobby-lower-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+.sho
+  #lobby-player-area-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  text-align: left;
+}
+
+.sho
+  #lobby-player-text-choose-container:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  text-align: left;
+  display: flex;
+  flex-direction: row;
+  width: 90vw;
+  max-width: 655px;
+}
+
+.sho #lobby-change-icon-button:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  margin-left: auto;
+}
+
+.sho #lobby-player-count-text:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  align-self: center;
+  font-size: calc(12px + 2vmin);
+}
+
+.sho #lobby-player-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+}
+
+.sho #lobby-player-placeholder:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 20vmin;
+  max-width: 16vh;
+  height: auto;
+  image-rendering: crisp-edges;
+  display: block;
+  margin: 5px;
+  border-radius: 16%/10%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.sho #lobby-button-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: inline-block;
+  flex-direction: column;
+  max-width: 700px;
+}
+
+.sho #lobby-vip-text:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  margin-bottom: 0;
+  text-align: center;
+}
+
+.sho #lobby-text-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: inline-block;
+  margin-top: 10px;
+  max-width: 700px;
+}
+
+.sho #lobby-warning-text:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  margin: 10px 0;
+  font-weight: 300;
+  text-align: center;
+}
+
+.sho #lobby-about-text:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  margin: 10px 10px;
+  font-weight: 300;
+}
+
+/* custom-alert/CustomAlert.css */
+.sho #alert:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  visibility: hidden;
+  z-index: 75;
+}
+
+.sho #alert-background:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: fixed;
+  width: 100%;
+  height: 110%;
+  min-height: 100%;
+  top: 0;
+  left: 0;
+  margin: 0;
+  z-index: 50;
+  box-sizing: border-box;
+  background-color: var(--alertFill);
+  opacity: var(--alertOverlayOpacity);
+}
+
+.sho #alert-box:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  z-index: 60;
+  opacity: 1;
+  min-width: 80vmin;
+  max-width: 40vw;
+  min-height: 60vmin;
+  padding: 20px 30px;
+  background-color: var(--alertFill);
+  text-align: center;
+  top: 10vh;
+  margin-bottom: 10px;
+}
+
+.sho .left-align:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  text-align: left;
+}
+
+.sho .appear-custom-alert:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  transition-timing-function: ease-in-out;
+  -webkit-animation: sho-appear-custom-alert 0.5s;
+  animation: sho-appear-custom-alert 0.5s;
+  visibility: visible;
+  transition: visibility 0.5s;
+  opacity: 1;
+}
+
+.sho .disappear-custom-alert:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  transition-timing-function: ease-in-out;
+  -webkit-animation: sho-disappear-custom-alert 1s;
+  animation: sho-disappear-custom-alert 1s;
+  visibility: hidden;
+  transition: visibility 0.5s;
+}
+
+@-webkit-keyframes sho-appear-custom-alert {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes sho-appear-custom-alert {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes sho-disappear-custom-alert {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes sho-disappear-custom-alert {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.sho
+  #alert-background.appear-custom-alert:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  -webkit-animation: sho-appear-background 0.5s;
+  animation: sho-appear-background 0.5s;
+}
+
+.sho
+  #alert-background.disappear-custom-alert:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  -webkit-animation: sho-disappear-background 1s;
+  animation: sho-disappear-background 1s;
+}
+
+@-webkit-keyframes sho-appear-background {
+  0% {
+    opacity: 0;
+    visibility: visible;
+  }
+  50% {
+    opacity: var(--alertOverlayOpacity);
+  }
+}
+
+@keyframes sho-appear-background {
+  0% {
+    opacity: 0;
+    visibility: visible;
+  }
+  50% {
+    opacity: var(--alertOverlayOpacity);
+  }
+}
+
+@-webkit-keyframes sho-disappear-background {
+  0% {
+    opacity: var(--alertOverlayOpacity);
+    visibility: visible;
+  }
+  40% {
+    opacity: var(--alertOverlayOpacity);
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes sho-disappear-background {
+  0% {
+    opacity: var(--alertOverlayOpacity);
+    visibility: visible;
+  }
+  40% {
+    opacity: var(--alertOverlayOpacity);
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* custom-alert/RoleAlert.css */
+.sho #role:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 25vmin;
+  height: auto;
+  display: inline;
+  float: left;
+  align-self: center;
+  margin: 10px 2vmin 10px 10px;
+}
+
+/* event-bar/EventBar.css */
+.sho #event-bar:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 100%;
+  top: 30%;
+  position: fixed;
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  visibility: hidden;
+  z-index: 48;
+  transition: visibility var(--eventBarIn);
+}
+
+.sho #bar-background:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 100%;
+  min-height: 15vmin;
+  background-color: var(--alertFill);
+  z-index: 48;
+  animation: ease-in-out;
+}
+
+.sho #event-bar-text:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  z-index: 49;
+  display: flex;
+  font-style: italic;
+  margin: 0 auto;
+  animation: ease-out;
+  opacity: 0;
+}
+
+.sho #event-bar.start-eventbar:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  visibility: hidden;
+}
+
+.sho #event-bar.appear-eventbar:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  visibility: visible;
+  transition: visibility 0s;
+}
+
+.sho
+  #bar-background.appear-eventbar:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  visibility: visible;
+  transition: 0s;
+  animation: sho-appear-bar var(--eventBarIn);
+  opacity: var(--eventBarOpacity);
+}
+
+.sho
+  #event-bar-text.appear-eventbar:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  visibility: visible;
+  transition: visibility 0s;
+  animation: sho-appear-text var(--eventBarIn);
+  opacity: 1;
+}
+
+.sho
+  #event-bar.disappear-eventbar:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  visibility: hidden;
+  transition: visibility var(--eventBarOut);
+}
+
+.sho
+  #bar-background.disappear-eventbar:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  visibility: hidden;
+  transition: visibility var(--eventBarOut);
+  animation: sho-disappear-bar var(--eventBarOut);
+}
+
+.sho
+  #event-bar-text.disappear-eventbar:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  visibility: hidden;
+  transition: visibility var(--eventBarOut);
+  animation: sho-disappear-text var(--eventBarOut);
+}
+
+@keyframes sho-appear-text {
+  0% {
+    opacity: 0;
+    padding-top: 20px;
+  }
+  60% {
+    opacity: 0;
+    padding-top: 20px;
+  }
+  100% {
+    opacity: 1;
+    padding-top: 0;
+  }
+}
+
+@keyframes sho-appear-bar {
+  0% {
+    opacity: 0;
+    width: 0;
+  }
+  60% {
+    opacity: var(--eventBarOpacity);
+    width: 100%;
+  }
+}
+
+@keyframes sho-disappear-text {
+  0% {
+    opacity: 1;
+    visibility: visible;
+  }
+  40% {
+    opacity: 0;
+    visibility: hidden;
+  }
+  60% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes sho-disappear-bar {
+  0% {
+    opacity: var(--eventBarOpacity);
+    visibility: visible;
+  }
+  60% {
+    opacity: var(--eventBarOpacity);
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* player/Player.css */
+.sho #player-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: relative;
+  margin: 5px;
+  border-radius: 16%/10%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.sho #player-container.darken:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  filter: none;
+}
+
+.sho #player-container.highlight:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background-color: var(--selectionHover);
+}
+
+.sho #player-icon:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  width: 82%;
+  left: 9%;
+  top: 6.3%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.sho #player-icon.darken:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  filter: brightness(calc(var(--playerBrightnessFilter) - 5%));
+}
+
+.sho #player-image:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 20vmin;
+  max-width: 16vh;
+  height: auto;
+  image-rendering: crisp-edges;
+  display: block;
+}
+
+.sho #player-image.darken:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  filter: brightness(calc(var(--playerBrightnessFilter) - 5%));
+}
+
+.sho #player-name:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  color: var(--backgroundDark);
+  font-family: var(--textFont);
+  top: 64%;
+  left: 10%;
+  width: 80%;
+  height: 16%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.sho #player-name.darken:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  color: var(--textShadowed);
+}
+
+.sho #player-identity-icon:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  top: 75%;
+  left: 8%;
+  width: 28%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.sho #player-busy-icon:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  top: 43%;
+  left: 50%;
+  width: 37.5%;
+}
+
+.sho #player-icon-vote:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  width: 73%;
+  image-rendering: crisp-edges;
+  top: 43%;
+  left: 14%;
+  transition: 0.5s visibility;
+}
+
+.sho #player-identity-label:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  top: 69%;
+  left: 36%;
+  width: 50%;
+  height: 12%;
+  font-size: min(2.3vh, 3vmin);
+  color: var(--textColorHighlight);
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  font-family: var(--textFont);
+}
+
+.sho
+  #player-identity-label.liberal-text:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  color: var(--textColorLiberal);
+}
+
+.sho #player-disabled-label:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-family: var(--headerFont);
+  color: var(--playerDisabledTextColor);
+  padding: 15% 0;
+  height: 100%;
+  width: 100%;
+  font-size: calc(4vmin - 0.3vw);
+  font-weight: normal;
+  vertical-align: middle;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.sho .darken:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  filter: brightness(var(--playerBrightnessFilter));
+}
+
+.sho .player-icon-default:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  visibility: hidden;
+}
+
+.sho .player-icon-show:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  visibility: visible;
+  animation: sho-player-icon-show 0.5s;
+}
+
+.sho .player-icon-hide:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  visibility: hidden;
+  animation: sho-player-icon-hide 0.5s;
+}
+
+@-webkit-keyframes sho-player-icon-show {
+  0% {
+    top: 35%;
+    opacity: 0;
+    visibility: visible;
+  }
+  100% {
+    top: 43%;
+    opacity: 1;
+  }
+}
+
+@keyframes sho-player-icon-show {
+  0% {
+    top: 35%;
+    opacity: 0;
+    visibility: visible;
+  }
+  100% {
+    top: 43%;
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes sho-player-icon-hide {
+  0% {
+    top: 43%;
+    opacity: 1;
+    visibility: visible;
+  }
+  100% {
+    top: 43%;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes sho-player-icon-hide {
+  0% {
+    top: 43%;
+    opacity: 1;
+    visibility: visible;
+  }
+  100% {
+    top: 43%;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* selectable.css */
+.sho .selectable:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background-color: var(--selectionNone);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sho .selectable.selected:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background-color: var(--selectionPressed);
+}
+
+.sho .selectable:hover:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background-color: var(--selectionHover);
+}
+
+.sho .selectable:active:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background-color: var(--selectionPressed);
+}
+
+.sho .selectable.disabled:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background-color: var(--selectionNone);
+}
+
+.sho .selectable.disabled:hover:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background-color: var(--selectionNone);
+}
+
+.sho .selectable.disabled:active:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background-color: var(--selectionNone);
+}
+
+/* player/PlayerDisplay.css */
+.sho #player-display:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 10px;
+}
+
+.sho #player-display-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: flex;
+  flex-direction: row;
+}
+
+.sho
+  #player-display-text-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: inline-block;
+  width: min-content;
+  margin-top: auto;
+}
+
+.sho #player-display-label:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: inline-block;
+  width: 15vmin;
+  font-size: calc(4px + 3vmin);
+  font-weight: normal;
+  font-family: var(--headerFont);
+  color: var(--textColorWhite);
+  margin: 0 auto;
+}
+
+/* status-bar/StatusBar.css */
+.sho #status-bar:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background-color: var(--alertFill);
+  min-height: 8vmin;
+}
+
+.sho #status-bar-text:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  margin: 0;
+  padding: 2vmin 5px;
+  color: var(--textColorWhite);
+  -webkit-animation: sho-show 0.25s;
+  animation: sho-show 0.25s;
+}
+
+.sho
+  #status-bar-text.hide-statusbar:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  animation-timing-function: ease-in-out;
+  -webkit-animation: sho-hide 0.25s;
+  animation: sho-hide 0.25s;
+}
+
+@-webkit-keyframes sho-show {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes sho-show {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@-webkit-keyframes sho-hide {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes sho-hide {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* board/Board.css */
+.sho #board-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: flex;
+  flex-direction: column;
+}
+
+.sho #board-group:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  margin: 4px 10px;
+  position: relative;
+}
+
+.sho #board:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  min-width: 40vmin;
+  width: 90vmin;
+  max-width: 90vw;
+}
+
+.sho #policy:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  width: 10%;
+  top: 30%;
+  image-rendering: pixelated;
+}
+
+.sho .hide:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  visibility: hidden;
+}
+
+.sho .show:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  transition-timing-function: ease-in-out;
+  visibility: visible;
+  -webkit-animation:
+    sho-appear 1s,
+    sho-drop 0.3s 1s;
+  animation:
+    sho-appear 1s,
+    sho-drop 0.3s 1s;
+}
+
+@-webkit-keyframes sho-appear {
+  0% {
+    opacity: 0;
+    top: 10%;
+  }
+  100% {
+    opacity: 1;
+    top: 10%;
+  }
+}
+
+@keyframes sho-appear {
+  0% {
+    opacity: 0;
+    top: 10%;
+  }
+  100% {
+    opacity: 1;
+    top: 10%;
+  }
+}
+
+@-webkit-keyframes sho-drop {
+  0% {
+    top: 10%;
+  }
+  100% {
+    top: 30%;
+  }
+}
+
+@keyframes sho-drop {
+  0% {
+    top: 10%;
+  }
+  100% {
+    top: 30%;
+  }
+}
+
+.sho #election-tracker:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  transition: 1s left;
+  transition-timing-function: ease-in-out;
+}
+
+/* custom-alert/VotingPrompt.css */
+.sho #player-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  float: left;
+  display: inline;
+  margin: 5px 10px 5px 5px;
+}
+
+.sho #voting-card-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: flex;
+  width: 100%;
+  align-content: center;
+}
+
+.sho #voting-card:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 30vmin;
+  border-radius: 8%/11%;
+  margin: 10px auto;
+}
+
+/* util/PolicyDisplay.css */
+.sho #legislative-policy:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 20vmin;
+  margin: 10px;
+  border-radius: 8%/6%;
+}
+
+.sho
+  #legislative-button-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  width: 100%;
+}
+
+/* custom-alert/ElectionTrackerAlert.css */
+.sho #election-tracker-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: relative;
+  width: 100%;
+}
+
+.sho #election-tracker-board:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 100%;
+}
+
+.sho #election-tracker-token:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  width: 7.5%;
+  top: 47%;
+  left: calc(17.6% + 2 * 19.1%);
+  animation-timing-function: linear;
+}
+
+.sho
+  #election-tracker-token.et-position-0:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  left: var(--etOffset);
+}
+
+.sho
+  #election-tracker-token.et-moveto-1:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  left: calc(var(--etOffset) + 1 * var(--etSpacing));
+  animation: sho-et-moveto-1 var(--etDuration);
+}
+
+.sho
+  #election-tracker-token.et-position-1:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  left: calc(var(--etOffset) + 1 * var(--etSpacing));
+}
+
+.sho
+  #election-tracker-token.et-moveto-2:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  left: calc(var(--etOffset) + 2 * var(--etSpacing));
+  animation: sho-et-moveto-2 var(--etDuration);
+}
+
+.sho
+  #election-tracker-token.et-position-2:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  left: calc(var(--etOffset) + 2 * var(--etSpacing));
+}
+
+.sho
+  #election-tracker-token.et-moveto-3:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  left: calc(var(--etOffset) + 3 * var(--etSpacing));
+  animation: sho-et-moveto-3 var(--etDuration);
+}
+
+@keyframes sho-et-moveto-1 {
+  0% {
+    left: var(--etOffset);
+  }
+  100% {
+    left: calc(var(--etOffset) + var(--etSpacing));
+  }
+}
+
+@keyframes sho-et-moveto-2 {
+  0% {
+    left: calc(var(--etOffset) + var(--etSpacing));
+  }
+  100% {
+    left: calc(var(--etOffset) + 2 * var(--etSpacing));
+  }
+}
+
+@keyframes sho-et-moveto-3 {
+  0% {
+    left: calc(var(--etOffset) + 2 * var(--etSpacing));
+  }
+  100% {
+    left: calc(var(--etOffset) + 3 * var(--etSpacing));
+  }
+}
+
+/* custom-alert/PolicyEnactedAlert.css */
+.sho #policy-enacted-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: flex;
+  width: 20vmin;
+  height: 26vmin;
+  margin: auto auto;
+  position: relative;
+  perspective: 1000px;
+}
+
+.sho #policy-enacted-cover-front:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)),
+.sho #policy-enacted-cover-back:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  width: auto;
+  height: 26vmin;
+  z-index: 54;
+  transition-timing-function: linear;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  left: -99.5%;
+  top: 0;
+  transition:
+    1s transform ease,
+    0.5s left ease-in-out;
+}
+
+.sho
+  #policy-enacted-cover-front.show-policy-shift:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  left: -49.5%;
+}
+
+.sho
+  #policy-enacted-cover-front.show-policy-flip:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  transform: rotateY(-180deg);
+  z-index: 53;
+}
+
+.sho #policy-enacted-cover-back:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  transform: rotateY(180deg);
+}
+
+.sho
+  #policy-enacted-cover-back.show-policy-shift:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  left: -49.5%;
+}
+
+.sho
+  #policy-enacted-cover-back.show-policy-flip:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  transform: rotateY(0deg);
+}
+
+.sho #policy-enacted-back:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  width: auto;
+  height: 26vmin;
+  z-index: 51;
+  left: -100%;
+  transition: 0.5s left;
+  transition-timing-function: ease-in-out;
+}
+
+.sho
+  #policy-enacted-back.show-policy-shift:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  left: -50%;
+}
+
+.sho #policy-enacted-policy:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  width: auto;
+  height: 100%;
+  left: -7.5%;
+  z-index: 52;
+  transition: 0.5s left;
+  transition-timing-function: ease-in-out;
+}
+
+.sho
+  #policy-enacted-policy.show-policy-shift:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  left: 42.5%;
+}
+
+/* custom-alert/InvestigationAlert.css */
+.sho #investigation-text:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  transition: 0.5s opacity;
+}
+
+.sho
+  #investigation-text.investigation-text-hide:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  opacity: 0;
+}
+
+.sho
+  #investigation-text.investigation-text-show:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  opacity: 100%;
+}
+
+.sho #party-card-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)),
+.sho #party-card-back:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)),
+.sho #party-card-front:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 28vmin;
+  height: 40vmin;
+}
+
+.sho #party-card-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  margin: auto auto;
+  position: relative;
+  perspective: 1000px;
+  display: flex;
+}
+
+.sho #party-card-back:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)),
+.sho #party-card-front:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  transition: 1.5s transform ease;
+  top: 0;
+  left: 0;
+  position: absolute;
+}
+
+.sho
+  #party-card-back.investigation-container-default:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  z-index: 51;
+}
+
+.sho
+  #party-card-back.investigation-container-flip:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  transform: rotateY(180deg);
+  z-index: 50;
+}
+
+.sho
+  #party-card-front.investigation-container-default:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  transform: rotateY(180deg);
+  z-index: 50;
+}
+
+.sho
+  #party-card-front.investigation-container-flip:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  transform: rotateY(360deg);
+  z-index: 51;
+}
+
+/* board/Deck.css */
+.sho #deck-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 14vmin;
+  height: fit-content;
+}
+
+.sho #deck-base:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 14vmin;
+  height: auto;
+}
+
+.sho #deck-card-count:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  font-size: 3.5vmin;
+  position: absolute;
+  color: var(--textColorWhite);
+  left: 30%;
+  top: 58%;
+  text-align: center;
+  width: 40%;
+}
+
+.sho #deck-policy:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  position: absolute;
+  width: 69%;
+  opacity: 1;
+}
+
+.sho #deck-policy.deck-final-show:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)),
+.sho
+  #deck-policy.deck-transition-show:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  transition:
+    0.4s top ease-in,
+    0.2s opacity;
+  opacity: 1;
+  left: 16%;
+}
+
+.sho #deck-policy.deck-final-hide:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)),
+.sho
+  #deck-policy.deck-transition-hide:not(
+    :where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)
+  ) {
+  transition:
+    0.2s 0.3s opacity,
+    0.5s left ease-in;
+  opacity: 0;
+  left: -30%;
+}
+
+/* util/PlayerPolicyStatus.css */
+.sho #pps-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  padding: 10px;
+  background-color: var(--backgroundDark);
+  margin: 10px;
+  border-radius: 4%/6%;
+}
+
+.sho #pps-icon-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: flex;
+  align-items: center;
+}
+
+.sho #pps-icon:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 5vmin;
+  height: 5vmin;
+  margin-left: 3px;
+}
+
+.sho #pps-icon-number:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  margin-bottom: 0;
+  margin-top: 0;
+}
+
+.sho #pps-text:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  text-align: left;
+  font-size: 2vmin;
+  margin-bottom: 0;
+  margin-top: 0;
+  color: var(--textColorWhite);
+}
+
+/* custom-alert/IconSelection.css */
+.sho #icon-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  width: 100%;
+}
+
+.sho #icon:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: inline;
+  width: 18vmin;
+  border-radius: 8%/8%;
+  margin: 3px 3px;
+  padding: 5px 5px;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.sho #icon.disabled:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  filter: brightness(calc(var(--playerBrightnessFilter) + 20%));
+  pointer-events: none;
+}
+
+.sho #icon-text:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  min-font-size: 12;
+  font-size: calc(12px + 0.5vmin);
+  margin-right: 5px;
+}
+
+.sho #locked-icon-text-container:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.sho #locked-icon-button:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background: var(--buttonAltFill);
+  box-shadow: 0 5px 0 var(--buttonAltShadowFill);
+  align-items: center;
+  height: 100%;
+}
+
+.sho #locked-icon-button:hover:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  background: var(--buttonAltHoverFill);
+}
+
+.sho #locked-icon-button:active:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  top: 5px;
+  background: var(--buttonAltFill);
+  box-shadow: 0 0 0 var(--buttonAltShadowFill);
+}
+
+.sho
+  #locked-icon-button:disabled:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  box-shadow: 0 5px 0 var(--buttonDisabledShadowFill);
+  background: var(--buttonDisabledFill);
+  cursor: not-allowed;
+}
+
+.sho #twitter-icon:not(:where(.jd-lchat, .jd-lchat *, .sho-jackdaw, .sho-jackdaw *)) {
+  height: calc(30px + 0.6vmin);
+}

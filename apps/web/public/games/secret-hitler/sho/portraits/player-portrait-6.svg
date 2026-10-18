@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1.4583in" height="1.4583in" version="1.1" viewBox="0 0 37.042 37.042" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <defs>
+  <linearGradient id="8" gradientTransform="matrix(0 0 0 0 20.949 -188.22)">
+   <stop stop-color="#c9c2b5" offset="0"/>
+  </linearGradient>
+  <linearGradient id="linearGradient1313" x1="54.811" x2="91.853" y1="32.815" y2="32.815" gradientTransform="translate(87.788 126.77)" gradientUnits="userSpaceOnUse">
+   <stop stop-color="#b3a995" offset="0"/>
+  </linearGradient>
+  <linearGradient id="linearGradient1548" x1="11.768" x2="27.066" y1="89.395" y2="89.395" gradientTransform="matrix(1.22 0 0 .81969 137.42 92.293)" gradientUnits="userSpaceOnUse">
+   <stop stop-color="#7e7867" offset="0"/>
+  </linearGradient>
+  <linearGradient id="linearGradient2890" x1="14.068" x2="19.41" y1="101.14" y2="101.14" gradientTransform="matrix(1.4142 0 0 .70711 137.42 92.293)" gradientUnits="userSpaceOnUse" xlink:href="#8"/>
+  <linearGradient id="linearGradient2892" x1="8.4856" x2="26.321" y1="99.021" y2="99.021" gradientTransform="matrix(1.3617 0 0 .73437 137.42 92.293)" gradientUnits="userSpaceOnUse" xlink:href="#8"/>
+ </defs>
+ <g transform="translate(-142.6 -141.07)" display="none">
+  <rect width="215.9" height="279.4" fill="#fcfcfc" style="paint-order:markers fill stroke"/>
+ </g>
+ <g transform="translate(-142.6 -141.07)">
+  <g>
+   <rect x="142.6" y="141.07" width="37.042" height="37.042" ry="2.0045" fill="url(#linearGradient1313)" style="paint-order:normal"/>
+   <ellipse cx="161.12" cy="151.76" rx="9.9812" ry="9.4267" fill="#413e35" stop-color="#000000" stroke-linecap="round" stroke-linejoin="bevel" stroke-width=".544"/>
+   <rect x="158.42" y="159.07" width="5.409" height="7.7654" ry="2.7045" fill="#615b4c" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+  </g>
+  <rect x="157.32" y="163.81" width="7.5552" height="3.7776" fill="url(#linearGradient2890)" stop-color="#000000" stroke-linecap="round" stroke-linejoin="bevel" stroke-width=".544"/>
+  <rect x="153.85" y="146.63" width="14.547" height="16.552" ry="7.2734" fill="#615b4c" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+  <g transform="translate(135.59 9.3951)">
+   <ellipse cx="21.999" cy="146.06" rx="2.0398" ry="1.4861" fill="#d3cdc3" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <ellipse cx="21.999" cy="146.06" rx=".885" ry="1.2626" fill="#413e35" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <ellipse cx="29.068" cy="146.06" rx="2.0398" ry="1.4861" fill="#d3cdc3" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <ellipse cx="29.068" cy="146.06" rx=".885" ry="1.2626" fill="#413e35" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+  </g>
+  <g>
+   <path d="m163.57 143.71a8.0908 4.3668 0 0 0-8.0093 4.3666 8.0908 4.3668 0 0 0 8.091 4.3667 8.0908 4.3668 0 0 0 7.2729-2.4541 9.9812 9.4267 0 0 0-4.0189-5.9108 8.0908 4.3668 0 0 0-3.2541-0.36845 8.0908 4.3668 0 0 0-0.0816 0z" fill="#413e35" stop-color="#000000" stroke-linecap="round" stroke-linejoin="bevel" stroke-width=".544"/>
+   <path d="m161.15 165.01a12.143 12.143 0 0 0-6.0999 1.6268 12.143 12.143 0 0 0-6.0715 10.517v0.95446h24.287v-0.95446a12.143 12.143 0 0 0-6.0715-10.517 12.143 12.143 0 0 0-6.0441-1.6268z" fill="url(#linearGradient2892)" style="paint-order:normal"/>
+   <path d="m164.9 165.57-1.0986 3.3595v9.1803h6.6373v-8.7648a12.143 12.143 0 0 0-3.2701-2.7585 12.143 12.143 0 0 0-2.2686-1.0165zm-7.5861 0.0522a12.143 12.143 0 0 0-2.2686 1.0165 12.143 12.143 0 0 0-3.2701 2.7585v8.7126h6.6373v-9.1281z" fill="url(#linearGradient1548)" style="paint-order:normal"/>
+   <circle cx="167.4" cy="171.98" r="1.9131" fill="#d3cdc3" stop-color="#000000" stroke-linecap="round" stroke-linejoin="bevel" stroke-width=".544"/>
+  </g>
+ </g>
+</svg>

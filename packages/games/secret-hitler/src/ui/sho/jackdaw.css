@@ -1,0 +1,136 @@
+/*
+ * Jackdaw's frame around secret-hitler.online's pages. Everything inside comes from sho.css;
+ * these rules only fit the pages into Jackdaw's layout (under the bar, beside the chat), and
+ * style the few things Jackdaw adds (house rules, the TV lobby's join panel, table talk).
+ */
+
+/* The site's background is its html and body, so it reaches past the page to the window's edge. */
+body:has(.sho-page),
+.lobby-page:has(.sho-page),
+.lobby-page:has(.sho-page) .lobby-layout {
+  background-color: #4d4945;
+}
+
+/* The page fills its column. */
+.sho.sho-page {
+  min-height: 100%;
+  width: 100%;
+  min-width: 0;
+  /* secret-hitler.online's overlays sit over the whole page, as on the site. */
+  position: static;
+  /* The site hides sideways overflow on its body; clip does the same here without making the
+     page a scroll box of its own (which would unstick the docked chat). */
+  overflow-x: clip;
+}
+
+/* The lobby: the page, with table talk docked beside it from 1240px (a drawer below that). */
+.sho-lobby {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 1240px) {
+  .sho-lobby {
+    grid-template-columns: minmax(0, 1fr) 360px;
+  }
+  .sho-lobby .sho-chat {
+    position: sticky;
+    top: 66px;
+    height: calc(100dvh - 66px);
+  }
+}
+.sho-lobby__main {
+  min-width: 0;
+  padding-bottom: 24px;
+}
+/* The tiles float in a row, as on the site; this keeps the buttons below them. */
+.sho #lobby-player-container::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.sho .sho-chat {
+  --lc-bg: #141414;
+  --lc-ink: #ffffff;
+  --lc-dim: #bbbbbb;
+  --lc-rule: #4d4945;
+  --lc-field: #372e25;
+  --lc-radius: 10px;
+  --lc-title-font: var(--headerFont);
+  --lc-name-font: var(--textFont);
+}
+
+/* House rules past 10 players, in the site's own pieces. */
+.sho #sho-house {
+  max-width: 700px;
+  margin-top: 10px;
+  padding: 10px 16px;
+  background-color: var(--backgroundDark);
+  border-radius: 10px;
+  text-align: left;
+}
+.sho #sho-house p {
+  margin: 6px 0;
+}
+.sho .sho-house__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-align: left;
+}
+.sho .sho-house__row button {
+  margin: 8px 10px;
+  padding: 6px 18px;
+}
+
+/* A screen that only watches (the TV, a phone that isn't seated): popups close themselves. */
+.sho-page--tv #alert-box button {
+  visibility: hidden;
+}
+
+/* The victory popup's line for everyone but the host. */
+.sho .sho-victory-wait {
+  text-align: center;
+}
+
+/* The TV's lobby: how to join beside the tiles. */
+.sho-tvlobby .App {
+  min-height: 100%;
+}
+.sho .sho-tvlobby__body {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 4vmin;
+  align-items: start;
+  padding: 4vmin;
+}
+.sho .sho-tvlobby__join {
+  display: grid;
+  justify-items: center;
+  gap: 2vmin;
+  padding: 3vmin;
+  background-color: var(--backgroundDark);
+  border-radius: 10px;
+  color: var(--textColorWhite);
+  font-family: var(--textFont);
+}
+/* Jackdaw's join panel, in light ink on the dark panel. */
+.sho-tvlobby__join .sho-jackdaw {
+  --ink: #ffffff;
+  --ink-2: #bbbbbb;
+  color: #ffffff;
+}
+.sho .sho-tvlobby__players {
+  text-align: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sho *,
+  .sho *::before,
+  .sho *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

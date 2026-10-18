@@ -54,6 +54,22 @@ export function Results({
   const winnerNames = result.winners.map((id) => names[id] ?? 'Someone');
   const me = s.me ? byId.get(s.me) : undefined;
 
+  // A game with its own end screen draws all of it (Secret Hitler's victory popup).
+  const OwnResults = entry?.ui?.Results;
+  if (OwnResults) {
+    return (
+      <OwnResults
+        result={result}
+        players={players}
+        me={s.me}
+        hostId={s.hostId}
+        isHost={isHost}
+        playAgain={() => void send({ type: 'playAgain', look })}
+        backToLobby={() => void send({ type: 'backToLobby' })}
+      />
+    );
+  }
+
   // Seated players get their own result; anyone who watched is told who won.
   let outcome: Outcome;
   let title: string;

@@ -56,6 +56,12 @@ export interface GameUi {
   /** Optional game-specific end-of-game reveal; the shell shows the recap timeline otherwise. */
   Reveal?: ComponentType<{ result: GameResult; players: ScreenPlayer[]; me: string | null }>;
   /**
+   * Optional: the whole end-of-game screen on phones, in the game's own look, in place of
+   * Jackdaw's results (Secret Hitler: secret-hitler.online's victory popup over the board). It
+   * gets the host's two choices to offer.
+   */
+  Results?: ComponentType<GameResultsProps>;
+  /**
    * Optional themed waiting room shown in the lobby once this game is chosen (e.g. Avalon's
    * round table). The lobby shows the game's box lid and options when it's absent.
    */
@@ -71,6 +77,11 @@ export interface GameUi {
    * page, which has its own header).
    */
   fullTv?: boolean;
+  /**
+   * The phone screen is drawn edge to edge (Secret Hitler, as secret-hitler.online draws it): it
+   * fills the column under Jackdaw's bar with no padding or width cap, beside the chat dock.
+   */
+  fullBleed?: boolean;
 }
 
 /**
@@ -98,12 +109,30 @@ export interface GameLobbyProps {
   onSeat: (playerId: string) => void;
   /** Host only: back to the list of games. */
   changeGame?: () => void;
+  /**
+   * Change your own look from the game's lobby (Secret Hitler's portraits stand for crests).
+   * Resolves true once saved; a crest or colour someone else has is refused.
+   */
+  setAvatar?: (avatar: Avatar) => Promise<boolean>;
   /** Reactions from the last few seconds, to pop over the game's own seats. */
   reactions: Reaction[];
   /** Send a reaction (only offered to seated players: `me` is set). */
   react: (kind: ReactionKind) => void;
   /** The lobby's chat, drawn in the game's own style. */
   chat: LobbyChat;
+}
+
+/** What a game's own end-of-game screen receives. */
+export interface GameResultsProps {
+  result: GameResult;
+  players: ScreenPlayer[];
+  me: string | null;
+  hostId: string;
+  isHost: boolean;
+  /** Host only: deal again with the same table. */
+  playAgain: () => void;
+  /** Host only: everyone back to the lobby. */
+  backToLobby: () => void;
 }
 
 /** What a game's TV lobby receives: public facts only (a TV has no seat). */

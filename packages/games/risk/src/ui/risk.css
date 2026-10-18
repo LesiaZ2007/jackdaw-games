@@ -942,8 +942,12 @@
   height: 10px;
 }
 .rk-muster__banners--tv .rk-banner__cloth {
+  width: 94%;
   min-height: calc(var(--tok) * 2.45);
   gap: 14px;
+}
+.rk-muster__banners--tv .rk-banner:not(.rk-banner--furled) .rk-banner__pole {
+  width: 100%;
 }
 .rk-muster__banners--tv .rk-banner__army {
   font-size: 18px;

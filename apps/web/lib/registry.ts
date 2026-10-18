@@ -4,6 +4,7 @@ import { codenames } from '@jackdaw/game-codenames';
 import { poker } from '@jackdaw/game-poker';
 import { rps } from '@jackdaw/game-rps';
 import { secretHitler } from '@jackdaw/game-secret-hitler';
+import { wordhoard } from '@jackdaw/game-wordhoard';
 
 /**
  * The one place games are registered. The room runtime runs these modules, and the catalog
@@ -16,6 +17,7 @@ export const games: GameRegistry = {
   [poker.meta.id]: poker,
   [rps.meta.id]: rps,
   [secretHitler.meta.id]: secretHitler,
+  [wordhoard.meta.id]: wordhoard,
 };
 
 /** Catalog metadata for every registered game, in display order. */

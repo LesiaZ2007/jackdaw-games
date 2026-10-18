@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Plaque,
   useMoment,
@@ -120,12 +120,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactio
       </section>
 
       {done ? (
-        <section className="pk-dock" aria-label="Next hand">
-          <Plaque go onClick={() => void send({ type: 'deal' })}>
-            {lastHandPlayed(v) ? 'See who won' : 'Deal the next hand'}
-          </Plaque>
-          <p className="pk-dock__note">Anyone can deal once everyone has seen the cards.</p>
-        </section>
+        <NextHand key={v.hand} t={v} me={v.me} send={send} />
       ) : v.toAct === v.me ? (
         <Betting key={`${v.hand}-${v.log.length}`} t={v} me={v.me} send={send} />
       ) : (
@@ -147,6 +142,58 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactio
     </div>
   );
 };
+
+/** Seconds between a hand ending and the next deal, time enough to see the cards. */
+const DEAL_AFTER = 7;
+
+/**
+ * Between hands: a countdown, then the next hand deals itself. Every phone sends the deal, the
+ * seat left of the button first and the rest a moment after in turn (in case that phone is
+ * asleep); the rules deal once. Anyone can deal straight away.
+ */
+function NextHand({
+  t,
+  me,
+  send,
+}: {
+  t: PokerTableView;
+  me: string;
+  send: (a: PokerAction) => Promise<boolean>;
+}) {
+  const final = lastHandPlayed(t);
+  const [left, setLeft] = useState(DEAL_AFTER);
+  const n = t.players.length;
+  const turn = (t.players.indexOf(me) - t.players.indexOf(t.dealer) - 1 + n) % n;
+
+  useEffect(() => {
+    const tick = setInterval(() => setLeft((l) => l - 1), 1000);
+    const deal = setTimeout(
+      () => void send({ type: 'deal', after: t.hand }),
+      DEAL_AFTER * 1000 + turn * 1200,
+    );
+    return () => {
+      clearInterval(tick);
+      clearTimeout(deal);
+    };
+    // One countdown per hand (the component is keyed by it).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <section className="pk-dock" aria-label="Next hand">
+      <p className="pk-dock__count" role="status">
+        {left > 0
+          ? `${final ? 'The winner' : 'Next hand'} in ${left}…`
+          : final
+            ? 'Counting the chips…'
+            : 'Dealing…'}
+      </p>
+      <Plaque onClick={() => void send({ type: 'deal', after: t.hand })}>
+        {final ? 'See who won now' : 'Deal now'}
+      </Plaque>
+    </section>
+  );
+}
 
 /** Fold, check or call, and a raise with its amount. */
 function Betting({

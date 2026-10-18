@@ -420,6 +420,110 @@ button.wh-sq:focus-visible {
   font-weight: 800;
 }
 
+/* ── The TV as a move lands ───────────────────────────────────────────── */
+.wh-tv__board {
+  position: relative;
+  container-type: inline-size;
+}
+/* Each new tile drops onto its square, one after another. */
+.wh-tile--drop {
+  animation: wh-drop 420ms var(--ease-out) both;
+}
+@keyframes wh-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-40%) scale(1.7);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(0.94);
+  }
+}
+/* Then the word rises over the board with who played it and the score, and fades away. */
+.wh-landing {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  translate: -50% -50%;
+  display: grid;
+  justify-items: center;
+  gap: 2.4cqw;
+  width: max-content;
+  max-width: 88%;
+  padding: 3cqw 4cqw;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: 5px;
+  box-shadow: 0 2.4cqw 5cqw -2cqw var(--shadow);
+  animation: wh-landing 3.6s var(--ease-out) both;
+}
+.wh-landing--quiet {
+  animation-duration: 2.6s;
+}
+@keyframes wh-landing {
+  0% {
+    opacity: 0;
+    transform: translateY(6cqw) scale(0.9);
+  }
+  12%,
+  82% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-3cqw);
+  }
+}
+.wh-landing__word {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6cqw;
+}
+.wh-landing__word .wh-tile {
+  width: 7.4cqw;
+  height: 7.4cqw;
+  font-size: 5.2cqw;
+  animation: wh-pop 360ms var(--ease-out) both;
+}
+@keyframes wh-pop {
+  from {
+    opacity: 0;
+    transform: translateY(1.4cqw) rotate(-8deg) scale(0.7);
+  }
+}
+.wh-landing__who {
+  display: flex;
+  align-items: center;
+  gap: 1.6cqw;
+  font: 700 3.2cqw/1.2 var(--font-body);
+}
+.wh-landing__score {
+  display: grid;
+  justify-items: center;
+  padding: 0.6cqw 2.4cqw;
+  background: var(--vert);
+  color: var(--on-fill);
+  font: 800 6.4cqw/1 var(--font-code);
+  font-variant-numeric: tabular-nums;
+  animation: wh-stamp 420ms var(--ease-out) both;
+}
+.wh-landing__score small {
+  font: 800 2cqw/1.3 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+@keyframes wh-stamp {
+  from {
+    opacity: 0;
+    transform: scale(2) rotate(-6deg);
+  }
+}
+
 /* Wide and landscape (a laptop): the board on the left, everything else in a column beside it. */
 @container game (min-width: 700px) and (orientation: landscape) {
   .wh--phone {
@@ -554,7 +658,24 @@ button.wh-sq:focus-visible {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wh-tile--pending {
+  .wh-tile--pending,
+  .wh-tile--drop,
+  .wh-landing__word .wh-tile,
+  .wh-landing__score {
     animation: none;
+  }
+  /* The card still comes and goes (it clears itself when its animation ends), without moving. */
+  .wh-landing {
+    animation-name: wh-landing-still;
+  }
+  @keyframes wh-landing-still {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    8%,
+    88% {
+      opacity: 1;
+    }
   }
 }

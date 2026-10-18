@@ -23,7 +23,7 @@ import { createLobby } from '@/lib/use-lobby';
 import { FilterBar } from './games/filter-bar';
 import { hasFilters, matches, NO_FILTERS, type Filters } from './games/filters';
 import { InstallButton } from './pwa';
-import { ThemeToggle } from './theme-toggle';
+import { ThemeButton } from './theme-toggle';
 
 const FALLBACK_AVATAR: Avatar = { crest: 'raven', tint: 'slate' };
 
@@ -83,6 +83,7 @@ export function Home() {
   return (
     <>
       <main className="home-hero">
+        <ThemeButton className="home-corner" />
         <div className="home-hero__inner">
           <div className="grid gap-5">
             <Lid className="grid justify-items-center gap-1 px-5 pb-5 pt-6 text-center">
@@ -164,7 +165,6 @@ export function Home() {
               <Link href="/tv" className="home-link">
                 Show a lobby on a TV
               </Link>
-              <ThemeToggle />
               <InstallButton />
             </nav>
           </section>

@@ -151,6 +151,15 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which suits simple games
   - **Emblems** are filled silhouettes that read at 24px: a dove in flight with an olive
     sprig in a round seal (Liberal), an art-deco skull in an angular badge (Fascist), and the
     badge printed solid with the skull and a crown knocked out (Hitler). Original art.
+- **Poker** uses Jackdaw's lobby. In play it's a printed card table seen from above: vert baize
+  on a sable rail with a fine cream rule, everyone's token round the rim (you at the bottom) with
+  a name plate, stack and last move, bets as small chip stacks pushed toward the middle, the
+  shared cards and pot on the baize. Cards are cream stock, charcoal ink, gules for hearts and
+  diamonds, an azure lozengy back; they look the same day and dark. `poker.css`.
+- **Wordhoard** uses Jackdaw's lobby. A printed board of paper squares ruled in ink, bonus
+  squares in heraldic fills (gules triple word, tenné double word, azure triple letter, pale
+  azure double letter), a star in the middle; bone tiles with the letter in Grenze and the value
+  in the corner, on a sable rack. `wordhoard.css`.
 - **Rock Paper Scissors** uses Jackdaw's lobby. Its own chalk-ring lobby was tried and dropped
   (2026-10-13: "the old rock paper scissors lobby was miles better").
 - A game that gets its own lobby scopes its look under the game's class, keeps the bar's pieces

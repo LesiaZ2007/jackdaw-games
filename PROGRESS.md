@@ -269,6 +269,68 @@ Lesia's playtest list ("do timers, do alerts, do all the improvements"), all don
   Game stats > Tonight.
 - A lobby saved before a game gained an option gets that option's default (start never breaks).
 
+### Risk (2026-10-18, branch `feat/risk`)
+
+Lesia asked for Risk ("Let's add Risk") and chose: a length option (secret missions, the short
+game, or classic world domination), both the classic world map and an original one, and Roll or
+Blitz attacks. Design: `docs/superpowers/specs/2026-10-18-risk-design.md`; plan:
+`docs/superpowers/plans/2026-10-18-risk.md`.
+
+- **Rules** (`packages/games/risk`): 2–6 players (two share the board with a passive neutral).
+  Options: map (World / Realm), goal (Secret missions / World domination), setup (Quick: dealt and
+  spread; Draft: everyone places their starting armies at once, hidden until all are done), card
+  sets (Rising 4, 6, 8, 10, 12, 15, +5 / Fixed 4, 6, 8, 10), turn timer (off, 1, 2, 3 minutes;
+  out of time it trades if forced, spreads what's left, moves in the minimum and ends the turn).
+  Reinforce (territories / 3, at least 3, plus continents and sets; must trade at 5 cards; +2 on a
+  traded territory you hold), attack (Roll: one exchange; Blitz: until it falls or you're down
+  to 1; the defender wins ties), move in, fortify once along your own chain. A card for taking a
+  territory; knocking someone out takes their cards (trade down at 6+). Missions: the map's six
+  continent goals, 24 territories, 18 with 2 armies each, destroy an army (not at 2 players;
+  falls back to 24 if someone else gets there first). Awards: Bloodiest battle, Greatest conquest.
+- **Maps** (`src/maps`): the classic 42-territory world (classic borders and bonuses, Europe
+  enlarged like printed boards) and the Realm, an island kingdom of 42 provinces in 6 regions.
+  Outlines come from `scripts/build-map.mjs` (`pnpm --filter @jackdaw/game-risk maps world`):
+  coast polygons and one seed per territory in `scripts/coasts/*.json`, cut into Voronoi cells with
+  wobbled, shared borders; a test checks that territories touch on land exactly where they border
+  (sea crossings are lanes). The output (`*.shapes.ts`) is generated and kept out of Prettier.
+- **Hidden information**: hands, missions, unrevealed drafts and the deck are only in
+  `getPlayerView`; the leak test plays 20 random whole games and checks, at every step, that the
+  table view and every player's view are unchanged when everyone else's secrets are scrambled.
+- **Screens**: the phone (`fit`) is the map (pinch, drag, wheel; it opens filling the frame,
+  "Whole map" shows all; tap a territory to pick it), the turn and clock, the last dice, and a
+  dock for each step; cards and mission in sheets. Each settled battle shows the attacker and
+  defender their `VerdictMoment` (taken / repelled, lost / held); being knocked out shows a loss.
+  The TV: the whole map with names, seats with lands, armies and cards, the dice and the
+  continents; settled battles as reveals. Results: everyone's mission and the final map. Jackdaw's
+  own lobby. Kit: a `banners` glyph. e2e: `apps/web/e2e/risk.spec.ts`.
+- **First playtest feedback** (Lesia, 2026-10-18; design approved in chat, "Yes, perfect"):
+  - **Whose land**: each seat marches under one of six heraldic army colours in seat order (red,
+    blue, green, gold, purple, orange; the neutral grey; `src/ui/armies.ts`). Territories are
+    filled with their owner's colour. Players' own tints were too muted and alike to tell apart;
+    their crest tokens keep them. Continents are ruled round in a heavy double line (`*_REGIONS`
+    from the map generator) and lettered in the sea with their bonus.
+  - **Dice**: they tumble as a battle lands (faces turning), then settle with the beaten dice
+    struck through; a blitz says how many throws it took (`Battle.throws`). The TV shows the last
+    battle as a card. Reduced motion: no tumble.
+  - **Your orders**: the game opens on a sealed letter in your army's colour (tap to break the
+    seal), your mission or "Conquer the world", your colour and land count, then "To battle".
+    Shown at the start (round one, before any battle), remembered per deal on the device.
+  - **Option explanations**: `GameUi.optionHelp` (new, optional) puts one line under each option
+    in Jackdaw's lobby, following the choice made. Risk explains all five.
+  - **Lobby layout (every game in Jackdaw's lobby)**: the game column is now the wider one, the
+    opened Next up stacks the box above the words when narrow, and the seat track draws only the
+    chosen game's seats (Risk 6, not 15).
+  - **Themed seating**: `LobbySeats` is the war council, each seat a banner in its army colour with
+    the crest on it over a faint engraving of the chosen map, open seats furled. `TvLobby`: the
+    map large and faint, the banners across it, joining on a cartouche. Switching the lobby to
+    a game with its own seats (and back), or the track changing size, runs as a view transition:
+    each crest and name flies to its new seat (`useSeatStyle` in `waiting.tsx`).
+  - **TV text**: names grow less than the roundels on the TV and long ones break onto two lines.
+  - **Landmarks** (`src/ui/decor.tsx`): World: title cartouche, compass rose, three galleons, a
+    sea serpent, the Rockies, Andes, Alps and Himalayas, Siberian forest. Realm: cartouche, compass,
+    ships, a serpent in the strait, castles at Kingsreach and Highcairn, a dragon over the Wolds,
+    Elderwood's pines, the Fells' peaks, Saltmarsh reeds and the Lantern Isle lighthouse.
+
 ## Next
 
 1. Lesia reviews and playtests Phase 1 on the Vercel preview, then merges `feat/phase-1` to `main`. Production then serves it.

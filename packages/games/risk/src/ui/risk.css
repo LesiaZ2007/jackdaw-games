@@ -39,7 +39,6 @@
   fill: none;
   stroke: var(--azure);
   stroke-opacity: 0.22;
-  stroke-width: 9;
   stroke-linejoin: round;
 }
 .rk-coast {
@@ -50,13 +49,12 @@
 }
 .rk-lane {
   stroke: var(--ink-2);
-  stroke-dasharray: 4 4;
   stroke-opacity: 0.7;
   pointer-events: none;
 }
 
 .rk-terr__land {
-  fill: color-mix(in srgb, var(--rk-wash) 24%, var(--paper));
+  fill: color-mix(in srgb, var(--rk-wash) 30%, var(--paper));
   transition: opacity 280ms var(--ease-out);
 }
 .rk-wash--gules {
@@ -91,20 +89,26 @@
 .rk-terr.is-pickable {
   cursor: pointer;
 }
-.rk-terr.is-dim .rk-terr__land {
-  opacity: 0.45;
+.rk-terr.is-dim {
+  opacity: 0.35;
+}
+.rk-terr {
+  transition: opacity 280ms var(--ease-out);
 }
 .rk-terr.is-target .rk-terr__line {
   stroke-opacity: 1;
-  stroke-width: 2.4;
-  stroke-dasharray: 5 3;
+  stroke: var(--ink);
+  stroke-dasharray: 2 1.4;
+  stroke-dashoffset: 0;
+}
+.rk-terr.is-target .rk-terr__land {
+  fill: color-mix(in srgb, var(--rk-wash) 34%, var(--paper));
 }
 .rk-terr.is-selected .rk-terr__land {
   fill: color-mix(in srgb, var(--rk-wash) 40%, var(--paper));
 }
 .rk-terr.is-selected .rk-terr__line {
   stroke-opacity: 1;
-  stroke-width: 3;
 }
 .rk-terr.is-flash .rk-terr__land {
   animation: rk-flash 900ms var(--ease-out) 2;
@@ -163,7 +167,451 @@
   box-shadow: 0 0.05em 0 var(--shadow);
 }
 
+/* ---------- The phone ---------- */
+
+.rk {
+  width: 100%;
+  color: var(--ink);
+}
+/* It fits under the bar without scrolling: the turn, the dice, the map as big as the space left
+   allows, then the dock. On a laptop the dock sits beside the map. */
+.rk--phone {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.rk--phone > .rk-stage {
+  flex: 1;
+}
+.rk-stage {
+  min-height: 0;
+  display: grid;
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -6px;
+  background: var(--paper);
+}
+.rk-stage > .rk-map {
+  padding: 4px;
+}
+
+.rk__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+.rk-turn {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+}
+.rk-turn__who {
+  font: 700 var(--step-1) / 1.1 var(--font-body);
+}
+.rk-turn__phase,
+.rk-turn__clock {
+  font: 700 14px / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.rk-turn__clock {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.rk-tools {
+  display: flex;
+  gap: var(--space-1);
+}
+.rk-tool {
+  min-height: var(--tap);
+  padding: 0 var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 14px / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 0.05em 0 var(--shadow);
+}
+.rk-tool b {
+  min-width: 1.6em;
+  padding: 3px 4px;
+  color: var(--paper);
+  background: var(--ink);
+  text-align: center;
+}
+
+/* The dice: the attacker's on the left, the defender's on the right, each in their colour. */
+.rk-dice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-block: 1px solid var(--rule);
+}
+.rk-dice__side {
+  display: flex;
+  gap: 4px;
+}
+.rk-die {
+  width: 28px;
+  height: 28px;
+}
+.rk-die rect {
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+.rk-die__pip {
+  fill: var(--on-fill);
+}
+.rk-dice__what {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  min-width: 0;
+}
+.rk-dice__line {
+  font-size: var(--step--1);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.rk-dice__line:first-child {
+  color: var(--ink);
+  font-weight: 700;
+}
+.rk-dice__chip {
+  margin-left: var(--space-1);
+}
+
+/* The dock: what you can do now, one plain instruction and its buttons. */
+.rk-dock {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) 0 var(--space-1);
+}
+.rk-dock__title {
+  margin: 0;
+  font: 700 var(--step-1) / 1.15 var(--font-body);
+}
+.rk-dock__hint {
+  margin: 0;
+  color: var(--ink-2);
+}
+.rk-dock__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+.rk-stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  margin-right: auto;
+}
+.rk-stepper button {
+  width: var(--tap);
+  min-height: var(--tap);
+  font: 700 var(--step-1) / 1 var(--font-plaque);
+  color: var(--ink);
+  background: none;
+  border: 0;
+}
+.rk-stepper button:disabled {
+  color: var(--rule);
+}
+.rk-stepper output {
+  min-width: 2.4em;
+  display: grid;
+  place-items: center;
+  font: 700 var(--step-1) / 1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  border-inline: 1px solid var(--rule);
+}
+
+/* Cards and the mission. */
+.rk-sheet__note {
+  margin: 0 0 var(--space-3);
+  color: var(--ink-2);
+}
+.rk-sheet__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: var(--space-3) 0;
+}
+.rk-hand {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-2);
+}
+.rk-card {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  justify-items: center;
+  gap: 4px;
+  padding: var(--space-2) 6px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -6px;
+  box-shadow: 0 0.05em 0 var(--shadow);
+  transition: transform 280ms var(--ease-out);
+}
+.rk-card.is-useful {
+  outline-color: var(--ink-2);
+}
+.rk-card.is-picked {
+  transform: translateY(-6px);
+  border-color: var(--azure);
+  outline: 2px solid var(--azure);
+}
+.rk-card__name {
+  font: 700 15px / 1.1 var(--font-body);
+  text-align: center;
+}
+.rk-card__kind {
+  font: 600 12px / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.rk-symbol {
+  width: 46px;
+  align-self: center;
+}
+.rk-symbol path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.rk-mission {
+  padding: var(--space-4);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -6px;
+  text-align: center;
+}
+.rk-mission__text {
+  margin: 0 0 var(--space-3);
+  font: 400 var(--step-3) / 1.15 var(--font-display);
+}
+
+.rk-continents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.rk-continents__row {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 34px;
+  border-bottom: 1px solid var(--rule);
+}
+.rk-continents__swatch {
+  width: 14px;
+  height: 14px;
+  background: color-mix(in srgb, var(--rk-wash) 45%, var(--paper));
+  border: 1px solid var(--ink);
+}
+.rk-continents__name {
+  font-weight: 700;
+}
+.rk-continents__bonus {
+  font: 700 15px / 1 var(--font-plaque);
+}
+.rk-continents__holder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+@container game (min-width: 760px) and (orientation: landscape) {
+  .rk--phone {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-content: start;
+    column-gap: var(--space-4);
+  }
+  .rk--phone > .rk-stage {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  .rk--phone > .rk__head,
+  .rk--phone > .rk-dice,
+  .rk--phone > .rk-dock {
+    grid-column: 2;
+  }
+  .rk--phone > .rk-dock {
+    align-self: start;
+  }
+}
+
+/* ---------- The TV ---------- */
+
+.rk--tv {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 24vw);
+  gap: 2vw;
+  padding: 2vh 2vw;
+  font-size: clamp(16px, 1.2vw, 26px);
+}
+.rk-tv__map {
+  min-height: 0;
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -6px;
+  background: var(--paper);
+  padding: 6px;
+  display: grid;
+}
+.rk-tv__side {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 2vh;
+}
+.rk-turn--tv .rk-turn__who {
+  font-size: 1.5em;
+}
+.rk-turn--tv {
+  flex-wrap: wrap;
+}
+.rk-seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.rk-seat {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: 'tok name' 'tok stats';
+  column-gap: var(--space-2);
+  align-items: center;
+  padding: 6px var(--space-2);
+  border-left: 4px solid transparent;
+}
+.rk-seat.is-turn {
+  border-left-color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.rk-seat.is-out {
+  opacity: 0.5;
+}
+.rk-seat__tok {
+  grid-area: tok;
+  position: relative;
+  display: inline-grid;
+  --z: 40px;
+}
+.rk-seat__name {
+  grid-area: name;
+  font-weight: 700;
+}
+.rk-seat__stats {
+  grid-area: stats;
+  color: var(--ink-2);
+  font: 600 0.8em / 1.2 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rk--tv .rk-die {
+  width: 2.2em;
+  height: 2.2em;
+}
+
+/* ---------- Results ---------- */
+
+.rk-reveal {
+  display: grid;
+  gap: var(--space-3);
+}
+.rk-reveal__map {
+  aspect-ratio: 1000 / 620;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 4px;
+  display: grid;
+}
+.rk-reveal--tv {
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 28%);
+  align-items: start;
+}
+.rk-reveal--tv .rk-reveal__map {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 0;
+}
+.rk-missions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.rk-missions__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'tok who chip' 'tok what chip';
+  column-gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.rk-missions__row > :first-child {
+  grid-area: tok;
+}
+.rk-missions__who {
+  grid-area: who;
+  font-weight: 700;
+}
+.rk-missions__what {
+  grid-area: what;
+  color: var(--ink-2);
+}
+.rk-missions__row > .jd-chip,
+.rk-missions__row > :last-child:not(.rk-missions__what) {
+  grid-area: chip;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .rk-card {
+    transition: none;
+  }
   .rk-terr__land {
     transition: none;
   }

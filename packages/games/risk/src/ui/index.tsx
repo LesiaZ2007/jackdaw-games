@@ -19,6 +19,17 @@ export const riskUi: GameUi = {
       'End your turn with one move between your joined-up territories. Complete your mission, or take everything, to win.',
     ],
     credit: 'Based on Risk by Albert Lamorisse. Jackdaw’s own maps and pieces.',
+    pictures: [
+      {
+        src: '/games/risk/game-phone.png',
+        alt: 'Risk on a phone: the map zoomed in on Asia, Irkutsk picked to attack Siberia, with Back, Stop, Blitz and Roll at the bottom.',
+      },
+      {
+        src: '/games/risk/tv.png',
+        alt: 'Risk on a TV: the whole world map with every army, the players’ lands, armies and cards, the last dice and who holds each continent.',
+        wide: true,
+      },
+    ],
   },
   fit: true,
   PlayerScreen,

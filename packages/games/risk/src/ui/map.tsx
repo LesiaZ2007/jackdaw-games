@@ -175,6 +175,21 @@ export function RiskMap({
     return () => el.removeEventListener('wheel', onWheel);
   }, [zoomable, cover]);
 
+  // Keep the picked territory in the frame (it can be picked off-screen from the dock's names).
+  const label = map.territories.find((t) => t.id === selected)?.label;
+  const offscreen =
+    !!label &&
+    (label[0] < x0 + vw * 0.1 ||
+      label[0] > x0 + vw * 0.9 ||
+      label[1] < y0 + vh * 0.1 ||
+      label[1] > y0 + vh * 0.9);
+  // Adjusted while rendering (React's pattern for "a prop changed"), once per pick.
+  const [followed, setFollowed] = useState<string | null>(null);
+  if ((selected ?? null) !== followed) {
+    setFollowed(selected ?? null);
+    if (offscreen && label) setView({ cx: label[0], cy: label[1], z: shown.z });
+  }
+
   const pick = (t: string) => {
     if (gesture.current.moved) return;
     onPick?.(t);

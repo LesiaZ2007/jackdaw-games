@@ -101,6 +101,8 @@ export function Waiting({
   const other = s.players.find((p) => p.id === tapped && p.id !== s.me);
   const mine = s.players.find((p) => p.id === s.me);
   const ThemedLobby = entry?.ui?.Lobby;
+  // A game can seat everyone its own way in Jackdaw's lobby (poker: round the card table).
+  const GameSeats = !showPicker ? entry?.ui?.LobbySeats : undefined;
   // A game with its own lobby (Avalon's round table) draws the players and the options itself,
   // and fills the screen under Jackdaw's bar. The host can still go back to the list of games.
   const themed = Boolean(entry && ThemedLobby && showOwnLobby);
@@ -147,11 +149,21 @@ export function Waiting({
               At the table
             </h2>
             <span>
-              {count} of 15 seats
+              {count} of {GameSeats && entry ? entry.meta.maxPlayers : 15} seats
               {s.displays > 0 && `, ${s.displays} TV`}
             </span>
           </div>
-          <SeatTrack seats={seats} onSeat={onSeat} reactions={s.reactions} transitions />
+          {GameSeats && entry ? (
+            <GameSeats
+              seats={seats}
+              max={entry.meta.maxPlayers}
+              options={s.gameOptions}
+              onSeat={onSeat}
+              reactions={s.reactions}
+            />
+          ) : (
+            <SeatTrack seats={seats} onSeat={onSeat} reactions={s.reactions} transitions />
+          )}
           {mine && (
             <div className="you-strip">
               <AvatarButton avatar={mine.avatar} size={44} onClick={() => onOpen('me')} />

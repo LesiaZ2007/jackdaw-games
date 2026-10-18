@@ -7,7 +7,7 @@ import type {
   ReactionKind,
   TvScreenProps,
 } from '@jackdaw/engine';
-import type { GameArt } from './pieces';
+import type { GameArt, Seat } from './pieces';
 
 /**
  * The client half of a game: how it looks in the catalog, its detail page, and its two screens.
@@ -67,6 +67,12 @@ export interface GameUi {
    */
   Results?: ComponentType<GameResultsProps>;
   /**
+   * Optional: the seats in Jackdaw's lobby on phones and laptops once this game is chosen, drawn the
+   * game's way in place of the seat track (poker: everyone round the card table). It gets the
+   * same seats as the track, the game's most players, and the options chosen so far.
+   */
+  LobbySeats?: ComponentType<LobbySeatsProps>;
+  /**
    * Optional themed waiting room shown in the lobby once this game is chosen (e.g. Avalon's
    * round table). The lobby shows the game's box lid and options when it's absent.
    */
@@ -95,6 +101,17 @@ export interface GameUi {
    * in a flex column); it is a size container named `game` for container queries.
    */
   fit?: boolean;
+}
+
+export interface LobbySeatsProps {
+  /** In seat order, as the seat track gets them. */
+  seats: Seat[];
+  /** The game's most players: how many places to draw. */
+  max: number;
+  options: Record<string, unknown>;
+  /** A seat with an `action` was tapped (your own opens your look; the host's opens remove). */
+  onSeat?: (id: string) => void;
+  reactions?: Reaction[];
 }
 
 /** What the platform adds to the engine's screen props. */

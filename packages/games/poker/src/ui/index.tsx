@@ -1,6 +1,7 @@
 'use client';
 
 import type { GameUi } from '@jackdaw/ui';
+import { LobbySeats } from './lobby';
 import { PlayerScreen } from './player';
 import { TvScreen } from './tv';
 
@@ -31,6 +32,7 @@ export const pokerUi: GameUi = {
     ],
   },
   fit: true,
+  LobbySeats,
   PlayerScreen,
   TvScreen,
 };

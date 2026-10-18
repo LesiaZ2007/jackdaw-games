@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { startBlocker, type ClientMessage, type Lobby, type LobbySnapshot } from '@jackdaw/engine';
 import {
   AvatarButton,
@@ -35,6 +36,35 @@ function useArrivals(ids: string[]): Set<string> {
     seen.current = now;
   }, [key]);
   return fresh;
+}
+
+/**
+ * The seats as drawn ("track:15", "risk:6"): when they change (the host picks a game with its own
+ * seats, or the track grows or shrinks), the old seats stay up one frame while a view transition
+ * captures them, then each player's crest and name fly to their new seat. Without View
+ * Transitions, or with reduced motion, it just switches.
+ */
+function useSeatStyle(want: string): string {
+  const [shown, setShown] = useState(want);
+  const running = useRef(false);
+  // Bumped when a transition finishes, to catch up with anything that changed meanwhile.
+  const [settled, setSettled] = useState(0);
+  useEffect(() => {
+    if (want === shown || running.current) return;
+    const swap = () => flushSync(() => setShown(want));
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (still || typeof document.startViewTransition !== 'function') {
+      swap();
+      return;
+    }
+    running.current = true;
+    const t = document.startViewTransition(swap);
+    void t.finished.finally(() => {
+      running.current = false;
+      setSettled((n) => n + 1);
+    });
+  }, [want, shown, settled]);
+  return shown;
 }
 
 /** Mirror the server's start check, so the button explains itself before anyone taps it. */
@@ -81,9 +111,19 @@ export function Waiting({
   const blocker = blockerFor(s);
   const count = s.players.length;
   const showPicker = picking || !entry;
-  // As many spaces as the chosen game seats (all 15 while choosing), in rows that stay square.
-  const spaces = entry && !showPicker ? Math.max(entry.meta.maxPlayers, count) : 15;
+  // A game can seat everyone its own way in Jackdaw's lobby (poker: round the card table; Risk:
+  // the war council's banners), drawn once that game is chosen. Otherwise the seat track, with as
+  // many spaces as the chosen game seats (all 15 while choosing). A change of either flies.
+  const seatStyle = useSeatStyle(
+    `${(!showPicker && entry?.ui?.LobbySeats && entry.meta.id) || 'track'}:${
+      entry && !showPicker ? Math.max(entry.meta.maxPlayers, count) : 15
+    }`,
+  );
+  const [seatsOf, shownSpaces] = seatStyle.split(':') as [string, string];
+  const spaces = Number(shownSpaces);
   const cols = spaces <= 4 ? spaces : spaces <= 6 ? 3 : spaces <= 8 ? 4 : 5;
+  const seatsEntry = seatsOf === 'track' ? undefined : catalogEntry(seatsOf);
+  const GameSeats = seatsEntry?.ui?.LobbySeats;
 
   const seats = s.players.map((p) => ({
     id: p.id,
@@ -104,8 +144,6 @@ export function Waiting({
   const other = s.players.find((p) => p.id === tapped && p.id !== s.me);
   const mine = s.players.find((p) => p.id === s.me);
   const ThemedLobby = entry?.ui?.Lobby;
-  // A game can seat everyone its own way in Jackdaw's lobby (poker: round the card table).
-  const GameSeats = !showPicker ? entry?.ui?.LobbySeats : undefined;
   // A game with its own lobby (Avalon's round table) draws the players and the options itself,
   // and fills the screen under Jackdaw's bar. The host can still go back to the list of games.
   const themed = Boolean(entry && ThemedLobby && showOwnLobby);
@@ -156,10 +194,10 @@ export function Waiting({
               {s.displays > 0 && `, ${s.displays} TV`}
             </span>
           </div>
-          {GameSeats && entry ? (
+          {GameSeats && seatsEntry ? (
             <GameSeats
               seats={seats}
-              max={entry.meta.maxPlayers}
+              max={seatsEntry.meta.maxPlayers}
               options={s.gameOptions}
               onSeat={onSeat}
               reactions={s.reactions}

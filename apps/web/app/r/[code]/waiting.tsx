@@ -133,6 +133,7 @@ export function Waiting({
             start={startGame}
             onSeat={onSeat}
             changeGame={isHost ? () => setPicking(true) : undefined}
+            setAvatar={async (avatar) => (await send({ type: 'setAvatar', avatar })) !== null}
             reactions={s.reactions}
             react={(kind) => void send({ type: 'react', kind })}
             chat={chat}

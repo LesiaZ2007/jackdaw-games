@@ -500,6 +500,24 @@
   gap: var(--space-4);
   padding-bottom: var(--space-5);
 }
+/* A game drawn edge to edge (GameUi.fullBleed) fills the main column, chat dock beside it. */
+.lobby-page--bleed .lobby-main {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.game-shell--bleed {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: none;
+  width: 100%;
+  gap: 0;
+  padding: 0;
+}
+.game-shell--bleed > :last-child {
+  flex: 1;
+}
 .spectator,
 .game-missing {
   margin: 0;

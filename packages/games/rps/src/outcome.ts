@@ -32,7 +32,7 @@ export function roundOutcome(result: RoundResult, me: string): RoundOutcome {
   return { winners, outcome, beat, lostTo };
 }
 
-/** "Bran", "Bran and Cerys", "Bran, Cerys and 2 others". */
+/** "Rook", "Rook and Magpie", "Rook, Magpie and 2 others". */
 export function listNames(ids: string[], name: (id: string) => string, max = 2): string {
   const names = ids.map(name);
   if (names.length <= 1) return names[0] ?? '';

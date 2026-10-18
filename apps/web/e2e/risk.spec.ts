@@ -44,17 +44,17 @@ test('risk: a whole turn on the phone, seen by the other phone and the TV', asyn
   request,
 }) => {
   test.setTimeout(180_000);
-  const keys = [token('wren'), token('bran')];
+  const keys = [token('wren'), token('rook')];
   const { code } = await call(request, '/api/lobby', keys[0]!, { name: 'Wren', gameId: 'risk' });
-  await call(request, `/api/lobby/${code}`, keys[1]!, { type: 'join', name: 'Bran' });
+  await call(request, `/api/lobby/${code}`, keys[1]!, { type: 'join', name: 'Rook' });
 
   // The lobby: each seat a banner in the colour its armies will be, and every option explained.
   const host = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await host.addInitScript((t) => localStorage.setItem('jackdaw:token', t), keys[0]!);
   const lobby = await host.newPage();
   await lobby.goto(`/r/${code}`);
-  await expect(lobby.getByLabel('the owner (you), host, Red armies')).toBeVisible();
-  await expect(lobby.getByLabel('Bran, Blue armies')).toBeVisible();
+  await expect(lobby.getByLabel('Wren (you), host, Red armies')).toBeVisible();
+  await expect(lobby.getByLabel('Rook, Blue armies')).toBeVisible();
   await lobby.getByRole('button', { name: 'Show options and rules' }).click();
   await expect(lobby.getByText(/Everyone gets a hidden goal/)).toBeVisible();
   await host.close();
@@ -122,7 +122,7 @@ test('risk: a whole turn on the phone, seen by the other phone and the TV', asyn
 
   await expect(other.getByText('Your turn')).toBeVisible();
   await expect(other.getByText('Tap your territories to add one at a time.')).toBeVisible();
-  await expect(tv.getByText('Bran’s turn').or(tv.getByText('the owner’s turn'))).toBeVisible();
+  await expect(tv.getByText('Rook’s turn').or(tv.getByText('Wren’s turn'))).toBeVisible();
   expect((await call(request, `/api/lobby/${code}`, null)).tableView.turn).toBe(otherId);
 
   // Nothing scrolls sideways, at any width, by day or by night.

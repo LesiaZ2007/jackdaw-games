@@ -125,7 +125,7 @@ test('a 4-player game: teams in the lobby, a real clue and guess, then to a win'
   browser,
 }) => {
   test.setTimeout(240_000);
-  const names = ['Wren', 'Bran', 'Cerys', 'Dafydd'];
+  const names = ['Wren', 'Rook', 'Magpie', 'Robin'];
   const host = await open(browser);
   const code = await hostCodenames(host);
   const phones: Page[] = [host];
@@ -152,29 +152,29 @@ test('a 4-player game: teams in the lobby, a real clue and guess, then to a win'
     await host.getByRole('button', { name: where, exact: true }).click();
   };
   await place('Wren', 'Red spymaster');
-  await place('Bran', 'Red operative');
-  await place('Cerys', 'Blue spymaster');
-  await place('Dafydd', 'Blue operative');
+  await place('Rook', 'Red operative');
+  await place('Magpie', 'Blue spymaster');
+  await place('Robin', 'Blue operative');
   await expect(host.getByRole('region', { name: 'Not on a team yet' })).toHaveCount(0);
   const red = host.getByRole('region', { name: 'Red team' });
   await expect(red).toContainText('Wren');
   await expect(red).toContainText('Spymaster');
-  await expect(host.getByRole('region', { name: 'Blue team' })).toContainText('Dafydd');
+  await expect(host.getByRole('region', { name: 'Blue team' })).toContainText('Robin');
   // Other phones see the same split, and can't move anyone.
-  const bran = phones[1]!;
-  await expect(bran.getByRole('region', { name: 'Blue team' })).toContainText('Cerys');
-  await expect(bran.getByRole('button', { name: 'Shuffle teams' })).toHaveCount(0);
+  const rook = phones[1]!;
+  await expect(rook.getByRole('region', { name: 'Blue team' })).toContainText('Magpie');
+  await expect(rook.getByRole('button', { name: 'Shuffle teams' })).toHaveCount(0);
 
   await host.getByRole('button', { name: 'Start Codenames' }).click();
   for (const p of phones) await expect(p.getByRole('list', { name: 'The 25 words' })).toBeVisible();
 
-  const first = (await read(host.request, code, tokens[ids.the owner!]!)).view!;
+  const first = (await read(host.request, code, tokens[ids.Wren!]!)).view!;
   expect(first.spymaster).toBe(true);
   expect(first.key).toHaveLength(25);
   const key = first.key!;
   const team = first.turn;
-  const spyName = team === 'red' ? 'Wren' : 'Cerys';
-  const opName = team === 'red' ? 'Bran' : 'Dafydd';
+  const spyName = team === 'red' ? 'Wren' : 'Magpie';
+  const opName = team === 'red' ? 'Rook' : 'Robin';
   const spyPage = phones[names.indexOf(spyName)]!;
   const opPage = phones[names.indexOf(opName)]!;
 
@@ -213,7 +213,7 @@ test('a 4-player game: teams in the lobby, a real clue and guess, then to a win'
   await playToWin(host.request, code, tokens);
   for (const p of phones)
     await expect(p.getByText(/wins:/).first()).toBeVisible({ timeout: 20_000 });
-  const done = await read(host.request, code, tokens[ids.the owner!]!);
+  const done = await read(host.request, code, tokens[ids.Wren!]!);
   expect(done.status).toBe('results');
   await expect(host.getByRole('region', { name: 'The whole key' })).toBeVisible();
   await expect(host.getByRole('region', { name: 'Clues so far' })).toContainText('SEASIDE');
@@ -242,7 +242,7 @@ for (const scheme of ['light', 'dark'] as const) {
     const tokens: Record<string, string> = {
       [(await read(host.request, code, await tokenOf(host))).me!]: await tokenOf(host),
     };
-    for (const [i, name] of ['Bran', 'Cerys', 'Dafydd', 'Elin', 'Ffion'].entries()) {
+    for (const [i, name] of ['Rook', 'Magpie', 'Robin', 'Finch', 'Heron'].entries()) {
       const token = `e2e-cn-${scheme}-${i}-0123456789`;
       const snap = await post(host.request, code, token, { type: 'join', name });
       tokens[snap.me!] = token;

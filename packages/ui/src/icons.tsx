@@ -199,6 +199,14 @@ export const GLYPHS: Record<string, ReactNode> = {
       <circle cx="32" cy="46" r="3" />
     </g>
   ),
+  /** Two war banners crossed (Risk). */
+  banners: (
+    <g {...stroke(3.4)}>
+      <path d="M14 58L46 8M50 58L18 8" />
+      <path d="M45 11l14 2-6 5 6 6-21-1M19 11l-14 2 6 5-6 6 21-1" />
+      <path d="M8 58h48" />
+    </g>
+  ),
 };
 
 export function Glyph({ id, size }: { id: string; size?: number | string }) {

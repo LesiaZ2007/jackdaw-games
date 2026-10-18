@@ -1,0 +1,1209 @@
+/* Risk: a printed war map. Card stock, an inked coast over an engraved sea, every territory
+   filled with its owner's army colour, continents ruled round in a double line and lettered in
+   the sea, with the engraver's ornaments. Tokens only; day and dark follow the shell. */
+
+/* ---------- The map ---------- */
+
+.rk-map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+}
+.rk-map > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.rk-map--zoom > svg {
+  touch-action: none;
+  cursor: grab;
+}
+.rk-map--zoom > svg:active {
+  cursor: grabbing;
+}
+
+.rk-sea {
+  fill: color-mix(in srgb, var(--azure) 9%, var(--paper));
+}
+.rk-sea-line {
+  stroke: var(--azure);
+  stroke-opacity: 0.16;
+  stroke-width: 0.6;
+}
+/* The engraver's ripple along every coast. */
+.rk-coast-halo {
+  fill: none;
+  stroke: var(--azure);
+  stroke-opacity: 0.22;
+  stroke-linejoin: round;
+}
+.rk-coast {
+  fill: none;
+  stroke: var(--ink);
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.rk-lane {
+  stroke: var(--ink-2);
+  stroke-opacity: 0.7;
+  pointer-events: none;
+}
+
+.rk-terr__land {
+  fill: color-mix(in srgb, var(--rk-own) 46%, var(--paper));
+  transition: opacity 280ms var(--ease-out);
+}
+.rk-terr__edge {
+  fill: none;
+  stroke: var(--rk-own);
+  stroke-opacity: 0.9;
+  pointer-events: none;
+}
+.rk-terr__line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.55;
+  pointer-events: none;
+}
+.rk-terr.is-pickable {
+  cursor: pointer;
+}
+.rk-terr.is-dim {
+  opacity: 0.35;
+}
+.rk-terr {
+  transition: opacity 280ms var(--ease-out);
+}
+.rk-terr.is-target .rk-terr__line {
+  stroke-opacity: 1;
+  stroke: var(--ink);
+  stroke-dasharray: 2 1.4;
+  stroke-dashoffset: 0;
+}
+.rk-terr.is-target .rk-terr__land {
+  fill: color-mix(in srgb, var(--rk-own) 56%, var(--paper));
+}
+.rk-terr.is-selected .rk-terr__land {
+  fill: color-mix(in srgb, var(--rk-own) 64%, var(--paper));
+}
+.rk-terr.is-selected .rk-terr__line {
+  stroke-opacity: 1;
+}
+.rk-terr.is-flash .rk-terr__land {
+  animation: rk-flash 900ms var(--ease-out) 2;
+}
+@keyframes rk-flash {
+  50% {
+    fill: color-mix(in srgb, var(--rk-own) 78%, var(--paper));
+  }
+}
+
+/* Each continent ruled round in a double line: heavy ink with a hairline of paper inside it. */
+.rk-region path {
+  fill: none;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.rk-region__outer {
+  stroke: var(--ink);
+  stroke-opacity: 0.85;
+}
+.rk-region__inner {
+  stroke: var(--paper);
+}
+
+/* The engraver's ornaments: ink lines, paper fills, a touch of colour. Never tappable. */
+.rk-decor {
+  pointer-events: none;
+}
+.rk-orn path,
+.rk-orn rect,
+.rk-orn circle {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.rk-orn .rk-orn__paper,
+.rk-orn .rk-orn__plate {
+  fill: var(--paper);
+}
+.rk-orn .rk-orn__paper-open {
+  fill: color-mix(in srgb, var(--paper) 70%, transparent);
+}
+.rk-orn .rk-orn__ink {
+  fill: var(--ink-2);
+}
+.rk-orn .rk-orn__ring {
+  stroke-width: 0.6;
+}
+.rk-orn .rk-orn__flag {
+  fill: var(--gules);
+}
+.rk-orn .rk-orn__beast {
+  fill: color-mix(in srgb, var(--vert) 35%, var(--paper));
+}
+.rk-orn .rk-orn__wing {
+  fill: color-mix(in srgb, var(--gules) 30%, var(--paper));
+}
+.rk-orn .rk-orn__tree {
+  fill: color-mix(in srgb, var(--vert) 55%, var(--paper));
+}
+.rk-orn .rk-orn__lamp {
+  fill: var(--or);
+}
+.rk-orn .rk-orn__beam {
+  stroke: var(--or);
+  stroke-width: 1.2;
+}
+.rk-orn--land path,
+.rk-orn--land rect {
+  stroke: var(--ink);
+  stroke-opacity: 0.75;
+  stroke-width: 1;
+}
+.rk-orn text {
+  text-anchor: middle;
+  fill: var(--ink);
+}
+.rk-orn__letter {
+  font-family: var(--font-plaque);
+  font-weight: 700;
+}
+.rk-orn__title {
+  font-family: var(--font-display);
+}
+.rk-orn__sub {
+  font-family: var(--font-plaque);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  fill: var(--ink-2);
+}
+.rk-continent-name {
+  font-family: var(--font-plaque);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-anchor: middle;
+  fill: var(--ink-2);
+  paint-order: stroke;
+  stroke: color-mix(in srgb, var(--azure) 9%, var(--paper));
+  stroke-width: 3px;
+  pointer-events: none;
+}
+.rk-continent-name__bonus {
+  font-family: var(--font-plaque);
+  font-weight: 700;
+  letter-spacing: 0;
+  fill: var(--ink);
+}
+
+.rk-roundel {
+  cursor: inherit;
+}
+.rk-roundel circle {
+  stroke: var(--paper);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.rk-roundel text {
+  font-family: var(--font-plaque);
+  font-weight: 700;
+  text-anchor: middle;
+  fill: var(--on-fill);
+  /* a dark rim keeps the count readable on every army's colour, gold included */
+  paint-order: stroke;
+  stroke: var(--sable);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.rk-roundel .rk-roundel__extra {
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
+}
+.rk-roundel .rk-name {
+  fill: var(--ink);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.rk-map__whole {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  font: 600 var(--step--1) / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 0 0.05em 0 var(--shadow);
+}
+
+/* ---------- The phone ---------- */
+
+.rk {
+  width: 100%;
+  color: var(--ink);
+}
+/* It fits under the bar without scrolling: the turn, the dice, the map as big as the space left
+   allows, then the dock. On a laptop the dock sits beside the map. */
+.rk--phone {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.rk--phone > .rk-stage {
+  flex: 1;
+}
+.rk-stage {
+  min-height: 0;
+  display: grid;
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -6px;
+  background: var(--paper);
+}
+.rk-stage > .rk-map {
+  padding: 4px;
+}
+
+.rk__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+.rk-turn {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+}
+.rk-turn__who {
+  font: 700 var(--step-1) / 1.1 var(--font-body);
+}
+.rk-turn__phase,
+.rk-turn__clock {
+  font: 700 14px / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.rk-turn__clock {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.rk-tools {
+  display: flex;
+  gap: var(--space-1);
+}
+.rk-tool {
+  min-height: var(--tap);
+  padding: 0 var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 14px / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  box-shadow: 0 0.05em 0 var(--shadow);
+}
+.rk-tool b {
+  min-width: 1.6em;
+  padding: 3px 4px;
+  color: var(--paper);
+  background: var(--ink);
+  text-align: center;
+}
+
+/* The dice: the attacker's on the left, the defender's on the right, each in their colour. */
+.rk-dice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-block: 1px solid var(--rule);
+}
+.rk-dice__side {
+  display: flex;
+  gap: 4px;
+}
+.rk-die {
+  width: 28px;
+  height: 28px;
+}
+.rk-die rect {
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+.rk-die__pip {
+  fill: var(--on-fill);
+}
+/* Thrown: each die tumbles in from above and lands, a beat after the one before. */
+.rk-die.is-rolling {
+  animation: rk-tumble 720ms var(--ease-out) both;
+}
+@keyframes rk-tumble {
+  0% {
+    transform: translateY(-60%) rotate(-160deg) scale(0.7);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  60% {
+    transform: translateY(8%) rotate(18deg) scale(1.05);
+  }
+  80% {
+    transform: translateY(-6%) rotate(-6deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+/* Beaten: struck through and set back, so who lost what reads at a glance. */
+.rk-die {
+  transition: opacity 280ms var(--ease-out);
+}
+.rk-die.is-lost {
+  opacity: 0.45;
+}
+.rk-die__strike {
+  stroke: var(--ink);
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+.rk-dice__what {
+  display: grid;
+  gap: 2px;
+  text-align: center;
+  min-width: 0;
+}
+.rk-dice__line {
+  font-size: var(--step--1);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.rk-dice__line:first-child {
+  color: var(--ink);
+  font-weight: 700;
+}
+.rk-dice__chip {
+  margin-left: var(--space-1);
+}
+
+/* The dock: what you can do now, one plain instruction and its buttons. */
+.rk-dock {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) 0 var(--space-1);
+}
+.rk-dock__title {
+  margin: 0;
+  font: 700 var(--step-1) / 1.15 var(--font-body);
+}
+.rk-dock__hint {
+  margin: 0;
+  color: var(--ink-2);
+}
+.rk-dock__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+.rk-stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  margin-right: auto;
+}
+.rk-stepper button {
+  width: var(--tap);
+  min-height: var(--tap);
+  font: 700 var(--step-1) / 1 var(--font-plaque);
+  color: var(--ink);
+  background: none;
+  border: 0;
+}
+.rk-stepper button:disabled {
+  color: var(--rule);
+}
+.rk-stepper output {
+  min-width: 2.4em;
+  display: grid;
+  place-items: center;
+  font: 700 var(--step-1) / 1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  border-inline: 1px solid var(--rule);
+}
+
+/* Cards and the mission. */
+.rk-sheet__note {
+  margin: 0 0 var(--space-3);
+  color: var(--ink-2);
+}
+.rk-sheet__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: var(--space-3) 0;
+}
+.rk-hand {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-2);
+}
+.rk-card {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  justify-items: center;
+  gap: 4px;
+  padding: var(--space-2) 6px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -6px;
+  box-shadow: 0 0.05em 0 var(--shadow);
+  transition: transform 280ms var(--ease-out);
+}
+.rk-card.is-useful {
+  outline-color: var(--ink-2);
+}
+.rk-card.is-picked {
+  transform: translateY(-6px);
+  border-color: var(--azure);
+  outline: 2px solid var(--azure);
+}
+.rk-card__name {
+  font: 700 15px / 1.1 var(--font-body);
+  text-align: center;
+}
+.rk-card__kind {
+  font: 600 12px / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.rk-symbol {
+  width: 46px;
+  align-self: center;
+}
+.rk-symbol path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.rk-mission {
+  padding: var(--space-4);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -6px;
+  text-align: center;
+}
+.rk-mission__text {
+  margin: 0 0 var(--space-3);
+  font: 400 var(--step-3) / 1.15 var(--font-display);
+}
+
+.rk-continents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.rk-continents__row {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 34px;
+  border-bottom: 1px solid var(--rule);
+}
+.rk-continents__swatch {
+  width: 14px;
+  height: 14px;
+  /* the holder's army colour (set inline); empty while nobody holds it all */
+  background: var(--paper);
+  border: 1px solid var(--ink);
+}
+.rk-continents__name {
+  font-weight: 700;
+}
+.rk-continents__bonus {
+  font: 700 15px / 1 var(--font-plaque);
+}
+.rk-continents__holder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+@container game (min-width: 760px) and (orientation: landscape) {
+  .rk--phone {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-content: start;
+    column-gap: var(--space-4);
+  }
+  .rk--phone > .rk-stage {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  .rk--phone > .rk__head,
+  .rk--phone > .rk-dice,
+  .rk--phone > .rk-dock {
+    grid-column: 2;
+  }
+  .rk--phone > .rk-dock {
+    align-self: start;
+  }
+}
+
+/* ---------- The TV ---------- */
+
+.rk--tv {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 24vw);
+  gap: 2vw;
+  padding: 2vh 2vw;
+  font-size: clamp(16px, 1.2vw, 26px);
+}
+.rk-tv__map {
+  min-height: 0;
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -6px;
+  background: var(--paper);
+  padding: 6px;
+  display: grid;
+}
+.rk-tv__side {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 2vh;
+}
+.rk-turn--tv .rk-turn__who {
+  font-size: 1.5em;
+}
+.rk-turn--tv {
+  flex-wrap: wrap;
+}
+.rk-seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.rk-seat {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: 'tok name' 'tok stats';
+  column-gap: var(--space-2);
+  align-items: center;
+  padding: 6px var(--space-2);
+  /* each seat's army colour down its edge, matching their land on the map */
+  border-left: 10px solid var(--rk-own);
+}
+.rk-seat.is-turn {
+  background: color-mix(in srgb, var(--rk-own) 16%, transparent);
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+.rk-seat.is-out {
+  opacity: 0.5;
+}
+.rk-seat__tok {
+  grid-area: tok;
+  position: relative;
+  display: inline-grid;
+  --z: 40px;
+}
+.rk-seat__name {
+  grid-area: name;
+  font-weight: 700;
+}
+.rk-seat__stats {
+  grid-area: stats;
+  color: var(--ink-2);
+  font: 600 0.8em / 1.2 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* On the TV the last battle is a card of its own, dice big enough to read from the sofa. */
+.rk--tv .rk-dice {
+  padding: 0.6em 0.8em;
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -6px;
+  background: var(--paper);
+}
+.rk--tv .rk-die {
+  width: 2.6em;
+  height: 2.6em;
+}
+
+/* ---------- The war council (lobby seats) ---------- */
+
+/* A strip of the chosen board, engraved faintly, with each general's banner hung across it. */
+.rk-muster {
+  container: muster / inline-size;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--azure) 9%, var(--paper));
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -6px;
+}
+.rk-muster__map {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.rk-muster__land {
+  fill: var(--paper);
+  stroke: var(--ink-2);
+  stroke-opacity: 0.35;
+  stroke-width: 0.7;
+}
+.rk-muster__region {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.35;
+  stroke-width: 2;
+}
+.rk-muster__title {
+  position: relative;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.rk-muster__title span {
+  font: 400 var(--step-2) / 1 var(--font-display);
+}
+.rk-muster__title small {
+  font: 700 13px / 1 var(--font-plaque);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.rk-muster__banners {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4) var(--space-2);
+}
+@container muster (min-width: 560px) {
+  .rk-muster__banners {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* One banner: a pole with a finial, the cloth hanging from it cut to a swallowtail. */
+.rk-banner {
+  --tok: 52px;
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  min-width: 0;
+}
+.rk-banner__pole {
+  width: 86%;
+  height: 6px;
+  background: var(--ink);
+  border-radius: 3px;
+  position: relative;
+}
+.rk-banner__pole::before,
+.rk-banner__pole::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--or);
+  border: 1.5px solid var(--ink);
+}
+.rk-banner__pole::before {
+  left: -5px;
+}
+.rk-banner__pole::after {
+  right: -5px;
+}
+.rk-banner__cloth {
+  --ring-bg: var(--rk-own);
+  width: 72%;
+  min-height: calc(var(--tok) * 2.1);
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  padding-top: calc(var(--tok) * 0.22);
+  color: var(--on-fill);
+  /* the cloth's fold, lighter at the top where it hangs */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--rk-own) 82%, var(--paper)) 0 10%,
+    var(--rk-own) 30% 100%
+  );
+  border-inline: 1.5px solid color-mix(in srgb, var(--rk-own) 60%, var(--ink));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
+  transform-origin: top center;
+  animation: rk-banner-sway 5s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -0.8s);
+}
+@keyframes rk-banner-sway {
+  50% {
+    transform: rotate(1.4deg) skewX(-1deg);
+  }
+}
+.rk-banner--landing .rk-banner__cloth {
+  animation:
+    rk-banner-unfurl 620ms var(--ease-out) both,
+    rk-banner-sway 5s ease-in-out 620ms infinite;
+}
+@keyframes rk-banner-unfurl {
+  from {
+    transform: scaleY(0.1);
+  }
+}
+.rk-banner__tok {
+  position: relative;
+  display: inline-grid;
+}
+.rk-banner__react {
+  position: absolute;
+  top: calc(var(--tok) * 0.22 + 6px);
+  left: 50%;
+  width: var(--tok);
+  height: var(--tok);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.rk-banner__army {
+  font: 700 11px / 1 var(--font-plaque);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.rk-banner__name {
+  max-width: 100%;
+  margin-top: 4px;
+  padding: 2px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 15px / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+}
+.rk-banner--me .rk-banner__name {
+  color: var(--paper);
+  background: var(--ink);
+}
+.rk-banner--away .rk-banner__cloth {
+  filter: saturate(0.4);
+}
+/* Open: the banner still furled round its pole. */
+.rk-banner--furled .rk-banner__furl {
+  width: 14px;
+  height: calc(var(--tok) * 1.7);
+  background: repeating-linear-gradient(
+    170deg,
+    var(--rule) 0 6px,
+    color-mix(in srgb, var(--rule) 55%, var(--paper)) 6px 12px
+  );
+  border: 1.5px solid var(--ink-2);
+  border-radius: 0 0 7px 7px;
+}
+.rk-banner--furled .rk-banner__pole {
+  width: 40%;
+  background: var(--ink-2);
+}
+.rk-banner--furled .rk-banner__name {
+  color: var(--ink-2);
+  border-style: dashed;
+  border-color: var(--rule);
+  background: transparent;
+}
+.rk-banner__tap {
+  position: absolute;
+  inset: 0;
+  min-height: var(--tap);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.rk-banner__tap:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+
+/* The TV: the whole board faint behind everything, the banners large, joining on a cartouche. */
+.rk-tvmuster {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 660px;
+  gap: 56px;
+  align-items: center;
+  padding: 56px 80px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--azure) 9%, var(--paper));
+}
+.rk-tvmuster > .rk-muster__map {
+  opacity: 0.9;
+}
+.rk-tvmuster__main {
+  position: relative;
+  display: grid;
+  gap: 48px;
+  align-content: center;
+}
+.rk-tvmuster__title {
+  margin: 0;
+  font: 400 140px / 0.9 var(--font-display);
+}
+.rk-tvmuster__sub {
+  margin: 8px 0 0;
+  max-width: 34ch;
+  font-size: 30px;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.rk-muster__banners--tv {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 24px;
+}
+.rk-muster__banners--tv .rk-banner {
+  --tok: 96px;
+}
+.rk-muster__banners--tv .rk-banner__pole {
+  height: 10px;
+}
+.rk-muster__banners--tv .rk-banner__cloth {
+  width: 94%;
+  min-height: calc(var(--tok) * 2.45);
+  gap: 14px;
+}
+.rk-muster__banners--tv .rk-banner:not(.rk-banner--furled) .rk-banner__pole {
+  width: 100%;
+}
+.rk-muster__banners--tv .rk-banner__army {
+  font-size: 18px;
+}
+.rk-muster__banners--tv .rk-banner__name {
+  font-size: 26px;
+  padding: 4px 12px;
+}
+.rk-muster__banners--tv .rk-banner--furled .rk-banner__furl {
+  width: 22px;
+}
+.rk-tvmuster__status {
+  margin: 0;
+  font: 800 40px / 1.05 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.rk-tvmuster__join {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  padding: 36px 32px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  outline: 1.5px solid var(--rule);
+  outline-offset: -12px;
+  box-shadow: 0 0.4em 1.4em var(--shadow);
+}
+
+/* ---------- Your orders (the opening screen) ---------- */
+
+.rk-orders {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4) var(--gutter, 16px);
+  background: color-mix(in srgb, var(--table) 88%, transparent);
+  backdrop-filter: blur(2px);
+  animation: rk-orders-in 320ms var(--ease-out) both;
+}
+@keyframes rk-orders-in {
+  from {
+    opacity: 0;
+  }
+}
+/* A folded letter on card stock, double-ruled, its edge in your army's colour. */
+.rk-orders__letter {
+  width: min(100%, 440px);
+  max-height: 100%;
+  overflow: auto;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4) var(--space-4);
+  text-align: center;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--rule);
+  outline-offset: -8px;
+  box-shadow:
+    inset 0 10px 0 var(--rk-own),
+    0 0.4em 1.2em var(--shadow);
+}
+.rk-orders__kicker {
+  margin: var(--space-2) 0 0;
+  font: 700 14px / 1 var(--font-plaque);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.rk-orders__title {
+  margin: 0;
+  font: 400 var(--step-4) / 0.95 var(--font-display);
+}
+.rk-orders__seal {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: var(--space-2);
+  color: var(--ink);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+/* The wax: your army's colour, scalloped like a pressed seal, your crest in the middle. */
+.rk-orders__wax {
+  --ring-bg: var(--rk-own);
+  width: 116px;
+  height: 116px;
+  display: grid;
+  place-items: center;
+  background: var(--rk-own);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--rk-own) 70%, var(--ink)),
+    inset 0 -6px 0 color-mix(in srgb, var(--rk-own) 70%, var(--ink));
+  animation: rk-seal-wait 2.4s var(--ease-out) infinite;
+}
+@keyframes rk-seal-wait {
+  50% {
+    transform: scale(1.04) rotate(-3deg);
+  }
+}
+.rk-orders__tap {
+  font: 700 15px / 1 var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.rk-orders__mission {
+  margin: 0;
+  font: 400 var(--step-3) / 1.1 var(--font-display);
+  animation: rk-unfold 420ms var(--ease-out) both;
+}
+@keyframes rk-unfold {
+  from {
+    opacity: 0;
+    transform: perspective(600px) rotateX(-70deg);
+    transform-origin: top;
+  }
+}
+.rk-orders__note {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+.rk-orders__facts {
+  width: 100%;
+  margin: var(--space-2) 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--rule);
+}
+.rk-orders__facts > div {
+  padding: var(--space-2) var(--space-1) 0;
+}
+.rk-orders__facts > div + div {
+  border-left: 1px solid var(--rule);
+}
+.rk-orders__facts dt {
+  font: 600 12px / 1.2 var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.rk-orders__facts dd {
+  margin: 4px 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+.rk-orders__swatch {
+  width: 14px;
+  height: 14px;
+  background: var(--rk-own);
+  border: 1.5px solid var(--ink);
+}
+.rk-orders__go {
+  justify-self: stretch;
+}
+
+/* ---------- Results ---------- */
+
+.rk-reveal {
+  display: grid;
+  gap: var(--space-3);
+}
+.rk-reveal__map {
+  aspect-ratio: 1000 / 620;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 4px;
+  display: grid;
+}
+.rk-reveal--tv {
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 28%);
+  align-items: start;
+}
+.rk-reveal--tv .rk-reveal__map {
+  aspect-ratio: auto;
+  height: 100%;
+  min-height: 0;
+}
+.rk-missions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.rk-missions__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'tok who chip' 'tok what chip';
+  column-gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.rk-missions__tok {
+  position: relative;
+  display: inline-grid;
+}
+.rk-missions__army,
+.rk-turn__army {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--ink);
+}
+.rk-missions__army {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+}
+.rk-missions__row > :first-child {
+  grid-area: tok;
+}
+.rk-missions__who {
+  grid-area: who;
+  font-weight: 700;
+}
+.rk-missions__what {
+  grid-area: what;
+  color: var(--ink-2);
+}
+.rk-missions__row > .jd-chip,
+.rk-missions__row > :last-child:not(.rk-missions__what) {
+  grid-area: chip;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rk-card {
+    transition: none;
+  }
+  .rk-terr__land {
+    transition: none;
+  }
+  .rk-terr.is-flash .rk-terr__land {
+    animation: none;
+  }
+  .rk-terr,
+  .rk-die,
+  .rk-die.is-rolling,
+  .rk-orders,
+  .rk-orders__wax,
+  .rk-orders__mission,
+  .rk-banner__cloth,
+  .rk-banner--landing .rk-banner__cloth {
+    transition: none;
+    animation: none;
+  }
+}

@@ -42,7 +42,7 @@ async function phone(browser: Browser, key: string, code: string) {
   return page;
 }
 
-test('poker: the player to act folds, the hand is settled, and anyone deals the next', async ({
+test('poker: the player to act folds, the hand is settled, and the next deals itself', async ({
   browser,
   request,
 }) => {
@@ -65,11 +65,12 @@ test('poker: the player to act folds, the hand is settled, and anyone deals the 
   await expect(other.getByText(/^Waiting for /)).toBeVisible();
   await actor.getByRole('button', { name: 'Fold', exact: true }).click();
 
-  // The other player won the blinds: their moment, then the deal.
+  // The other player won the blinds: their moment, a countdown, then the next hand on its own.
   await expect(other.getByText(/^You won /)).toBeVisible({ timeout: 20_000 });
-  await other.getByText(/^You won /).click();
-  await other.getByRole('button', { name: 'Deal the next hand' }).click();
-  await expect(other.getByText(/^Hand 2 of 30/)).toBeVisible({ timeout: 20_000 });
+  await expect(other.getByText(/^Next hand in /)).toBeVisible();
+  await expect(other.getByText(/^Hand 2 of 30/)).toBeVisible({ timeout: 30_000 });
+  const after = await call(request, `/api/lobby/${code}`, null);
+  expect(after.tableView.hand).toBe(2);
 });
 
 test('wordhoard: a tile placed shows why it is not a play yet, then the turn is passed', async ({

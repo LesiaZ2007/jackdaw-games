@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Plaque,
+  useCountdown,
   useMoment,
   VerdictMoment,
   type GameUi,
@@ -79,7 +80,13 @@ const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, M
  * Poker on a phone: the table from your seat, your two cards, and the betting controls at the
  * bottom, within thumb reach, when it's your turn.
  */
-export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactions, ...props }) => {
+export const PlayerScreen: GameUi['PlayerScreen'] = ({
+  view,
+  sendAction,
+  reactions,
+  now,
+  ...props
+}) => {
   const v = view as PokerPlayerView;
   const players = props.players as ScreenPlayer[];
   const byId = new Map(players.map((p) => [p.id, p]));
@@ -100,7 +107,9 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactio
         <p>{handLine(v)}</p>
       </header>
 
-      <PokerTable t={v} players={players} me={v.me} reactions={reactions} />
+      <div className="pk-stage">
+        <PokerTable t={v} players={players} me={v.me} reactions={reactions} />
+      </div>
 
       <section className="pk-me" aria-label="Your cards">
         {v.hole.length === 2 ? (
@@ -120,13 +129,11 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactio
       </section>
 
       {done ? (
-        <NextHand key={v.hand} t={v} me={v.me} send={send} />
+        <NextHand key={v.hand} t={v} me={v.me} send={send} now={now} />
       ) : v.toAct === v.me ? (
-        <Betting key={`${v.hand}-${v.log.length}`} t={v} me={v.me} send={send} />
+        <Betting key={`${v.hand}-${v.log.length}`} t={v} me={v.me} send={send} now={now} />
       ) : (
-        <p className="pk-dock pk-dock__wait" role="status">
-          {v.toAct ? `Waiting for ${name(v.toAct)}.` : 'Dealing…'}
-        </p>
+        <Waiting t={v} name={name} now={now} />
       )}
 
       {moment && (
@@ -143,54 +150,81 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactio
   );
 };
 
-/** Seconds between a hand ending and the next deal, time enough to see the cards. */
-const DEAL_AFTER = 7;
+/** "12s" while a turn timer runs, for the dock. */
+function TurnClock({ t, now }: { t: PokerTableView; now: () => number }) {
+  const left = useCountdown(t.actBy, now);
+  if (left === null) return null;
+  return (
+    <span
+      className={left <= 5 ? 'pk-clock is-low' : 'pk-clock'}
+      aria-label={`${left} seconds left`}
+    >
+      {left}s
+    </span>
+  );
+}
+
+/** Someone else is to act. */
+function Waiting({
+  t,
+  name,
+  now,
+}: {
+  t: PokerTableView;
+  name: (id: string) => string;
+  now: () => number;
+}) {
+  return (
+    <p className="pk-dock pk-dock__wait" role="status">
+      <span>{t.toAct ? `Waiting for ${name(t.toAct)}.` : 'Dealing…'}</span>
+      <TurnClock t={t} now={now} />
+    </p>
+  );
+}
 
 /**
- * Between hands: a countdown, then the next hand deals itself. Every phone sends the deal, the
- * seat left of the button first and the rest a moment after in turn (in case that phone is
- * asleep); the rules deal once. Anyone can deal straight away.
+ * Between hands: a countdown, then the server deals the next hand by itself (or shows who won
+ * after the last). Anyone can deal straight away, and a player out of chips may buy back in if the
+ * table allows.
  */
 function NextHand({
   t,
   me,
   send,
+  now,
 }: {
   t: PokerTableView;
   me: string;
   send: (a: PokerAction) => Promise<boolean>;
+  now: () => number;
 }) {
   const final = lastHandPlayed(t);
-  const [left, setLeft] = useState(DEAL_AFTER);
-  const n = t.players.length;
-  const turn = (t.players.indexOf(me) - t.players.indexOf(t.dealer) - 1 + n) % n;
-
-  useEffect(() => {
-    const tick = setInterval(() => setLeft((l) => l - 1), 1000);
-    const deal = setTimeout(
-      () => void send({ type: 'deal', after: t.hand }),
-      DEAL_AFTER * 1000 + turn * 1200,
-    );
-    return () => {
-      clearInterval(tick);
-      clearTimeout(deal);
-    };
-    // One countdown per hand (the component is keyed by it).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const left = useCountdown(t.dealAt, now);
+  const buyBack = t.canBuyBack.includes(me);
 
   return (
     <section className="pk-dock" aria-label="Next hand">
-      <p className="pk-dock__count" role="status">
-        {left > 0
-          ? `${final ? 'The winner' : 'Next hand'} in ${left}…`
-          : final
-            ? 'Counting the chips…'
-            : 'Dealing…'}
-      </p>
-      <Plaque onClick={() => void send({ type: 'deal', after: t.hand })}>
-        {final ? 'See who won now' : 'Deal now'}
-      </Plaque>
+      {left !== null && (
+        <p className="pk-dock__count" role="status">
+          {left > 0
+            ? `${final ? 'The winner' : 'Next hand'} in ${left}…`
+            : final
+              ? 'Counting the chips…'
+              : 'Dealing…'}
+        </p>
+      )}
+      {buyBack ? (
+        <div className="pk-dock__row">
+          <Plaque go onClick={() => void send({ type: 'buyBack' })}>
+            Buy back in
+          </Plaque>
+          <Plaque onClick={() => void send({ type: 'deal', after: t.hand })}>Deal now</Plaque>
+        </div>
+      ) : (
+        <Plaque onClick={() => void send({ type: 'deal', after: t.hand })}>
+          {final ? 'See who won now' : 'Deal now'}
+        </Plaque>
+      )}
     </section>
   );
 }
@@ -200,10 +234,12 @@ function Betting({
   t,
   me,
   send,
+  now,
 }: {
   t: PokerTableView;
   me: string;
   send: (a: PokerAction) => Promise<boolean>;
+  now: () => number;
 }) {
   const c = choices(t, me);
   const [to, setTo] = useState(c.minTo);
@@ -228,6 +264,12 @@ function Betting({
 
   return (
     <section className="pk-dock pk-bet-dock" aria-label="Your move">
+      {t.actBy && (
+        <p className="pk-dock__wait">
+          <span>Your move.</span>
+          <TurnClock t={t} now={now} />
+        </p>
+      )}
       <div className="pk-dock__row">
         <Plaque disabled={busy} onClick={() => void go({ type: 'fold' })}>
           Fold

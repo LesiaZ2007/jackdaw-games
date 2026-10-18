@@ -12,7 +12,29 @@
   max-width: 640px;
   margin-inline: auto;
   width: 100%;
-  min-height: calc(100dvh - 96px);
+}
+/* On a phone or laptop it fits under the bar without scrolling: the heading, the table as big as
+   the space left allows, your cards, then the betting dock. */
+.pk--phone {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+.pk--phone .pk__head h2 {
+  font-size: var(--step-2);
+}
+.pk-stage {
+  min-height: 0;
+  display: grid;
+  place-items: start center;
+  container-type: size;
+}
+/* Seats sit on the rim, so the bottom one's name hangs below the table: leave it room. */
+.pk-stage .pk-table {
+  width: max(200px, min(100cqw - 24px, (100cqh - 64px) / 1.02));
+  margin: 14px auto 0;
 }
 .pk__head h2 {
   font-size: var(--step-3);
@@ -353,19 +375,33 @@
   font-size: var(--step-0);
 }
 .pk-dock {
-  margin-top: auto;
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
   display: grid;
   gap: var(--space-2);
-  padding: var(--space-3) 0 calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
-  background: var(--table);
 }
 .pk-dock__wait {
-  margin-bottom: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
   color: var(--ink-2);
   font-weight: 700;
+}
+/* A turn timer: the seconds left, in a small printed tag that turns gules near the end. */
+.pk-clock {
+  min-width: 3.2em;
+  padding: 2px 8px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 16px/1.2 var(--font-code);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.pk-clock.is-low {
+  background: var(--gules);
+  border-color: var(--gules);
+  color: var(--on-fill);
 }
 .pk-dock__count {
   margin: 0;
@@ -468,6 +504,51 @@
 .pk-table--tv .pk-bet {
   font-size: clamp(16px, 1.5cqw, 28px);
   --pk-chip-font: clamp(16px, 1.5cqw, 28px);
+}
+
+/* Wide and landscape (a laptop): the table on the left, your cards and the dock beside it. */
+@container game (min-width: 700px) and (orientation: landscape) {
+  .pk--phone {
+    max-width: 1180px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    column-gap: var(--space-5);
+    row-gap: var(--space-3);
+  }
+  .pk--phone > .pk-stage {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  .pk--phone > .pk__head,
+  .pk--phone > .pk-me,
+  .pk--phone > .pk-dock {
+    grid-column: 2;
+  }
+  .pk--phone > .pk-dock {
+    grid-row: 4;
+  }
+  .pk--phone .pk__head h2 {
+    font-size: var(--step-3);
+  }
+  .pk--phone .pk-stage {
+    place-items: center;
+  }
+  .pk--phone .pk-me {
+    align-self: start;
+  }
+}
+
+/* Short phones: smaller cards in hand, so the table keeps as much room as it can. */
+@container game (max-height: 640px) and (orientation: portrait) {
+  .pk--phone .pk-me__cards .pk-card {
+    --w: 36px;
+  }
+  .pk--phone .pk-me__what {
+    font-size: 15px;
+  }
+  .pk--phone {
+    gap: var(--space-1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

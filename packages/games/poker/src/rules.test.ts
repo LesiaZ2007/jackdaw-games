@@ -2,6 +2,7 @@ import { createRng, GameError } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
 import { bestHand, compareScore, handName, scoreFive } from './cards';
 import {
+  DEAL_AFTER_MS,
   choices,
   lastHandPlayed,
   poker as game,
@@ -204,6 +205,58 @@ describe('the game', () => {
     const again = act(s, 'c', { type: 'deal', after: 1 });
     expect(again).toBe(s);
     expect(s.hand).toBe(2);
+  });
+
+  it('deals the next hand by itself a few seconds after one ends', () => {
+    const at = (s: PokerState, who: string, a: PokerAction, now: number) =>
+      game.applyAction(s, who, a, createRng(2), now);
+    let s = deal();
+    expect(game.nextTimer!(s)).toBeNull();
+    for (let i = 0; i < 100 && s.toAct; i++) {
+      const c = choices(game.getTableView(s), s.toAct);
+      s = at(s, s.toAct, { type: c.canCheck ? 'check' : 'call' }, 1000);
+    }
+    expect(s.phase).toBe('done');
+    expect(game.nextTimer!(s)).toEqual({ id: 'deal', at: 1000 + DEAL_AFTER_MS });
+    expect(game.getTableView(s).dealAt).toBe(1000 + DEAL_AFTER_MS);
+    s = game.onTimer!(s, 'deal', createRng(3), 1000 + DEAL_AFTER_MS);
+    expect(s.hand).toBe(2);
+    expect(s.phase).toBe('preflop');
+    expect(game.nextTimer!(s)).toBeNull();
+  });
+
+  it('with a turn timer, a player out of time checks if they can, or folds', () => {
+    let s = deal(ids, { turnTimer: '30 seconds' });
+    const first = s.toAct!;
+    expect(game.nextTimer!(s)).toEqual({ id: 'act', at: 30_000 });
+    // Facing the big blind, the first player folds when time runs out.
+    s = game.onTimer!(s, 'act', createRng(3), 30_000);
+    expect(s.folded).toContain(first);
+    expect(game.nextTimer!(s)).toEqual({ id: 'act', at: 60_000 });
+    // A move restarts the clock for the next player.
+    const c = choices(game.getTableView(s), s.toAct!);
+    s = game.applyAction(
+      s,
+      s.toAct!,
+      { type: c.canCheck ? 'check' : 'call' },
+      createRng(4),
+      40_000,
+    );
+    if (s.toAct) expect(game.nextTimer!(s)!.at).toBe(70_000);
+  });
+
+  it('lets a busted player buy back in once, early in the game', () => {
+    let s = deal(['a', 'b', 'c'], { buyBack: 'Once each', length: '30 hands' });
+    s = passive(s);
+    s = { ...s, stacks: { ...s.stacks, a: 0 } };
+    expect(game.getTableView(s).canBuyBack).toEqual(['a']);
+    expect(() => act(s, 'b', { type: 'buyBack' })).toThrow(/can’t buy back/);
+    s = act(s, 'a', { type: 'buyBack' });
+    expect(s.stacks.a).toBe(1000);
+    expect(s.buyIns).toEqual({ a: 1 });
+    s = { ...s, stacks: { ...s.stacks, a: 0 } };
+    expect(game.getTableView(s).canBuyBack).toEqual([]);
+    expect(deal(ids).buyBackLimit).toBe(0);
   });
 
   it('doubles the blinds on schedule', () => {

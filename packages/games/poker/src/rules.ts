@@ -1,4 +1,10 @@
-import { GameError, type GameModule, type GameResult, type RecapEvent } from '@jackdaw/engine';
+import {
+  GameError,
+  type GameModule,
+  type GameResult,
+  type RecapEvent,
+  type Rng,
+} from '@jackdaw/engine';
 import { z } from 'zod';
 import { FULL_DECK, bestHand, cardText, compareScore, type Card } from './cards';
 import { meta } from './meta';
@@ -20,12 +26,19 @@ const STACKS = ['500', '1000', '2000'] as const;
 const BLINDS = ['5/10', '10/20', '25/50'] as const;
 const LENGTHS = ['15 hands', '30 hands', 'Last one standing'] as const;
 const RISES = ['Never', 'Every 5 hands', 'Every 10 hands'] as const;
+const CLOCKS = ['Off', '30 seconds', '60 seconds'] as const;
+const BUY_BACKS = ['No', 'Once each', 'Any time'] as const;
+
+/** Seconds between a hand ending and the next deal, time enough to see the cards. */
+export const DEAL_AFTER_MS = 7_000;
 
 export const optionsSchema = z.object({
   stack: z.enum(STACKS).describe('Starting chips'),
   blinds: z.enum(BLINDS).describe('Blinds'),
   blindsDouble: z.enum(RISES).describe('Blinds double'),
   length: z.enum(LENGTHS).describe('Game length'),
+  turnTimer: z.enum(CLOCKS).describe('Turn timer'),
+  buyBack: z.enum(BUY_BACKS).describe('Buy back in'),
 });
 export type PokerOptions = z.infer<typeof optionsSchema>;
 
@@ -37,10 +50,13 @@ export const actionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('raise'), to: z.number().int().positive() }),
   z.object({ type: z.literal('allIn') }),
   /**
-   * After a hand: deal the next one. Phones send it by themselves a few seconds after a hand
+   * After a hand: deal the next one now ("Deal now"; the server deals by itself after
+   * DEAL_AFTER_MS). Older phones sent it themselves a few seconds after a hand
    * ends, naming the hand just played, so only the first of them deals and the rest do nothing.
    */
   z.object({ type: z.literal('deal'), after: z.number().int().nonnegative().optional() }),
+  /** Out of chips, between hands: buy back in for a fresh starting stack (if the table allows). */
+  z.object({ type: z.literal('buyBack') }),
 ]);
 export type PokerAction = z.infer<typeof actionSchema>;
 
@@ -120,6 +136,19 @@ export interface PokerState {
   log: ActionLine[];
   last: HandResult | null;
   recap: RecapEvent[];
+  /** When the next hand deals itself (server time), between hands. Older games don't have it. */
+  dealAt?: number | null;
+  /** Seconds each player gets to act, 0 for no limit. */
+  turnSecs?: number;
+  /** When the player to act runs out of time (server time), if there's a turn timer. */
+  actBy?: number | null;
+  /** The starting stack, for buying back in. */
+  startStack?: number;
+  /** Buy-backs allowed per player (0 for none), and until which hand. */
+  buyBackLimit?: number;
+  buyBackUntil?: number;
+  /** Buy-backs each player has made. */
+  buyIns?: Record<string, number>;
 }
 
 /** Everything public: the TV and every phone render this. */
@@ -149,6 +178,13 @@ export interface PokerTableView {
   canRaise: string[];
   log: ActionLine[];
   last: HandResult | null;
+  /** When the next hand deals itself (server time), between hands. */
+  dealAt: number | null;
+  /** When the player to act runs out of time (server time), with a turn timer. */
+  actBy: number | null;
+  /** Busted players who may still buy back in. */
+  canBuyBack: string[];
+  buyIns: Record<string, number>;
 }
 
 export interface PokerPlayerView extends PokerTableView {
@@ -169,13 +205,40 @@ const STREETS: Street[] = ['preflop', 'flop', 'turn', 'river'];
 
 function parseOptions(o: PokerOptions) {
   const [sb, bb] = o.blinds.split('/').map(Number) as [number, number];
+  const handLimit = o.length === 'Last one standing' ? 0 : Number(o.length.split(' ')[0]);
   return {
+    turnSecs: o.turnTimer === 'Off' ? 0 : Number(o.turnTimer.split(' ')[0]),
+    buyBackLimit: o.buyBack === 'No' ? 0 : o.buyBack === 'Once each' ? 1 : 99,
+    // Buying back in is for the first half of the game (the first 10 hands, to the last one).
+    buyBackUntil: handLimit > 0 ? Math.floor(handLimit / 2) : 10,
     stack: Number(o.stack),
     sb,
     bb,
     doubleEvery: o.blindsDouble === 'Never' ? 0 : Number(o.blindsDouble.split(' ')[1]),
-    handLimit: o.length === 'Last one standing' ? 0 : Number(o.length.split(' ')[0]),
+    handLimit,
   };
+}
+
+/** Busted players who may buy back in now: between hands, early enough, with buy-backs left. */
+function buyBackers(s: PokerState): string[] {
+  if (s.phase !== 'done' || !s.buyBackLimit || s.hand > (s.buyBackUntil ?? 0)) return [];
+  return s.players.filter(
+    (id) => (s.stacks[id] ?? 0) === 0 && (s.buyIns?.[id] ?? 0) < s.buyBackLimit!,
+  );
+}
+
+/**
+ * Sets the clocks after a change: when a hand has just ended, the next deals itself in a few
+ * seconds; when someone new is to act (or acted and it's them again), their turn timer starts.
+ */
+function stamp(prev: PokerState | null, s: PokerState, now: number): PokerState {
+  if (s === prev) return s;
+  const ended = s.phase === 'done' && (prev?.phase !== 'done' || prev.hand !== s.hand);
+  const dealAt = s.phase === 'done' ? (ended ? now + DEAL_AFTER_MS : (s.dealAt ?? null)) : null;
+  const moved = !prev || s.toAct !== prev.toAct || s.log.length !== prev.log.length;
+  const actBy =
+    s.toAct && s.turnSecs ? (moved ? now + s.turnSecs * 1000 : (s.actBy ?? null)) : null;
+  return { ...s, dealAt, actBy };
 }
 
 /** Seats from `after` (exclusive) going round, filtered. */
@@ -458,6 +521,10 @@ function view(s: PokerState): PokerTableView {
     canRaise: canAct(s).filter((id) => !s.acted.includes(id)),
     log: s.log,
     last: s.last,
+    dealAt: s.dealAt ?? null,
+    actBy: s.actBy ?? null,
+    canBuyBack: buyBackers(s),
+    buyIns: s.buyIns ?? {},
   };
 }
 
@@ -480,6 +547,99 @@ export function choices(t: PokerTableView, id: string) {
   return { bet, stack, owe, max, minTo, canRaise, canCheck: owe === 0 };
 }
 
+/** One player's move, before the clocks are set (see `stamp`). */
+function move(s: PokerState, playerId: string, action: PokerAction, rng: Rng): PokerState {
+  if (!s.players.includes(playerId))
+    throw new GameError('not_playing', 'You’re not at this table.');
+  if (action.type === 'deal') {
+    if (action.after !== undefined && (action.after !== s.hand || s.phase !== 'done')) return s;
+    if (s.phase !== 'done') throw new GameError('not_yet', 'This hand isn’t over yet.');
+    return startHand(s, rng);
+  }
+  if (action.type === 'buyBack') {
+    if (!buyBackers(s).includes(playerId))
+      throw new GameError('no_buy_back', 'You can’t buy back in now.');
+    return {
+      ...s,
+      stacks: { ...s.stacks, [playerId]: s.startStack ?? 1000 },
+      buyIns: { ...s.buyIns, [playerId]: (s.buyIns?.[playerId] ?? 0) + 1 },
+      recap: [
+        ...s.recap,
+        { round: s.hand, actor: playerId, text: `{${playerId}} bought back in.` },
+      ],
+    };
+  }
+  if (s.phase === 'done' || s.phase === 'over')
+    throw new GameError('no_hand', 'There’s no hand being played.');
+  if (s.toAct !== playerId) throw new GameError('not_your_turn', 'It’s not your turn.');
+  const street = s.phase as Street;
+  const c = choices(view(s), playerId);
+  const line = (kind: string, amount?: number): ActionLine => ({
+    player: playerId,
+    kind,
+    amount,
+    street,
+  });
+  let next: PokerState;
+  switch (action.type) {
+    case 'fold':
+      next = { ...s, folded: [...s.folded, playerId], log: [...s.log, line('fold')] };
+      break;
+    case 'check':
+      if (!c.canCheck) throw new GameError('must_call', `You need to call ${c.owe} or fold.`);
+      next = { ...s, log: [...s.log, line('check')] };
+      break;
+    case 'call':
+      if (c.canCheck)
+        throw new GameError('nothing_to_call', 'There’s nothing to call. Check instead.');
+      next = put(s, playerId, c.owe);
+      next = {
+        ...next,
+        log: [
+          ...next.log,
+          line(next.allIn.includes(playerId) ? 'allIn' : 'call', next.bets[playerId]),
+        ],
+      };
+      break;
+    case 'raise':
+    case 'allIn': {
+      const to = action.type === 'allIn' ? c.max : action.to;
+      if (action.type === 'allIn' && c.max <= s.currentBet) {
+        // All-in for no more than the bet is a call.
+        next = put(s, playerId, c.owe);
+        next = { ...next, log: [...next.log, line('allIn', next.bets[playerId])] };
+        break;
+      }
+      if (!c.canRaise) throw new GameError('no_raise', 'You can only call or fold now.');
+      if (to > c.max) throw new GameError('too_much', `You only have ${c.max} to bet.`);
+      if (to <= s.currentBet)
+        throw new GameError('too_little', `Raise to more than ${s.currentBet}.`);
+      if (to < c.minTo) throw new GameError('too_little', `The smallest raise is to ${c.minTo}.`);
+      const full = to - s.currentBet >= s.minRaise;
+      next = put(s, playerId, to - c.bet);
+      next = {
+        ...next,
+        currentBet: to,
+        minRaise: full ? to - s.currentBet : s.minRaise,
+        // A full raise reopens the betting for everyone else.
+        acted: full ? [] : next.acted,
+        log: [
+          ...next.log,
+          line(next.allIn.includes(playerId) ? 'allIn' : s.currentBet === 0 ? 'bet' : 'raise', to),
+        ],
+      };
+      break;
+    }
+    default:
+      throw new GameError('bad_action', 'That isn’t a poker move.');
+  }
+  next = {
+    ...next,
+    acted: next.acted.includes(playerId) ? next.acted : [...next.acted, playerId],
+  };
+  return afterAction(next, playerId);
+}
+
 export const poker: GameModule<
   PokerState,
   PokerAction,
@@ -495,11 +655,18 @@ export const poker: GameModule<
     blinds: '10/20',
     blindsDouble: 'Every 10 hands',
     length: '30 hands',
+    turnTimer: 'Off',
+    buyBack: 'No',
   }),
 
-  setup({ playerIds, options, rng }) {
+  setup({ playerIds, options, rng, now }) {
     const o = parseOptions(options);
     const base: PokerState = {
+      startStack: o.stack,
+      turnSecs: o.turnSecs,
+      buyBackLimit: o.buyBackLimit,
+      buyBackUntil: o.buyBackUntil,
+      buyIns: {},
       players: playerIds,
       stacks: Object.fromEntries(playerIds.map((id) => [id, o.stack])),
       sb: o.sb,
@@ -527,7 +694,7 @@ export const poker: GameModule<
       last: null,
       recap: [],
     };
-    return startHand(base, rng);
+    return stamp(null, startHand(base, rng), now);
   },
 
   getPlayerView(s, playerId) {
@@ -536,86 +703,24 @@ export const poker: GameModule<
 
   getTableView: view,
 
-  applyAction(s, playerId, action, rng) {
-    if (!s.players.includes(playerId))
-      throw new GameError('not_playing', 'You’re not at this table.');
-    if (action.type === 'deal') {
-      if (action.after !== undefined && (action.after !== s.hand || s.phase !== 'done')) return s;
-      if (s.phase !== 'done') throw new GameError('not_yet', 'This hand isn’t over yet.');
-      return startHand(s, rng);
+  applyAction(s, playerId, action, rng, now) {
+    return stamp(s, move(s, playerId, action, rng), now);
+  },
+
+  nextTimer(s) {
+    if (s.phase === 'done' && s.dealAt) return { id: 'deal', at: s.dealAt };
+    if (s.toAct && s.actBy) return { id: 'act', at: s.actBy };
+    return null;
+  },
+
+  onTimer(s, id, rng, now) {
+    if (id === 'deal' && s.phase === 'done') return stamp(s, startHand(s, rng), now);
+    if (id === 'act' && s.toAct) {
+      // Out of time: check if that's free, otherwise fold.
+      const c = choices(view(s), s.toAct);
+      return stamp(s, move(s, s.toAct, { type: c.canCheck ? 'check' : 'fold' }, rng), now);
     }
-    if (s.phase === 'done' || s.phase === 'over')
-      throw new GameError('no_hand', 'There’s no hand being played.');
-    if (s.toAct !== playerId) throw new GameError('not_your_turn', 'It’s not your turn.');
-    const street = s.phase as Street;
-    const c = choices(view(s), playerId);
-    const line = (kind: string, amount?: number): ActionLine => ({
-      player: playerId,
-      kind,
-      amount,
-      street,
-    });
-    let next: PokerState;
-    switch (action.type) {
-      case 'fold':
-        next = { ...s, folded: [...s.folded, playerId], log: [...s.log, line('fold')] };
-        break;
-      case 'check':
-        if (!c.canCheck) throw new GameError('must_call', `You need to call ${c.owe} or fold.`);
-        next = { ...s, log: [...s.log, line('check')] };
-        break;
-      case 'call':
-        if (c.canCheck)
-          throw new GameError('nothing_to_call', 'There’s nothing to call. Check instead.');
-        next = put(s, playerId, c.owe);
-        next = {
-          ...next,
-          log: [
-            ...next.log,
-            line(next.allIn.includes(playerId) ? 'allIn' : 'call', next.bets[playerId]),
-          ],
-        };
-        break;
-      case 'raise':
-      case 'allIn': {
-        const to = action.type === 'allIn' ? c.max : action.to;
-        if (action.type === 'allIn' && c.max <= s.currentBet) {
-          // All-in for no more than the bet is a call.
-          next = put(s, playerId, c.owe);
-          next = { ...next, log: [...next.log, line('allIn', next.bets[playerId])] };
-          break;
-        }
-        if (!c.canRaise) throw new GameError('no_raise', 'You can only call or fold now.');
-        if (to > c.max) throw new GameError('too_much', `You only have ${c.max} to bet.`);
-        if (to <= s.currentBet)
-          throw new GameError('too_little', `Raise to more than ${s.currentBet}.`);
-        if (to < c.minTo) throw new GameError('too_little', `The smallest raise is to ${c.minTo}.`);
-        const full = to - s.currentBet >= s.minRaise;
-        next = put(s, playerId, to - c.bet);
-        next = {
-          ...next,
-          currentBet: to,
-          minRaise: full ? to - s.currentBet : s.minRaise,
-          // A full raise reopens the betting for everyone else.
-          acted: full ? [] : next.acted,
-          log: [
-            ...next.log,
-            line(
-              next.allIn.includes(playerId) ? 'allIn' : s.currentBet === 0 ? 'bet' : 'raise',
-              to,
-            ),
-          ],
-        };
-        break;
-      }
-      default:
-        throw new GameError('bad_action', 'That isn’t a poker move.');
-    }
-    next = {
-      ...next,
-      acted: next.acted.includes(playerId) ? next.acted : [...next.acted, playerId],
-    };
-    return afterAction(next, playerId);
+    return s;
   },
 
   getResult(s): GameResult | null {
@@ -637,7 +742,7 @@ export const poker: GameModule<
       standings: s.players.map((id) => ({
         playerId: id,
         outcome: winners.includes(id) ? (winners.length > 1 ? 'draw' : 'win') : 'loss',
-        role: `${s.stacks[id] ?? 0} chips`,
+        role: `${s.stacks[id] ?? 0} chips${(s.buyIns?.[id] ?? 0) > 0 ? `, bought back in${s.buyIns![id]! > 1 ? ` ${s.buyIns![id]} times` : ''}` : ''}`,
       })),
     };
   },

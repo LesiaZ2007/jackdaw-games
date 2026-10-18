@@ -30,6 +30,7 @@ export const pokerUi: GameUi = {
       },
     ],
   },
+  fit: true,
   PlayerScreen,
   TvScreen,
 };

@@ -1,0 +1,313 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { Plaque, PlayerReaction, Tally, Token, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
+import type { Reaction } from '@jackdaw/engine';
+import { RACK, checkPlay, type Placement } from '../board';
+import type { Move, WordhoardAction, WordhoardPlayerView, WordhoardTableView } from '../rules';
+import { BoardGrid, Tile } from './pieces';
+import './wordhoard.css';
+
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+/** "Bran played HOARD for 24", in words. */
+export function moveText(m: Move, name: (id: string) => string): string {
+  const who = name(m.player);
+  if (m.kind === 'pass') return `${who} passed.`;
+  if (m.kind === 'swap') return `${who} swapped ${m.count} tile${m.count === 1 ? '' : 's'}.`;
+  const words = (m.words ?? []).map((w) => w.word).join(', ');
+  return `${who} played ${words} for ${m.score}${m.bingo ? ', all seven tiles' : ''}.`;
+}
+
+/** Everyone's score, in seat order, with whose turn it is. */
+export function Scores({
+  t,
+  players,
+  me,
+  reactions,
+}: {
+  t: WordhoardTableView;
+  players: ScreenPlayer[];
+  me?: string;
+  reactions?: Reaction[];
+}) {
+  const byId = new Map(players.map((p) => [p.id, p]));
+  return (
+    <ol className="wh-scores" aria-label="Scores">
+      {t.players.map((id) => {
+        const p = byId.get(id);
+        const turn = !t.over && t.turn === id;
+        return (
+          <li key={id} className={turn ? 'is-turn' : undefined}>
+            <span className="wh-scores__tok">
+              {p && <Token avatar={p.avatar} size={34} away={!p.online} />}
+              <PlayerReaction reactions={reactions} playerId={id} name={p?.name} size={34} />
+            </span>
+            <span className="wh-scores__name">
+              {id === me ? 'You' : (p?.name ?? 'Someone')}
+              <small>{turn ? 'Playing' : `${t.rackCounts[id] ?? 0} tiles`}</small>
+            </span>
+            <Tally className="wh-scores__n" value={t.scores[id] ?? 0} />
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/**
+ * Wordhoard on a phone: the scores, the board, and your rack at the bottom. Tap a tile on your
+ * rack, then a square, to place it; tap a placed tile to take it back. The score shows before you
+ * play.
+ */
+export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactions, ...props }) => {
+  const v = view as WordhoardPlayerView;
+  const players = props.players as ScreenPlayer[];
+  const byId = new Map(players.map((p) => [p.id, p]));
+  const name = (id: string) => byId.get(id)?.name ?? 'Someone';
+  const last = v.moves[v.moves.length - 1];
+  const myTurn = v.turn === v.me && !v.over;
+
+  return (
+    <div className="wh wh--phone">
+      <header className="wh__head">
+        <h2 className="jd-display">{myTurn ? 'Your turn' : `${name(v.turn)}’s turn`}</h2>
+        <p>
+          {v.bagCount} tile{v.bagCount === 1 ? '' : 's'} in the bag
+          {last ? ` · ${moveText(last, (id) => (id === v.me ? 'You' : name(id)))}` : ''}
+        </p>
+      </header>
+      <Scores t={v} players={players} me={v.me} reactions={reactions} />
+      {/* Keyed by the move count, so a new turn starts with your tiles back on the rack. */}
+      <Turn key={v.moves.length} v={v} myTurn={myTurn} send={sendAction} />
+    </div>
+  );
+};
+
+interface Pending extends Placement {
+  /** Which rack tile it came from. */
+  from: number;
+}
+
+function Turn({
+  v,
+  myTurn,
+  send,
+}: {
+  v: WordhoardPlayerView;
+  myTurn: boolean;
+  send: (a: WordhoardAction) => Promise<boolean>;
+}) {
+  const [pending, setPending] = useState<Pending[]>([]);
+  const [picked, setPicked] = useState<number | null>(null);
+  const [blankAt, setBlankAt] = useState<{ row: number; col: number; from: number } | null>(null);
+  const [swapping, setSwapping] = useState<number[] | null>(null);
+  const [order, setOrder] = useState<number[]>(() => v.rack.map((_, i) => i));
+  const [zoom, setZoom] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const used = new Set(pending.map((p) => p.from));
+  const check = useMemo(
+    () => (pending.length ? checkPlay(v.board, pending) : null),
+    [pending, v.board],
+  );
+  const last = v.moves[v.moves.length - 1];
+
+  const go = async (a: WordhoardAction) => {
+    setBusy(true);
+    try {
+      return await send(a);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  function onSquare(row: number, col: number) {
+    if (!myTurn) return;
+    const here = pending.find((p) => p.row === row && p.col === col);
+    if (here) {
+      setPending(pending.filter((p) => p !== here));
+      return;
+    }
+    if (picked === null) return;
+    const letter = v.rack[picked]!;
+    if (letter === '?') {
+      setBlankAt({ row, col, from: picked });
+      return;
+    }
+    setPending([...pending, { row, col, letter, from: picked }]);
+    setPicked(null);
+  }
+
+  function onRack(i: number) {
+    if (swapping) {
+      setSwapping(swapping.includes(i) ? swapping.filter((x) => x !== i) : [...swapping, i]);
+      return;
+    }
+    if (!myTurn || used.has(i)) return;
+    setPicked(picked === i ? null : i);
+  }
+
+  function shuffle() {
+    // A fixed reshuffle is enough to see the letters afresh; no randomness needed.
+    setOrder((o) =>
+      [...o.filter((_, i) => i % 2 === 1), ...o.filter((_, i) => i % 2 === 0)].reverse(),
+    );
+  }
+
+  const status = !myTurn
+    ? v.over
+      ? 'The game is over.'
+      : 'Plan your next word while you wait.'
+    : swapping
+      ? `Pick the tiles to swap (${swapping.length} chosen).`
+      : check
+        ? check.ok
+          ? `${check.words.map((w) => w.word).join(', ')}: ${check.score} points${check.bingo ? ', with 50 for all seven' : ''}`
+          : check.reason
+        : picked !== null
+          ? 'Now tap a square on the board.'
+          : 'Tap a tile, then a square. Tap a placed tile to take it back.';
+
+  return (
+    <>
+      <div className={zoom ? 'wh-boardwrap is-zoomed' : 'wh-boardwrap'}>
+        <BoardGrid
+          board={v.board}
+          pending={pending}
+          recent={last?.cells}
+          onSquare={myTurn && !swapping ? onSquare : undefined}
+        />
+      </div>
+
+      <section className="wh-dock" aria-label="Your tiles">
+        <p
+          className={check && !check.ok ? 'wh-dock__status is-bad' : 'wh-dock__status'}
+          role="status"
+        >
+          {status}
+        </p>
+        <div className="wh-rack" role="group" aria-label="Your rack">
+          {order
+            .filter((i) => i < v.rack.length)
+            .map((i) => {
+              const t = v.rack[i]!;
+              const chosen = swapping ? swapping.includes(i) : picked === i;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  className={['wh-rack__slot', chosen && 'is-picked', used.has(i) && 'is-used']
+                    .filter(Boolean)
+                    .join(' ')}
+                  aria-pressed={chosen}
+                  aria-label={t === '?' ? 'Blank tile' : t}
+                  disabled={(!myTurn && !swapping) || (used.has(i) && !swapping)}
+                  onClick={() => onRack(i)}
+                >
+                  <Tile letter={t} />
+                </button>
+              );
+            })}
+          {Array.from({ length: Math.max(0, RACK - v.rack.length) }, (_, i) => (
+            <span key={`gap-${i}`} className="wh-rack__slot is-empty" aria-hidden="true" />
+          ))}
+        </div>
+
+        {swapping ? (
+          <div className="wh-dock__row">
+            <Plaque onClick={() => setSwapping(null)}>Cancel</Plaque>
+            <Plaque
+              go
+              disabled={busy || swapping.length === 0}
+              onClick={() => void go({ type: 'swap', tiles: swapping.map((i) => v.rack[i]!) })}
+            >
+              Swap {swapping.length || ''}
+            </Plaque>
+          </div>
+        ) : (
+          <div className="wh-dock__row wh-dock__row--4">
+            <Plaque small onClick={() => (pending.length ? setPending([]) : shuffle())}>
+              {pending.length ? 'Undo' : 'Shuffle'}
+            </Plaque>
+            <Plaque small onClick={() => setZoom(!zoom)}>
+              {zoom ? 'Fit' : 'Zoom'}
+            </Plaque>
+            {myTurn && pending.length === 0 && (
+              <>
+                <Plaque
+                  small
+                  disabled={busy || v.bagCount < RACK}
+                  onClick={() => {
+                    setPicked(null);
+                    setSwapping([]);
+                  }}
+                  title={v.bagCount < RACK ? 'Fewer than seven tiles left in the bag' : undefined}
+                >
+                  Swap
+                </Plaque>
+                <Plaque small disabled={busy} onClick={() => void go({ type: 'pass' })}>
+                  Pass
+                </Plaque>
+              </>
+            )}
+            {myTurn && pending.length > 0 && (
+              <Plaque
+                go
+                small
+                className="wh-dock__play"
+                disabled={busy || !check?.ok}
+                onClick={() =>
+                  void go({
+                    type: 'play',
+                    tiles: pending.map(({ row, col, letter, blank }) => ({
+                      row,
+                      col,
+                      letter,
+                      ...(blank ? { blank: true } : {}),
+                    })),
+                  })
+                }
+              >
+                {check?.ok ? `Play for ${check.score}` : 'Play'}
+              </Plaque>
+            )}
+          </div>
+        )}
+      </section>
+
+      {blankAt && (
+        <div className="jd-sheet" role="presentation">
+          <button
+            type="button"
+            className="jd-sheet__backdrop"
+            aria-label="Cancel"
+            onClick={() => setBlankAt(null)}
+          />
+          <div
+            className="jd-sheet__panel wh-blank"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Choose the blank’s letter"
+          >
+            <h3 className="jd-display">Which letter is the blank?</h3>
+            <div className="wh-blank__letters">
+              {LETTERS.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => {
+                    setPending([...pending, { ...blankAt, letter: l, blank: true }]);
+                    setBlankAt(null);
+                    setPicked(null);
+                  }}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

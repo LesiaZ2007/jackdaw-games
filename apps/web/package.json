@@ -18,6 +18,7 @@
     "@jackdaw/game-poker": "workspace:*",
     "@jackdaw/game-rps": "workspace:*",
     "@jackdaw/game-secret-hitler": "workspace:*",
+    "@jackdaw/game-wordhoard": "workspace:*",
     "@jackdaw/server": "workspace:*",
     "@jackdaw/ui": "workspace:*",
     "next": "16.4.0",

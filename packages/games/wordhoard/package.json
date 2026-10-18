@@ -1,0 +1,32 @@
+{
+  "name": "@jackdaw/game-wordhoard",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wordhoard: build words on a 15 by 15 board, 2 to 4 players",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.tsx"
+  },
+  "imports": {
+    "#packed-words": {
+      "browser": "./src/words.none.ts",
+      "default": "./src/words.packed.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jackdaw/engine": "workspace:*",
+    "@jackdaw/ui": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.0"
+  }
+}

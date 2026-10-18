@@ -1,0 +1,477 @@
+/*
+ * Poker: a printed card table in the compendium. The baize is heraldic vert on a sable rail with
+ * a double rule; the cards are cream stock with charcoal ink and gules for hearts and diamonds,
+ * and the same in day and dark (they're printed). Everything else comes from @jackdaw/ui tokens.
+ */
+.pk {
+  --pk-card-ink: #1d1d1c;
+  --pk-card-stock: #f6f0e1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 640px;
+  margin-inline: auto;
+  width: 100%;
+  min-height: calc(100dvh - 96px);
+}
+.pk__head h2 {
+  font-size: var(--step-3);
+  line-height: 1.05;
+}
+.pk__head p {
+  margin: var(--space-1) 0 0;
+  color: var(--ink-2);
+  font: 700 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+.pk-card {
+  --w: 44px;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: var(--w);
+  aspect-ratio: 5 / 7;
+  border: max(1.5px, calc(var(--w) * 0.03)) solid var(--pk-card-ink);
+  border-radius: calc(var(--w) * 0.09);
+  background: var(--pk-card-stock);
+  color: var(--pk-card-ink);
+  box-shadow: 0 calc(var(--w) * 0.05) 0 var(--shadow);
+  transition:
+    transform 240ms var(--ease-out),
+    opacity 240ms;
+}
+.pk-card--red {
+  color: var(--gules);
+}
+.pk-card__rank {
+  position: absolute;
+  top: 4%;
+  left: 9%;
+  font: 800 calc(var(--w) * 0.36) / 1 var(--font-code);
+}
+.pk-card__pip {
+  position: absolute;
+  top: 40%;
+  left: 9%;
+  width: 24%;
+}
+.pk-card__suit {
+  position: absolute;
+  right: 8%;
+  bottom: 6%;
+  width: 56%;
+}
+.pk-card svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.pk-card--back {
+  background: var(--azure)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='16'%3E%3Cpath d='M6 0L12 8L6 16L0 8Z' fill='none' stroke='%23f6f0e1' stroke-opacity='.35' stroke-width='1.2'/%3E%3C/svg%3E");
+  background-size: calc(var(--w) * 0.24) auto;
+  outline: max(1px, calc(var(--w) * 0.025)) solid var(--on-fill);
+  outline-offset: calc(var(--w) * -0.1);
+}
+.pk-card--dim {
+  opacity: 0.5;
+}
+.pk-card--lift {
+  transform: translateY(calc(var(--w) * -0.12));
+}
+.pk-deal {
+  animation: pk-deal 420ms var(--ease-out) both;
+}
+@keyframes pk-deal {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) rotate(-6deg) scale(0.9);
+  }
+}
+
+/* ── Chips and the button ──────────────────────────────────────────────── */
+.pk-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 800 var(--pk-chip-font, 14px) var(--font-plaque);
+  letter-spacing: 0.03em;
+  color: var(--on-fill);
+}
+.pk-chips__pile {
+  position: relative;
+  width: 1.15em;
+  height: 1.35em;
+}
+.pk-chips__pile i {
+  position: absolute;
+  left: 0;
+  width: 1.15em;
+  height: 0.5em;
+  border-radius: 50%;
+  border: 1.5px solid var(--on-fill);
+  background: var(--gules);
+}
+.pk-chips__pile i:nth-child(1) {
+  bottom: 0;
+}
+.pk-chips__pile i:nth-child(2) {
+  bottom: 0.3em;
+  background: var(--azure);
+}
+.pk-chips__pile i:nth-child(3) {
+  bottom: 0.6em;
+}
+.pk-button {
+  position: absolute;
+  right: -18%;
+  bottom: -8%;
+  width: 46%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--pk-card-stock);
+  color: var(--pk-card-ink);
+  border: 1.5px solid var(--pk-card-ink);
+  font: 900 calc(var(--pk-tok) * 0.26) / 1 var(--font-plaque);
+  box-shadow: 0 2px 0 var(--shadow);
+}
+
+/* ── The table ─────────────────────────────────────────────────────────── */
+.pk-table {
+  --pk-tok: clamp(30px, 11cqw, 60px);
+  --pk-board-card: min(13cqw, 64px);
+  container-type: inline-size;
+  position: relative;
+  /* As big as fits above your cards and the betting controls. */
+  width: max(280px, min(100%, calc(100dvh - 430px)));
+  aspect-ratio: 1 / 1.02;
+  margin: 16px auto 34px;
+}
+.pk-rail {
+  position: absolute;
+  inset: 3% 2%;
+  border-radius: 50%;
+  background: var(--sable);
+  border: 2px solid var(--ink);
+  box-shadow: 0 18px 40px -24px var(--shadow);
+}
+.pk-felt {
+  position: absolute;
+  inset: 11% 10%;
+  border-radius: 50%;
+  background: var(--vert);
+  box-shadow:
+    inset 0 0 0 5px var(--vert),
+    inset 0 0 0 6.5px rgba(246, 240, 225, 0.55);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 3cqw;
+  color: var(--on-fill);
+  text-align: center;
+}
+.pk-board {
+  display: flex;
+  gap: 1.2cqw;
+}
+.pk-board .pk-card {
+  --w: var(--pk-board-card);
+}
+.pk-slot {
+  width: var(--pk-board-card);
+  aspect-ratio: 5 / 7;
+  border: 1.5px dashed rgba(246, 240, 225, 0.4);
+  border-radius: calc(var(--pk-board-card) * 0.09);
+}
+.pk-pot {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  max-width: 52cqw;
+  font: 800 clamp(16px, 5cqw, 30px) / 1.1 var(--font-plaque);
+  letter-spacing: 0.03em;
+}
+.pk-pot .jd-label {
+  color: rgba(246, 240, 225, 0.75);
+  font-size: 0.6em;
+}
+.pk-pot__line small {
+  display: block;
+  font: 700 clamp(13px, 3.4cqw, 20px) var(--font-body);
+  letter-spacing: 0;
+  color: rgba(246, 240, 225, 0.85);
+}
+
+.pk-seat {
+  --ring-bg: var(--sable);
+  position: absolute;
+  z-index: 2;
+  width: calc(var(--pk-tok) * 2.1);
+  translate: -50% calc(var(--pk-tok) * -0.5);
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  text-align: center;
+}
+.pk-seat__tok {
+  position: relative;
+  display: inline-grid;
+}
+.pk-seat .jd-token {
+  --z: var(--pk-tok);
+}
+.pk-seat__name {
+  max-width: 100%;
+  padding: 1px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  font: 800 clamp(12px, 3.6cqw, 22px) / 1.25 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.pk-seat__stack {
+  font: 800 clamp(12px, 3.4cqw, 20px) / 1.1 var(--font-code);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--table) 80%, transparent);
+  padding: 0 4px;
+}
+.pk-seat--me .pk-seat__name {
+  background: var(--ink);
+  color: var(--paper);
+}
+.pk-seat--turn .jd-token {
+  outline: 3px solid var(--or);
+  outline-offset: calc(var(--pk-tok) * 0.12);
+  animation: pk-turn 1.4s var(--ease-out) infinite;
+}
+@keyframes pk-turn {
+  50% {
+    outline-offset: calc(var(--pk-tok) * 0.2);
+  }
+}
+.pk-seat--out .pk-seat__tok,
+.pk-seat--out .pk-seat__name {
+  opacity: 0.5;
+}
+.pk-tag {
+  position: absolute;
+  top: calc(var(--pk-tok) * -0.42);
+  padding: 1px 6px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 clamp(11px, 2.8cqw, 18px) / 1.2 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.pk-tag--fold {
+  background: var(--rule);
+}
+.pk-seat .jd-outcome,
+.pk-seat [class*='jd-chip'] {
+  font-size: clamp(12px, 3.2cqw, 20px);
+}
+.pk-seat__shown,
+.pk-seat__hidden {
+  position: absolute;
+  left: 50%;
+  bottom: 62%;
+  display: flex;
+  translate: -50% 0;
+  z-index: 1;
+}
+.pk-seat__shown .pk-card {
+  --w: calc(var(--pk-tok) * 0.78);
+}
+.pk-seat__hidden {
+  left: auto;
+  right: -46%;
+  bottom: 18%;
+  translate: 0 0;
+}
+.pk-seat__hidden .pk-card {
+  --w: calc(var(--pk-tok) * 0.36);
+}
+.pk-seat__hidden .pk-card + .pk-card,
+.pk-seat__shown .pk-card + .pk-card {
+  margin-left: calc(var(--w) * -0.35);
+  rotate: 8deg;
+}
+.pk-seat__hidden .pk-card:first-child,
+.pk-seat__shown .pk-card:first-child {
+  rotate: -6deg;
+}
+/* Your own cards are below the table, not on it. */
+.pk-seat--me .pk-seat__hidden {
+  display: none;
+}
+.pk-bet {
+  position: absolute;
+  z-index: 1;
+  translate: -50% -50%;
+  --pk-chip-font: clamp(12px, 3.4cqw, 22px);
+  padding: 1px 6px 1px 3px;
+  background: rgba(20, 20, 19, 0.45);
+  animation: pk-push 360ms var(--ease-out) both;
+}
+@keyframes pk-push {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+/* ── Your cards and the betting dock (phone) ──────────────────────────── */
+.pk-me {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.pk-me__cards {
+  display: flex;
+  gap: 6px;
+}
+.pk-me__cards .pk-card {
+  --w: 54px;
+}
+.pk-me__cards--folded {
+  opacity: 0.45;
+}
+.pk-me__what {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--step-0);
+}
+.pk-dock {
+  margin-top: auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3) 0 calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  background: var(--table);
+}
+.pk-dock__wait {
+  margin-bottom: 0;
+  color: var(--ink-2);
+  font-weight: 700;
+}
+.pk-dock__note {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--step--1);
+}
+.pk-dock__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.pk-dock__presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-1);
+}
+.pk-dock__presets button {
+  min-height: 40px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.pk-dock__presets button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.pk-stepper {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: stretch;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+.pk-stepper button {
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 800 24px var(--font-plaque);
+  cursor: pointer;
+}
+.pk-stepper button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.pk-stepper output {
+  display: grid;
+  place-items: center;
+  font: 800 22px var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── TV ────────────────────────────────────────────────────────────────── */
+.pk--tv {
+  max-width: none;
+  min-height: 0;
+  height: 100%;
+  padding: 2vh 3vw;
+  box-sizing: border-box;
+}
+.pk--tv .pk__head {
+  display: flex;
+  align-items: baseline;
+  gap: 2vw;
+}
+.pk--tv .pk__head p {
+  font-size: 26px;
+}
+.pk-table--tv {
+  --pk-tok: clamp(48px, 6cqw, 100px);
+  --pk-board-card: min(8cqw, 150px);
+  aspect-ratio: 2.05 / 1;
+  width: min(100%, calc((100vh - 420px) * 2.05));
+  margin: 7vh auto 9vh;
+}
+.pk-table--tv .pk-felt {
+  inset: 13% 9%;
+  gap: 1.6cqw;
+}
+.pk-table--tv .pk-board {
+  gap: 0.8cqw;
+}
+.pk-table--tv .pk-pot {
+  font-size: clamp(22px, 2.6cqw, 48px);
+  max-width: 44cqw;
+}
+.pk-table--tv .pk-pot__line small {
+  font-size: clamp(16px, 1.6cqw, 30px);
+}
+.pk-table--tv .pk-seat__name {
+  font-size: clamp(16px, 1.7cqw, 30px);
+}
+.pk-table--tv .pk-seat__stack,
+.pk-table--tv .pk-tag,
+.pk-table--tv .pk-bet {
+  font-size: clamp(16px, 1.5cqw, 28px);
+  --pk-chip-font: clamp(16px, 1.5cqw, 28px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pk-deal,
+  .pk-bet,
+  .pk-seat--turn .jd-token {
+    animation: none;
+  }
+}

@@ -322,7 +322,9 @@ Blitz attacks. Design: `docs/superpowers/specs/2026-10-18-risk-design.md`; plan:
     chosen game's seats (Risk 6, not 15).
   - **Themed seating**: `LobbySeats` is the war council, each seat a banner in its army colour with
     the crest on it over a faint engraving of the chosen map, open seats furled. `TvLobby`: the
-    map large and faint, the banners across it, joining on a cartouche.
+    map large and faint, the banners across it, joining on a cartouche. Switching the lobby to
+    a game with its own seats (and back), or the track changing size, runs as a view transition:
+    each crest and name flies to its new seat (`useSeatStyle` in `waiting.tsx`).
   - **TV text**: names grow less than the roundels on the TV and long ones break onto two lines.
   - **Landmarks** (`src/ui/decor.tsx`): World: title cartouche, compass rose, three galleons, a
     sea serpent, the Rockies, Andes, Alps and Himalayas, Siberian forest. Realm: cartouche, compass,

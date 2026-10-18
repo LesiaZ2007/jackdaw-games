@@ -8,31 +8,33 @@ import { AvalonTvLobby } from './tv-lobby';
 /** Avalon, linked: catalog art, detail page, its own lobby, and the hand-off screens. */
 export const avalonUi: GameUi = {
   fullTv: true,
+  // Parchment wherever you are, unless you switch Avalon to Night in its lobby.
+  look: 'light',
   art: { band: 'azure', field: 'wavy', glyph: 'avalon' },
   about: {
     description:
-      "Arthur's knights go on five quests, but a few of them secretly serve Mordred. Leaders pick teams, everyone votes, and each team plays Success or Fail in secret. Good wins three quests, unless the Assassin can name Merlin at the end.",
+      "You're all knights of the Round Table, except a few of you secretly work for Mordred. Each quest needs a team, and the traitors want on it so they can sink it. Good needs three successful quests, and even then the Assassin gets one guess at who Merlin is to steal the win.",
     steps: [
-      'The leader proposes a team for the quest.',
-      'Everyone votes to approve or reject it, all at once.',
-      'An approved team secretly plays Success or Fail.',
-      'One Fail sinks the quest (two on quest 4 with 7 or more players).',
+      'The leader picks a team for the quest.',
+      'Everyone votes on the team at the same time.',
+      'If it passes, the team secretly plays Success or Fail.',
+      'A single Fail sinks the quest (quest 4 needs two Fails with 7 or more players).',
     ],
     credit:
-      'Based on The Resistance: Avalon by Don Eskridge. Played in the Avalon app; Jackdaw seats the table and keeps the score.',
+      'Based on The Resistance: Avalon by Don Eskridge. The game runs in the Avalon app; Jackdaw seats everyone and keeps score.',
     pictures: [
       {
-        src: '/games/avalon/lobby-phone.png',
-        alt: 'Avalon lobby on a phone: the round table with six shields.',
+        src: '/games/avalon/lobby-phone.jpg',
+        alt: 'Avalon lobby on a phone: the round table with everyone’s shield.',
       },
       {
-        src: '/games/avalon/game-phone.png',
-        alt: 'Avalon on a phone during Quest 1: the leader is choosing two knights.',
+        src: '/games/avalon/game-phone.jpg',
+        alt: 'Avalon on a phone during the first quest, while the leader picks a team.',
       },
       {
-        src: '/games/avalon/tv.png',
-        alt: 'Avalon on a TV: the round table and quest track, with whose turn it is.',
-        wide: true,
+        src: '/games/avalon/desktop.jpg',
+        alt: 'Avalon on a laptop: the round table, the quest track and whose turn it is.',
+        desktop: true,
       },
     ],
   },

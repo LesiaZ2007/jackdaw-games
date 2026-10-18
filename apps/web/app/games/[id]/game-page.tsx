@@ -24,21 +24,35 @@ export function GamePage({ id }: { id: string }) {
 
   return (
     <div className="cat-page">
-      <header className="cat-bar">
-        <button type="button" className="jd-iconbtn" onClick={back} aria-label="Back to the games">
-          <Icon.back />
-        </button>
-        <span className="jd-label">The games</span>
-      </header>
       {entry ? (
         <>
           <div className="cat-page__body">
-            <GameDetail entry={entry} />
+            <GameDetail
+              entry={entry}
+              back={
+                <button
+                  type="button"
+                  className="jd-iconbtn"
+                  onClick={back}
+                  aria-label="Back to the games"
+                >
+                  <Icon.back />
+                </button>
+              }
+            />
           </div>
-          <StartLobby entry={entry} />
+          <StartLobby entry={entry} autoHide />
         </>
       ) : (
         <div className="cat-page__missing">
+          <button
+            type="button"
+            className="jd-iconbtn"
+            onClick={back}
+            aria-label="Back to the games"
+          >
+            <Icon.back />
+          </button>
           <h1 className="jd-display">No such game</h1>
           <p>That game isn&apos;t in the compendium.</p>
           <Link href="/games" className="jd-plaque jd-plaque--small">

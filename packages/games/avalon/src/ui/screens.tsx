@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTheme, type GameUi } from '@jackdaw/ui';
+import { useGameLook, type GameUi } from '@jackdaw/ui';
 import { seatUrl, tvUrl, type AvalonPlayerView, type AvalonTableView } from '../rules';
 import { ShieldMark } from './art';
 import './avalon-copied.css';
@@ -31,7 +31,7 @@ function markWent(code: string) {
 }
 
 function Away({ title, children }: { title: string; children: React.ReactNode }) {
-  const look = useTheme();
+  const look = useGameLook('avalon', 'light');
   return (
     <div className="avalon av-away" data-printed={look === 'light' ? '' : undefined}>
       <span className="av-away__crest">

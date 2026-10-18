@@ -174,6 +174,10 @@ export interface LobbySnapshot {
   /** The caller's player id, or null for a TV display. */
   me: string | null;
   session: { id: string; gameId: string; seq: number; startedAt: number } | null;
+  /** Server time when this was sent, so screens can correct their clock for countdowns. */
+  serverNow: number;
+  /** When the running game's next timer fires (server time), so clients can poll right then. */
+  timerAt?: number;
   /** This player's private view. Only for seated players during a game. */
   view?: unknown;
   /** Public table view. Everyone gets it during a game. */

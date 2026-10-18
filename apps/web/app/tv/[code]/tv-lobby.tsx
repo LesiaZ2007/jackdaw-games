@@ -6,14 +6,14 @@ import type { LobbySnapshot } from '@jackdaw/engine';
 import { BirdMark, BoxLid, Chits, SeatTrack, type ScreenPlayer, type Seat } from '@jackdaw/ui';
 import { catalogEntry, gameUis } from '@/lib/catalog';
 import { QrCode } from '@/lib/qr-code';
+import { serverClock } from '@/lib/clock';
 import { siteUrl } from '@/lib/qr';
 import { useLobby } from '@/lib/use-lobby';
 import { NightHint, TvNight } from './tv-night';
 import { TvResults } from './tv-results';
 import { TvStage, useWakeLock } from './tv-stage';
 
-// Device time for now; a server-corrected clock comes with the first timed game.
-const clock = () => Date.now();
+const clock = serverClock;
 
 const noSubscribe = () => () => {};
 const serverSiteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/$/, '');

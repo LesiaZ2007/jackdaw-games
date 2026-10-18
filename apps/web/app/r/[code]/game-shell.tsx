@@ -4,9 +4,7 @@ import { useCallback } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
 import type { LobbyChat, ScreenPlayer } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
-
-// Device time for now; a server-corrected clock comes with the first timed game.
-const clock = () => Date.now();
+import { serverClock as clock } from '@/lib/clock';
 
 /**
  * Runs the chosen game's own screen. Seated players get their private view plus the public
@@ -63,7 +61,15 @@ export function GameShell({
 
   const Screen = ui.PlayerScreen;
   return (
-    <div className={ui.fullBleed ? 'game-shell game-shell--bleed' : 'game-shell'}>
+    <div
+      className={
+        ui.fullBleed
+          ? 'game-shell game-shell--bleed'
+          : ui.fit
+            ? 'game-shell game-shell--fit'
+            : 'game-shell'
+      }
+    >
       <Screen
         view={s.view}
         tableView={s.tableView}

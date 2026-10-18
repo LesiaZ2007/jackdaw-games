@@ -538,6 +538,11 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
 }
 
 /* ── Results: the big reveal ──────────────────────────────────────────────── */
+/* A game's own reveal beside the standings (Wordhoard's finished board), sized to the space. */
+.tv-reveal {
+  min-height: 0;
+  container-type: size;
+}
 .tv-results {
   height: 100%;
   display: grid;

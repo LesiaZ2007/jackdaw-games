@@ -70,7 +70,10 @@ export function Sheet({
   );
 }
 
-/** A brief message (rule refusals, network trouble). Disappears on its own after a few seconds. */
+/**
+ * A brief message (rule refusals, network trouble) at the top of the screen. Disappears on its
+ * own after a few seconds, or when tapped.
+ */
 export function Toast({
   message,
   onDone,
@@ -87,7 +90,7 @@ export function Toast({
   }, [message, onDone, ms]);
   if (!message) return null;
   return (
-    <div className="jd-toast" role="status" aria-live="polite">
+    <div className="jd-toast" role="status" aria-live="polite" onClick={onDone}>
       {message}
     </div>
   );

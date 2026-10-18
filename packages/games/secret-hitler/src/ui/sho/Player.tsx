@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import portraits, { A, defaultPortrait, portraitsAltText } from './assets';
+import { useState, type CSSProperties } from 'react';
+import { Crest, seatTransition as seatNames } from '@jackdaw/ui';
+import { A } from './assets';
 import { Textfit } from './Textfit';
-import { Role } from './types';
+import { Role, type Look } from './types';
 
 type PlayerProps = {
   isBusy?: boolean;
@@ -18,7 +19,9 @@ type PlayerProps = {
   highlight?: boolean;
   showVote?: boolean;
   vote?: boolean;
-  icon?: string;
+  icon?: Look;
+  /** Jackdaw: this tile's crest and name fly to and from the player's other seats. */
+  seatTransition?: boolean;
 };
 
 const capitalizeFirstOnly = (text: string) =>
@@ -41,7 +44,8 @@ export default function Player({
   highlight = false,
   showVote = false,
   vote = false,
-  icon = defaultPortrait,
+  icon,
+  seatTransition = false,
 }: PlayerProps) {
   const [initialState, setInitialState] = useState(true);
   const [initialVoteState, setInitialVoteState] = useState(true);
@@ -56,6 +60,7 @@ export default function Player({
   const buttonClass =
     useAsButton && !disabled ? (isSelected ? ' selectable selected' : ' selectable') : '';
   const altText = showRole ? name + capitalizeFirstOnly(role) : name;
+  const names = seatTransition && icon?.id ? seatNames(icon.id) : null;
 
   return (
     <div
@@ -66,7 +71,18 @@ export default function Player({
     >
       <img id="player-image" src={A.playerBase} alt={altText} className={darken} />
 
-      <img id="player-icon" alt={portraitsAltText[icon]} src={portraits[icon]} className={darken} />
+      {/* Jackdaw: the player's crest on their colour, where the site has a portrait. */}
+      <span
+        className={'sho-jackdaw sho-crest' + darken}
+        style={
+          {
+            '--sho-tint': icon ? `var(--tint-${icon.tint})` : undefined,
+            viewTransitionName: names?.token,
+          } as CSSProperties
+        }
+      >
+        {icon && <Crest id={icon.crest} />}
+      </span>
 
       <img
         id="player-busy-icon"
@@ -100,7 +116,11 @@ export default function Player({
         </>
       )}
 
-      <Textfit id="player-name" className={darken + ' force-update'}>
+      <Textfit
+        id="player-name"
+        className={darken + ' force-update'}
+        style={names ? { viewTransitionName: names.name } : undefined}
+      >
         {name}
       </Textfit>
 

@@ -42,6 +42,12 @@ export type PlayerState = {
   investigated: boolean;
 };
 
+/**
+ * A player's look. secret-hitler.online gives each player a portrait; on Jackdaw it's the crest
+ * and colour they carry from game to game, and their id names the seat animation.
+ */
+export type Look = { crest: string; tint: string; id?: string };
+
 export type GameState = {
   state: LobbyState;
   lastState: LobbyState;
@@ -64,8 +70,8 @@ export type GameState = {
   lastPolicy: string;
   vetoOccurred: boolean;
   peek?: PolicyType[];
-  /** Maps from usernames to icon keys */
-  icon: Record<string, string>;
+  /** Maps from usernames to their look (Jackdaw: each player's crest and colour). */
+  icon: Record<string, Look>;
   /** Jackdaw: the size of the whole policy deck (17 officially, more with the house deck). */
   deckTotal?: { liberal: number; fascist: number };
   /** Jackdaw: the deal (5 to 10 officially; the house rules carry on to 15). */

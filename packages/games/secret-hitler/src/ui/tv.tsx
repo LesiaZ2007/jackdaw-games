@@ -2,12 +2,11 @@
 
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import type { TvScreenProps } from '@jackdaw/engine';
-import type { ScreenPlayer } from '@jackdaw/ui';
+import type { ScreenExtras } from '@jackdaw/ui';
 import type { ShTableView } from '../rules';
+import { ShFrame } from './frame';
 import GamePage from './sho/GamePage';
 import { toGameState } from './sho/adapt';
-import './sho/sho.css';
-import './sho/jackdaw.css';
 
 /**
  * On a TV the page can't scroll, so it shrinks as a whole until the boards fit under the tiles
@@ -17,7 +16,7 @@ function useFitOnTv() {
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = ref.current;
-    const host = el?.parentElement;
+    const host = el?.closest('.sho-frame')?.parentElement;
     if (!el || !host || !el.closest('.tv-game') || typeof ResizeObserver === 'undefined') return;
     // The largest scale that fits: tiles rewrap as the page shrinks, so it's searched for.
     const fits = (zoom: number) => {
@@ -48,18 +47,17 @@ function useFitOnTv() {
  * The TV, and a phone that isn't seated: secret-hitler.online's game page with no seat, so
  * nobody's role shows and there's nothing to answer. Its popups close themselves.
  */
-export function TvScreen({
-  tableView,
-  players,
-}: TvScreenProps<ShTableView> & { players: ScreenPlayer[] }) {
+export function TvScreen({ tableView, players, chat }: TvScreenProps<ShTableView> & ScreenExtras) {
   const next = toGameState(tableView, null, players);
   const key = JSON.stringify(next);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const gameState = useMemo(() => next, [key]);
   const ref = useFitOnTv();
   return (
-    <div className="sho sho-page sho-page--tv" ref={ref}>
-      <GamePage gameState={gameState} user={null} />
-    </div>
+    <ShFrame chat={chat} players={players} className="sho-page--tv">
+      <div ref={ref}>
+        <GamePage gameState={gameState} user={null} />
+      </div>
+    </ShFrame>
   );
 }

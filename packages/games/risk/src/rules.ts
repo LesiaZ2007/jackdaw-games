@@ -599,16 +599,19 @@ function endTurn(s: RiskState, rng: Rng): RiskState {
   };
 }
 
-/** After every move: one player left, or the mover's mission complete, ends the game. */
-function settle(s: RiskState): RiskState {
+/**
+ * After every move: one player left, or the mover's mission complete, ends the game. The mover is
+ * passed in, since a fortify or the end of a turn has already handed the turn on.
+ */
+function settle(s: RiskState, mover: string): RiskState {
   if (s.phase === 'over' || s.phase === 'draft') return s;
   const alive = s.seats.filter((p) => !s.eliminated.includes(p));
-  const mission = s.missions?.[s.turn];
+  const mission = s.missions?.[mover];
   const won =
     alive.length === 1
       ? alive[0]!
-      : mission && missionDone(mission, mapOf(s), s.owner, s.armies, s.turn, s.eliminatedBy)
-        ? s.turn
+      : mission && missionDone(mission, mapOf(s), s.owner, s.armies, mover, s.eliminatedBy)
+        ? mover
         : null;
   if (!won) return s;
   return logged(
@@ -673,7 +676,7 @@ function timeUp(s: RiskState, rng: Rng): RiskState {
   const who = s.turn;
   let next = s;
   for (let guard = 0; guard < 20 && next.turn === who && next.phase !== 'over'; guard++) {
-    if (next.phase === 'occupy') next = settle(occupy(next, next.occupy!.min));
+    if (next.phase === 'occupy') next = settle(occupy(next, next.occupy!.min), who);
     else if (next.phase === 'reinforce') {
       while ((next.hands[who]?.length ?? 0) >= 5) {
         const set = bestSet(next.hands[who]!, next.cardSets, next.setsTraded)!;
@@ -683,7 +686,7 @@ function timeUp(s: RiskState, rng: Rng): RiskState {
           set.map((c) => c.id),
         );
       }
-      next = settle(reinforce(next, who, spread(next, who, next.toPlace, rng)));
+      next = settle(reinforce(next, who, spread(next, who, next.toPlace, rng)), who);
     } else next = endTurn(next, rng);
   }
   return next;
@@ -857,12 +860,12 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
   setup,
   getPlayerView,
   getTableView,
-  applyAction: (s, pid, a, rng, now) => stamp(s, settle(applyAction(s, pid, a, rng)), now),
+  applyAction: (s, pid, a, rng, now) => stamp(s, settle(applyAction(s, pid, a, rng), pid), now),
   getResult,
   announce,
   waitingOn,
   nextTimer: (s) =>
     s.turnSecs && s.actBy !== null && s.phase !== 'over' ? { id: 'turn', at: s.actBy } : null,
   onTimer: (s, id, rng, now) =>
-    id !== 'turn' || s.phase === 'over' ? s : stamp(s, settle(timeUp(s, rng)), now),
+    id !== 'turn' || s.phase === 'over' ? s : stamp(s, settle(timeUp(s, rng), s.turn), now),
 };

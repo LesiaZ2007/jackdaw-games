@@ -106,6 +106,14 @@ const NAMES: Record<number, [string, string]> = {
 const one = (r: number) => NAMES[r]![0];
 const many = (r: number) => NAMES[r]![1];
 
+/** Two hole cards in words, before the flop: "A pair of sevens", "Ace and six, same suit". */
+export function startingHandName(hole: Card[]): string {
+  const [a, b] = [...hole].sort((x, y) => rankOf(y) - rankOf(x)) as [Card, Card];
+  if (rankOf(a) === rankOf(b)) return `A pair of ${many(rankOf(a))}`;
+  const top = one(rankOf(a));
+  return `${top[0]!.toUpperCase()}${top.slice(1)} and ${one(rankOf(b))}, ${suitOf(a) === suitOf(b) ? 'same suit' : 'different suits'}`;
+}
+
 /** A score in words: "Two pair, aces and nines". */
 export function handName(score: Score): string {
   const [cat, a = 0, b = 0] = score;

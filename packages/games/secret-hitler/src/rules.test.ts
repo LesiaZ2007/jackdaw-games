@@ -35,7 +35,13 @@ function table(n: number, opts: { roles?: Role[]; deck?: Policy[]; president?: s
   } satisfies ShState;
 }
 
-const act = (s: ShState, who: string, a: ShAction) => game.applyAction(s, who, a, rng, 0);
+const apply = (s: ShState, who: string, a: ShAction) => game.applyAction(s, who, a, rng, 0);
+
+/** One move, with the president pressing End term straight away once the round is done. */
+function act(s: ShState, who: string, a: ShAction): ShState {
+  const next = apply(s, who, a);
+  return next.phase === 'post' ? apply(next, next.president, { type: 'endTerm' }) : next;
+}
 
 /** Everyone alive votes; `nein` lists who votes no. */
 function vote(s: ShState, nein: string[] = []): ShState {
@@ -124,6 +130,34 @@ describe('the deal', () => {
       expect(hitlerView.known.length > 0).toBe(n <= 6);
       expect(game.getPlayerView(s, ids(n)[n - 1]!).known).toEqual([]);
     }
+  });
+});
+
+describe('ending a term', () => {
+  it('waits for the president to press End term after every round', () => {
+    let s = table(5, { deck: [L, L, F, F, F, F, F, F, F, F] });
+    s = apply(s, 'p0', { type: 'nominate', chancellor: 'p3' });
+    for (const id of s.players) s = apply(s, id, { type: 'vote', ja: id !== 'p4' });
+    s = apply(s, 'p0', { type: 'discard', policy: F });
+    s = apply(s, 'p3', { type: 'enact', policy: L });
+    expect(s.phase).toBe('post');
+    expect(s.president).toBe('p0');
+    expect(s.nominee).toBe('p3');
+    expect(game.getTableView(s).phase).toBe('post');
+    expect(() => apply(s, 'p3', { type: 'endTerm' })).toThrow(/Only the president/);
+    s = apply(s, 'p0', { type: 'endTerm' });
+    expect(s.phase).toBe('nominate');
+    expect(s.president).toBe('p1');
+    expect(s.nominee).toBeNull();
+    expect(() => apply(s, 'p1', { type: 'endTerm' })).toThrow(/not over/);
+  });
+
+  it('also follows a failed vote', () => {
+    let s = apply(table(5), 'p0', { type: 'nominate', chancellor: 'p3' });
+    for (const id of s.players) s = apply(s, id, { type: 'vote', ja: false });
+    expect(s.phase).toBe('post');
+    expect(s.tracker).toBe(1);
+    expect(apply(s, 'p0', { type: 'endTerm' }).president).toBe('p1');
   });
 });
 
@@ -441,6 +475,9 @@ describe('winning', () => {
             s = move({ type: 'power', target: local.pick(others) }, s.president);
             break;
           }
+          case 'post':
+            s = move({ type: 'endTerm' }, s.president);
+            break;
         }
       }
       expect(s.winner).not.toBeNull();

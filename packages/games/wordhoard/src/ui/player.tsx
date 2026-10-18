@@ -19,7 +19,19 @@ export function moveText(m: Move, name: (id: string) => string): string {
   return `${who} played ${words} for ${m.score}${m.bingo ? ', all seven tiles' : ''}.`;
 }
 
-/** Everyone's score, in seat order, with whose turn it is. */
+/** A side's names: "Bran", or "Bran & Ana" (you first, as "You"). */
+export function sideName(
+  t: WordhoardTableView,
+  key: string,
+  name: (id: string) => string,
+  me?: string,
+) {
+  const side = t.sides.find((x) => x[0] === key) ?? [key];
+  const ids = me && side.includes(me) ? [me, ...side.filter((id) => id !== me)] : side;
+  return ids.map((id) => (id === me ? 'You' : name(id))).join(' & ');
+}
+
+/** Every side's score, in turn order, with whose turn it is. A pair shows both crests. */
 export function Scores({
   t,
   players,
@@ -32,22 +44,39 @@ export function Scores({
   reactions?: Reaction[];
 }) {
   const byId = new Map(players.map((p) => [p.id, p]));
+  const paired = t.sides.some((side) => side.length > 1);
   return (
-    <ol className="wh-scores" aria-label="Scores">
-      {t.players.map((id) => {
-        const p = byId.get(id);
-        const turn = !t.over && t.turn === id;
+    <ol className={paired ? 'wh-scores wh-scores--pairs' : 'wh-scores'} aria-label="Scores">
+      {t.sides.map((side) => {
+        const key = side[0]!;
+        const turn = !t.over && t.turn === key;
         return (
-          <li key={id} className={turn ? 'is-turn' : undefined}>
-            <span className="wh-scores__tok">
-              {p && <Token avatar={p.avatar} size={34} away={!p.online} />}
-              <PlayerReaction reactions={reactions} playerId={id} name={p?.name} size={34} />
+          <li key={key} className={turn ? 'is-turn' : undefined}>
+            <span className="wh-scores__toks">
+              {side.map((id) => {
+                const p = byId.get(id);
+                return (
+                  <span key={id} className="wh-scores__tok">
+                    {p && <Token avatar={p.avatar} size={paired ? 28 : 34} away={!p.online} />}
+                    <PlayerReaction
+                      reactions={reactions}
+                      playerId={id}
+                      name={p?.name}
+                      size={paired ? 28 : 34}
+                    />
+                  </span>
+                );
+              })}
             </span>
             <span className="wh-scores__name">
-              {id === me ? 'You' : (p?.name ?? 'Someone')}
-              <small>{turn ? 'Playing' : `${t.rackCounts[id] ?? 0} tiles`}</small>
+              {(me && side.includes(me) ? [me, ...side.filter((id) => id !== me)] : side).map(
+                (id) => (
+                  <span key={id}>{id === me ? 'You' : (byId.get(id)?.name ?? 'Someone')}</span>
+                ),
+              )}
+              <small>{turn ? 'Playing' : `${t.rackCounts[key] ?? 0} tiles`}</small>
             </span>
-            <Tally className="wh-scores__n" value={t.scores[id] ?? 0} />
+            <Tally className="wh-scores__n" value={t.scores[key] ?? 0} />
           </li>
         );
       })}
@@ -66,12 +95,15 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactio
   const byId = new Map(players.map((p) => [p.id, p]));
   const name = (id: string) => byId.get(id)?.name ?? 'Someone';
   const last = v.moves[v.moves.length - 1];
-  const myTurn = v.turn === v.me && !v.over;
+  const myTurn = v.turn === v.side && !v.over;
+  const partner = v.sides.find((x) => x[0] === v.side)?.find((id) => id !== v.me);
 
   return (
     <div className="wh wh--phone">
       <header className="wh__head">
-        <h2 className="jd-display">{myTurn ? 'Your turn' : `${name(v.turn)}’s turn`}</h2>
+        <h2 className="jd-display">
+          {myTurn ? 'Your turn' : `${sideName(v, v.turn, name)}’s turn`}
+        </h2>
         <p>
           {v.bagCount} tile{v.bagCount === 1 ? '' : 's'} in the bag
           {last ? ` · ${moveText(last, (id) => (id === v.me ? 'You' : name(id)))}` : ''}
@@ -79,7 +111,13 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactio
       </header>
       <Scores t={v} players={players} me={v.me} reactions={reactions} />
       {/* Keyed by the move count, so a new turn starts with your tiles back on the rack. */}
-      <Turn key={v.moves.length} v={v} myTurn={myTurn} send={sendAction} />
+      <Turn
+        key={v.moves.length}
+        v={v}
+        myTurn={myTurn}
+        partner={partner ? name(partner) : undefined}
+        send={sendAction}
+      />
     </div>
   );
 };
@@ -92,10 +130,13 @@ interface Pending extends Placement {
 function Turn({
   v,
   myTurn,
+  partner,
   send,
 }: {
   v: WordhoardPlayerView;
   myTurn: boolean;
+  /** Your partner's name, playing in pairs. */
+  partner?: string;
   send: (a: WordhoardAction) => Promise<boolean>;
 }) {
   const [pending, setPending] = useState<Pending[]>([]);
@@ -166,7 +207,9 @@ function Turn({
           : check.reason
         : picked !== null
           ? 'Now tap a square on the board.'
-          : 'Tap a tile, then a square. Tap a placed tile to take it back.';
+          : partner
+            ? `Your rack, shared with ${partner}. Either of you can play.`
+            : 'Tap a tile, then a square. Tap a placed tile to take it back.';
 
   return (
     <>

@@ -481,6 +481,22 @@ describe('winning', () => {
     expect(s1.winner).toBe('a');
   });
 
+  it('a fortify that completes the mission wins, though the turn has passed', () => {
+    const mine = allBut('kamchatka').slice(0, 18);
+    expect(mine).toContain('alaska');
+    expect(mine).toContain('alberta');
+    const armies = Object.fromEntries(mine.map((t) => [t, 2]));
+    const s = staged({ a: mine, armies: { ...armies, alaska: 1, alberta: 3 } }, 'fortify');
+    const m: Mission = { kind: 'territories2', n: 18 };
+    const s1 = act(withMissions(s, { a: m, b: hold24 }), 'a', {
+      type: 'fortify',
+      from: 'alberta',
+      to: 'alaska',
+      n: 1,
+    });
+    expect([s1.phase, s1.winner]).toEqual(['over', 'a']);
+  });
+
   it('two continents', () => {
     const asia = world.territories.filter((t) => t.continent === 'asia').map((t) => t.id);
     const sa = world.territories.filter((t) => t.continent === 'south-america').map((t) => t.id);

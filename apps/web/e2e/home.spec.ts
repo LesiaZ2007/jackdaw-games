@@ -31,14 +31,17 @@ test('the token on the home page opens the crest and colour picker and remembers
   ).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('Browse the games scrolls down to the shelves', async ({ page }) => {
+test('Browse the games scrolls down to the games, which filter by kind', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto('/');
-  const shelves = page.getByRole('heading', { name: 'The games', level: 2 });
-  await expect(shelves).not.toBeInViewport();
+  const games = page.getByRole('heading', { name: 'The games', level: 2 });
+  await expect(games).not.toBeInViewport();
   await page.getByRole('button', { name: 'Browse the games' }).click();
-  await expect(shelves).toBeInViewport();
-  await expect(page.getByRole('heading', { name: 'Ready to play' })).toBeVisible();
+  await expect(games).toBeInViewport();
+  await page.getByLabel('Kind').selectOption('card');
+  await expect(page.getByRole('link', { name: /Poker/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Rock Paper Scissors/ })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Clear filters' }).click();
   await page
     .getByRole('link', { name: /Rock Paper Scissors/ })
     .first()

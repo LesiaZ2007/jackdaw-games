@@ -72,8 +72,9 @@ Lesia's feedback on the first preview, all done:
   their names.
 - The seat track is bigger on laptops and your own seat is marked. The TV track is bigger too.
 - Home: the nav is one row on laptops (About moved to the /games footer). "Browse the games"
-  scrolls to shelves of `GameCover`s (Ready to play, Hidden roles, Quick games, Fine with three,
-  Coming soon). In the lobby, Next up is a small row that expands to options and rules.
+  scrolls to the games. (Since 2026-10-18, Lesia: with few games the shelves confused; home and
+  /games show one grid, loosely by kind with playable games first, under one row of filters.)
+  In the lobby, Next up is a small row that expands to options and rules.
 - Results you can feel: the kit's `VerdictMoment` for every round in RPS (phones and TV), and
   your own verdict plus coloured standings on the results screens.
 - Every game follows the day/dark choice (`useTheme()`).

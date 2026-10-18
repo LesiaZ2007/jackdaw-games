@@ -2,30 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import type { GameCategory } from '@jackdaw/engine';
 import { BirdMark, GameCover } from '@jackdaw/ui';
-import {
-  catalog,
-  catalogEntry,
-  CATEGORY_LABEL,
-  COMPLEXITY_LABEL,
-  unfitReason,
-} from '@/lib/catalog';
+import { catalog, catalogEntry, CATEGORY_LABEL, unfitReason } from '@/lib/catalog';
 import { GameDetail, StartLobby } from './detail';
-import {
-  filterQuery,
-  type Filters,
-  hasFilters,
-  LENGTH_LABEL,
-  type Length,
-  matches,
-  MAX_PLAYERS,
-  MIN_PLAYERS,
-  NO_FILTERS,
-  readFilters,
-} from './filters';
+import { FilterBar } from './filter-bar';
+import { filterQuery, type Filters, hasFilters, matches, NO_FILTERS, readFilters } from './filters';
 
-/** Wide enough for filters, shelf and the detail panel side by side. */
+/** Wide enough for the games and the detail panel side by side. */
 const WIDE = '(min-width: 1024px)';
 
 export function Catalog() {
@@ -58,32 +41,7 @@ export function Catalog() {
         </Link>
       </header>
 
-      <aside className="cat-filters" aria-label="Filter games">
-        <PlayerStepper
-          value={filters.players}
-          onChange={(players) => update({ ...filters, players })}
-        />
-        <Choice
-          label="Kind"
-          value={filters.kind}
-          options={Object.entries(CATEGORY_LABEL) as [GameCategory, string][]}
-          onChange={(kind) => update({ ...filters, kind })}
-        />
-        <Choice
-          label="Length"
-          value={filters.length}
-          options={Object.entries(LENGTH_LABEL) as [Length, string][]}
-          onChange={(length) => update({ ...filters, length })}
-        />
-        <Choice
-          label="Rules"
-          value={filters.rules ? String(filters.rules) : null}
-          options={Object.entries(COMPLEXITY_LABEL) as [string, string][]}
-          onChange={(rules) =>
-            update({ ...filters, rules: rules ? (Number(rules) as 1 | 2 | 3) : null })
-          }
-        />
-      </aside>
+      <FilterBar filters={filters} onChange={(next) => update(next)} />
 
       <main className="cat-shelf" aria-label="Games">
         <div className="cat-count">
@@ -140,88 +98,6 @@ export function Catalog() {
           <StartLobby key={selected.meta.id} entry={selected} />
         </aside>
       )}
-    </div>
-  );
-}
-
-function PlayerStepper({
-  value,
-  onChange,
-}: {
-  value: number | null;
-  onChange: (v: number | null) => void;
-}) {
-  const down = () => onChange(value === null ? null : value <= MIN_PLAYERS ? null : value - 1);
-  const up = () => onChange(value === null ? MIN_PLAYERS + 2 : Math.min(MAX_PLAYERS, value + 1));
-  return (
-    <div className="cat-filter cat-filter--stepper" role="group" aria-label="Number of players">
-      <span className="jd-label">Players</span>
-      <span className="cat-stepper">
-        <button type="button" onClick={down} disabled={value === null} aria-label="Fewer players">
-          −
-        </button>
-        <output aria-live="polite">{value ?? 'Any'}</output>
-        <button
-          type="button"
-          onClick={up}
-          disabled={value === MAX_PLAYERS}
-          aria-label="More players"
-        >
-          +
-        </button>
-      </span>
-    </div>
-  );
-}
-
-/**
- * A single-choice filter. Phones get a native select (compact, one tap); wide screens get the
- * same choice as a printed checklist in the left column.
- */
-function Choice<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T | null;
-  options: [T, string][];
-  onChange: (v: T | null) => void;
-}) {
-  const id = `filter-${label.toLowerCase()}`;
-  return (
-    <div className="cat-filter">
-      <label className="jd-label" htmlFor={id}>
-        {label}
-      </label>
-      <select
-        id={id}
-        className="cat-select"
-        value={value ?? ''}
-        onChange={(e) => onChange((e.target.value || null) as T | null)}
-      >
-        <option value="">Any</option>
-        {options.map(([v, text]) => (
-          <option key={v} value={v}>
-            {text}
-          </option>
-        ))}
-      </select>
-      <fieldset className="cat-checks">
-        <legend className="sr-only">{label}</legend>
-        {[['' as T, 'Any'] as [T, string], ...options].map(([v, text]) => (
-          <label key={v || 'any'}>
-            <input
-              type="radio"
-              name={id}
-              checked={(value ?? '') === v}
-              onChange={() => onChange((v || null) as T | null)}
-            />
-            <span>{text}</span>
-          </label>
-        ))}
-      </fieldset>
     </div>
   );
 }

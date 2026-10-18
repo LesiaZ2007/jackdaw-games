@@ -56,6 +56,9 @@ importers:
       '@jackdaw/game-secret-hitler':
         specifier: workspace:*
         version: link:../../packages/games/secret-hitler
+      '@jackdaw/game-wordhoard':
+        specifier: workspace:*
+        version: link:../../packages/games/wordhoard
       '@jackdaw/server':
         specifier: workspace:*
         version: link:../../packages/server
@@ -186,6 +189,25 @@ importers:
         version: 19.3.0
 
   packages/games/secret-hitler:
+    dependencies:
+      '@jackdaw/engine':
+        specifier: workspace:*
+        version: link:../../engine
+      '@jackdaw/ui':
+        specifier: workspace:*
+        version: link:../../ui
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+
+  packages/games/wordhoard:
     dependencies:
       '@jackdaw/engine':
         specifier: workspace:*

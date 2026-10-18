@@ -4,6 +4,7 @@ import { codenamesUi } from '@jackdaw/game-codenames/ui';
 import { pokerUi } from '@jackdaw/game-poker/ui';
 import { rpsUi } from '@jackdaw/game-rps/ui';
 import { secretHitlerUi } from '@jackdaw/game-secret-hitler/ui';
+import { wordhoardUi } from '@jackdaw/game-wordhoard/ui';
 import type { GameAbout, GameUi } from '@jackdaw/ui';
 import { games } from './registry';
 import type { GameArt } from '@jackdaw/ui';
@@ -29,6 +30,7 @@ export const gameUis: Record<string, GameUi> = {
   poker: pokerUi,
   rps: rpsUi,
   'secret-hitler': secretHitlerUi,
+  wordhoard: wordhoardUi,
 };
 
 const upcoming: Omit<CatalogEntry, 'playable'>[] = [

@@ -124,6 +124,8 @@ export interface WordhoardPlayerView extends WordhoardTableView {
 }
 
 export interface WordhoardReveal {
+  /** Older results (before pairs) don't have it: one side per player then. */
+  sides?: string[][];
   board: Board;
   scores: Record<string, number>;
   racks: Record<string, string[]>;
@@ -361,6 +363,7 @@ export const wordhoard: GameModule<
       .filter((m) => m.kind === 'play')
       .reduce<Move | null>((a, m) => (!a || m.score > a.score ? m : a), null);
     const reveal: WordhoardReveal = {
+      sides: s.sides,
       board: s.board,
       scores: s.scores,
       racks: s.racks,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Plaque, PlayerReaction, Tally, Token, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { Reaction } from '@jackdaw/engine';
 import { RACK, checkPlay, type Placement } from '../board';
@@ -87,7 +87,8 @@ export function Scores({
 /**
  * Wordhoard on a phone: the scores, the board, and your rack at the bottom. Tap a tile on your
  * rack, then a square, to place it; tap a placed tile to take it back. The score shows before you
- * play.
+ * play. It fits the screen without scrolling: on a laptop the board takes the left and the rack
+ * sits beside it.
  */
 export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactions, ...props }) => {
   const v = view as WordhoardPlayerView;
@@ -122,6 +123,44 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactio
   );
 };
 
+/** Words already looked up on this device: true if in the word list. */
+const known = new Map<string, boolean>();
+
+/**
+ * Which of these words aren't in the word list, asked of the server (the list itself is too big
+ * for a phone). Null until the answer is in; an empty list if the lookup fails, since the server
+ * checks again on Play anyway.
+ */
+function useUnknownWords(words: string[] | null): string[] | null {
+  const key = words?.join(',') ?? '';
+  const [answer, setAnswer] = useState<{ key: string; unknown: string[] } | null>(null);
+  const cached = words?.every((w) => known.has(w))
+    ? words.filter((w) => known.get(w) === false)
+    : null;
+  useEffect(() => {
+    if (!key || cached) return;
+    const ask = key.split(',').filter((w) => !known.has(w));
+    const ctl = new AbortController();
+    const t = setTimeout(() => {
+      fetch(`/api/words?w=${encodeURIComponent(ask.join(','))}`, { signal: ctl.signal })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((body: { unknown: string[] }) => {
+          for (const w of ask) known.set(w, !body.unknown.includes(w));
+          setAnswer({ key, unknown: key.split(',').filter((w) => known.get(w) === false) });
+        })
+        .catch(() => {
+          if (!ctl.signal.aborted) setAnswer({ key, unknown: [] });
+        });
+    }, 150);
+    return () => {
+      clearTimeout(t);
+      ctl.abort();
+    };
+  }, [key, cached]);
+  if (!words) return null;
+  return cached ?? (answer?.key === key ? answer.unknown : null);
+}
+
 interface Pending extends Placement {
   /** Which rack tile it came from. */
   from: number;
@@ -152,6 +191,8 @@ function Turn({
     [pending, v.board],
   );
   const last = v.moves[v.moves.length - 1];
+  const unknown = useUnknownWords(check?.ok ? check.words.map((w) => w.word) : null);
+  const wrong = unknown && unknown.length > 0;
 
   const go = async (a: WordhoardAction) => {
     setBusy(true);
@@ -203,7 +244,11 @@ function Turn({
       ? `Pick the tiles to swap (${swapping.length} chosen).`
       : check
         ? check.ok
-          ? `${check.words.map((w) => w.word).join(', ')}: ${check.score} points${check.bingo ? ', with 50 for all seven' : ''}`
+          ? wrong
+            ? unknown.length === 1
+              ? `${unknown[0]} isn’t in the word list.`
+              : `${unknown.join(', ')} aren’t in the word list.`
+            : `${check.words.map((w) => w.word).join(', ')}: ${check.score} points${check.bingo ? ', with 50 for all seven' : ''}`
           : check.reason
         : picked !== null
           ? 'Now tap a square on the board.'
@@ -213,18 +258,20 @@ function Turn({
 
   return (
     <>
-      <div className={zoom ? 'wh-boardwrap is-zoomed' : 'wh-boardwrap'}>
-        <BoardGrid
-          board={v.board}
-          pending={pending}
-          recent={last?.cells}
-          onSquare={myTurn && !swapping ? onSquare : undefined}
-        />
+      <div className="wh-stage">
+        <div className={zoom ? 'wh-boardwrap is-zoomed' : 'wh-boardwrap'}>
+          <BoardGrid
+            board={v.board}
+            pending={pending}
+            recent={last?.cells}
+            onSquare={myTurn && !swapping ? onSquare : undefined}
+          />
+        </div>
       </div>
 
       <section className="wh-dock" aria-label="Your tiles">
         <p
-          className={check && !check.ok ? 'wh-dock__status is-bad' : 'wh-dock__status'}
+          className={check && (!check.ok || wrong) ? 'wh-dock__status is-bad' : 'wh-dock__status'}
           role="status"
         >
           {status}
@@ -298,7 +345,7 @@ function Turn({
                 go
                 small
                 className="wh-dock__play"
-                disabled={busy || !check?.ok}
+                disabled={busy || !check?.ok || Boolean(wrong)}
                 onClick={() =>
                   void go({
                     type: 'play',
@@ -311,7 +358,7 @@ function Turn({
                   })
                 }
               >
-                {check?.ok ? `Play for ${check.score}` : 'Play'}
+                {check?.ok && !wrong ? `Play for ${check.score}` : 'Play'}
               </Plaque>
             )}
           </div>

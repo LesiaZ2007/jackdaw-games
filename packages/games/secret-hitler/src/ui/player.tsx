@@ -2,15 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { PlayerScreenProps } from '@jackdaw/engine';
-import type { ScreenPlayer } from '@jackdaw/ui';
+import type { ScreenExtras } from '@jackdaw/ui';
 import type { Policy } from '../lineup';
 import type { ShAction, ShPlayerView, ShTableView } from '../rules';
+import { ShFrame } from './frame';
 import GamePage, { type Investigation } from './sho/GamePage';
 import { namesFor, toGameState } from './sho/adapt';
 import { remember } from './sho/memory';
 import { WSCommandType, type GameState, type ServerRequestPayload } from './sho/types';
-import './sho/sho.css';
-import './sho/jackdaw.css';
 
 /** The same object until the content changes, so the game page only reacts to real changes. */
 function useStable<T>(value: T): T {
@@ -62,7 +61,8 @@ export function PlayerScreen({
   tableView,
   players,
   sendAction,
-}: PlayerScreenProps<ShPlayerView, ShTableView, ShAction> & { players: ScreenPlayer[] }) {
+  chat,
+}: PlayerScreenProps<ShPlayerView, ShTableView, ShAction> & ScreenExtras) {
   const gameState = useStable(toGameState(tableView, view, players));
   const { name, idOf } = namesFor(tableView.players, players);
   const investigations = useStable<Investigation[]>(
@@ -87,13 +87,13 @@ export function PlayerScreen({
   );
 
   return (
-    <div className="sho sho-page">
+    <ShFrame chat={chat} players={players}>
       <GamePage
         gameState={gameState}
         user={name(view.me)}
         send={send}
         investigations={investigations}
       />
-    </div>
+    </ShFrame>
   );
 }

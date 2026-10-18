@@ -7,6 +7,7 @@ import ButtonPrompt from './ButtonPrompt';
 import CustomAlert from './CustomAlert';
 import Deck from './Deck';
 import EventBar from './EventBar';
+import { FitToScreen } from './FitToScreen';
 import PlayerDisplay, { DISABLE_EXECUTED_PLAYERS, DISABLE_NONE } from './PlayerDisplay';
 import PlayerPolicyStatus from './PlayerPolicyStatus';
 import StatusBar from './StatusBar';
@@ -726,12 +727,13 @@ export default class GamePage extends Component<GamePageProps, GamePageState> {
             showVotes={this.state.showVotes}
             showBusy={this.state.allAnimationsFinished} // Only show busy when there isn't an active animation.
             playerDisabledFilter={DISABLE_EXECUTED_PLAYERS}
+            seatTransitions
           />
         </div>
 
         <StatusBar>{this.state.statusBarText}</StatusBar>
 
-        <div style={{ display: 'inline-block' }}>
+        <FitToScreen>
           <div
             id="Board Layout"
             style={{
@@ -783,7 +785,7 @@ export default class GamePage extends Component<GamePageProps, GamePageState> {
               electionTracker={this.state.electionTracker}
             />
           </div>
-        </div>
+        </FitToScreen>
 
         <div style={{ textAlign: 'center' }}>
           <div id="snackbar">{this.state.snackbarMessage}</div>

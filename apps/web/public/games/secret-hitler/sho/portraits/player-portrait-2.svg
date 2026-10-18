@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1.4583in" height="1.4583in" version="1.1" viewBox="0 0 37.042 37.042" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+ <defs>
+  <linearGradient id="linearGradient2662" x1="54.811" x2="91.853" y1="32.815" y2="32.815" gradientTransform="translate(-6.305 -9.812)" gradientUnits="userSpaceOnUse">
+   <stop stop-color="#b3a995" offset="0"/>
+  </linearGradient>
+  <linearGradient id="4" x1="41.053" x2="59.219" y1="37.348" y2="37.348" gradientTransform="scale(1.3369 .74799)" gradientUnits="userSpaceOnUse">
+   <stop stop-color="#7e7867" offset="0"/>
+  </linearGradient>
+  <linearGradient id="2" x1="-86.011" x2="-66.572" y1="-24.381" y2="-24.381" gradientUnits="userSpaceOnUse">
+   <stop stop-color="#4f4b41" offset="0"/>
+  </linearGradient>
+  <linearGradient id="6-0" x1="-86.011" x2="-78.78" y1="-24.381" y2="-24.381" gradientUnits="userSpaceOnUse">
+   <stop stop-color="#a19a86" offset="0"/>
+  </linearGradient>
+ </defs>
+ <g transform="translate(-52.279 -98.455)" display="none">
+  <rect width="215.9" height="279.4" fill="#fcfcfc" style="paint-order:markers fill stroke"/>
+ </g>
+ <g transform="translate(-52.279 -98.455)">
+  <g transform="translate(3.7724 93.973)">
+   <rect x="48.506" y="4.4825" width="37.042" height="37.042" ry="2.0045" fill="url(#linearGradient2662)" style="paint-order:normal"/>
+   <rect x="59.754" y="10.831" width="14.547" height="16.552" ry="7.2734" fill="#615b4c" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <path d="m67.055 27.936a12.143 12.143 0 0 0-6.0999 1.6268 12.143 12.143 0 0 0-6.0715 10.517v1.4449h24.287v-1.4449a12.143 12.143 0 0 0-6.0715-10.517 12.143 12.143 0 0 0-6.0441-1.6268z" fill="url(#4)" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <rect x="64.323" y="23.266" width="5.409" height="7.7654" ry="2.7045" fill="#615b4c" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <path d="m67.027 10.831c-3.4522 0-6.3252 2.3821-7.0783 5.5983a5.0609 4.2674 0 0 0 2.529 0.57142 5.0609 4.2674 0 0 0 4.6484-2.5799 5.0609 4.2674 0 0 0 4.5097 2.3315 5.0609 4.2674 0 0 0 2.422-0.5205c-0.82233-3.1159-3.6494-5.4008-7.0308-5.4008z" fill="#413e35" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <circle cx="74.301" cy="10.831" r="3.8956" fill="#413e35" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <ellipse cx="63.44" cy="19.657" rx="2.0398" ry="1.4861" fill="#d3cdc3" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <ellipse cx="63.464" cy="19.636" rx=".885" ry="1.2626" fill="#413e35" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <ellipse cx="70.509" cy="19.657" rx="2.0398" ry="1.4861" fill="#d3cdc3" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <ellipse cx="70.534" cy="19.636" rx=".885" ry="1.2626" fill="#413e35" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <path transform="rotate(191.85)" d="m-66.572-24.381a19.439 19.439 0 0 1-19.439 19.439v-19.439z" fill="url(#2)" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <path transform="rotate(191.85)" d="m-78.78-24.381a7.2309 7.2309 0 0 1-7.2309 7.2309v-7.2309z" fill="url(#6-0)" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <path d="m78.59 37.719a2.7888 2.7888 0 0 0-2.789 2.789 2.7888 2.7888 0 0 0 0.19224 1.016h5.1935a2.7888 2.7888 0 0 0 0.19224-1.016 2.7888 2.7888 0 0 0-2.789-2.789z" fill="#615b4c" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+  </g>
+ </g>
+</svg>

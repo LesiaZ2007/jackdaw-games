@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1.4583in" height="1.4583in" version="1.1" viewBox="0 0 37.042 37.042" xmlns="http://www.w3.org/2000/svg">
+ <g transform="translate(-194.71 -136.57)">
+  <rect x="194.71" y="136.57" width="37.042" height="37.042" ry="2.0045" fill="#615b4c" style="paint-order:normal"/>
+  <g fill="#413e35">
+   <rect x="205.96" y="142.92" width="14.547" height="16.552" ry="7.2734" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <path d="m213.26 160.03a12.143 12.143 0 0 0-6.0999 1.6268 12.143 12.143 0 0 0-6.0715 10.517v1.4449h24.287v-1.4449a12.143 12.143 0 0 0-6.0715-10.517 12.143 12.143 0 0 0-6.0441-1.6268z" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <rect x="210.53" y="155.36" width="5.409" height="7.7654" ry="2.7045" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+  </g>
+  <g transform="rotate(-10.191 454.72 -213.3)">
+   <ellipse cx="148.92" cy="103.26" rx="2.0398" ry="1.4861" fill="#d3cdc3" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <ellipse cx="148.92" cy="103.26" rx=".885" ry="1.2626" fill="#413e35" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <ellipse cx="155.99" cy="103.26" rx="2.0398" ry="1.4861" fill="#d3cdc3" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+   <ellipse cx="155.99" cy="103.26" rx=".885" ry="1.2626" fill="#413e35" stop-color="#000000" style="font-variation-settings:normal;paint-order:normal"/>
+  </g>
+ </g>
+</svg>

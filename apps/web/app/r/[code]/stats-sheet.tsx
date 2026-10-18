@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { HistoryEntry, LobbySnapshot, LobbyStats, PlayerStats } from '@jackdaw/engine';
 import { Sheet, Token } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
+import { nightSummary } from '@/lib/night';
 
 type Tab = 'players' | 'games' | 'tonight';
 const gameName = (id: string) => catalogEntry(id)?.meta.name ?? id;
@@ -158,6 +159,9 @@ export function StatsSheet({
       )}
 
       {data && data.stats.totalGames > 0 && tab === 'tonight' && (
+        <Awards history={data.history} snapshot={snapshot} avatars={avatars} />
+      )}
+      {data && data.stats.totalGames > 0 && tab === 'tonight' && (
         <ol className="pad__log">
           {data.history.map((h) => (
             <li key={h.endedAt}>
@@ -173,5 +177,37 @@ export function StatsSheet({
         </ol>
       )}
     </Sheet>
+  );
+}
+
+/** Tonight's awards (best word, biggest pot…), above the log of games. */
+function Awards({
+  history,
+  snapshot,
+  avatars,
+}: {
+  history: HistoryEntry[];
+  snapshot: LobbySnapshot;
+  avatars: Map<string, { crest: string; tint: string }>;
+}) {
+  const names = Object.fromEntries(snapshot.players.map((p) => [p.id, p.name]));
+  const { awards } = nightSummary(history, snapshot.scores, names);
+  if (awards.length === 0) return null;
+  return (
+    <ul className="pad__awards" aria-label="Tonight’s awards">
+      {awards.map((a) => (
+        <li key={a.award}>
+          <span className="jd-label">{a.award}</span>
+          <b>{a.text}</b>
+          <span className="pad__awardee">
+            {a.holders.map((h) => {
+              const avatar = avatars.get(h.playerId);
+              return avatar ? <Token key={h.playerId} avatar={avatar} size={26} /> : null;
+            })}
+            {a.holders.map((h) => h.name).join(' and ')}, {gameName(a.gameId)}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }

@@ -404,11 +404,27 @@ export const codenames: GameModule<
       winner,
       how: state.how,
     };
+    // The clue that found the most of its team's words, for the night's awards.
+    const found = (c: Clue) => c.guesses.filter((g) => g.card === c.team).length;
+    const bestClue = state.clues.reduce<Clue | null>(
+      (a, c) => (found(c) >= 2 && (!a || found(c) > found(a)) ? c : a),
+      null,
+    );
     return {
       winners: state.players.filter((id) => state.teams[id] === winner),
       summary,
       reveal,
       recap: state.recap,
+      highlights: bestClue
+        ? [
+            {
+              award: 'Best clue',
+              playerIds: [bestClue.by],
+              text: `“${bestClue.word}” found ${found(bestClue)} words`,
+              value: found(bestClue),
+            },
+          ]
+        : [],
       standings: state.players.map((playerId) => {
         const team = state.teams[playerId]!;
         return {

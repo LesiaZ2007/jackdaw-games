@@ -75,6 +75,20 @@ export interface Standing {
   role?: string;
 }
 
+/**
+ * A standout moment for the night's awards ("Best word: QUIXOTIC for 98, by Bran"). Across the
+ * night, the highest `value` under each `award` wins it. Public, like the rest of a result.
+ */
+export interface Highlight {
+  /** The award's name, the same in every game of this kind: "Best word", "Biggest pot". */
+  award: string;
+  playerIds: string[];
+  /** What happened, without the names: "QUIXOTIC for 98". */
+  text: string;
+  /** Bigger is better, to compare across games. */
+  value: number;
+}
+
 export interface GameResult {
   /** Player ids of the winners. */
   winners: string[];
@@ -89,6 +103,8 @@ export interface GameResult {
    * out, the platform derives win/loss from `winners`.
    */
   standings?: Standing[];
+  /** Optional standout moments for the night's awards. */
+  highlights?: Highlight[];
 }
 
 export interface GameModule<State, Action, View, TableView, Options> {

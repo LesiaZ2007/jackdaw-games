@@ -81,6 +81,9 @@ export function Waiting({
   const blocker = blockerFor(s);
   const count = s.players.length;
   const showPicker = picking || !entry;
+  // As many spaces as the chosen game seats (all 15 while choosing), in rows that stay square.
+  const spaces = entry && !showPicker ? Math.max(entry.meta.maxPlayers, count) : 15;
+  const cols = spaces <= 4 ? spaces : spaces <= 6 ? 3 : spaces <= 8 ? 4 : 5;
 
   const seats = s.players.map((p) => ({
     id: p.id,
@@ -149,7 +152,7 @@ export function Waiting({
               At the table
             </h2>
             <span>
-              {count} of {GameSeats && entry ? entry.meta.maxPlayers : 15} seats
+              {count} of {spaces} seats
               {s.displays > 0 && `, ${s.displays} TV`}
             </span>
           </div>
@@ -162,7 +165,14 @@ export function Waiting({
               reactions={s.reactions}
             />
           ) : (
-            <SeatTrack seats={seats} onSeat={onSeat} reactions={s.reactions} transitions />
+            <SeatTrack
+              seats={seats}
+              spaces={spaces}
+              cols={cols}
+              onSeat={onSeat}
+              reactions={s.reactions}
+              transitions
+            />
           )}
           {mine && (
             <div className="you-strip">

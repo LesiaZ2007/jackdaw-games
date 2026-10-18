@@ -238,7 +238,8 @@
 }
 /* A game with its own lobby (Avalon's round table) fills the screen under Jackdaw's bar, edge to
    edge, and chat moves behind the bar's button, as in the game's own app. */
-.lobby-page--full .lobby-layout {
+.lobby-page--full .lobby-layout,
+.lobby-page--bleed .lobby-layout {
   grid-template-columns: minmax(0, 1fr);
 }
 .lobby-page--full .lobby-main {
@@ -248,7 +249,8 @@
 }
 /* Its chat docks beside the game from 1240px (as in Avalon); below that the bar's button opens it. */
 @media (max-width: 1239.98px) {
-  .lobby-page--full .lobby-bar__chat {
+  .lobby-page--full .lobby-bar__chat,
+  .lobby-page--bleed .lobby-bar__chat {
     display: grid !important;
   }
 }
@@ -500,7 +502,7 @@
   gap: var(--space-4);
   padding-bottom: var(--space-5);
 }
-/* A game drawn edge to edge (GameUi.fullBleed) fills the main column, chat dock beside it. */
+/* A game drawn edge to edge (GameUi.fullBleed) fills the main column and draws its own chat. */
 .lobby-page--bleed .lobby-main {
   display: flex;
   flex-direction: column;

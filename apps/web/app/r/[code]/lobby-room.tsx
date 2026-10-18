@@ -64,6 +64,59 @@ function useLobbySwitch(want: boolean, shown: boolean, setShown: (full: boolean)
 }
 
 /**
+ * The snapshot to draw. When a game that draws its own seats (`fullBleed`) starts or ends, the
+ * old screen stays up for one frame while a view transition captures it, then the new one comes
+ * in: each player's crest and name fly from their lobby seat to their place at the table, and
+ * back again. Without View Transitions, or with reduced motion, it just switches.
+ */
+function useStatusSwitch(snapshot: LobbySnapshot | null): LobbySnapshot | null {
+  const [shown, setShown] = useState(snapshot);
+  const running = useRef(false);
+  // Bumped when a transition finishes, to catch up with anything that arrived meanwhile.
+  const [settled, setSettled] = useState(0);
+  const flies = (s: LobbySnapshot | null) =>
+    Boolean(
+      s &&
+      catalogEntry(
+        s.status === 'in_game'
+          ? s.session?.gameId
+          : s.status === 'results'
+            ? s.results?.gameId
+            : s.selectedGameId,
+      )?.ui?.fullBleed,
+    );
+  const animate = Boolean(
+    snapshot &&
+    shown &&
+    snapshot.status !== shown.status &&
+    flies(snapshot) &&
+    flies(shown) &&
+    snapshot.me === shown.me,
+  );
+  // Same screen (or nothing to fly): keep up with every poll.
+  if (!animate && shown !== snapshot) setShown(snapshot);
+  useEffect(() => {
+    if (!animate || running.current) return;
+    const swap = () => {
+      flushSync(() => setShown(snapshot));
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (still || typeof document.startViewTransition !== 'function') {
+      swap();
+      return;
+    }
+    running.current = true;
+    const t = document.startViewTransition(swap);
+    void t.finished.finally(() => {
+      running.current = false;
+      setSettled((n) => n + 1);
+    });
+  }, [animate, snapshot, settled]);
+  return animate ? shown : snapshot;
+}
+
+/**
  * The time of the last chat message this tab has seen. It starts at the newest message on the
  * first snapshot (or where this tab left off before a refresh) and catches up whenever the chat
  * is on screen.
@@ -85,7 +138,8 @@ export function screenPlayers(s: LobbySnapshot): ScreenPlayer[] {
 
 /** One lobby, from joining through games and results, on this device. */
 export function LobbyRoom({ code }: { code: string }) {
-  const { snapshot, error, missing, send, clearError } = useLobby(code, 'player');
+  const { snapshot: live, error, missing, send, clearError } = useLobby(code, 'player');
+  const snapshot = useStatusSwitch(live);
   const [panel, setPanel] = useState<Panel>(null);
   const [hadSeat, setHadSeat] = useState<string | null>(null);
 
@@ -139,8 +193,10 @@ export function LobbyRoom({ code }: { code: string }) {
     (status === 'results' && Boolean(catalogEntry(snapshot?.results?.gameId)?.ui?.Results));
   const wide = useMedia(WIDE);
   const wideOwn = useMedia(WIDE_OWN);
+  // A game's own lobby, or a game drawn edge to edge, draws table talk in its own style.
+  const ownChat = full || bleed;
   // True when the chat is on screen without opening it.
-  const docked = full ? wideOwn : wide;
+  const docked = ownChat ? wideOwn : wide;
   const seenAt = useChatSeen(code, snapshot?.chat, docked || panel === 'chat');
 
   // The same chat, worded for a game's own lobby to draw in its own style.
@@ -237,13 +293,19 @@ export function LobbyRoom({ code }: { code: string }) {
             />
           )}
           {snapshot.status === 'in_game' && (
-            <GameShell snapshot={snapshot} players={players} send={send} />
+            <GameShell snapshot={snapshot} players={players} send={send} chat={lobbyChat} />
           )}
           {snapshot.status === 'results' && (
-            <Results snapshot={snapshot} players={players} isHost={isHost} send={send} />
+            <Results
+              snapshot={snapshot}
+              players={players}
+              isHost={isHost}
+              send={send}
+              chat={lobbyChat}
+            />
           )}
         </main>
-        {!full && (
+        {!ownChat && (
           <aside className="lobby-dock" aria-label="Chat">
             <Chat snapshot={snapshot} players={players} send={send} />
           </aside>
@@ -261,7 +323,7 @@ export function LobbyRoom({ code }: { code: string }) {
         onEdit={() => setPanel('me')}
       />
       <MeSheet open={panel === 'me'} onClose={close} snapshot={snapshot} send={send} />
-      {panel === 'chat' && !full && (
+      {panel === 'chat' && !ownChat && (
         <ChatSheet onClose={close}>
           <Chat snapshot={snapshot} players={players} send={send} />
         </ChatSheet>

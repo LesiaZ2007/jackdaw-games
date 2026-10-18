@@ -108,13 +108,22 @@ const upcoming: Omit<CatalogEntry, 'playable'>[] = [
   },
 ];
 
+/** The order games are listed in: grouped loosely by kind. */
+const KIND_ORDER: GameCategory[] = ['social-deduction', 'word', 'card', 'board'];
+
+/** Every game, playable ones first, each group by kind and then by name. */
 export const catalog: CatalogEntry[] = [
   ...Object.values(games).flatMap((g) => {
     const ui = gameUis[g.meta.id];
     return ui ? [{ meta: g.meta, art: ui.art, about: ui.about, playable: true, ui }] : [];
   }),
   ...upcoming.filter((u) => !games[u.meta.id]).map((u) => ({ ...u, playable: false })),
-];
+].sort(
+  (a, b) =>
+    Number(b.playable) - Number(a.playable) ||
+    KIND_ORDER.indexOf(a.meta.category) - KIND_ORDER.indexOf(b.meta.category) ||
+    a.meta.name.localeCompare(b.meta.name),
+);
 
 export function catalogEntry(id: string | null | undefined): CatalogEntry | undefined {
   return catalog.find((e) => e.meta.id === id);

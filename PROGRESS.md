@@ -151,6 +151,35 @@ Approved by Lesia for every game:
   strip with busy hourglasses, a named status line with "Your move", the vote tally, the board
   with its piles, and a phase banner), and new filled emblems. `src/status.ts` has the busy set
   and the wording, with unit tests.
+- 2026-10-17 (`feat/sh-online`, Lesia: "copy EXACTLY"): **played and drawn as
+  secret-hitler.online.** ShrimpCryptid's Secret Hitler Online (CC BY-NC-SA 4.0, React +
+  Java) is open source, but its live server can't be driven from Jackdaw (no API, CORS locked to
+  its own site, a watcher would take a seat), so its client was ported instead:
+  - `src/ui/sho/`: its components (player tiles, player row, status bar, event bar, decks,
+    boards, every prompt and popup, the role card, the investigation card, the policy folder,
+    the election tracker, the victory popup) with the same markup, ids, text and timings, and
+    `GamePage.tsx`, its App's game page with the animation queue, driven by polling.
+    `sho.css` is its stylesheet rule for rule, generated: every selector scoped under `.sho`
+    (and skipping `.jd-lchat` / `.sho-jackdaw`), every keyframe renamed `sho-*`, plus a
+    browser-defaults reset (`all: revert`) because the site relies on what Tailwind's
+    preflight removes. Art in `apps/web/public/games/secret-hitler/sho/`; Germania One and
+    Montserrat come from `next/font` in `app/layout.tsx`.
+  - `adapt.ts` turns Jackdaw's views into its game state (players keyed by name, which Jackdaw
+    keeps unique), with a leak test; moves map back in `ui/player.tsx`.
+  - Its gameplay: the president presses **End term** after every round (new `post` phase and
+    `endTerm` action in the rules).
+  - Its lobby page (code, invite link, tiles, Change icon, Start game for the VIP); portraits
+    stand for crests (16 crests → portraits 1–16), so choosing one sets your crest. House rules
+    past 10 sit in the lobby in its style. The TV lobby and TV use its look; the TV page zooms
+    to fit the screen. The end of a game replays the last move on the phone, then its victory
+    popup, with Play again / Return to lobby for the host.
+  - Kept from Jackdaw: the bar, table talk, short links, stats and scores, 11–15 players.
+    Differences from the site: the header says SECRET HITLER (not its domain); 16 of its 20
+    portraits, one per crest, none locked behind a Twitter share; [Host] marks the host (the
+    site marks everyone else by mistake); no bots; one look only (it has no day/dark); its own
+    popups instead of the kit's VerdictMoments.
+  - Platform additions: `GameUi.fullBleed` (the game fills the column under the bar),
+    `GameUi.Results` (a game's own end screen) and `GameLobbyProps.setAvatar`.
 
 ## Next
 

@@ -170,3 +170,10 @@ Additions approved by Lesia:
   `GameUi.TvLobby` (optional) is the TV's lobby in the game's look; the platform hands it the
   join panel and keeps the night so far below. `fullTv` drops Jackdaw's strip above the TV screen. It gets the code, players, options, `start()`, `onSeat(id)` (own seat opens your look;
   the host's tap opens remove / make host) and `changeGame` for the host.
+- **Secret Hitler is secret-hitler.online, ported** (Lesia, 2026-10-17: "copy EXACTLY"). Its
+  screens live in `packages/games/secret-hitler/src/ui/sho/` with the site's markup, text,
+  timings and stylesheet (scoped under `.sho`); change them only to match the site. For it the
+  UI types gained `GameUi.fullBleed` (the phone screen fills the column under the bar),
+  `GameUi.Results` (a game draws the whole end-of-game screen on phones, with the host's Play
+  again and Back to lobby) and `GameLobbyProps.setAvatar` (a game's lobby sets your look).
+  See PROGRESS.md.

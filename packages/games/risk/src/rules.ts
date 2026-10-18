@@ -91,8 +91,11 @@ export interface Battle {
   from: string;
   to: string;
   mode: 'roll' | 'blitz';
+  /** The last throw's dice, highest first (a blitz shows its last throw). */
   attackDice: number[];
   defendDice: number[];
+  /** How many throws it took (1 for a roll). */
+  throws: number;
   attackerLost: number;
   defenderLost: number;
   conquered: boolean;
@@ -439,6 +442,7 @@ function attack(
   let attackerLost = 0;
   let defenderLost = 0;
   let last = exchange(rng, atk, def);
+  let throws = 1;
   for (;;) {
     atk -= last.attackerLost;
     def -= last.defenderLost;
@@ -446,6 +450,7 @@ function attack(
     defenderLost += last.defenderLost;
     if (a.mode === 'roll' || def === 0 || atk < 2) break;
     last = exchange(rng, atk, def);
+    throws++;
   }
   const conquered = def === 0;
   const seq = s.battleSeq + 1;
@@ -458,6 +463,7 @@ function attack(
     mode: a.mode,
     attackDice: last.attackDice,
     defendDice: last.defendDice,
+    throws,
     attackerLost,
     defenderLost,
     conquered,
@@ -770,6 +776,8 @@ export function legalMoves(s: RiskState, pid: string): RiskAction[] {
 /** Everything safe to show once the game is over. */
 export interface RiskReveal {
   map: MapId;
+  /** Seat order, which sets each army's colour. */
+  seats: string[];
   owner: Owner;
   armies: Armies;
   missions: Record<string, Mission> | null;
@@ -786,6 +794,7 @@ function getResult(s: RiskState): GameResult | null {
   const mission = s.missions?.[s.winner];
   const reveal: RiskReveal = {
     map: s.map,
+    seats: s.seats,
     owner: s.owner,
     armies: s.armies,
     missions: s.missions,

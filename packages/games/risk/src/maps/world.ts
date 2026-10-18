@@ -1,5 +1,5 @@
 import { defineMap } from './define';
-import { WORLD_SEA, WORLD_SHAPES } from './world.shapes';
+import { WORLD_REGIONS, WORLD_SEA, WORLD_SHAPES } from './world.shapes';
 
 /** The classic board: 42 territories in 6 continents with the usual borders and bonuses. */
 export const world = defineMap({
@@ -180,4 +180,5 @@ export const world = defineMap({
   ],
   shapes: WORLD_SHAPES,
   sea: WORLD_SEA,
+  regions: WORLD_REGIONS,
 });

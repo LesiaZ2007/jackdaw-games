@@ -1,11 +1,18 @@
 'use client';
 
 import type { GameUi } from '@jackdaw/ui';
+import { LobbySeats, RiskTvLobby } from './lobby';
 import { PlayerScreen } from './player';
 import { Reveal, TvReveal } from './reveal';
 import { TvScreen } from './tv';
 
-/** Risk: catalog art, detail page and screens. It uses Jackdaw's own lobby. */
+/** What happens when the turn clock runs out (rules.ts `timeUp`). */
+const LATE = 'When time runs out, any armies left are placed for you and your turn ends.';
+
+/**
+ * Risk: catalog art, detail page and screens. It uses Jackdaw's lobby with its own seats (the war
+ * council's banners) and its own TV lobby.
+ */
 export const riskUi: GameUi = {
   art: { band: 'tenne', field: 'checky', glyph: 'banners' },
   about: {
@@ -31,7 +38,34 @@ export const riskUi: GameUi = {
       },
     ],
   },
+  optionHelp: {
+    map: {
+      World: 'The classic board: 42 territories over six continents.',
+      Realm: 'Jackdaw’s own island kingdom: 42 provinces, six regions, a few sea crossings.',
+    },
+    goal: {
+      'Secret missions':
+        'Everyone gets a hidden goal; the first to finish theirs wins. About an hour.',
+      'World domination': 'Take every territory on the map. The long game: two hours or more.',
+    },
+    setup: {
+      Quick: 'Territories are dealt at random and armies spread out for you.',
+      Draft: 'Territories are dealt, then everyone places their starting armies at once, unseen.',
+    },
+    cardSets: {
+      Rising: 'Each set traded is worth more than the last (4, 6, 8, 10, 12, 15…).',
+      Fixed: 'A set’s worth depends on its symbols: 4, 6 or 8 for three alike, 10 for one of each.',
+    },
+    turnTimer: {
+      Off: 'Take as long as you like.',
+      '1 minute': LATE,
+      '2 minutes': LATE,
+      '3 minutes': LATE,
+    },
+  },
   fit: true,
+  LobbySeats,
+  TvLobby: RiskTvLobby,
   PlayerScreen,
   TvScreen,
   Reveal,

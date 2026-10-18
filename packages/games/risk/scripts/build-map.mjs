@@ -4,7 +4,8 @@
 // coasts a little so they read as engraved rather than ruled, cuts each landmass into Voronoi cells
 // around its seeds (a landmass with one seed is that territory), and writes
 // src/maps/<map>.shapes.ts with every territory's outline and label point, the coastline, and the
-// pairs of territories that touch on land (a test checks those against the map's borders).
+// pairs of territories that touch on land (a test checks those against the map's borders), and
+// each continent's outline (its territories merged), for the heavier rule between continents.
 import { Delaunay } from 'd3-delaunay';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -152,6 +153,8 @@ const pathOf = (multi) =>
     .join('');
 
 const shapes = {};
+/** Each territory's polygons, for merging into continents. */
+const polys = {};
 const landPairs = [];
 const coast = [];
 
@@ -164,6 +167,7 @@ for (const [name, raw] of Object.entries(src.lands)) {
   if (ids.length === 1) {
     const multi = [land];
     shapes[ids[0]] = { path: pathOf(multi), label: labelPoint(multi) };
+    polys[ids[0]] = multi;
     continue;
   }
   const pts = ids.map((t) => project(src.seeds[t]));
@@ -194,6 +198,7 @@ for (const [name, raw] of Object.entries(src.lands)) {
   if (strays.length) throw new Error(`${name}: ${strays.length} stray pieces touch nothing`);
   ids.forEach((t, i) => {
     shapes[t] = { path: pathOf(kept[i]), label: labelPoint(kept[i]) };
+    polys[t] = kept[i];
   });
   // Neighbours: territories whose outlines run together for more than a sliver.
   for (let i = 0; i < ids.length; i++)
@@ -236,6 +241,18 @@ function sharedLength(a, b) {
   return len;
 }
 
+// Which continent each territory is in, read from the map's own list (src/maps/<map>.ts).
+const listed = readFileSync(join(root, 'src/maps', `${id}.ts`), 'utf8');
+const regionOf = {};
+for (const m of listed.matchAll(/\[\s*'([a-z0-9-]+)',\s*'[^']*',\s*'([a-z0-9-]+)'\s*\]/g))
+  regionOf[m[1]] = m[2];
+const regions = {};
+for (const [t, shape] of Object.entries(polys)) {
+  const r = regionOf[t];
+  if (!r) throw new Error(`${t}: not in src/maps/${id}.ts`);
+  regions[r] = regions[r] ? polygonClipping.union(regions[r], shape) : shape;
+}
+
 const missing = Object.keys(src.seeds).filter((t) => !shapes[t]);
 if (missing.length) throw new Error(`seeds outside every landmass: ${missing.join(', ')}`);
 
@@ -245,6 +262,10 @@ export const ${UP}_SHAPES: Record<string, { path: string; label: [number, number
 export const ${UP}_SEA = ${JSON.stringify(pathOf(coast))};
 /** Territories that touch on land (checked against the borders in a test). */
 export const ${UP}_LAND: [string, string][] = ${JSON.stringify(landPairs.sort())};
+/** Each continent's outline, by continent id. */
+export const ${UP}_REGIONS: Record<string, string> = ${JSON.stringify(
+  Object.fromEntries(Object.entries(regions).map(([r, multi]) => [r, pathOf(multi)])),
+)};
 `;
 writeFileSync(join(root, 'src/maps', `${id}.shapes.ts`), out);
 console.log(`${id}: ${Object.keys(shapes).length} territories, ${landPairs.length} land borders`);

@@ -308,6 +308,20 @@ describe('attacking', () => {
     expect(s2.battle).toMatchObject({ attackerLost: 1, defenderLost: 0, ended: true });
   });
 
+  it('a battle counts its throws, so a blitz can say how long it took', () => {
+    const s = staged({ a: ['alaska'], armies: { alaska: 4, kamchatka: 1 } });
+    // First throw: three 1s against a 6 (the attacker loses one); second: 6s against a 1.
+    const s1 = act(s, 'a', ak('alaska', 'kamchatka', 'blitz'), dice(1, 1, 1, 6, 6, 6, 1));
+    expect(s1.battle).toMatchObject({
+      throws: 2,
+      conquered: true,
+      attackDice: [6, 6],
+      defendDice: [1],
+    });
+    const s2 = act(s, 'a', ak(), dice(1, 1, 1, 6));
+    expect(s2.battle).toMatchObject({ throws: 1, conquered: false });
+  });
+
   it('refuses attacks from 1 army, on yourself, past your borders, or from someone else’s land', () => {
     const s = staged({ a: ['alaska', 'alberta'], armies: { alaska: 1, alberta: 5, peru: 5 } });
     expectError(() => act(s, 'a', ak('alaska', 'kamchatka')));
@@ -553,6 +567,8 @@ describe('winning', () => {
       { playerId: 'c', outcome: 'loss', role: 'Hold 24 territories' },
     ]);
     expect(r.highlights!.map((h) => h.award)).toEqual(['Bloodiest battle', 'Greatest conquest']);
+    // The seat order, so the final map keeps everyone's army colours.
+    expect((r.reveal as { seats: string[] }).seats).toEqual(['a', 'b', 'c']);
     expect(game.getTableView(s1).missions).toEqual(s1.missions);
   });
 

@@ -17,8 +17,10 @@ import { battleMoment, type Moment } from '../moments';
 import type { RiskAction, RiskTableView, RiskView } from '../rules';
 import { CardsSheet, MissionSheet } from './cards';
 import { Continents, DiceStrip, PHASE_LABEL, TurnClock, namer } from './common';
+import { armyColour } from './armies';
 import { AttackDock, FortifyDock, OccupyDock, PlaceDock, WaitDock } from './dock';
 import { RiskMap } from './map';
+import { Orders, useOrders } from './orders';
 import './risk.css';
 
 interface Picks {
@@ -142,6 +144,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   }
 
   const turnP = players.find((x) => x.id === t.turn);
+  const [ordersOpen, closeOrders] = useOrders(t, me);
   const waitingDraft = t.seats.filter((x) => !t.draftDone.includes(x)).map(name);
 
   let dock;
@@ -220,6 +223,11 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           ) : (
             <>
               {turnP && <Token avatar={turnP.avatar} size={26} />}
+              <span
+                className="rk-turn__army"
+                aria-hidden="true"
+                style={{ background: armyColour(t.turn, t.seats) }}
+              />
               <span className="rk-turn__who">
                 {t.turn === me ? 'Your turn' : `${name(t.turn)}’s turn`}
               </span>
@@ -242,13 +250,13 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           </button>
         </nav>
       </header>
-      <DiceStrip battle={t.battle} map={map} players={players} />
+      <DiceStrip battle={t.battle} map={map} players={players} seats={t.seats} />
       <div className="rk-stage">
         <RiskMap
           map={map}
           owner={t.owner}
           armies={t.armies}
-          players={players}
+          seats={t.seats}
           selected={from}
           targets={to ? [to] : targets}
           staged={placing ? staged : (v?.draft ?? undefined)}
@@ -287,6 +295,17 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         <Continents map={map} t={t} players={players} />
       </Sheet>
       <Toast message={note} onDone={() => setNote(null)} />
+      {ordersOpen && me && (
+        <Orders
+          t={t}
+          me={me}
+          mission={v?.mission ?? null}
+          map={map}
+          players={players}
+          nameOf={name}
+          onClose={closeOrders}
+        />
+      )}
       {moment && (
         <VerdictMoment
           key={`${t.battle?.seq}-${t.eliminated.length}`}

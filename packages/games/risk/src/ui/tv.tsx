@@ -8,10 +8,12 @@ import {
   type GameUi,
   type ScreenPlayer,
 } from '@jackdaw/ui';
+import type { CSSProperties } from 'react';
 import { territoriesOf } from '../board';
 import { getMap } from '../maps';
 import { battleMoment } from '../moments';
 import type { RiskTableView } from '../rules';
+import { armyColour } from './armies';
 import { Continents, DiceStrip, PHASE_LABEL, TurnClock, namer } from './common';
 import { RiskMap } from './map';
 import './risk.css';
@@ -36,7 +38,7 @@ export const TvScreen: GameUi['TvScreen'] = ({
           map={map}
           owner={t.owner}
           armies={t.armies}
-          players={players}
+          seats={t.seats}
           flash={t.battle?.ended ? t.battle.to : null}
           names
           scale={1.6}
@@ -64,6 +66,7 @@ export const TvScreen: GameUi['TvScreen'] = ({
               <li
                 key={id}
                 className={`rk-seat ${id === t.turn && t.phase !== 'draft' ? 'is-turn' : ''} ${out ? 'is-out' : ''}`}
+                style={{ '--rk-own': armyColour(id, t.seats) } as CSSProperties}
               >
                 <span className="rk-seat__tok">
                   {p && <Token avatar={p.avatar} away={!p.online} />}
@@ -83,7 +86,7 @@ export const TvScreen: GameUi['TvScreen'] = ({
             );
           })}
         </ol>
-        <DiceStrip battle={t.battle} map={map} players={players} />
+        <DiceStrip battle={t.battle} map={map} players={players} seats={t.seats} />
         <Continents map={map} t={t} players={players} />
       </aside>
       {moment && (

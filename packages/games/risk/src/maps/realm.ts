@@ -1,5 +1,5 @@
 import { defineMap } from './define';
-import { REALM_SEA, REALM_SHAPES } from './realm.shapes';
+import { REALM_REGIONS, REALM_SEA, REALM_SHAPES } from './realm.shapes';
 
 /**
  * Jackdaw's own board: an island kingdom with 42 provinces in 6 regions, shaped like the classic
@@ -189,4 +189,5 @@ export const realm = defineMap({
   ],
   shapes: REALM_SHAPES,
   sea: REALM_SEA,
+  regions: REALM_REGIONS,
 });

@@ -8,6 +8,18 @@ export interface Moment {
 }
 
 /**
+ * Which dice lost their pair in one throw (dice highest first): highest against highest, the
+ * defender winning ties. Dice with no pair (the attacker's third) lose nothing.
+ */
+export function beaten(attack: number[], defend: number[]) {
+  const pairs = Math.min(attack.length, defend.length);
+  return {
+    attack: attack.map((a, i) => i < pairs && a <= defend[i]!),
+    defend: defend.map((d, i) => i < pairs && attack[i]! > d),
+  };
+}
+
+/**
  * What a settled battle means to `me`: the attacker took it or was repelled, the defender lost it
  * or held. Anyone else sees it on the map; the TV (`me` null) gets a reveal. Public data only.
  */

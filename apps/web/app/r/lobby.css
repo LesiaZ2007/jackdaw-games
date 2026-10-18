@@ -225,8 +225,8 @@
 }
 @media (min-width: 768px) {
   .waiting {
-    /* the table gets the larger share, so tokens are easy to find on a laptop */
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    /* the game gets the larger share: its blurb and options read in lines, not single words */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     align-items: start;
     column-gap: var(--space-6);
   }
@@ -331,9 +331,10 @@
 }
 .options__row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-1) var(--space-3);
   padding: var(--space-2) var(--space-3);
   min-height: 56px;
 }
@@ -345,6 +346,12 @@
 }
 .options dd {
   margin: 0;
+}
+.options .options__help {
+  flex-basis: 100%;
+  color: var(--ink-2);
+  font-size: var(--step--1);
+  line-height: 1.35;
 }
 .options dd b {
   font: 800 20px var(--font-plaque);

@@ -10,6 +10,8 @@ import {
   NEUTRAL,
   STARTING_ARMIES,
   attackTargets,
+  continentsHeld,
+  reachable,
   reinforcementCount,
   territoriesOf,
   type Armies,
@@ -18,7 +20,14 @@ import {
 import { isSet, makeDeck, setValue, type Card, type CardSets } from './cards';
 import { getMap, type MapDef, type MapId } from './maps';
 import { meta } from './meta';
-import { dealMissions, fallback, type Mission } from './missions';
+import {
+  dealMissions,
+  fallback,
+  missionDone,
+  missionLabel,
+  missionText,
+  type Mission,
+} from './missions';
 
 /**
  * Risk for 2–6 players on the classic world or Jackdaw's own realm. Territories are dealt at
@@ -171,7 +180,8 @@ export interface RiskView {
   draftLeft: number;
 }
 
-const LOG_KEEP = 60;
+/** The log is the recap, so it keeps a whole game (a long one runs to a few hundred lines). */
+const LOG_KEEP = 1000;
 const LOG_SHOWN = 12;
 
 export const mapOf = (s: { map: MapId }): MapDef => getMap(s.map);
@@ -486,6 +496,8 @@ function attack(
     occupy: { from: a.from, to: a.to, min, max: atk - 1 },
     takenThisTurn: s.takenThisTurn + 1,
   };
+  if (next.takenThisTurn > (next.best.conquest?.value ?? 0))
+    next = { ...next, best: { ...next.best, conquest: { pid, value: next.takenThisTurn } } };
   next = logged(next, `{actor} takes ${nameOf(map, a.to)}`, pid, { to: a.to, from: defender });
   return defender !== NEUTRAL && territoriesOf(next.owner, defender).length === 0
     ? knockOut(next, pid, defender)
@@ -534,6 +546,78 @@ function occupy(s: RiskState, n: number): RiskState {
     : next;
 }
 
+function fortify(s: RiskState, pid: string, a: { from: string; to: string; n: number }, rng: Rng) {
+  if (s.phase !== 'attack' && s.phase !== 'fortify')
+    return refuse('wrong-phase', 'You can’t move armies now.');
+  if (!reachable(mapOf(s), s.owner, pid, a.from).includes(a.to))
+    return refuse('bad-move', 'Move between your own territories that join up.');
+  if (a.n > s.armies[a.from]! - 1) return refuse('wrong-count', 'Leave at least 1 army behind.');
+  const moved = {
+    ...s,
+    armies: { ...s.armies, [a.from]: s.armies[a.from]! - a.n, [a.to]: s.armies[a.to]! + a.n },
+  };
+  return endTurn(moved, rng);
+}
+
+/** Draws the top card, reshuffling the discard pile into a fresh deck if it's run out. */
+function draw(s: RiskState, pid: string, rng: Rng): RiskState {
+  let { deck, discard } = s;
+  if (!deck.length) [deck, discard] = [rng.shuffle(discard), []];
+  if (!deck.length) return s;
+  const [top, ...rest] = deck;
+  return {
+    ...s,
+    deck: rest,
+    discard,
+    hands: { ...s.hands, [pid]: [...(s.hands[pid] ?? []), top!] },
+  };
+}
+
+function endTurn(s: RiskState, rng: Rng): RiskState {
+  if (s.phase !== 'attack' && s.phase !== 'fortify')
+    return refuse('wrong-phase', 'Finish placing or moving in first.');
+  const done = s.takenThisTurn > 0 ? draw(s, s.turn, rng) : s;
+  // Seats measured from whoever went first, so a new round starts when that count wraps.
+  const n = s.seats.length;
+  const rel = (p: string) => (s.seats.indexOf(p) - s.seats.indexOf(s.first) + n) % n;
+  const alive = s.seats.filter((p) => !s.eliminated.includes(p));
+  const after = alive.filter((p) => rel(p) > rel(s.turn));
+  const next = after.length
+    ? after.sort((x, y) => rel(x) - rel(y))[0]!
+    : alive.sort((x, y) => rel(x) - rel(y))[0]!;
+  const round = rel(next) <= rel(s.turn) ? s.round + 1 : s.round;
+  return {
+    ...done,
+    turn: next,
+    round,
+    phase: 'reinforce',
+    toPlace: reinforcementCount(mapOf(s), s.owner, next),
+    takenThisTurn: 0,
+    run: null,
+    occupy: null,
+    returnTo: null,
+  };
+}
+
+/** After every move: one player left, or the mover's mission complete, ends the game. */
+function settle(s: RiskState): RiskState {
+  if (s.phase === 'over' || s.phase === 'draft') return s;
+  const alive = s.seats.filter((p) => !s.eliminated.includes(p));
+  const mission = s.missions?.[s.turn];
+  const won =
+    alive.length === 1
+      ? alive[0]!
+      : mission && missionDone(mission, mapOf(s), s.owner, s.armies, s.turn, s.eliminatedBy)
+        ? s.turn
+        : null;
+  if (!won) return s;
+  return logged(
+    { ...s, phase: 'over', winner: won, occupy: null, actBy: null },
+    '{actor} wins',
+    won,
+  );
+}
+
 function applyAction(s: RiskState, pid: string, a: RiskAction, rng: Rng): RiskState {
   if (s.phase === 'over') return refuse('over', 'The game is over.');
   if (!s.seats.includes(pid) || s.eliminated.includes(pid))
@@ -552,14 +636,95 @@ function applyAction(s: RiskState, pid: string, a: RiskAction, rng: Rng): RiskSt
       return attack(s, pid, a, rng);
     case 'occupy':
       return occupy(s, a.n);
-    default:
-      return refuse('wrong-phase', 'You can’t do that now.');
+    case 'endAttack':
+      if (s.phase !== 'attack') return refuse('wrong-phase', 'You’re not attacking.');
+      return { ...s, phase: 'fortify' };
+    case 'fortify':
+      return fortify(s, pid, a, rng);
+    case 'endTurn':
+      return endTurn(s, rng);
+    case 'draft':
+      return refuse('wrong-phase', 'The armies are already placed.');
   }
 }
 
+/** Everything safe to show once the game is over. */
+export interface RiskReveal {
+  map: MapId;
+  owner: Owner;
+  armies: Armies;
+  missions: Record<string, Mission> | null;
+  eliminated: string[];
+  winner: string | null;
+  rounds: number;
+}
+
+const lower = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
+
 function getResult(s: RiskState): GameResult | null {
-  void s;
-  return null;
+  if (s.phase !== 'over' || !s.winner) return null;
+  const map = mapOf(s);
+  const mission = s.missions?.[s.winner];
+  const reveal: RiskReveal = {
+    map: s.map,
+    owner: s.owner,
+    armies: s.armies,
+    missions: s.missions,
+    eliminated: s.eliminated,
+    winner: s.winner,
+    rounds: s.round,
+  };
+  const highlights: GameResult['highlights'] = [];
+  if (s.best.battle)
+    highlights.push({
+      award: 'Bloodiest battle',
+      playerIds: [s.best.battle.pid],
+      text: `${s.best.battle.value} armies lost, ${s.best.battle.text}`,
+      value: s.best.battle.value,
+    });
+  if (s.best.conquest)
+    highlights.push({
+      award: 'Greatest conquest',
+      playerIds: [s.best.conquest.pid],
+      text: `${s.best.conquest.value} territories in one turn`,
+      value: s.best.conquest.value,
+    });
+  return {
+    winners: [s.winner],
+    summary: mission
+      ? `Mission complete: ${lower(missionLabel(mission, map))}`
+      : `The last army standing after ${s.round} rounds`,
+    reveal,
+    recap: s.log,
+    standings: s.seats.map((p) => ({
+      playerId: p,
+      outcome: p === s.winner ? 'win' : 'loss',
+      ...(s.missions?.[p] ? { role: missionLabel(s.missions[p], map) } : {}),
+    })),
+    highlights,
+  };
+}
+
+/** Chat lines: knock-outs, a continent changing hands to the mover, and the win. */
+function announce(prev: RiskState | null, next: RiskState): string[] {
+  if (!prev) return [];
+  const map = mapOf(next);
+  const lines: string[] = [];
+  for (const p of next.eliminated.slice(prev.eliminated.length))
+    lines.push(`{${p}} is knocked out by {${next.eliminatedBy[p]}}`);
+  const before = continentsHeld(map, prev.owner, prev.turn);
+  for (const c of continentsHeld(map, next.owner, prev.turn))
+    if (!before.includes(c))
+      lines.push(`{${prev.turn}} holds ${map.continents.find((x) => x.id === c)!.name}`);
+  if (next.winner && !prev.winner) {
+    const m = next.missions?.[next.winner];
+    lines.push(
+      m
+        ? `{${next.winner}} wins: ${lower(missionText(m, map, (p) => `{${p}}`))}`
+        : `{${next.winner}} conquers the world`,
+    );
+  }
+  return lines;
 }
 
 export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, RiskOptions> = {
@@ -576,6 +741,7 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
   setup,
   getPlayerView,
   getTableView,
-  applyAction: (s, pid, a, rng, now) => stamp(s, applyAction(s, pid, a, rng), now),
+  applyAction: (s, pid, a, rng, now) => stamp(s, settle(applyAction(s, pid, a, rng)), now),
   getResult,
+  announce,
 };

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { NEUTRAL, reinforcementCount, territoriesOf } from './board';
 import type { Card } from './cards';
 import { MAPS } from './maps';
+import type { Mission } from './missions';
 import { risk as game, type RiskAction, type RiskOptions, type RiskState } from './rules';
 
 const ids3 = ['a', 'b', 'c'];
@@ -377,5 +378,182 @@ describe('attacking', () => {
     expect(s2.battleSeq).toBe(s.battleSeq + 2);
     expect(s2.best.battle).toMatchObject({ pid: 'a', value: 4 });
     expect(s2.best.battle!.text).toBe('Alaska to Kamchatka');
+  });
+});
+
+describe('fortifying and ending the turn', () => {
+  const chain = { a: ['alaska', 'alberta', 'ontario', 'quebec'], armies: { alaska: 5 } };
+
+  it('moves along your own chain, leaves 1 behind, and passes the turn', () => {
+    const s = staged(chain, 'fortify');
+    const s1 = act(s, 'a', { type: 'fortify', from: 'alaska', to: 'quebec', n: 4 });
+    expect([s1.armies.alaska, s1.armies.quebec]).toEqual([1, 5]);
+    expect(s1.turn).toBe('b');
+    expect(s1.phase).toBe('reinforce');
+    expect(s1.toPlace).toBe(reinforcementCount(world, s1.owner, 'b'));
+    expectError(() => act(s, 'a', { type: 'fortify', from: 'alaska', to: 'quebec', n: 5 }));
+    expectError(() => act(s, 'a', { type: 'fortify', from: 'alaska', to: 'kamchatka', n: 1 }));
+    const gap = staged({ a: ['alaska', 'ontario'], armies: { alaska: 5 } }, 'fortify');
+    expectError(() => act(gap, 'a', { type: 'fortify', from: 'alaska', to: 'ontario', n: 1 }));
+  });
+
+  it('can fortify straight from attacking, or end the turn without moving', () => {
+    const s = staged(chain);
+    expect(act(s, 'a', { type: 'fortify', from: 'alaska', to: 'alberta', n: 1 }).turn).toBe('b');
+    expect(act(s, 'a', { type: 'endAttack' }).phase).toBe('fortify');
+    const s1 = act(s, 'a', { type: 'endTurn' });
+    expect([s1.turn, s1.phase]).toEqual(['b', 'reinforce']);
+    expectError(() => act({ ...s, phase: 'reinforce', toPlace: 3 }, 'a', { type: 'endTurn' }));
+  });
+
+  it('draws a card only if you took a territory this turn', () => {
+    const s = staged(chain, 'fortify');
+    expect(act(s, 'a', { type: 'endTurn' }).hands.a).toHaveLength(0);
+    const s1 = act({ ...s, takenThisTurn: 1 }, 'a', { type: 'endTurn' });
+    expect(s1.hands.a).toHaveLength(1);
+    expect(s1.deck).toHaveLength(s.deck.length - 1);
+    expect(s1.takenThisTurn).toBe(0);
+  });
+
+  it('reshuffles the discard when the deck runs out; with both empty there’s no card', () => {
+    const s = { ...staged(chain, 'fortify'), takenThisTurn: 1 };
+    const s1 = act({ ...s, deck: [], discard: [card('d1', 'infantry')] }, 'a', { type: 'endTurn' });
+    expect(s1.hands.a!.map((c) => c.id)).toEqual(['d1']);
+    expect(s1.discard).toEqual([]);
+    const s2 = act({ ...s, deck: [], discard: [] }, 'a', { type: 'endTurn' });
+    expect(s2.hands.a).toEqual([]);
+  });
+
+  it('skips players who are out, and counts rounds from whoever went first', () => {
+    const s = staged(chain, 'fortify', ['a', 'b', 'c']);
+    const out = { ...s, eliminated: ['b'] };
+    const s1 = act(out, 'a', { type: 'endTurn' });
+    expect([s1.turn, s1.round]).toEqual(['c', s.round]);
+    const s2 = act({ ...s1, phase: 'fortify' }, 'c', { type: 'endTurn' });
+    expect([s2.turn, s2.round]).toEqual(['a', s.round + 1]);
+  });
+});
+
+describe('winning', () => {
+  const withMissions = (s: RiskState, missions: Record<string, Mission>): RiskState => ({
+    ...s,
+    goal: 'missions',
+    missions,
+  });
+  const allBut = (...not: string[]) => tids.filter((t) => !not.includes(t));
+  const take = (s: RiskState) =>
+    act(
+      s,
+      'a',
+      { type: 'attack', from: 'alaska', to: 'kamchatka', mode: 'roll' },
+      dice(6, 6, 6, 1),
+    );
+  const hold24: Mission = { kind: 'territories', n: 24 };
+
+  it('a mission completed by the mover wins at once: 24 territories', () => {
+    const s = staged({ a: allBut('kamchatka').slice(0, 23), armies: { alaska: 4 } }, 'attack', [
+      'a',
+      'b',
+      'c',
+    ]);
+    const s1 = take(withMissions(s, { a: hold24, b: hold24, c: hold24 }));
+    expect(s1.phase).toBe('over');
+    expect(s1.winner).toBe('a');
+    expect(s1.actBy).toBeNull();
+    expectError(() => act(s1, 'a', { type: 'occupy', n: 3 }), 'over');
+  });
+
+  it('18 territories with 2 armies each', () => {
+    const mine = allBut('kamchatka').slice(0, 18);
+    const armies = Object.fromEntries(mine.map((t, i) => [t, i === 0 ? 1 : 2]));
+    const s = { ...staged({ a: mine, armies }, 'reinforce'), toPlace: 3 };
+    const m: Mission = { kind: 'territories2', n: 18 };
+    const s1 = act(withMissions(s, { a: m, b: hold24 }), 'a', {
+      type: 'reinforce',
+      placements: { [mine[0]!]: 3 },
+    });
+    expect(s1.winner).toBe('a');
+  });
+
+  it('two continents', () => {
+    const asia = world.territories.filter((t) => t.continent === 'asia').map((t) => t.id);
+    const sa = world.territories.filter((t) => t.continent === 'south-america').map((t) => t.id);
+    const s = staged({
+      a: ['alaska', ...sa, ...asia.filter((t) => t !== 'kamchatka')],
+      armies: { alaska: 4 },
+    });
+    const m: Mission = { kind: 'continents', ids: ['asia', 'south-america'], any: false };
+    expect(take(withMissions(s, { a: m, b: hold24 })).winner).toBe('a');
+  });
+
+  it('destroying your target', () => {
+    const s = staged({ a: ['alaska'], c: ['kamchatka'], armies: { alaska: 4 } }, 'attack', [
+      'a',
+      'b',
+      'c',
+    ]);
+    const s1 = take(withMissions(s, { a: { kind: 'destroy', target: 'c' }, b: hold24, c: hold24 }));
+    expect(s1.winner).toBe('a');
+  });
+
+  it('a destroy mission falls back to 24 territories when someone else gets there first', () => {
+    const s = staged({ a: ['alaska'], c: ['kamchatka'], armies: { alaska: 4 } }, 'attack', [
+      'a',
+      'b',
+      'c',
+    ]);
+    const s1 = take(withMissions(s, { a: hold24, b: { kind: 'destroy', target: 'c' }, c: hold24 }));
+    expect(s1.winner).toBeNull();
+    expect(s1.missions!.b).toEqual(hold24);
+  });
+
+  it('world domination ends when one player is left', () => {
+    const s = staged({ a: allBut('kamchatka'), armies: { alaska: 4 } });
+    const s1 = take(s);
+    expect([s1.phase, s1.winner]).toEqual(['over', 'a']);
+  });
+
+  it('reports the winner, everyone’s mission and the awards', () => {
+    const s = staged({ a: allBut('kamchatka').slice(0, 23), armies: { alaska: 4 } }, 'attack', [
+      'a',
+      'b',
+      'c',
+    ]);
+    const before = withMissions(s, { a: hold24, b: { kind: 'destroy', target: 'c' }, c: hold24 });
+    expect(game.getResult(before)).toBeNull();
+    const s1 = take(before);
+    const r = game.getResult(s1)!;
+    expect(r.winners).toEqual(['a']);
+    expect(r.summary).toBe('Mission complete: hold 24 territories');
+    expect(r.standings).toEqual([
+      { playerId: 'a', outcome: 'win', role: 'Hold 24 territories' },
+      { playerId: 'b', outcome: 'loss', role: 'Destroy an army' },
+      { playerId: 'c', outcome: 'loss', role: 'Hold 24 territories' },
+    ]);
+    expect(r.highlights!.map((h) => h.award)).toEqual(['Bloodiest battle', 'Greatest conquest']);
+    expect(game.getTableView(s1).missions).toEqual(s1.missions);
+  });
+
+  it('announces knock-outs, continents taken and the win', () => {
+    const s = staged({ a: allBut('kamchatka').slice(0, 23), armies: { alaska: 4 } }, 'attack', [
+      'a',
+      'b',
+      'c',
+    ]);
+    const before = withMissions(s, { a: hold24, b: hold24, c: hold24 });
+    const lines = game.announce!(before, take(before));
+    expect(lines).toContain('{a} wins: hold 24 territories');
+    const asia = world.territories.filter((t) => t.continent === 'asia').map((t) => t.id);
+    const s2 = staged({
+      a: ['alaska', ...asia.filter((t) => t !== 'kamchatka')],
+      armies: { alaska: 4 },
+    });
+    expect(game.announce!(s2, take(s2))).toContain('{a} holds Asia');
+    const s3 = staged({ a: ['alaska'], c: ['kamchatka'], armies: { alaska: 4 } }, 'attack', [
+      'a',
+      'b',
+      'c',
+    ]);
+    expect(game.announce!(s3, take(s3))).toContain('{c} is knocked out by {a}');
   });
 });

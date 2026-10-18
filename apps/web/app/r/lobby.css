@@ -780,7 +780,6 @@
   inset: 0 auto 0 0;
   background: var(--vert);
 }
-.pad__list,
 /* Tonight's awards: printed ribbons above the log, each with its holder. */
 .pad__awards {
   list-style: none;
@@ -809,6 +808,7 @@
   gap: 6px;
   color: var(--ink-2);
 }
+.pad__list,
 .pad__log {
   list-style: none;
   margin: 0;

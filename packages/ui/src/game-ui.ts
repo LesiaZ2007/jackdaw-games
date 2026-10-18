@@ -50,9 +50,9 @@ export interface GameUi {
   about: GameAbout;
   // Each game narrows these; the shell only passes what the server sent.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  PlayerScreen: ComponentType<PlayerScreenProps<any, any, any> & { players: ScreenPlayer[] }>;
+  PlayerScreen: ComponentType<PlayerScreenProps<any, any, any> & ScreenExtras>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  TvScreen: ComponentType<TvScreenProps<any> & { players: ScreenPlayer[] }>;
+  TvScreen: ComponentType<TvScreenProps<any> & ScreenExtras>;
   /** Optional game-specific end-of-game reveal; the shell shows the recap timeline otherwise. */
   Reveal?: ComponentType<{ result: GameResult; players: ScreenPlayer[]; me: string | null }>;
   /**
@@ -79,9 +79,18 @@ export interface GameUi {
   fullTv?: boolean;
   /**
    * The phone screen is drawn edge to edge (Secret Hitler, as secret-hitler.online draws it): it
-   * fills the column under Jackdaw's bar with no padding or width cap, beside the chat dock.
+   * fills the column under Jackdaw's bar with no padding or width cap. The game draws table talk
+   * itself from `chat` (as its own lobby does), and the players' tokens fly between the lobby and
+   * the game (`seatTransition`) when it starts and ends.
    */
   fullBleed?: boolean;
+}
+
+/** What the platform adds to the engine's screen props. */
+export interface ScreenExtras {
+  players: ScreenPlayer[];
+  /** Table talk, for a `fullBleed` game to draw in its own style (phones only; never a TV). */
+  chat?: LobbyChat;
 }
 
 /**
@@ -109,11 +118,6 @@ export interface GameLobbyProps {
   onSeat: (playerId: string) => void;
   /** Host only: back to the list of games. */
   changeGame?: () => void;
-  /**
-   * Change your own look from the game's lobby (Secret Hitler's portraits stand for crests).
-   * Resolves true once saved; a crest or colour someone else has is refused.
-   */
-  setAvatar?: (avatar: Avatar) => Promise<boolean>;
   /** Reactions from the last few seconds, to pop over the game's own seats. */
   reactions: Reaction[];
   /** Send a reaction (only offered to seated players: `me` is set). */
@@ -133,6 +137,8 @@ export interface GameResultsProps {
   playAgain: () => void;
   /** Host only: everyone back to the lobby. */
   backToLobby: () => void;
+  /** Table talk, drawn in the game's own style. */
+  chat?: LobbyChat;
 }
 
 /** What a game's TV lobby receives: public facts only (a TV has no seat). */

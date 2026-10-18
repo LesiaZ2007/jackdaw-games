@@ -17,6 +17,47 @@ const armiesOf = (s: RiskState, pid: string) =>
 const world = MAPS.world;
 const tids = world.territories.map((t) => t.id);
 
+/** A rigged dice cup: `int(6)` returns the faces given (1–6), in order. */
+function dice(...faces: number[]): Rng {
+  const base = createRng(3);
+  let i = 0;
+  return {
+    next: () => base.next(),
+    int: (n: number) => (n === 6 && i < faces.length ? faces[i++]! - 1 : base.int(n)),
+    pick: (xs) => base.pick(xs),
+    shuffle: (xs) => base.shuffle(xs),
+    get state() {
+      return base.state;
+    },
+  };
+}
+
+/**
+ * A board where `a` is to move (in `phase`); `c` holds `layout.c` if playing; `b` holds the rest.
+ * Every territory has 1 army unless `layout.armies` says otherwise; nobody holds cards.
+ */
+function staged(
+  layout: { a: string[]; c?: string[]; armies?: Record<string, number> },
+  phase: RiskState['phase'] = 'attack',
+  players = ['a', 'b'],
+): RiskState {
+  const s = start(players, { goal: 'World domination' });
+  const holder = (t: string) => (layout.a.includes(t) ? 'a' : layout.c?.includes(t) ? 'c' : 'b');
+  const owner = Object.fromEntries(tids.map((t) => [t, holder(t)]));
+  const armies = Object.fromEntries(tids.map((t) => [t, layout.armies?.[t] ?? 1]));
+  return {
+    ...s,
+    neutral: false,
+    owner,
+    armies,
+    phase,
+    turn: 'a',
+    first: 'a',
+    toPlace: 0,
+    hands: Object.fromEntries(players.map((p) => [p, [] as Card[]])),
+  };
+}
+
 describe('setup', () => {
   it('deals every territory and the right starting armies', () => {
     const s = start();
@@ -215,5 +256,126 @@ describe('reinforcing', () => {
     const s1 = act(s, p, { type: 'reinforce', placements: { [m1!]: s.toPlace } });
     expectError(() => act(s1, p, { type: 'reinforce', placements: { [m1!]: 1 } }));
     expectError(() => act(s1, 'nobody', { type: 'endAttack' }));
+  });
+});
+
+describe('attacking', () => {
+  const ak = (from = 'alaska', to = 'kamchatka', mode: 'roll' | 'blitz' = 'roll') =>
+    ({ type: 'attack', from, to, mode }) as const;
+
+  it('rolls up to 3 dice against up to 2; the defender wins ties', () => {
+    const s = staged({ a: ['alaska'], armies: { alaska: 4, kamchatka: 2 } });
+    const s1 = act(s, 'a', ak(), dice(6, 5, 1, 5, 5));
+    expect(s1.battle).toMatchObject({
+      attacker: 'a',
+      defender: 'b',
+      attackDice: [6, 5, 1],
+      defendDice: [5, 5],
+      attackerLost: 1,
+      defenderLost: 1,
+      conquered: false,
+      ended: false,
+    });
+    expect(s1.armies.alaska).toBe(3);
+    expect(s1.armies.kamchatka).toBe(1);
+  });
+
+  it('a roll is one exchange; the battle ends when the attacker is down to 1', () => {
+    const s = staged({ a: ['alaska'], armies: { alaska: 2, kamchatka: 3 } });
+    const s1 = act(s, 'a', ak(), dice(1, 6, 6));
+    expect(s1.battle).toMatchObject({ attackDice: [1], defendDice: [6, 6], ended: true });
+    expect(s1.armies.alaska).toBe(1);
+    expect(s1.phase).toBe('attack');
+  });
+
+  it('blitz fights until the territory falls or the attacker is down to 1', () => {
+    const big = staged({ a: ['alaska'], armies: { alaska: 30, kamchatka: 3 } });
+    const s1 = act(big, 'a', ak('alaska', 'kamchatka', 'blitz'), createRng(5));
+    expect(s1.battle).toMatchObject({ mode: 'blitz', ended: true });
+    expect(s1.battle!.conquered || s1.armies.alaska === 1).toBe(true);
+    expect(s1.battle!.attackerLost + s1.battle!.defenderLost).toBeGreaterThan(0);
+    const small = staged({ a: ['alaska'], armies: { alaska: 2, kamchatka: 5 } });
+    const s2 = act(small, 'a', ak('alaska', 'kamchatka', 'blitz'), dice(1, 6, 6, 6, 6));
+    expect(s2.armies.alaska).toBe(1);
+    expect(s2.armies.kamchatka).toBe(5);
+    expect(s2.battle).toMatchObject({ attackerLost: 1, defenderLost: 0, ended: true });
+  });
+
+  it('refuses attacks from 1 army, on yourself, past your borders, or from someone else’s land', () => {
+    const s = staged({ a: ['alaska', 'alberta'], armies: { alaska: 1, alberta: 5, peru: 5 } });
+    expectError(() => act(s, 'a', ak('alaska', 'kamchatka')));
+    expectError(() => act(s, 'a', ak('alberta', 'alaska')));
+    expectError(() => act(s, 'a', ak('alberta', 'kamchatka')));
+    expectError(() => act(s, 'a', ak('peru', 'brazil')));
+  });
+
+  it('a conquest asks how many move in: at least the dice rolled, leaving 1 behind', () => {
+    const s = staged({ a: ['alaska'], armies: { alaska: 4, kamchatka: 1 } });
+    const s1 = act(s, 'a', ak(), dice(6, 6, 6, 1));
+    expect(s1.battle).toMatchObject({ conquered: true, ended: true });
+    expect(s1.owner.kamchatka).toBe('a');
+    expect(s1.phase).toBe('occupy');
+    expect(s1.occupy).toEqual({ from: 'alaska', to: 'kamchatka', min: 3, max: 3 });
+    expectError(() => act(s1, 'a', { type: 'occupy', n: 4 }));
+    expectError(() => act(s1, 'a', { type: 'occupy', n: 2 }));
+    expectError(() => act(s1, 'a', ak('alaska', 'northwest-territory')));
+    const s2 = act(s1, 'a', { type: 'occupy', n: 3 });
+    expect([s2.armies.alaska, s2.armies.kamchatka]).toEqual([1, 3]);
+    expect(s2.phase).toBe('attack');
+    expect(s2.occupy).toBeNull();
+    expect(s2.takenThisTurn).toBe(1);
+  });
+
+  it('can take the neutral’s territories', () => {
+    const s = staged({ a: ['alaska'], armies: { alaska: 5, kamchatka: 1 } });
+    const n = { ...s, owner: { ...s.owner, kamchatka: NEUTRAL } };
+    const s1 = act(n, 'a', ak(), dice(6, 6, 6, 1));
+    expect(s1.owner.kamchatka).toBe('a');
+    expect(s1.battle!.defender).toBe(NEUTRAL);
+  });
+
+  it('taking someone’s last territory knocks them out and hands you their cards', () => {
+    const s = staged(
+      { a: ['alaska'], c: ['kamchatka'], armies: { alaska: 4, kamchatka: 1 } },
+      'attack',
+      ['a', 'b', 'c'],
+    );
+    const withCards = {
+      ...s,
+      hands: { a: [], b: [], c: [card('x', 'cavalry'), card('y', 'wild', null)] },
+    };
+    const s1 = act(withCards, 'a', ak(), dice(6, 6, 6, 1));
+    expect(s1.eliminated).toEqual(['c']);
+    expect(s1.eliminatedBy).toEqual({ c: 'a' });
+    expect(s1.hands.a!.map((x) => x.id)).toEqual(['x', 'y']);
+    expect(s1.hands.c).toEqual([]);
+  });
+
+  it('with 6+ cards after a knock-out you trade down and place before attacking again', () => {
+    const s = staged(
+      { a: ['alaska'], c: ['kamchatka'], armies: { alaska: 4, kamchatka: 1 } },
+      'attack',
+      ['a', 'b', 'c'],
+    );
+    const four = ['p', 'q', 'r', 's'].map((id) => card(id, 'infantry'));
+    const two = [card('t', 'cavalry'), card('u', 'artillery')];
+    const s1 = act({ ...s, hands: { a: four, b: [], c: two } }, 'a', ak(), dice(6, 6, 6, 1));
+    const s2 = act(s1, 'a', { type: 'occupy', n: 3 });
+    expect(s2.phase).toBe('reinforce');
+    expect(s2.returnTo).toBe('attack');
+    expectError(() => act(s2, 'a', ak('kamchatka', 'japan')));
+    const s3 = act(s2, 'a', { type: 'trade', cards: ['p', 'q', 'r'] });
+    const s4 = act(s3, 'a', { type: 'reinforce', placements: { kamchatka: s3.toPlace } });
+    expect(s4.phase).toBe('attack');
+    expect(s4.hands.a).toHaveLength(3);
+  });
+
+  it('counts every attack and remembers the bloodiest battle', () => {
+    const s = staged({ a: ['alaska'], armies: { alaska: 10, kamchatka: 6 } });
+    const s1 = act(s, 'a', ak(), dice(6, 6, 6, 1, 1));
+    const s2 = act(s1, 'a', ak(), dice(6, 6, 6, 1, 1));
+    expect(s2.battleSeq).toBe(s.battleSeq + 2);
+    expect(s2.best.battle).toMatchObject({ pid: 'a', value: 4 });
+    expect(s2.best.battle!.text).toBe('Alaska to Kamchatka');
   });
 });

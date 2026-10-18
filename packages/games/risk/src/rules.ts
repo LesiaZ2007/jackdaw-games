@@ -9,6 +9,7 @@ import { z } from 'zod';
 import {
   NEUTRAL,
   STARTING_ARMIES,
+  attackTargets,
   reinforcementCount,
   territoriesOf,
   type Armies,
@@ -17,7 +18,7 @@ import {
 import { isSet, makeDeck, setValue, type Card, type CardSets } from './cards';
 import { getMap, type MapDef, type MapId } from './maps';
 import { meta } from './meta';
-import { dealMissions, type Mission } from './missions';
+import { dealMissions, fallback, type Mission } from './missions';
 
 /**
  * Risk for 2–6 players on the classic world or Jackdaw's own realm. Territories are dealt at
@@ -388,7 +389,152 @@ function reinforce(s: RiskState, pid: string, placements: Record<string, number>
   };
 }
 
-function applyAction(s: RiskState, pid: string, a: RiskAction): RiskState {
+const nameOf = (map: MapDef, t: string) => map.territories.find((x) => x.id === t)?.name ?? t;
+
+const roll = (rng: Rng, n: number) =>
+  Array.from({ length: n }, () => rng.int(6) + 1).sort((x, y) => y - x);
+
+/** One exchange of dice: returns the dice and how many each side lost. */
+function exchange(rng: Rng, attacking: number, defending: number) {
+  const attackDice = roll(rng, Math.min(3, attacking - 1));
+  const defendDice = roll(rng, Math.min(2, defending));
+  let attackerLost = 0;
+  let defenderLost = 0;
+  for (let i = 0; i < Math.min(attackDice.length, defendDice.length); i++) {
+    if (attackDice[i]! > defendDice[i]!) defenderLost++;
+    else attackerLost++;
+  }
+  return { attackDice, defendDice, attackerLost, defenderLost };
+}
+
+function attack(
+  s: RiskState,
+  pid: string,
+  a: { from: string; to: string; mode: 'roll' | 'blitz' },
+  rng: Rng,
+): RiskState {
+  if (s.phase !== 'attack') return refuse('wrong-phase', 'You can’t attack now.');
+  const map = mapOf(s);
+  if (s.owner[a.from] !== pid) return refuse('not-yours', 'Attack from one of your territories.');
+  if (!attackTargets(map, s.owner, s.armies, pid, a.from).includes(a.to))
+    return refuse(
+      'bad-target',
+      s.armies[a.from]! < 2
+        ? 'You need at least 2 armies to attack.'
+        : 'You can only attack an enemy next door.',
+    );
+  const defender = s.owner[a.to]!;
+  let atk = s.armies[a.from]!;
+  let def = s.armies[a.to]!;
+  let attackerLost = 0;
+  let defenderLost = 0;
+  let last = exchange(rng, atk, def);
+  for (;;) {
+    atk -= last.attackerLost;
+    def -= last.defenderLost;
+    attackerLost += last.attackerLost;
+    defenderLost += last.defenderLost;
+    if (a.mode === 'roll' || def === 0 || atk < 2) break;
+    last = exchange(rng, atk, def);
+  }
+  const conquered = def === 0;
+  const seq = s.battleSeq + 1;
+  const battle: Battle = {
+    seq,
+    attacker: pid,
+    defender,
+    from: a.from,
+    to: a.to,
+    mode: a.mode,
+    attackDice: last.attackDice,
+    defendDice: last.defendDice,
+    attackerLost,
+    defenderLost,
+    conquered,
+    ended: conquered || atk < 2,
+  };
+  // The bloodiest battle: a run of attacks on the same border, both sides' losses together.
+  const same = s.run && s.run.from === a.from && s.run.to === a.to;
+  const run = {
+    from: a.from,
+    to: a.to,
+    lost: (same ? s.run!.lost : 0) + attackerLost + defenderLost,
+  };
+  const best =
+    run.lost > (s.best.battle?.value ?? 0)
+      ? {
+          ...s.best,
+          battle: { pid, value: run.lost, text: `${nameOf(map, a.from)} to ${nameOf(map, a.to)}` },
+        }
+      : s.best;
+  let next: RiskState = {
+    ...s,
+    armies: { ...s.armies, [a.from]: atk, [a.to]: def },
+    battle,
+    battleSeq: seq,
+    run,
+    best,
+  };
+  if (!conquered) return next;
+  // The dice rolled last move in at once; occupy can send more.
+  const min = last.attackDice.length;
+  next = {
+    ...next,
+    owner: { ...next.owner, [a.to]: pid },
+    armies: { ...next.armies, [a.from]: atk - min, [a.to]: min },
+    phase: 'occupy',
+    occupy: { from: a.from, to: a.to, min, max: atk - 1 },
+    takenThisTurn: s.takenThisTurn + 1,
+  };
+  next = logged(next, `{actor} takes ${nameOf(map, a.to)}`, pid, { to: a.to, from: defender });
+  return defender !== NEUTRAL && territoriesOf(next.owner, defender).length === 0
+    ? knockOut(next, pid, defender)
+    : next;
+}
+
+/** `loser` has no territories left: out of the game, their cards to whoever took them out. */
+function knockOut(s: RiskState, by: string, loser: string): RiskState {
+  const eliminatedBy = { ...s.eliminatedBy, [loser]: by };
+  const missions =
+    s.missions &&
+    Object.fromEntries(
+      Object.entries(s.missions).map(([p, m]) => [p, fallback(m, p, eliminatedBy)]),
+    );
+  return logged(
+    {
+      ...s,
+      eliminated: [...s.eliminated, loser],
+      eliminatedBy,
+      missions,
+      hands: {
+        ...s.hands,
+        [by]: [...(s.hands[by] ?? []), ...(s.hands[loser] ?? [])],
+        [loser]: [],
+      },
+    },
+    `{actor} is knocked out`,
+    loser,
+  );
+}
+
+function occupy(s: RiskState, n: number): RiskState {
+  if (s.phase !== 'occupy' || !s.occupy) return refuse('wrong-phase', 'Nothing to move in.');
+  const { from, to, min, max } = s.occupy;
+  if (n < min || n > max)
+    return refuse('wrong-count', min === max ? `Move in ${min}.` : `Move in ${min} to ${max}.`);
+  const next: RiskState = {
+    ...s,
+    armies: { ...s.armies, [from]: s.armies[from]! - (n - min), [to]: s.armies[to]! + (n - min) },
+    occupy: null,
+    phase: 'attack',
+  };
+  // Six or more cards after a knock-out: trade down to four or fewer before attacking again.
+  return (next.hands[next.turn]?.length ?? 0) >= 6
+    ? { ...next, phase: 'reinforce', returnTo: 'attack' }
+    : next;
+}
+
+function applyAction(s: RiskState, pid: string, a: RiskAction, rng: Rng): RiskState {
   if (s.phase === 'over') return refuse('over', 'The game is over.');
   if (!s.seats.includes(pid) || s.eliminated.includes(pid))
     return refuse('not-playing', 'You’re not in this game.');
@@ -402,6 +548,10 @@ function applyAction(s: RiskState, pid: string, a: RiskAction): RiskState {
       return trade(s, pid, a.cards);
     case 'reinforce':
       return reinforce(s, pid, a.placements);
+    case 'attack':
+      return attack(s, pid, a, rng);
+    case 'occupy':
+      return occupy(s, a.n);
     default:
       return refuse('wrong-phase', 'You can’t do that now.');
   }
@@ -426,6 +576,6 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
   setup,
   getPlayerView,
   getTableView,
-  applyAction: (s, pid, a, _rng, now) => stamp(s, applyAction(s, pid, a), now),
+  applyAction: (s, pid, a, rng, now) => stamp(s, applyAction(s, pid, a, rng), now),
   getResult,
 };

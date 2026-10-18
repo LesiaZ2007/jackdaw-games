@@ -378,6 +378,13 @@ export const codenames: GameModule<
     return { ...state, suggestions };
   },
 
+  waitingOn: (s) =>
+    s.phase === 'clue'
+      ? [s.spymasters[s.turn]]
+      : s.phase === 'guess'
+        ? s.players.filter((id) => s.teams[id] === s.turn && s.spymasters[s.turn] !== id)
+        : [],
+
   getResult(state): GameResult | null {
     if (state.phase !== 'over' || !state.winner) return null;
     const winner = state.winner;

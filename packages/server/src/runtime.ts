@@ -32,6 +32,7 @@ import {
   lobbyStats,
   nextTimerAt,
   runTimers,
+  waitingFor,
   type Avatar,
   type Ctx,
   type GameLink,
@@ -45,6 +46,13 @@ import {
 } from '@jackdaw/engine';
 import { DEFAULT_AVATARS, isKnownAvatar } from './avatars';
 import { RoomError } from './errors';
+import {
+  isPushSubscription,
+  sendPush,
+  type PushMessage,
+  type PushSubscriptionData,
+  type VapidKeys,
+} from './push';
 import type { RoomStorage } from './storage';
 
 /**
@@ -62,6 +70,8 @@ export const PRESENCE_WRITE_MS = 25_000;
 const lobbyKey = (code: string) => `jackdaw:lobby:${code}`;
 const lockKey = (code: string) => `jackdaw:lock:${code}`;
 const seenKey = (code: string) => `jackdaw:seen:${code}`;
+/** Each player's push subscription in a lobby (an empty value means none). */
+const pushKey = (code: string) => `jackdaw:push:${code}`;
 
 export interface RuntimeOptions {
   storage: RoomStorage;
@@ -82,6 +92,16 @@ export interface RuntimeOptions {
   linkCheckMs?: number;
   /** This site's public origin, for "Back to Jackdaw" links. Falls back to the request's. */
   siteUrl?: string;
+  /**
+   * Web Push, for "your turn" notifications on locked phones. Without it, subscribing is refused
+   * and nothing is sent. `send` is for tests.
+   */
+  push?: { vapid: VapidKeys; send?: typeof sendPush };
+  /**
+   * Runs work after the response has gone (Next's `after`), so pushes don't slow a move down.
+   * Without it, the work is awaited before replying.
+   */
+  defer?: (work: Promise<unknown>) => void;
 }
 
 /** Where a message came from, for anything that needs this site's own address. */
@@ -204,6 +224,43 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     if (t - (presence[id] ?? 0) < PRESENCE_WRITE_MS) return presence;
     await storage.hset(seenKey(code), id, String(t), LOBBY_TTL_SECONDS);
     return { ...presence, [id]: t };
+  }
+
+  /**
+   * Pushes "your move" to players the game has just started waiting on, if they asked for
+   * notifications. A subscription the push service says is gone is forgotten.
+   */
+  async function notifyWaiting(before: Lobby | null, after: Lobby) {
+    const push = opts.push;
+    if (!push || after.status !== 'in_game' || !after.session) return;
+    const sameGame = before?.status === 'in_game' && before.session?.id === after.session.id;
+    const was = new Set(sameGame ? waitingFor(before!, { games }) : []);
+    const fresh = waitingFor(after, { games }).filter((id) => !was.has(id));
+    if (fresh.length === 0) return;
+    const game = games[after.session.gameId]?.meta.name ?? 'the game';
+    const work = (async () => {
+      const subs = await storage.hgetall(pushKey(after.code));
+      await Promise.all(
+        fresh.map(async (id) => {
+          const raw = subs[id];
+          if (!raw) return;
+          const message: PushMessage = {
+            title: `Your move in ${game}`,
+            body: `Lobby ${after.code} is waiting for you.`,
+            url: `/r/${after.code}`,
+            tag: `jackdaw-${after.code}`,
+          };
+          const sent = await (push.send ?? sendPush)(
+            JSON.parse(raw) as PushSubscriptionData,
+            message,
+            push.vapid,
+          );
+          if (sent === 'gone') await storage.hset(pushKey(after.code), id, '', LOBBY_TTL_SECONDS);
+        }),
+      );
+    })().catch((e) => console.error('[jackdaw] notifying failed', e));
+    if (opts.defer) opts.defer(work);
+    else await work;
   }
 
   async function lock(code: string): Promise<() => Promise<void>> {
@@ -335,9 +392,11 @@ export function createRoomRuntime(opts: RuntimeOptions) {
 
     // A linked game the host ends here should end in its own app too (after the save).
     let ending: { gameId: string; state: unknown } | undefined;
+    let previous: Lobby | null = null;
     const { lobby, result: playerId } = await withLobby(code, (loaded) => {
       const c = ctx();
       ending = undefined;
+      previous = loaded;
       // A game timer that came due before this message fires first.
       const current = runTimers(loaded, c);
       if (msg.type === 'join') {
@@ -371,6 +430,7 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     });
 
     if (ending) await endLink(ending.gameId, ending.state);
+    await notifyWaiting(previous, lobby);
     const fresh = await checkIn(code, playerId, presence);
     return snapshotFor(lobby, playerId, fresh, ctx());
   }
@@ -465,7 +525,14 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     // A game timer that's due fires now (there are no alarms on Vercel).
     const due = nextTimerAt(lobby, c);
     if (due !== null && due <= c.now) {
-      lobby = (await withLobby(code, (l) => ({ lobby: runTimers(l, ctx()), result: null }))).lobby;
+      let loaded: Lobby | null = null;
+      lobby = (
+        await withLobby(code, (l) => {
+          loaded = l;
+          return { lobby: runTimers(l, ctx()), result: null };
+        })
+      ).lobby;
+      await notifyWaiting(loaded, lobby);
     }
 
     if (sinceVersion === lobby.version) {
@@ -521,6 +588,28 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     }
   }
 
+  /**
+   * Remember (or, with null, forget) this player's push subscription for the lobby, so they're
+   * notified when it's their move.
+   */
+  async function setPush(code: string, token: string, subscription: unknown): Promise<void> {
+    rateLimit(`push:${token}`, 10);
+    if (!opts.push) throw new RoomError(404, 'NOT_SET_UP', 'Notifications aren’t set up here.');
+    if (subscription !== null && !isPushSubscription(subscription))
+      throw new RoomError(400, 'BAD_REQUEST', 'That isn’t a push subscription.');
+    const lobby = await loadShared(code);
+    if (!lobby) throw notFound();
+    const me = playerIdForToken(lobby, await tokenKey(token));
+    if (!me) throw new GameError('NOT_A_PLAYER', 'You are not in this lobby. Join it first.');
+    const value = subscription
+      ? JSON.stringify({
+          endpoint: subscription.endpoint,
+          keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth },
+        })
+      : '';
+    await storage.hset(pushKey(code), me, value, LOBBY_TTL_SECONDS);
+  }
+
   /** Move a seat to this device with a one-time rejoin code. */
   async function redeemRejoin(
     code: string,
@@ -549,7 +638,7 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     return { stats: lobbyStats(lobby.history), history: lobby.history };
   }
 
-  return { create, post, poll, redeemRejoin, stats };
+  return { create, post, poll, redeemRejoin, stats, setPush };
 }
 
 export type RoomRuntime = ReturnType<typeof createRoomRuntime>;

@@ -36,8 +36,11 @@ export const actionSchema = z.discriminatedUnion('type', [
   /** Raise (or bet) so your total bet this round is `to`. */
   z.object({ type: z.literal('raise'), to: z.number().int().positive() }),
   z.object({ type: z.literal('allIn') }),
-  /** After a hand: deal the next one. */
-  z.object({ type: z.literal('deal') }),
+  /**
+   * After a hand: deal the next one. Phones send it by themselves a few seconds after a hand
+   * ends, naming the hand just played, so only the first of them deals and the rest do nothing.
+   */
+  z.object({ type: z.literal('deal'), after: z.number().int().nonnegative().optional() }),
 ]);
 export type PokerAction = z.infer<typeof actionSchema>;
 
@@ -537,6 +540,7 @@ export const poker: GameModule<
     if (!s.players.includes(playerId))
       throw new GameError('not_playing', 'You’re not at this table.');
     if (action.type === 'deal') {
+      if (action.after !== undefined && (action.after !== s.hand || s.phase !== 'done')) return s;
       if (s.phase !== 'done') throw new GameError('not_yet', 'This hand isn’t over yet.');
       return startHand(s, rng);
     }

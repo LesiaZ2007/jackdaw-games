@@ -198,6 +198,14 @@ describe('the game', () => {
     expect(s.dealer).not.toBe(button);
   });
 
+  it('deals once when several phones send the deal for the same hand', () => {
+    let s = passive(deal());
+    s = act(s, 'b', { type: 'deal', after: 1 });
+    const again = act(s, 'c', { type: 'deal', after: 1 });
+    expect(again).toBe(s);
+    expect(s.hand).toBe(2);
+  });
+
   it('doubles the blinds on schedule', () => {
     let s = deal(ids, { blindsDouble: 'Every 5 hands' });
     for (let h = 1; h <= 5; h++) s = act(passive(s), 'a', { type: 'deal' });

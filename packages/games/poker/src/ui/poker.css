@@ -367,10 +367,12 @@
   color: var(--ink-2);
   font-weight: 700;
 }
-.pk-dock__note {
+.pk-dock__count {
   margin: 0;
-  color: var(--ink-2);
-  font-size: var(--step--1);
+  font: 800 var(--step-1) / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
 .pk-dock__row {
   display: grid;

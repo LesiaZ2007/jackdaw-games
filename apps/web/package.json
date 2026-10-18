@@ -15,6 +15,7 @@
     "@jackdaw/engine": "workspace:*",
     "@jackdaw/game-avalon": "workspace:*",
     "@jackdaw/game-codenames": "workspace:*",
+    "@jackdaw/game-uno": "workspace:*",
     "@jackdaw/game-poker": "workspace:*",
     "@jackdaw/game-risk": "workspace:*",
     "@jackdaw/game-rps": "workspace:*",

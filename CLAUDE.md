@@ -172,8 +172,10 @@ Additions approved by Lesia:
   the host's tap opens remove / make host) and `changeGame` for the host.
 - **Secret Hitler is secret-hitler.online, ported** (Lesia, 2026-10-17: "copy EXACTLY"). Its
   screens live in `packages/games/secret-hitler/src/ui/sho/` with the site's markup, text,
-  timings and stylesheet (scoped under `.sho`); change them only to match the site. For it the
-  UI types gained `GameUi.fullBleed` (the phone screen fills the column under the bar),
-  `GameUi.Results` (a game draws the whole end-of-game screen on phones, with the host's Play
-  again and Back to lobby) and `GameLobbyProps.setAvatar` (a game's lobby sets your look).
-  See PROGRESS.md.
+  timings and stylesheet (scoped under `.sho`); change them only to match the site, or to fit
+  Jackdaw (Lesia, same day: "with necessary adaptations": no scrolling, Jackdaw's crests and
+  look sheet, table talk shown properly, tokens flying in and out as in Avalon). For it the UI
+  types gained `GameUi.fullBleed` (the phone screen fills the column under the bar and draws
+  table talk itself from `ScreenExtras.chat`; starting and ending the game runs a view
+  transition so seats fly) and `GameUi.Results` (a game draws the whole end-of-game screen on
+  phones, with the host's Play again and Back to lobby, and its chat). See PROGRESS.md.

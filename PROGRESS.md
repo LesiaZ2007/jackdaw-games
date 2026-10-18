@@ -168,18 +168,29 @@ Approved by Lesia for every game:
     keeps unique), with a leak test; moves map back in `ui/player.tsx`.
   - Its gameplay: the president presses **End term** after every round (new `post` phase and
     `endTerm` action in the rules).
-  - Its lobby page (code, invite link, tiles, Change icon, Start game for the VIP); portraits
-    stand for crests (16 crests → portraits 1–16), so choosing one sets your crest. House rules
-    past 10 sit in the lobby in its style. The TV lobby and TV use its look; the TV page zooms
-    to fit the screen. The end of a game replays the last move on the phone, then its victory
-    popup, with Play again / Return to lobby for the host.
-  - Kept from Jackdaw: the bar, table talk, short links, stats and scores, 11–15 players.
-    Differences from the site: the header says SECRET HITLER (not its domain); 16 of its 20
-    portraits, one per crest, none locked behind a Twitter share; [Host] marks the host (the
-    site marks everyone else by mistake); no bots; one look only (it has no day/dark); its own
-    popups instead of the kit's VerdictMoments.
-  - Platform additions: `GameUi.fullBleed` (the game fills the column under the bar),
-    `GameUi.Results` (a game's own end screen) and `GameLobbyProps.setAvatar`.
+  - Its lobby page (code, invite link, tiles, Change icon, Start game for the VIP), fitted to
+    one screen with no scrolling (`useTileFit` sizes the tiles for 5 to 15 players). The invite
+    is the code plus the short link printed plainly with Copy (no text box). House rules past 10
+    sit in the lobby in its style. The TV lobby and TV use its look; the TV page zooms to fit
+    the screen. The end of a game replays the last move on the phone, then its victory popup,
+    with Play again / Return to lobby for the host.
+  - Adapted to Jackdaw (Lesia, 2026-10-17: "exactly, with necessary adaptations"): tiles carry
+    each player's Jackdaw crest and colour instead of the site's portraits, and Change icon opens
+    Jackdaw's own look sheet, so a look is the same in every game. Table talk is drawn in the
+    site's colours and type on every Secret Hitler screen (lobby, game, results): docked from
+    1240px, a drawer from the bar's chat button below that. Popups sit under Jackdaw's bar, so
+    the chat and menu open mid-vote. The decks and boards shrink to fit under the tiles
+    (`FitToScreen`), and on landscape screens the two boards sit side by side, so the game page
+    doesn't scroll. Crests and names fly between Jackdaw's seat track, the Secret Hitler lobby
+    and the table (view transitions) when the game is chosen, starts and ends. No "About this
+    project" link; the credit is on the game's About page.
+  - Kept from Jackdaw: the bar, table talk, short links, looks, stats and scores, 11–15 players.
+    Other differences from the site: the header says SECRET HITLER (not its domain); [Host]
+    marks the host (the site marks everyone else by mistake); no bots; one look only (it has no
+    day/dark); its own popups instead of the kit's VerdictMoments.
+  - Platform additions: `GameUi.fullBleed` (the game fills the column under the bar, draws
+    table talk itself from `ScreenExtras.chat` / `GameResultsProps.chat`, and its tokens fly in
+    and out on start and end) and `GameUi.Results` (a game's own end screen).
 
 ## Next
 

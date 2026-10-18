@@ -47,15 +47,21 @@ export function BoardGrid({
   recent = [],
   onSquare,
   label = 'The board',
+  dropIn,
 }: {
   board: Board;
   pending?: Placement[];
   recent?: [number, number][];
+  /**
+   * The recent tiles drop onto the board one after another, this many milliseconds apart (the
+   * TV, as a move lands).
+   */
+  dropIn?: number;
   onSquare?: (row: number, col: number) => void;
   label?: string;
 }) {
   const pend = new Map(pending.map((p) => [`${p.row},${p.col}`, p]));
-  const fresh = new Set(recent.map(([r, c]) => `${r},${c}`));
+  const fresh = new Map(recent.map(([r, c], i) => [`${r},${c}`, i]));
   return (
     <div className="wh-board" role="group" aria-label={label}>
       {Array.from({ length: SIZE }, (_, r) =>
@@ -76,7 +82,18 @@ export function BoardGrid({
             <Tile
               letter={cell.letter}
               blank={cell.blank}
-              className={fresh.has(key) ? 'wh-tile--recent' : undefined}
+              className={
+                !fresh.has(key)
+                  ? undefined
+                  : dropIn !== undefined
+                    ? 'wh-tile--recent wh-tile--drop'
+                    : 'wh-tile--recent'
+              }
+              style={
+                dropIn !== undefined && fresh.has(key)
+                  ? { animationDelay: `${fresh.get(key)! * dropIn}ms` }
+                  : undefined
+              }
             />
           ) : p ? (
             <Tile letter={p.letter} blank={p.blank} className="wh-tile--pending" />

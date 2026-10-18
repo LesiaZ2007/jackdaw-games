@@ -176,6 +176,9 @@ Additions approved by Lesia:
   Web Push (VAPID env vars; see PROGRESS.md). `GameResult.highlights?` feeds the night's
   awards. UI types: `GameUi.fit` (phone screen fits under the bar, no scrolling), `LobbySeats`
   (a game's own seats in Jackdaw's lobby), `TvReveal` (a game's reveal on the TV's results).
+  Later (Lesia, 2026-10-18, Risk feedback): `GameUi.optionHelp` (one line under each option in
+  Jackdaw's lobby, per option or per choice), and the lobby's seat track draws only the chosen
+  game's seats.
 - **Secret Hitler is secret-hitler.online, ported** (Lesia, 2026-10-17: "copy EXACTLY"). Its
   screens live in `packages/games/secret-hitler/src/ui/sho/` with the site's markup, text,
   timings and stylesheet (scoped under `.sho`); change them only to match the site, or to fit

@@ -26,10 +26,13 @@ export function OptionsPanel({
   options,
   editable,
   onChange,
+  help,
 }: {
   schema: ZodType;
   options: Record<string, unknown>;
   editable: boolean;
+  /** A line under each option, by key: one for the option, or one per choice. */
+  help?: Record<string, string | Record<string, string>>;
   /** Sends the new options; may return the save's promise. */
   onChange: (next: Record<string, unknown>) => unknown;
 }) {
@@ -45,6 +48,8 @@ export function OptionsPanel({
         const type = f.def.type;
         const value = current[key];
         const set = (v: unknown) => save({ ...current, [key]: v });
+        const h = help?.[key];
+        const note = typeof h === 'string' ? h : h?.[String(value)];
         return (
           <div key={key} className="options__row">
             <dt>{f.description ?? label(key)}</dt>
@@ -109,6 +114,7 @@ export function OptionsPanel({
                 <b>{String(value ?? '')}</b>
               )}
             </dd>
+            {note && <dd className="options__help">{note}</dd>}
           </div>
         );
       })}

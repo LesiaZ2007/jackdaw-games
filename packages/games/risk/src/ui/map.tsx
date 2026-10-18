@@ -13,32 +13,14 @@ export function tintOf(pid: string, players: ScreenPlayer[]): string {
   return p ? `var(--tint-${p.avatar.tint}, var(--sable))` : 'var(--sable)';
 }
 
+/** What's in the frame: the map point at its centre, and the zoom (1 = the whole map fits). */
 interface View {
-  /** Zoom (1 = the whole map). */
-  k: number;
-  /** Offset in map units. */
-  x: number;
-  y: number;
+  cx: number;
+  cy: number;
+  z: number;
 }
 
-const MAX_ZOOM = 5;
-const WHOLE: View = { k: 1, x: 0, y: 0 };
-
-/** Keeps the map covering the frame: no panning off the edge. */
-function clamp(v: View, w: number, h: number): View {
-  const k = Math.min(MAX_ZOOM, Math.max(1, v.k));
-  return {
-    k,
-    x: Math.min(0, Math.max(w * (1 - k), v.x)),
-    y: Math.min(0, Math.max(h * (1 - k), v.y)),
-  };
-}
-
-/** Zooms to `k` keeping the map point under `c` (in frame units) where it is. */
-function zoomAt(v: View, k: number, c: [number, number]): View {
-  const r = k / v.k;
-  return { k, x: c[0] - r * (c[0] - v.x), y: c[1] - r * (c[1] - v.y) };
-}
+const MAX_ZOOM = 8;
 
 export interface RiskMapProps {
   map: MapDef;
@@ -54,10 +36,15 @@ export interface RiskMapProps {
   /** A territory to flash (the last battle's). */
   flash?: string | null;
   onPick?: (territory: string) => void;
-  /** Pinch, drag and wheel zoom (phones and laptops); the TV shows the whole map. */
+  /**
+   * Pinch, drag and wheel zoom (phones and laptops). It opens filling the frame (on a portrait
+   * phone you pan sideways); "Whole map" shows all of it. Without it, the whole map always fits.
+   */
   zoomable?: boolean;
   /** Always show names (the TV, the results). */
   names?: boolean;
+  /** Roundels and names this many times their phone size (the TV, seen from the sofa). */
+  scale?: number;
   className?: string;
 }
 
@@ -78,51 +65,71 @@ export function RiskMap({
   onPick,
   zoomable = false,
   names = false,
+  scale = 1,
   className,
 }: RiskMapProps) {
   const [w, h] = map.viewBox;
   const uid = useId().replace(/:/g, '');
   const svg = useRef<SVGSVGElement>(null);
-  const [view, setView] = useState<View>(WHOLE);
-  // Screen pixels per map unit at zoom 1, for sizing roundels and names.
-  const [ppu, setPpu] = useState(0.4);
+  // The frame's size in pixels (measured), and pixels per map unit when the whole map fits.
+  const [frame, setFrame] = useState<[number, number]>([w, h]);
+  const base = Math.min(frame[0] / w, frame[1] / h);
+  const cover = Math.min(2.4, Math.max(frame[0] / w, frame[1] / h) / base);
+  const [view, setView] = useState<View | null>(null);
 
   useLayoutEffect(() => {
     const el = svg.current;
     if (!el) return;
     const measure = () => {
       const r = el.getBoundingClientRect();
-      if (r.width && r.height) setPpu(Math.min(r.width / w, r.height / h));
+      if (r.width && r.height) setFrame([r.width, r.height]);
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [w, h]);
+  }, []);
+
+  /** Keeps the map in the frame: no panning past its edges, zoom between "fits" and 8×. */
+  const clamp = (v: View): View => {
+    const z = Math.min(MAX_ZOOM, Math.max(1, v.z));
+    const [vw, vh] = [frame[0] / (base * z), frame[1] / (base * z)];
+    const fit = (c: number, span: number, size: number) =>
+      span >= size ? size / 2 : Math.min(size - span / 2, Math.max(span / 2, c));
+    return { z, cx: fit(v.cx, vw, w), cy: fit(v.cy, vh, h) };
+  };
+  const shown = clamp(view ?? { cx: w / 2, cy: h / 2, z: zoomable ? cover : 1 });
+  const px = base * shown.z;
+  const [vw, vh] = [frame[0] / px, frame[1] / px];
+  const [x0, y0] = [shown.cx - vw / 2, shown.cy - vh / 2];
+
+  /** The map point under a spot on screen. */
+  const toUnits = (clientX: number, clientY: number): [number, number] => {
+    const r = svg.current!.getBoundingClientRect();
+    return [x0 + (clientX - r.left) / px, y0 + (clientY - r.top) / px];
+  };
+  /** Zoom to `z` keeping the map point under the screen spot where it is. */
+  const zoomTo = (z: number, clientX: number, clientY: number) => {
+    const r = svg.current!.getBoundingClientRect();
+    const [ux, uy] = toUnits(clientX, clientY);
+    const p2 = base * z;
+    const [sx, sy] = [clientX - r.left, clientY - r.top];
+    return clamp({ z, cx: ux - (sx - frame[0] / 2) / p2, cy: uy - (sy - frame[1] / 2) / p2 });
+  };
 
   // Gestures: one finger drags, two pinch; a tap that barely moved still picks.
   const pointers = useRef(new Map<number, [number, number]>());
-  const gesture = useRef<{ moved: boolean; start: View; pinch?: number; mid?: [number, number] }>({
-    moved: false,
-    start: WHOLE,
-  });
-  const toUnits = (cx: number, cy: number): [number, number] => {
-    const r = svg.current!.getBoundingClientRect();
-    const scale = Math.min(r.width / w, r.height / h);
-    const ox = (r.width - w * scale) / 2;
-    const oy = (r.height - h * scale) / 2;
-    return [(cx - r.left - ox) / scale, (cy - r.top - oy) / scale];
-  };
+  const gesture = useRef<{ moved: boolean; pinch?: number; z?: number }>({ moved: false });
 
   const onPointerDown = (e: PointerEvent<SVGSVGElement>) => {
     if (!zoomable) return;
     pointers.current.set(e.pointerId, [e.clientX, e.clientY]);
     const pts = [...pointers.current.values()];
-    gesture.current = { moved: pointers.current.size > 1, start: view };
+    gesture.current = { moved: pts.length > 1 };
     if (pts.length === 2) {
       const [a, b] = pts as [[number, number], [number, number]];
       gesture.current.pinch = Math.hypot(a[0] - b[0], a[1] - b[1]);
-      gesture.current.mid = toUnits((a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+      gesture.current.z = shown.z;
     }
   };
   const onPointerMove = (e: PointerEvent<SVGSVGElement>) => {
@@ -131,53 +138,52 @@ export function RiskMap({
     pointers.current.set(e.pointerId, [e.clientX, e.clientY]);
     const pts = [...pointers.current.values()];
     const g = gesture.current;
-    if (pts.length === 2 && g.pinch && g.mid) {
+    if (pts.length === 2 && g.pinch && g.z) {
       const [a, b] = pts as [[number, number], [number, number]];
       const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-      g.moved = true;
-      setView(clamp(zoomAt(g.start, g.start.k * (d / g.pinch), g.mid), w, h));
+      setView(zoomTo(g.z * (d / g.pinch), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2));
       return;
     }
     const [dx, dy] = [e.clientX - prev[0], e.clientY - prev[1]];
-    if (!g.moved && Math.hypot(dx, dy) < 4) {
+    if (!g.moved && Math.hypot(dx, dy) < 6) {
       pointers.current.set(e.pointerId, prev);
       return;
     }
     g.moved = true;
-    if (e.currentTarget.hasPointerCapture?.(e.pointerId) === false)
-      e.currentTarget.setPointerCapture?.(e.pointerId);
-    setView((v) => clamp({ ...v, x: v.x + dx / ppu, y: v.y + dy / ppu }, w, h));
+    setView(clamp({ ...shown, cx: shown.cx - dx / px, cy: shown.cy - dy / px }));
   };
   const onPointerUp = (e: PointerEvent<SVGSVGElement>) => {
     pointers.current.delete(e.pointerId);
-    if (pointers.current.size === 1)
-      gesture.current = { ...gesture.current, start: view, pinch: undefined };
   };
 
+  // Wheel zoom needs a non-passive listener; keep the latest zoom function in a ref.
+  const wheelZoom = useRef(zoomTo);
+  useLayoutEffect(() => {
+    wheelZoom.current = zoomTo;
+  });
   useEffect(() => {
     const el = svg.current;
     if (!el || !zoomable) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const c = toUnits(e.clientX, e.clientY);
-      setView((v) => clamp(zoomAt(v, v.k * Math.exp(-e.deltaY / 400), c), w, h));
+      setView((v) => {
+        const z = (v?.z ?? cover) * Math.exp(-e.deltaY / 400);
+        return wheelZoom.current(z, e.clientX, e.clientY);
+      });
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
-    // toUnits reads the element directly; it doesn't need to be a dependency.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoomable, w, h]);
+  }, [zoomable, cover]);
 
   const pick = (t: string) => {
     if (gesture.current.moved) return;
     onPick?.(t);
   };
 
-  // Roundels about 11px across on screen, names about 11px tall, whatever the zoom.
-  const px = ppu * view.k;
-  const r = Math.max(6, 11 / px);
+  // Roundels about 22px across on screen, names about 11px tall, whatever the zoom.
+  const r = (11 * scale) / px;
   const showNames = names || px > 1.15;
-  const font = 11 / px;
+  const font = (11 * scale) / px;
   const tint = new Map(map.continents.map((c) => [c.id, c.tint]));
   const aiming = targets.length > 0;
 
@@ -185,7 +191,8 @@ export function RiskMap({
     <div className={`rk-map ${zoomable ? 'rk-map--zoom' : ''} ${className ?? ''}`}>
       <svg
         ref={svg}
-        viewBox={`0 0 ${w} ${h}`}
+        viewBox={`${x0} ${y0} ${vw} ${vh}`}
+        preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label={`Map of ${map.name}`}
         onPointerDown={onPointerDown}
@@ -203,83 +210,90 @@ export function RiskMap({
             </clipPath>
           ))}
         </defs>
-        <g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>
-          <rect width={w} height={h} className="rk-sea" />
-          <rect width={w} height={h} fill={`url(#${uid}-sea)`} />
-          <path d={map.sea} className="rk-coast-halo" />
-          {map.lanes.map(([a, b]) => {
-            const ta = map.territories.find((t) => t.id === a)!;
-            const tb = map.territories.find((t) => t.id === b)!;
-            return (
-              <line
-                key={`${a}-${b}`}
-                x1={ta.label[0]}
-                y1={ta.label[1]}
-                x2={tb.label[0]}
-                y2={tb.label[1]}
-                className="rk-lane"
-                strokeWidth={1.4 / view.k}
+        <rect x={-w} y={-h} width={3 * w} height={3 * h} className="rk-sea" />
+        <rect x={-w} y={-h} width={3 * w} height={3 * h} fill={`url(#${uid}-sea)`} />
+        <path d={map.sea} className="rk-coast-halo" strokeWidth={14 / Math.sqrt(px * 2.5)} />
+        {map.lanes.map(([a, b]) => {
+          const ta = map.territories.find((t) => t.id === a)!;
+          const tb = map.territories.find((t) => t.id === b)!;
+          return (
+            <line
+              key={`${a}-${b}`}
+              x1={ta.label[0]}
+              y1={ta.label[1]}
+              x2={tb.label[0]}
+              y2={tb.label[1]}
+              className="rk-lane"
+              strokeWidth={1.4 / px}
+              strokeDasharray={`${4 / px} ${4 / px}`}
+            />
+          );
+        })}
+        {map.territories.map((t) => {
+          const who = owner[t.id] ?? NEUTRAL;
+          const isTarget = targets.includes(t.id);
+          const cls = [
+            'rk-terr',
+            `rk-wash--${tint.get(t.continent)}`,
+            t.id === selected && 'is-selected',
+            isTarget && 'is-target',
+            aiming && !isTarget && t.id !== selected && 'is-dim',
+            t.id === flash && 'is-flash',
+            onPick && 'is-pickable',
+          ]
+            .filter(Boolean)
+            .join(' ');
+          return (
+            <g key={t.id} className={cls} data-t={t.id} onClick={() => pick(t.id)}>
+              <title>{t.name}</title>
+              <path d={t.path} className="rk-terr__land" />
+              <path
+                d={t.path}
+                className="rk-terr__edge"
+                clipPath={`url(#${uid}-${t.id})`}
+                style={{ stroke: tintOf(who, players) }}
+                strokeWidth={Math.max(4, 8 / px)}
               />
-            );
-          })}
-          {map.territories.map((t) => {
-            const who = owner[t.id] ?? NEUTRAL;
-            const isTarget = targets.includes(t.id);
-            const cls = [
-              'rk-terr',
-              `rk-wash--${tint.get(t.continent)}`,
-              t.id === selected && 'is-selected',
-              isTarget && 'is-target',
-              aiming && !isTarget && t.id !== selected && 'is-dim',
-              t.id === flash && 'is-flash',
-              onPick && 'is-pickable',
-            ]
-              .filter(Boolean)
-              .join(' ');
-            return (
-              <g key={t.id} className={cls} onClick={() => pick(t.id)}>
-                <title>{t.name}</title>
-                <path d={t.path} className="rk-terr__land" />
-                <path
-                  d={t.path}
-                  className="rk-terr__edge"
-                  clipPath={`url(#${uid}-${t.id})`}
-                  style={{ stroke: tintOf(who, players) }}
-                  strokeWidth={9 / Math.sqrt(view.k)}
-                />
-                <path d={t.path} className="rk-terr__line" strokeWidth={0.8 / view.k} />
-              </g>
-            );
-          })}
-          <path d={map.sea} className="rk-coast" strokeWidth={2 / Math.sqrt(view.k)} />
-          {map.territories.map((t) => {
-            const who = owner[t.id] ?? NEUTRAL;
-            const [x, y] = t.label;
-            const extra = staged[t.id] ?? 0;
-            return (
-              <g key={t.id} className="rk-roundel" onClick={() => pick(t.id)}>
-                <circle cx={x} cy={y} r={r} style={{ fill: tintOf(who, players) }} />
-                <text x={x} y={y} dy="0.36em" fontSize={r * 1.15}>
-                  {(armies[t.id] ?? 0) + extra}
+              <path
+                d={t.path}
+                className="rk-terr__line"
+                strokeWidth={(isTarget || t.id === selected ? 2.4 : 0.8) / px}
+              />
+            </g>
+          );
+        })}
+        <path d={map.sea} className="rk-coast" strokeWidth={1.8 / Math.sqrt(px)} />
+        {map.territories.map((t) => {
+          const who = owner[t.id] ?? NEUTRAL;
+          const [x, y] = t.label;
+          const extra = staged[t.id] ?? 0;
+          return (
+            <g key={t.id} className="rk-roundel" data-roundel={t.id} onClick={() => pick(t.id)}>
+              <circle cx={x} cy={y} r={r} style={{ fill: tintOf(who, players) }} />
+              <text x={x} y={y} dy="0.36em" fontSize={r * 1.15}>
+                {(armies[t.id] ?? 0) + extra}
+              </text>
+              {extra > 0 && (
+                <text x={x + r * 1.1} y={y - r * 0.9} className="rk-roundel__extra" fontSize={r}>
+                  +{extra}
                 </text>
-                {extra > 0 && (
-                  <text x={x + r * 1.1} y={y - r * 0.9} className="rk-roundel__extra" fontSize={r}>
-                    +{extra}
-                  </text>
-                )}
-                {showNames && (
-                  <text x={x} y={y + r + font * 1.1} className="rk-name" fontSize={font}>
-                    {t.name}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </g>
+              )}
+              {showNames && (
+                <text x={x} y={y + r + font * 1.1} className="rk-name" fontSize={font}>
+                  {t.name}
+                </text>
+              )}
+            </g>
+          );
+        })}
       </svg>
-      {zoomable && view.k > 1.01 && (
-        <button type="button" className="rk-map__whole" onClick={() => setView(WHOLE)}>
-          Whole map
+      {zoomable && (
+        <button
+          type="button"
+          className="rk-map__whole"
+          onClick={() => setView({ cx: w / 2, cy: h / 2, z: shown.z > 1.01 ? 1 : cover })}
+        >
+          {shown.z > 1.01 ? 'Whole map' : 'Closer'}
         </button>
       )}
     </div>

@@ -30,6 +30,8 @@ import {
   startWouldBegin,
   transferHost,
   lobbyStats,
+  nextTimerAt,
+  runTimers,
   type Avatar,
   type Ctx,
   type GameLink,
@@ -100,6 +102,8 @@ export interface UnchangedSnapshot {
   version: number;
   online: string[];
   displays: number;
+  serverNow: number;
+  timerAt?: number;
 }
 
 const ID_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789';
@@ -295,7 +299,10 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       lobbyCode: lobby.code,
       hostId: lobby.hostId,
       players: lobby.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar })),
-      options: game.optionsSchema.parse(lobby.gameOptions),
+      options: game.optionsSchema.parse({
+        ...game.defaultOptions(lobby.players.length),
+        ...lobby.gameOptions,
+      }),
       returnUrl: `${origin}/r/${lobby.code}`,
       look: msg.look ?? 'light',
     });
@@ -328,9 +335,11 @@ export function createRoomRuntime(opts: RuntimeOptions) {
 
     // A linked game the host ends here should end in its own app too (after the save).
     let ending: { gameId: string; state: unknown } | undefined;
-    const { lobby, result: playerId } = await withLobby(code, (current) => {
+    const { lobby, result: playerId } = await withLobby(code, (loaded) => {
       const c = ctx();
       ending = undefined;
+      // A game timer that came due before this message fires first.
+      const current = runTimers(loaded, c);
       if (msg.type === 'join') {
         const joined = join(
           current,
@@ -453,13 +462,22 @@ export function createRoomRuntime(opts: RuntimeOptions) {
 
     lobby = await checkLink(lobby);
 
+    // A game timer that's due fires now (there are no alarms on Vercel).
+    const due = nextTimerAt(lobby, c);
+    if (due !== null && due <= c.now) {
+      lobby = (await withLobby(code, (l) => ({ lobby: runTimers(l, ctx()), result: null }))).lobby;
+    }
+
     if (sinceVersion === lobby.version) {
+      const timerAt = nextTimerAt(lobby, c);
       const fresh = (id: string) => c.now - (presence[id] ?? 0) <= ONLINE_WINDOW_MS;
       return {
         unchanged: true,
         version: lobby.version,
         online: lobby.players.filter((p) => fresh(p.id)).map((p) => p.id),
         displays: Object.keys(presence).filter((id) => id.startsWith('tv:') && fresh(id)).length,
+        serverNow: c.now,
+        ...(timerAt !== null ? { timerAt } : {}),
       };
     }
     return snapshotFor(lobby, me, presence, c);

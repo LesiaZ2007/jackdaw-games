@@ -14,6 +14,7 @@ import {
   reassignHostIfAway,
   redeemRejoinCode,
   rename,
+  runTimers,
   setAvatar,
   setGame,
   setOptions,
@@ -425,5 +426,42 @@ describe('platform additions', () => {
       );
     for (const r of tv.reactions)
       expect(Object.keys(r).sort()).toEqual(['at', 'id', 'kind', 'playerId']);
+  });
+});
+
+describe('game timers', () => {
+  // The counter game with a clock: whoever's turn it is adds 1 by themselves every second from 5s.
+  const timed = {
+    ...counterGame,
+    meta: { ...counterGame.meta, id: 'timed' },
+    nextTimer: (s: { count: number }) => ({ id: 'tick', at: 5_000 + s.count * 1_000 }),
+    onTimer: (s: Parameters<typeof counterGame.applyAction>[0]) =>
+      counterGame.applyAction(s, s.players[s.turn]!, { type: 'add' }, null as never, 0),
+  };
+  const tctx = (now: number): Ctx => ({ now, games: { timed } });
+  const started = () => {
+    let lobby = lobbyWith(2);
+    lobby = setGame(lobby, 'p1', 'timed', tctx(1_000));
+    lobby = setOptions(lobby, 'p1', { target: 10 }, tctx(1_000));
+    return start(lobby, 'p1', { sessionId: 's1', seed: 7 }, tctx(1_000));
+  };
+
+  it('fire once due, each as a move, and the snapshot says when the next one is', () => {
+    const lobby = started();
+    expect(runTimers(lobby, tctx(4_999))).toBe(lobby);
+    const snap = snapshotFor(lobby, 'p1', {}, tctx(4_000));
+    expect(snap.timerAt).toBe(5_000);
+    expect(snap.serverNow).toBe(4_000);
+    const later = runTimers(lobby, tctx(6_500));
+    expect((later.session!.state as { count: number }).count).toBe(2);
+    expect(later.session!.seq).toBe(lobby.session!.seq + 2);
+    expect(later.version).toBe(lobby.version + 2);
+    expect(snapshotFor(later, null, {}, tctx(6_500)).timerAt).toBe(7_000);
+  });
+
+  it('can end the game', () => {
+    const over = runTimers(started(), tctx(60_000));
+    expect(over.status).toBe('results');
+    expect(over.results?.summary).toBe('Reached 10');
   });
 });

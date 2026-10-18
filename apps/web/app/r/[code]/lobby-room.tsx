@@ -191,6 +191,8 @@ export function LobbyRoom({ code }: { code: string }) {
   const bleed =
     (status === 'in_game' && Boolean(catalogEntry(snapshot?.session?.gameId)?.ui?.fullBleed)) ||
     (status === 'results' && Boolean(catalogEntry(snapshot?.results?.gameId)?.ui?.Results));
+  // A game that fits the screen (Wordhoard's board, rack and buttons) never scrolls.
+  const fit = status === 'in_game' && Boolean(catalogEntry(snapshot?.session?.gameId)?.ui?.fit);
   const wide = useMedia(WIDE);
   const wideOwn = useMedia(WIDE_OWN);
   // A game's own lobby, or a game drawn edge to edge, draws table talk in its own style.
@@ -273,7 +275,13 @@ export function LobbyRoom({ code }: { code: string }) {
   return (
     <div
       className={
-        full ? 'lobby-page lobby-page--full' : bleed ? 'lobby-page lobby-page--bleed' : 'lobby-page'
+        full
+          ? 'lobby-page lobby-page--full'
+          : bleed
+            ? 'lobby-page lobby-page--bleed'
+            : fit
+              ? 'lobby-page lobby-page--fit'
+              : 'lobby-page'
       }
     >
       <LobbyBar code={code} status={snapshot.status} onOpen={setPanel} unread={unread} />

@@ -115,7 +115,10 @@ export interface GameModule<State, Action, View, TableView, Options> {
 
   /**
    * Optional, for timed phases. The platform checks `nextTimer` lazily on every read and write
-   * (there are no alarms on Vercel) and calls `onTimer` once `now >= at`. Must not mutate.
+   * (there are no alarms on Vercel) and calls `onTimer` once `now >= at`; screens poll right at
+   * `at`, so a timer fires within a moment of it whenever anyone has the game open. A timer's
+   * time is public (it's sent to every screen). `onTimer` returning the same state means nothing
+   * happened. Must not mutate. Put deadlines a screen should count down in the table view.
    */
   nextTimer?(state: State): GameTimer | null;
   onTimer?(state: State, timerId: string, rng: Rng, now: number): State;

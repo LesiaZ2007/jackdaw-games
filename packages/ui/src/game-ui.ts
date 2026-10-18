@@ -56,6 +56,11 @@ export interface GameUi {
   /** Optional game-specific end-of-game reveal; the shell shows the recap timeline otherwise. */
   Reveal?: ComponentType<{ result: GameResult; players: ScreenPlayer[]; me: string | null }>;
   /**
+   * Optional: drawn on the TV's results in place of the recap, beside the standings (Wordhoard:
+   * the finished board). It fills a size container, so it can fit itself to the space.
+   */
+  TvReveal?: ComponentType<{ result: GameResult; players: ScreenPlayer[] }>;
+  /**
    * Optional: the whole end-of-game screen on phones, in the game's own look, in place of
    * Jackdaw's results (Secret Hitler: secret-hitler.online's victory popup over the board). It
    * gets the host's two choices to offer.
@@ -84,6 +89,12 @@ export interface GameUi {
    * the game (`seatTransition`) when it starts and ends.
    */
   fullBleed?: boolean;
+  /**
+   * The phone screen fits the height under Jackdaw's bar and never scrolls (Wordhoard: the whole
+   * board, the rack and the buttons at once). The screen's root should fill its parent (`flex: 1`
+   * in a flex column); it is a size container named `game` for container queries.
+   */
+  fit?: boolean;
 }
 
 /** What the platform adds to the engine's screen props. */

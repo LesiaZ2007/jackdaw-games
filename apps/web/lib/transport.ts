@@ -1,5 +1,6 @@
 import type { ClientMessage, ErrorBody, LobbySnapshot, LobbyStatus } from '@jackdaw/engine';
 import type { UnchangedSnapshot } from '@jackdaw/server';
+import { observeServerTime, serverClock } from './clock';
 
 /**
  * RoomTransport: how a screen talks to its lobby. Game and lobby UI only use this interface,
@@ -103,6 +104,8 @@ export class PollingTransport implements RoomTransport {
     onError?: (e: TransportError) => void;
   }>();
   private timer: ReturnType<typeof setTimeout> | null = null;
+  /** When the game's next timer fires (server time), to poll right then. */
+  private timerAt: number | null = null;
   private inFlight = false;
   private idlePolls = 0;
   private stopped = false;
@@ -133,6 +136,7 @@ export class PollingTransport implements RoomTransport {
   }
 
   async send(message: ClientMessage): Promise<LobbySnapshot> {
+    const sentAt = Date.now();
     const res = await this.fetch(this.url, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...identityHeaders(this.opts) },
@@ -141,6 +145,7 @@ export class PollingTransport implements RoomTransport {
     });
     if (!res.ok) throw await readError(res);
     const snapshot = (await res.json()) as LobbySnapshot;
+    this.heard(snapshot, sentAt);
     // The reply is a fresh read, so it stands in for the "poll right after sending".
     this.idlePolls = 0;
     this.publish(snapshot);
@@ -178,7 +183,15 @@ export class PollingTransport implements RoomTransport {
       idlePolls: this.idlePolls,
       hidden: Boolean(this.doc?.hidden),
     });
-    this.timer = setTimeout(() => void this.poll(), delay);
+    // A game timer due sooner (the next deal, a turn running out): poll just after it.
+    const untilTimer = this.timerAt === null ? Infinity : this.timerAt - serverClock() + 150;
+    this.timer = setTimeout(() => void this.poll(), Math.max(100, Math.min(delay, untilTimer)));
+  }
+
+  /** Learn the server's clock and the game's next timer from any reply. */
+  private heard(body: { serverNow?: number; timerAt?: number }, sentAt: number) {
+    if (typeof body.serverNow === 'number') observeServerTime(body.serverNow, sentAt, Date.now());
+    this.timerAt = typeof body.timerAt === 'number' ? body.timerAt : null;
   }
 
   private publish(snapshot: LobbySnapshot) {
@@ -195,12 +208,14 @@ export class PollingTransport implements RoomTransport {
     this.timer = null;
     try {
       const v = this.snapshot ? `?v=${this.snapshot.version}` : '';
+      const sentAt = Date.now();
       const res = await this.fetch(this.url + v, {
         headers: identityHeaders(this.opts),
         cache: 'no-store',
       });
       if (!res.ok) throw await readError(res);
       const body = (await res.json()) as LobbySnapshot | UnchangedSnapshot;
+      this.heard(body, sentAt);
       if ('unchanged' in body) {
         this.idlePolls++;
         if (this.snapshot) this.publish(mergeUnchanged(this.snapshot, body));

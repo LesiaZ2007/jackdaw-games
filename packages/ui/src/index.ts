@@ -10,3 +10,4 @@ export * from './cover';
 export * from './celebrate';
 export * from './reactions';
 export * from './lobby-chat';
+export * from './clock';

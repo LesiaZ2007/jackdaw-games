@@ -154,6 +154,9 @@ export function AttackDock({
         <Plaque small disabled={busy} onClick={onCancel}>
           Back
         </Plaque>
+        <Plaque small disabled={busy} onClick={() => send({ type: 'endAttack' })}>
+          Stop
+        </Plaque>
         <Plaque disabled={busy} onClick={() => send({ type: 'attack', from, to, mode: 'blitz' })}>
           Blitz
         </Plaque>

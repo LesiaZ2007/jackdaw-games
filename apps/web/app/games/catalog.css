@@ -41,11 +41,6 @@
 .cat-linkbtn:focus-visible,
 .cat-select:focus-visible,
 .cat-stepper button:focus-visible,
-.cat-checks input:focus-visible + span,
-.cat-pics:focus-visible {
-  outline: 3px solid var(--or);
-  outline-offset: 2px;
-}
 
 /* ── Catalog layout ──────────────────────────────────────────────────────── */
 .cat {
@@ -71,7 +66,7 @@
   display: none;
 }
 
-/* ── Filters ─────────────────────────────────────────────────────────────── */
+/* ── Filters: one row along the top (players on its own row on phones) ───── */
 .cat-filter {
   display: grid;
   gap: 6px;
@@ -133,47 +128,6 @@
   color: var(--ink);
   background: var(--paper);
   text-transform: none;
-}
-.cat-checks {
-  display: none;
-  border: 0;
-  margin: 0;
-  padding: 0;
-  gap: 2px;
-}
-.cat-checks label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 32px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.cat-checks input {
-  position: absolute;
-  opacity: 0;
-  width: 1px;
-  height: 1px;
-}
-.cat-checks span::before {
-  content: '';
-  flex: none;
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--ink);
-  background: var(--paper);
-}
-.cat-checks span {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.cat-checks input:checked + span::before {
-  background: var(--ink);
-  box-shadow: inset 0 0 0 2px var(--paper);
-}
-.cat-checks input:checked + span {
-  font-weight: 700;
 }
 
 /* ── Shelf ───────────────────────────────────────────────────────────────── */
@@ -237,6 +191,18 @@
 .cat-empty {
   margin: var(--space-5) 0;
   font-size: 18px;
+}
+
+@media (min-width: 720px) {
+  .cat-filters {
+    grid-template-columns: max-content repeat(3, minmax(120px, 210px));
+    justify-content: start;
+  }
+  .cat-filter--stepper {
+    grid-column: auto;
+    gap: var(--space-3);
+    min-width: max-content;
+  }
 }
 
 /* ── Detail ──────────────────────────────────────────────────────────────── */
@@ -484,30 +450,12 @@
   .cat {
     height: 100dvh;
     min-height: 0;
-    grid-template-columns: 250px minmax(0, 1fr) clamp(400px, 34vw, 560px);
-    grid-template-rows: auto minmax(0, 1fr);
-    grid-template-areas: 'bar bar bar' 'filters shelf panel';
+    grid-template-columns: minmax(0, 1fr) clamp(400px, 34vw, 560px);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas: 'bar bar' 'filters panel' 'shelf panel';
   }
   .cat-filters {
-    grid-template-columns: 1fr;
-    align-content: start;
-    gap: var(--space-3);
-    padding: var(--space-4) var(--space-4);
-    border-right: 2px solid var(--ink);
-    overflow-y: auto;
-  }
-  .cat-filter--stepper {
-    grid-template-columns: 1fr;
-    grid-column: auto;
-  }
-  .cat-stepper {
-    justify-content: flex-start;
-  }
-  .cat-select {
-    display: none;
-  }
-  .cat-checks {
-    display: grid;
+    padding-inline: var(--space-5);
   }
   .cat-shelf {
     padding: var(--space-3) var(--space-5) var(--space-6);

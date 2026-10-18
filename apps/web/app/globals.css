@@ -148,7 +148,7 @@ a {
   }
 }
 
-/* Shelves: carousels of game covers */
+/* The games on the home page: one grid with the filters on top */
 .home-shelves {
   display: grid;
   gap: var(--space-6);
@@ -169,72 +169,22 @@ a {
 .home-shelves__head h2 {
   font-size: var(--step-4);
 }
-.shelf-row {
+.home-games {
   display: grid;
   gap: var(--space-3);
   width: 100%;
   max-width: 1180px;
   margin-inline: auto;
-}
-.shelf-row__head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-3);
   padding-inline: var(--gutter);
 }
-.shelf-row__title {
-  font-size: var(--step-2);
-}
-.shelf-row__blurb {
-  margin: 4px 0 0;
-  color: var(--ink-2);
-}
-.shelf-row__pager {
-  display: none;
-  gap: 6px;
-}
-.shelf-row__pager .jd-iconbtn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-.shelf-row__next svg {
-  transform: scaleX(-1);
-}
-@media (hover: hover) and (pointer: fine) {
-  .shelf-row__pager {
-    display: flex;
-  }
-}
-.shelf-row__track {
-  list-style: none;
-  margin: 0;
-  display: flex;
-  gap: var(--space-5);
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: var(--gutter);
-  /* room for the covers' box edges and lift, which would otherwise be clipped */
-  padding: 6px var(--gutter) 16px;
-  scrollbar-width: none;
-}
-.shelf-row__track::-webkit-scrollbar {
-  display: none;
-}
-.shelf-row__track li {
-  flex: none;
-  width: clamp(190px, 52vw, 236px);
-  scroll-snap-align: start;
+.home-games .cat-filters {
+  grid-area: auto;
+  padding: 0;
 }
 @media (min-width: 1240px) {
-  .shelf-row__track,
-  .shelf-row__head,
+  .home-games,
   .home-shelves__head {
     padding-inline: var(--space-6);
-  }
-  .shelf-row__track {
-    scroll-padding-inline: var(--space-6);
   }
 }
 

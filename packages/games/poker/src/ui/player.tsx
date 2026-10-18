@@ -10,7 +10,7 @@ import {
   type Outcome,
   type ScreenPlayer,
 } from '@jackdaw/ui';
-import { bestHand } from '../cards';
+import { bestHand, startingHandName } from '../cards';
 import {
   choices,
   lastHandPlayed,
@@ -96,8 +96,13 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const done = v.phase === 'done';
   const meP = byId.get(v.me);
   const send = (a: PokerAction) => sendAction(a);
+  // What you're holding, in words: your two cards before the flop, then your best five.
   const hand =
-    v.hole.length === 2 && v.board.length >= 3 ? bestHand([...v.hole, ...v.board]).name : null;
+    v.hole.length !== 2
+      ? null
+      : v.board.length >= 3
+        ? bestHand([...v.hole, ...v.board]).name
+        : startingHandName(v.hole);
   const folded = v.folded.includes(v.me);
 
   return (

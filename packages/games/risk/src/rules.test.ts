@@ -4,7 +4,13 @@ import { NEUTRAL, reinforcementCount, territoriesOf } from './board';
 import type { Card } from './cards';
 import { MAPS } from './maps';
 import type { Mission } from './missions';
-import { risk as game, type RiskAction, type RiskOptions, type RiskState } from './rules';
+import {
+  risk as game,
+  legalMoves,
+  type RiskAction,
+  type RiskOptions,
+  type RiskState,
+} from './rules';
 
 const ids3 = ['a', 'b', 'c'];
 const opts = (o: Partial<RiskOptions> = {}): RiskOptions => ({ ...game.defaultOptions(3), ...o });
@@ -555,5 +561,155 @@ describe('winning', () => {
       'c',
     ]);
     expect(game.announce!(s3, take(s3))).toContain('{c} is knocked out by {a}');
+  });
+});
+
+describe('the turn timer', () => {
+  const timed = (o: Partial<RiskOptions> = {}) =>
+    game.setup({
+      playerIds: ids3,
+      options: opts({ turnTimer: '1 minute', ...o }),
+      rng: createRng(1),
+      now: 1000,
+    });
+  const fire = (s: RiskState) => game.onTimer!(s, 'turn', createRng(9), s.actBy!);
+
+  it('is off unless chosen', () => {
+    expect(game.nextTimer!(start())).toBeNull();
+    const s = timed();
+    expect(game.nextTimer!(s)).toEqual({ id: 'turn', at: 61_000 });
+  });
+
+  it('restarts when the turn passes', () => {
+    const s = staged({ a: ['alaska'] }, 'fortify');
+    const t = { ...s, turnSecs: 60, actBy: 5 };
+    const s1 = act(t, 'a', { type: 'endTurn' }, createRng(1), 10_000);
+    expect(s1.actBy).toBe(70_000);
+  });
+
+  it('finishes a turn from every phase', () => {
+    const s = timed();
+    const p = s.turn;
+    // Reinforce, with a forced trade first (three cavalry, the first set: 4).
+    const hand = ['p', 'q', 'r', 's', 't'].map((id) => card(id, 'cavalry'));
+    const r = fire({ ...s, hands: { ...s.hands, [p]: hand } });
+    expect(r.turn).not.toBe(p);
+    expect(r.hands[p]).toHaveLength(2);
+    expect(armiesOf(r, p)).toBe(armiesOf(s, p) + s.toPlace + 4);
+    // Attack and fortify.
+    for (const phase of ['attack', 'fortify'] as const)
+      expect(fire({ ...s, phase, toPlace: 0 }).turn).not.toBe(p);
+    // Occupy: the minimum moves in.
+    const big = staged({ a: ['alaska'], armies: { alaska: 4, kamchatka: 1 } });
+    const o = act(
+      { ...big, turnSecs: 60, actBy: 1 },
+      'a',
+      {
+        type: 'attack',
+        from: 'alaska',
+        to: 'kamchatka',
+        mode: 'roll',
+      },
+      dice(6, 6, 6, 1),
+    );
+    const o1 = fire(o);
+    expect([o1.armies.alaska, o1.armies.kamchatka, o1.turn]).toEqual([1, 3, 'b']);
+    // Unknown timers do nothing.
+    expect(game.onTimer!(s, 'other', createRng(1), 99_999)).toBe(s);
+  });
+
+  it('spreads everyone’s unplaced armies when the draft runs out', () => {
+    const s = timed({ setup: 'Draft' });
+    const s1 = fire(s);
+    expect(s1.phase).toBe('reinforce');
+    for (const p of ids3) expect(armiesOf(s1, p)).toBe(35);
+  });
+
+  it('says who the game is waiting on', () => {
+    const d = start(ids3, { setup: 'Draft' });
+    expect(game.waitingOn!(d)).toEqual(ids3);
+    const placed = act(d, 'b', {
+      type: 'draft',
+      placements: { [territoriesOf(d.owner, 'b')[0]!]: d.drafts!.b!.left },
+    });
+    expect(game.waitingOn!(placed)).toEqual(['a', 'c']);
+    const s = start();
+    expect(game.waitingOn!(s)).toEqual([s.turn]);
+  });
+});
+
+describe('random whole games', () => {
+  /** The same state with every hidden thing swapped for something else. */
+  function scrambled(s: RiskState, keep?: string): RiskState {
+    const fake = (p: string): Card[] =>
+      p === keep ? s.hands[p]! : [card(`fake-${p}`, 'wild', null)];
+    return {
+      ...s,
+      hands: Object.fromEntries(s.seats.map((p) => [p, fake(p)])),
+      deck: [],
+      discard: [card('fake-discard', 'cavalry')],
+      missions:
+        s.missions &&
+        Object.fromEntries(
+          s.seats.map((p) => [p, p === keep ? s.missions![p]! : { kind: 'territories', n: 24 }]),
+        ),
+      drafts:
+        s.drafts &&
+        Object.fromEntries(
+          s.seats.map((p) => {
+            const d = s.drafts![p]!;
+            return [p, p === keep || !d.placed ? d : { ...d, placed: { nowhere: d.left } }];
+          }),
+        ),
+    } as RiskState;
+  }
+
+  const configs: [string[], Partial<RiskOptions>][] = [];
+  for (const n of [2, 3, 4, 5, 6])
+    for (const map of ['World', 'Realm'] as const)
+      for (const goal of ['Secret missions', 'World domination'] as const)
+        configs.push([
+          ['a', 'b', 'c', 'd', 'e', 'f'].slice(0, n),
+          { map, goal, setup: n % 2 ? 'Draft' : 'Quick', cardSets: n > 3 ? 'Fixed' : 'Rising' },
+        ]);
+
+  let finished = 0;
+  it.each(configs.map((c, i) => [i, ...c] as const))(
+    'game %i (%j, %j) stays sound and never leaks',
+    (i, players, o) => {
+      const rng = createRng(100 + i);
+      let s = start(players, o, 100 + i);
+      for (let step = 0; step < 2500 && !game.getResult(s); step++) {
+        const movers = game.waitingOn!(s);
+        const pid = movers[rng.int(movers.length)]!;
+        const moves = legalMoves(s, pid);
+        expect(moves.length, `${s.phase} for ${pid}`).toBeGreaterThan(0);
+        // Mostly attack while attacking, so games move along.
+        const attacks = moves.filter((m) => m.type === 'attack');
+        const move = attacks.length && rng.next() < 0.8 ? rng.pick(attacks) : rng.pick(moves);
+        s = game.applyAction(s, pid, move, rng, step * 1000);
+        // The board stays sound.
+        expect(Object.keys(s.owner)).toHaveLength(42);
+        for (const t of Object.keys(s.owner)) expect(s.armies[t]).toBeGreaterThanOrEqual(1);
+        // The table view never depends on anything hidden…
+        if (s.phase !== 'over') {
+          const t = scrambled(s);
+          const tv = game.getTableView(s);
+          // Card counts are public; the scrambled hands differ in size, so set those aside.
+          expect({ ...game.getTableView(t), handCounts: tv.handCounts }).toEqual(tv);
+          // …and nobody's view depends on anyone else's secrets.
+          for (const p of s.seats) {
+            expect(game.getPlayerView(scrambled(s, p), p)).toEqual(game.getPlayerView(s, p));
+          }
+        }
+      }
+      if (game.getResult(s)) finished++;
+    },
+    30_000,
+  );
+
+  it('mostly finish', () => {
+    // Missions games end quickly; random world domination can wander for a long time.
+    expect(finished).toBeGreaterThan(configs.length / 2);
   });
 });

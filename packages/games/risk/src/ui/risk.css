@@ -1,0 +1,173 @@
+/* Risk: a printed war map. Cream card stock, an inked coast over an engraved sea, continents
+   washed in heraldic colours, every territory edged inside in its owner's colour. Tokens only;
+   day and dark follow the shell. */
+
+/* ---------- The map ---------- */
+
+.rk-map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+}
+.rk-map > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.rk-map--zoom > svg {
+  touch-action: none;
+  cursor: grab;
+}
+.rk-map--zoom > svg:active {
+  cursor: grabbing;
+}
+
+.rk-sea {
+  fill: color-mix(in srgb, var(--azure) 9%, var(--paper));
+}
+.rk-sea-line {
+  stroke: var(--azure);
+  stroke-opacity: 0.16;
+  stroke-width: 0.6;
+}
+/* The engraver's ripple along every coast. */
+.rk-coast-halo {
+  fill: none;
+  stroke: var(--azure);
+  stroke-opacity: 0.22;
+  stroke-width: 9;
+  stroke-linejoin: round;
+}
+.rk-coast {
+  fill: none;
+  stroke: var(--ink);
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.rk-lane {
+  stroke: var(--ink-2);
+  stroke-dasharray: 4 4;
+  stroke-opacity: 0.7;
+  pointer-events: none;
+}
+
+.rk-terr__land {
+  fill: color-mix(in srgb, var(--rk-wash) 24%, var(--paper));
+  transition: opacity 280ms var(--ease-out);
+}
+.rk-wash--gules {
+  --rk-wash: var(--gules);
+}
+.rk-wash--azure {
+  --rk-wash: var(--azure);
+}
+.rk-wash--vert {
+  --rk-wash: var(--vert);
+}
+.rk-wash--sable {
+  --rk-wash: var(--sable);
+}
+.rk-wash--purpure {
+  --rk-wash: var(--purpure);
+}
+.rk-wash--tenne {
+  --rk-wash: var(--tenne);
+}
+.rk-terr__edge {
+  fill: none;
+  stroke-opacity: 0.75;
+  pointer-events: none;
+}
+.rk-terr__line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.55;
+  pointer-events: none;
+}
+.rk-terr.is-pickable {
+  cursor: pointer;
+}
+.rk-terr.is-dim .rk-terr__land {
+  opacity: 0.45;
+}
+.rk-terr.is-target .rk-terr__line {
+  stroke-opacity: 1;
+  stroke-width: 2.4;
+  stroke-dasharray: 5 3;
+}
+.rk-terr.is-selected .rk-terr__land {
+  fill: color-mix(in srgb, var(--rk-wash) 40%, var(--paper));
+}
+.rk-terr.is-selected .rk-terr__line {
+  stroke-opacity: 1;
+  stroke-width: 3;
+}
+.rk-terr.is-flash .rk-terr__land {
+  animation: rk-flash 900ms var(--ease-out) 2;
+}
+@keyframes rk-flash {
+  50% {
+    fill: color-mix(in srgb, var(--rk-wash) 55%, var(--paper));
+  }
+}
+
+.rk-roundel {
+  cursor: inherit;
+}
+.rk-roundel circle {
+  stroke: var(--paper);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.rk-roundel text {
+  font-family: var(--font-plaque);
+  font-weight: 700;
+  text-anchor: middle;
+  fill: var(--on-fill);
+  pointer-events: none;
+}
+.rk-roundel .rk-roundel__extra {
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
+}
+.rk-roundel .rk-name {
+  fill: var(--ink);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.rk-map__whole {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  font: 600 var(--step--1) / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 0 0.05em 0 var(--shadow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rk-terr__land {
+    transition: none;
+  }
+  .rk-terr.is-flash .rk-terr__land {
+    animation: none;
+  }
+}

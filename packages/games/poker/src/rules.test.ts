@@ -1,6 +1,6 @@
 import { createRng, GameError } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
-import { bestHand, compareScore, handName, scoreFive } from './cards';
+import { bestHand, compareScore, handName, scoreFive, startingHandName } from './cards';
 import {
   DEAL_AFTER_MS,
   choices,
@@ -61,6 +61,9 @@ describe('hand ranking', () => {
     expect(b.cards).toHaveLength(5);
     expect(handName(scoreFive('Kc Kd Kh 5s 5c'.split(' ')))).toBe('Full house, kings over fives');
     expect(handName(scoreFive('Ts Js Qs Ks As'.split(' ')))).toBe('Royal flush');
+    expect(startingHandName(['7c', '7h'])).toBe('A pair of sevens');
+    expect(startingHandName(['6d', 'Ad'])).toBe('Ace and six, same suit');
+    expect(startingHandName(['Jc', 'Kh'])).toBe('King and jack, different suits');
   });
 });
 

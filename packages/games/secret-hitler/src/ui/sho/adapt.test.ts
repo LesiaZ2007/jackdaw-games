@@ -8,7 +8,7 @@ import { LobbyState } from './types';
 
 const rng = createRng(3);
 const ids = ['p0', 'p1', 'p2', 'p3', 'p4'];
-const NAMES = ['Lesia', 'Bran', 'Cerys', 'Dafydd', 'Elin'];
+const NAMES = ['Wren', 'Rook', 'Magpie', 'Robin', 'Finch'];
 const CRESTS = ['helm', 'crown', 'swords', 'shield', 'tower'];
 const players: ScreenPlayer[] = ids.map((id, i) => ({
   id,
@@ -38,17 +38,17 @@ describe('the game state for secret-hitler.online’s screens', () => {
     const g = seen(table(), 'p2');
     expect(g.playerOrder).toEqual(NAMES);
     expect(g.icon).toMatchObject({
-      Lesia: { crest: 'helm', tint: 'slate', id: 'p0' },
-      Elin: { crest: 'tower', tint: 'slate', id: 'p4' },
+      Wren: { crest: 'helm', tint: 'slate', id: 'p0' },
+      Finch: { crest: 'tower', tint: 'slate', id: 'p4' },
     });
-    expect(namesFor(ids, players).idOf('Cerys')).toBe('p2');
+    expect(namesFor(ids, players).idOf('Magpie')).toBe('p2');
   });
 
   it('shows a Liberal only their own role, and a TV nobody’s', () => {
     const s = table();
     const liberal = seen(s, 'p2');
-    expect(liberal.players.Cerys!.id).toBe('LIBERAL');
-    for (const n of ['Lesia', 'Bran', 'Dafydd', 'Elin'])
+    expect(liberal.players.Magpie!.id).toBe('LIBERAL');
+    for (const n of ['Wren', 'Rook', 'Robin', 'Finch'])
       expect(liberal.players[n]!.id).toBeUndefined();
     const tv = seen(s, null);
     for (const n of NAMES) expect(tv.players[n]!.id).toBeUndefined();
@@ -58,9 +58,9 @@ describe('the game state for secret-hitler.online’s screens', () => {
   it('shows a Fascist the team, and Hitler the Fascists at five players', () => {
     const s = table();
     const fascist = seen(s, 'p1');
-    expect(fascist.players.Lesia!.id).toBe('HITLER');
-    expect(fascist.players.Cerys!.id).toBeUndefined();
-    expect(seen(s, 'p0').players.Bran!.id).toBe('FASCIST');
+    expect(fascist.players.Wren!.id).toBe('HITLER');
+    expect(fascist.players.Magpie!.id).toBeUndefined();
+    expect(seen(s, 'p0').players.Rook!.id).toBe('FASCIST');
   });
 
   it('keeps a vote secret until it’s counted, then shows it', () => {
@@ -68,12 +68,12 @@ describe('the game state for secret-hitler.online’s screens', () => {
     s = act(s, 'p3', { type: 'vote', ja: true });
     const voting = seen(s, 'p4');
     expect(voting.state).toBe(LobbyState.CHANCELLOR_VOTING);
-    expect(voting.chancellor).toBe('Cerys');
-    expect(voting.userVotes).toEqual({ Dafydd: false });
+    expect(voting.chancellor).toBe('Magpie');
+    expect(voting.userVotes).toEqual({ Robin: false });
     for (const id of ['p0', 'p1', 'p2', 'p4']) s = act(s, id, { type: 'vote', ja: id !== 'p1' });
     const counted = seen(s, 'p4');
     expect(counted.state).toBe(LobbyState.LEGISLATIVE_PRESIDENT);
-    expect(counted.userVotes).toMatchObject({ Bran: false, Dafydd: true });
+    expect(counted.userVotes).toMatchObject({ Rook: false, Robin: true });
   });
 
   it('gives only the president and then the chancellor their cards', () => {
@@ -125,9 +125,9 @@ describe('the end of the game', () => {
     const result = game.getResult(s)!;
     const g = finalGameState(result.reveal as never, players);
     expect(g.state).toBe(LobbyState.FASCIST_VICTORY_ELECTION);
-    expect(g.players.Lesia!.id).toBe('HITLER');
-    expect(g.players.Cerys!.id).toBe('LIBERAL');
-    expect(g.chancellor).toBe('Lesia');
+    expect(g.players.Wren!.id).toBe('HITLER');
+    expect(g.players.Magpie!.id).toBe('LIBERAL');
+    expect(g.chancellor).toBe('Wren');
     expect(Object.values(g.userVotes)).toEqual([true, true, true, true, true]);
   });
 });

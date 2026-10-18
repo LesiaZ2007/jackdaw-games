@@ -17,7 +17,7 @@ test.afterAll(async () => {
   await avalon?.close();
 });
 
-const NAMES = ['Lesia', 'Bran', 'Cerys', 'Dafydd', 'Elin'];
+const NAMES = ['Wren', 'Rook', 'Magpie', 'Robin', 'Finch'];
 
 async function phone(
   browser: Browser,
@@ -33,7 +33,7 @@ async function phone(
 const mySeat = (page: Page, name: string) =>
   page.getByRole('button', { name: `${name} (you)` }).first();
 
-async function hostAvalon(page: Page, name = 'Lesia'): Promise<string> {
+async function hostAvalon(page: Page, name = 'Wren'): Promise<string> {
   await page.goto('/');
   // A name typed before the page has loaded can be lost, so try again until the lobby opens
   // (and stop if a slow first try got there after all).
@@ -80,14 +80,14 @@ test('five phones gather in Avalon’s lobby, land in their own Avalon seats, an
     await expect(host.getByRole('button', { name: new RegExp(`^${name}`) }).first()).toBeVisible();
 
   // Only the host sets Avalon up; everyone sees the deal change.
-  const bran = others[0]!;
-  await expect(bran.getByRole('combobox', { name: 'Roles' })).toHaveCount(0);
+  const rook = others[0]!;
+  await expect(rook.getByRole('combobox', { name: 'Roles' })).toHaveCount(0);
   await host.getByRole('combobox', { name: 'Roles' }).selectOption('full');
-  const deal = bran.getByRole('list', { name: 'Roles dealt for 5 players' });
+  const deal = rook.getByRole('list', { name: 'Roles dealt for 5 players' });
   await expect(deal).toContainText('Percival');
   await expect(deal).toContainText('Morgana');
   await expect(
-    bran.getByText('Not enough evil seats for Mordred and Oberon yet.', { exact: false }),
+    rook.getByText('Not enough evil seats for Mordred and Oberon yet.', { exact: false }),
   ).toBeVisible();
 
   // The TV's lobby is Avalon's round table too, with the way to join beside it.
@@ -98,13 +98,13 @@ test('five phones gather in Avalon’s lobby, land in their own Avalon seats, an
   await tvLobby.close();
 
   // Table talk in Avalon's own style: on phones the bar's chat button opens Avalon's drawer.
-  await bran.getByRole('button', { name: /^Chat/ }).click();
-  const talk = bran.getByRole('complementary', { name: 'Table talk' });
+  await rook.getByRole('button', { name: /^Chat/ }).click();
+  const talk = rook.getByRole('complementary', { name: 'Table talk' });
   await talk.getByLabel('Message').fill('Who wants to be Merlin?');
   await talk.getByRole('button', { name: 'Send' }).click();
   await expect(talk.getByText('Who wants to be Merlin?')).toBeVisible();
   await expect(host.getByRole('button', { name: 'Chat, 1 unread' })).toBeVisible();
-  await bran.keyboard.press('Escape');
+  await rook.keyboard.press('Escape');
 
   // Start: Jackdaw opens the Avalon room, and every phone lands on its own seat.
   await host.getByRole('button', { name: 'Deal the roles: start Avalon' }).click();
@@ -135,17 +135,17 @@ test('five phones gather in Avalon’s lobby, land in their own Avalon seats, an
   expect(tvRead.tableView).toEqual({ avalonCode: room.code, avalonUrl: avalon.url });
 
   // Coming back mid-game offers the way back rather than bouncing straight out again.
-  await bran.goto(`/r/${code}`);
-  await expect(bran.getByText('Avalon is underway')).toBeVisible();
-  await expect(bran.getByRole('link', { name: 'Go to your seat' })).toHaveAttribute(
+  await rook.goto(`/r/${code}`);
+  await expect(rook.getByText('Avalon is underway')).toBeVisible();
+  await expect(rook.getByRole('link', { name: 'Go to your seat' })).toHaveAttribute(
     'href',
-    `${avalon.url}/j/${room.code}#seat=${seatOf('Bran').playerId}.${seatOf('Bran').token}`,
+    `${avalon.url}/j/${room.code}#seat=${seatOf('Rook').playerId}.${seatOf('Rook').token}`,
   );
 
   // A latecomer watches: Avalon's table, with a link to open it.
   const late = await phone(browser);
   await late.goto(`/r/${code}`);
-  await late.getByLabel('Your name').fill('Ffion');
+  await late.getByLabel('Your name').fill('Heron');
   await late.getByRole('button', { name: 'Watch, and play next game' }).click();
   await expect(late.getByRole('link', { name: 'Open Avalon’s table' })).toHaveAttribute(
     'href',
@@ -185,8 +185,8 @@ test('five phones gather in Avalon’s lobby, land in their own Avalon seats, an
   expect(stats.history[0].summary).toBe('Good wins: Merlin survived the assassination');
   expect(JSON.stringify(stats)).not.toContain('seat-token-');
   const snapshot = await (await host.request.get(`/api/lobby/${code}`)).json();
-  const lesia = room.body.players[0]!.id;
-  expect(snapshot.scores[lesia]).toEqual({ wins: 1, losses: 0, played: 1 });
+  const wren = room.body.players[0]!.id;
+  expect(snapshot.scores[wren]).toEqual({ wins: 1, losses: 0, played: 1 });
   expect(JSON.stringify(snapshot.chat)).not.toContain('seat-token-');
 });
 

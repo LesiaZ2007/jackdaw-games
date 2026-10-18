@@ -41,17 +41,17 @@ for (const [width, height, scheme] of RUNS) {
     const host = await phone(browser, width, height, scheme);
     await host.goto('/');
     await host.waitForLoadState('networkidle');
-    await host.getByLabel('Your name').fill('Lesia');
+    await host.getByLabel('Your name').fill('Wren');
     await host.getByRole('button', { name: 'Create a lobby' }).click();
     await host.waitForURL(/\/r\/[A-Z]{4}$/);
     const code = host.url().split('/').pop()!;
 
-    const bran = await phone(browser, width, height, scheme);
-    await bran.goto(`/r/${code}`);
-    await bran.waitForLoadState('networkidle');
-    await bran.getByLabel('Your name').fill('Bran');
-    await bran.getByRole('button', { name: 'Take a seat' }).click();
-    await expect(bran.getByText('At the table')).toBeVisible();
+    const rook = await phone(browser, width, height, scheme);
+    await rook.goto(`/r/${code}`);
+    await rook.waitForLoadState('networkidle');
+    await rook.getByLabel('Your name').fill('Rook');
+    await rook.getByRole('button', { name: 'Take a seat' }).click();
+    await expect(rook.getByText('At the table')).toBeVisible();
 
     const tv = await phone(browser, 1920, 1080, scheme);
     await tv.goto(`/tv/${code}`);
@@ -61,49 +61,49 @@ for (const [width, height, scheme] of RUNS) {
       .first()
       .click();
     await host.getByRole('button', { name: 'Start Rock Paper Scissors' }).click();
-    for (const p of [host, bran])
+    for (const p of [host, rook])
       await expect(p.getByRole('radiogroup', { name: 'Throw' })).toBeVisible();
     // The TV polls; let it reach the table before anyone throws, as it would in a real room.
     await expect(tv.getByText('Waiting on 2 players')).toBeVisible();
 
-    // Round 1: Lesia's rock beats Bran's scissors.
+    // Round 1: Wren's rock beats Rook's scissors.
     await throwPick(host, 'Rock');
-    await throwPick(bran, 'Scissors');
+    await throwPick(rook, 'Scissors');
     await expect(host.getByText('You won round 1')).toBeVisible();
-    await expect(bran.getByText('You lost round 1')).toBeVisible();
-    await expect(tv.getByText('Lesia takes round 1')).toBeVisible();
-    await expect(bran.getByText('Lesia beat your scissors with rock.')).toBeVisible();
+    await expect(rook.getByText('You lost round 1')).toBeVisible();
+    await expect(tv.getByText('Wren takes round 1')).toBeVisible();
+    await expect(rook.getByText('Wren beat your scissors with rock.')).toBeVisible();
     const tag = `${width}-${scheme}`;
     await shot(info, host, `r1-win-mid-${tag}`);
-    await shot(info, bran, `r1-loss-mid-${tag}`);
+    await shot(info, rook, `r1-loss-mid-${tag}`);
     await host.waitForTimeout(1500);
     await shot(info, host, `r1-win-settled-${tag}`);
-    await shot(info, bran, `r1-loss-settled-${tag}`);
+    await shot(info, rook, `r1-loss-settled-${tag}`);
     await shot(info, tv, `r1-tv-${tag}`);
     await dismiss(host);
-    await dismiss(bran);
+    await dismiss(rook);
     await shot(info, host, `r1-board-${tag}`);
 
     // Round 2: both throw rock, a stand-off.
     await throwPick(host, 'Rock');
-    await throwPick(bran, 'Rock');
+    await throwPick(rook, 'Rock');
     await expect(host.getByText('Round 2 is a stand-off')).toBeVisible();
-    await expect(bran.getByText('Round 2 is a stand-off')).toBeVisible();
+    await expect(rook.getByText('Round 2 is a stand-off')).toBeVisible();
     await host.waitForTimeout(1200);
     await shot(info, host, `r2-draw-${tag}`);
     await dismiss(host);
-    await dismiss(bran);
+    await dismiss(rook);
 
-    // Round 3 decides it: Lesia wins the game.
+    // Round 3 decides it: Wren wins the game.
     await throwPick(host, 'Paper');
-    await throwPick(bran, 'Rock');
+    await throwPick(rook, 'Rock');
     await expect(host.getByRole('status').getByText('You won', { exact: true })).toBeVisible();
-    await expect(bran.getByRole('status').getByText('You lost', { exact: true })).toBeVisible();
-    await expect(tv.getByText('Lesia wins')).toBeVisible();
+    await expect(rook.getByRole('status').getByText('You lost', { exact: true })).toBeVisible();
+    await expect(tv.getByText('Wren wins')).toBeVisible();
     await shot(info, host, `results-win-mid-${tag}`);
     await host.waitForTimeout(1600);
     await shot(info, host, `results-win-${tag}`);
-    await shot(info, bran, `results-loss-${tag}`);
+    await shot(info, rook, `results-loss-${tag}`);
     await shot(info, tv, `results-tv-${tag}`);
 
     const overflow = await host.evaluate(

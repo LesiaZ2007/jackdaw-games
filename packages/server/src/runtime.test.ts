@@ -34,13 +34,13 @@ async function snap(p: Promise<LobbySnapshot | UnchangedSnapshot>): Promise<Lobb
   return s;
 }
 
-/** Ana hosts an RPS lobby (from the catalog); Ben and Cy join. */
+/** Jay hosts an RPS lobby (from the catalog); Crow and Kite join. */
 async function threePlayerLobby(rounds = 1) {
   const env = setup();
-  const created = await env.runtime.create({ token: TOKENS.ana, name: 'Ana', gameId: 'rps' });
+  const created = await env.runtime.create({ token: TOKENS.ana, name: 'Jay', gameId: 'rps' });
   const { code } = created;
-  await env.runtime.post(code, TOKENS.ben, { type: 'join', name: 'Ben' });
-  await env.runtime.post(code, TOKENS.cy, { type: 'join', name: 'Cy' });
+  await env.runtime.post(code, TOKENS.ben, { type: 'join', name: 'Crow' });
+  await env.runtime.post(code, TOKENS.cy, { type: 'join', name: 'Kite' });
   await env.runtime.post(code, TOKENS.ana, { type: 'setOptions', options: { rounds } });
   return { ...env, code };
 }
@@ -77,9 +77,9 @@ describe('room runtime', () => {
     // The full record and stats come from their own endpoint.
     const { stats, history } = await runtime.stats(code);
     expect(history).toHaveLength(1);
-    expect(history[0]?.names[started.players[0]!.id]).toBe('Ana');
+    expect(history[0]?.names[started.players[0]!.id]).toBe('Jay');
     expect(stats.totalGames).toBe(1);
-    expect(stats.players[0]).toMatchObject({ name: 'Ana', played: 1, wins: 1, losses: 0 });
+    expect(stats.players[0]).toMatchObject({ name: 'Jay', played: 1, wins: 1, losses: 0 });
     expect(stats.games).toEqual([{ gameId: 'rps', played: 1, lastPlayedAt: expect.any(Number) }]);
 
     const again = await runtime.post(code, TOKENS.ana, { type: 'playAgain' });
@@ -133,14 +133,14 @@ describe('room runtime', () => {
     clock.advance(30_000);
     await runtime.poll(code, { token: TOKENS.ben });
     await runtime.poll(code, { token: TOKENS.cy });
-    clock.advance(35_000); // Ana last seen 65s ago, Ben and Cy 35s ago.
+    clock.advance(35_000); // Jay last seen 65s ago, Crow and Kite 35s ago.
     const s = await snap(runtime.poll(code, { token: TOKENS.cy }));
     expect(s.hostId).toBe(s.players[1]!.id);
   });
 
   it('rate-limits a device that floods messages', async () => {
     const env = setup({ rateLimit: { posts: 3, polls: 100, windowMs: 10_000 } });
-    const { code } = await env.runtime.create({ token: TOKENS.ana, name: 'Ana' });
+    const { code } = await env.runtime.create({ token: TOKENS.ana, name: 'Jay' });
     for (let i = 0; i < 3; i++)
       await env.runtime.post(code, TOKENS.ana, { type: 'chat', text: `hi ${i}` });
     await expect(
@@ -166,7 +166,7 @@ describe('room runtime', () => {
   it('refuses a taken name, carries reactions to the TV, and lets the host end a game', async () => {
     const { runtime, code } = await threePlayerLobby();
     await expect(
-      runtime.post(code, 'token-dee-0123456789', { type: 'join', name: 'ben' }),
+      runtime.post(code, 'token-dee-0123456789', { type: 'join', name: 'crow' }),
     ).rejects.toMatchObject({ code: 'NAME_TAKEN' });
 
     await runtime.post(code, TOKENS.ben, { type: 'react', kind: 'haha' });
@@ -228,7 +228,7 @@ describe('http handlers', () => {
       new Request('http://x/api/lobby', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ name: 'Ana', gameId: 'rps' }),
+        body: JSON.stringify({ name: 'Jay', gameId: 'rps' }),
       }),
     );
     expect(created.status).toBe(201);
@@ -293,8 +293,8 @@ describe('your-move notifications', () => {
         send: async (s, m) => (sent.push({ to: s.endpoint, title: m.title }), answer),
       },
     });
-    const { code } = await runtime.create({ token: TOKENS.ana, name: 'Ana', gameId: 'rps' });
-    await runtime.post(code, TOKENS.ben, { type: 'join', name: 'Ben' });
+    const { code } = await runtime.create({ token: TOKENS.ana, name: 'Jay', gameId: 'rps' });
+    await runtime.post(code, TOKENS.ben, { type: 'join', name: 'Crow' });
     await runtime.post(code, TOKENS.ana, { type: 'setOptions', options: { rounds: 3 } });
     await expect(runtime.setPush(code, TOKENS.ben, { endpoint: 'http://x' })).rejects.toThrow();
     await runtime.setPush(code, TOKENS.ben, sub);
@@ -304,7 +304,7 @@ describe('your-move notifications', () => {
     expect(sent).toEqual([{ to: sub.endpoint, title: 'Your move in Rock Paper Scissors' }]);
     s = await runtime.post(code, TOKENS.ben, pick(s, 'rock'));
     expect(sent).toHaveLength(1);
-    // Ana's pick ends the round; the next one waits on Ben again.
+    // Jay's pick ends the round; the next one waits on Crow again.
     answer = 'gone';
     s = await runtime.post(code, TOKENS.ana, pick(s, 'paper'));
     expect(sent).toHaveLength(2);

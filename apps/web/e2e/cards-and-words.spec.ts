@@ -25,9 +25,9 @@ async function call(req: APIRequestContext, path: string, key: string | null, da
 
 /** A lobby with two players in the given game, started. Returns the code and tokens by id. */
 async function table(req: APIRequestContext, gameId: string) {
-  const keys = [token('lesia'), token('bran')];
-  const { code } = await call(req, '/api/lobby', keys[0]!, { name: 'Lesia', gameId });
-  await call(req, `/api/lobby/${code}`, keys[1]!, { type: 'join', name: 'Bran' });
+  const keys = [token('wren'), token('rook')];
+  const { code } = await call(req, '/api/lobby', keys[0]!, { name: 'Wren', gameId });
+  await call(req, `/api/lobby/${code}`, keys[1]!, { type: 'join', name: 'Rook' });
   await call(req, `/api/lobby/${code}`, keys[0]!, { type: 'start', look: 'light' });
   const byId: Record<string, string> = {};
   for (const k of keys) byId[(await call(req, `/api/lobby/${code}`, k)).me] = k;

@@ -9,6 +9,7 @@ import {
   Token,
   Verdict,
   useTheme,
+  type LobbyChat,
   type Outcome,
   type ScreenPlayer,
 } from '@jackdaw/ui';
@@ -32,11 +33,14 @@ export function Results({
   players,
   isHost,
   send,
+  chat,
 }: {
   snapshot: LobbySnapshot;
   players: ScreenPlayer[];
   isHost: boolean;
   send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
+  /** Table talk, for a game that draws its own end screen. */
+  chat: LobbyChat;
 }) {
   const look = useTheme();
   const result = s.results;
@@ -66,6 +70,7 @@ export function Results({
         isHost={isHost}
         playAgain={() => void send({ type: 'playAgain', look })}
         backToLobby={() => void send({ type: 'backToLobby' })}
+        chat={chat}
       />
     );
   }

@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
-import type { ScreenPlayer } from '@jackdaw/ui';
+import type { LobbyChat, ScreenPlayer } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 
 // Device time for now; a server-corrected clock comes with the first timed game.
@@ -16,10 +16,13 @@ export function GameShell({
   snapshot: s,
   players,
   send,
+  chat,
 }: {
   snapshot: LobbySnapshot;
   players: ScreenPlayer[];
   send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
+  /** Table talk, for a game drawn edge to edge to draw itself. */
+  chat: LobbyChat;
 }) {
   const session = s.session;
   const entry = catalogEntry(session?.gameId);
@@ -47,7 +50,13 @@ export function GameShell({
           You&rsquo;re watching this round of {entry.meta.name}. You&rsquo;ll be seated in the next
           game.
         </p>
-        <Tv tableView={s.tableView} players={players} now={clock} reactions={s.reactions} />
+        <Tv
+          tableView={s.tableView}
+          players={players}
+          now={clock}
+          reactions={s.reactions}
+          chat={ui.fullBleed ? chat : undefined}
+        />
       </div>
     );
   }
@@ -63,6 +72,7 @@ export function GameShell({
         sendAction={sendAction}
         now={clock}
         reactions={s.reactions}
+        chat={ui.fullBleed ? chat : undefined}
       />
     </div>
   );

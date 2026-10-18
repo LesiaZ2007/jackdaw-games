@@ -49,19 +49,19 @@ describe('nightSummary', () => {
         d: { wins: 2, losses: 0, played: 2 },
         idle: { wins: 0, losses: 0, played: 0 },
       },
-      { a: 'Ana', b: 'Bran', c: 'Cerys', d: 'Dafydd', idle: 'Idle' },
+      { a: 'Jay', b: 'Rook', c: 'Magpie', d: 'Robin', idle: 'Idle' },
     );
     expect(s.table.map((r) => [r.name, r.rank])).toEqual([
-      ['Bran', 1],
-      ['Dafydd', 2],
-      ['Ana', 3],
-      ['Cerys', 3],
+      ['Rook', 1],
+      ['Robin', 2],
+      ['Jay', 3],
+      ['Magpie', 3],
     ]);
   });
 
   it('names people who left by the name they last played under', () => {
     const h = night(game('rps', ['a', 'gone'], ['gone']));
-    const s = nightSummary(h, { gone: { wins: 1, losses: 0, played: 1 } }, { a: 'Ana' });
+    const s = nightSummary(h, { gone: { wins: 1, losses: 0, played: 1 } }, { a: 'Jay' });
     expect(s.table[0]!.name).toBe('GONE');
   });
 
@@ -74,8 +74,8 @@ describe('nightSummary', () => {
       game('rps', ['a', 'b'], ['b']),
       game('rps', ['a', 'b'], ['a']),
     );
-    const s = nightSummary(h, {}, { a: 'Ana' });
-    expect(s.streak).toEqual({ length: 2, holders: [{ playerId: 'a', name: 'Ana' }] });
+    const s = nightSummary(h, {}, { a: 'Jay' });
+    expect(s.streak).toEqual({ length: 2, holders: [{ playerId: 'a', name: 'Jay' }] });
   });
 
   it('lists everyone tied on the longest streak and skips streaks of one', () => {
@@ -125,7 +125,7 @@ describe('nightSummary', () => {
         word('a', 'ZAX for 98', 98),
       ),
       {},
-      { a: 'Ana' },
+      { a: 'Jay' },
     );
     expect(s.awards).toEqual([
       {

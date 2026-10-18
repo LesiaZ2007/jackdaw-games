@@ -5,7 +5,7 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 // driven through the lobby API to a win, ending on its victory popup. The TV and every public read
 // must never carry a role, a hand or a ballot.
 
-const NAMES = ['Wren', 'Bran', 'Cerys', 'Dafydd', 'Elin'];
+const NAMES = ['Wren', 'Rook', 'Magpie', 'Robin', 'Finch'];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Snap = any;
@@ -278,7 +278,7 @@ test('five phones play Secret Hitler as on secret-hitler.online, on to a win, wi
     await expect(popup(p).locator('#player-identity-icon')).toHaveCount(5);
   }
   await expect(
-    popup(pages[1]!).getByText('Waiting for the owner to return to the lobby.'),
+    popup(pages[1]!).getByText('Waiting for Wren to return to the lobby.'),
   ).toBeVisible();
   const stats = await (await pages[0]!.request.get(`/api/lobby/${code}/stats`)).json();
   expect(stats.history[0].standings[0].team).toMatch(/Liberal|Fascist/);

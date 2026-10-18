@@ -24,7 +24,7 @@ import './wordhoard.css';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-/** "Bran played HOARD for 24", in words. */
+/** "Rook played HOARD for 24", in words. */
 export function moveText(m: Move, name: (id: string) => string): string {
   const who = name(m.player);
   if (m.kind === 'pass') return m.late ? `${who} ran out of time.` : `${who} passed.`;
@@ -33,7 +33,7 @@ export function moveText(m: Move, name: (id: string) => string): string {
   return `${who} played ${words} for ${m.score}${m.bingo ? ', all seven tiles' : ''}.`;
 }
 
-/** A side's names: "Bran", or "Bran & Ana" (you first, as "You"). */
+/** A side's names: "Rook", or "Rook & Jay" (you first, as "You"). */
 export function sideName(
   t: WordhoardTableView,
   key: string,

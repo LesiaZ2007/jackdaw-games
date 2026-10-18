@@ -212,7 +212,7 @@ export interface Seat {
   me?: boolean;
   /** Animate this token being placed (the newest arrival). */
   landing?: boolean;
-  /** What tapping this seat does, e.g. "Remove Bran". With `onSeat`, the seat becomes a button. */
+  /** What tapping this seat does, e.g. "Remove Rook". With `onSeat`, the seat becomes a button. */
   action?: string;
 }
 

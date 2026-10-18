@@ -41,6 +41,10 @@
 .cat-linkbtn:focus-visible,
 .cat-select:focus-visible,
 .cat-stepper button:focus-visible,
+.cat-pics:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
 
 /* ── Catalog layout ──────────────────────────────────────────────────────── */
 .cat {

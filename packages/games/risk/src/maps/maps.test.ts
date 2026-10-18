@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { MAPS } from './index';
+import { REALM_LAND } from './realm.shapes';
+import { WORLD_LAND } from './world.shapes';
+
+const LAND = { world: WORLD_LAND, realm: REALM_LAND };
 
 describe.each(Object.values(MAPS))('the $name map', (map) => {
   const ids = new Set(map.territories.map((t) => t.id));
@@ -56,6 +60,29 @@ describe.each(Object.values(MAPS))('the $name map', (map) => {
 
   it('lanes are also adjacencies', () => {
     for (const [a, b] of map.lanes) expect(byId.get(a)!.adj, `${a}–${b}`).toContain(b);
+  });
+
+  it('every territory has an outline and a label inside the map', () => {
+    const [w, h] = map.viewBox;
+    for (const t of map.territories) {
+      expect(t.path, t.id).toMatch(/^M[\d.\s,LZM-]+Z$/);
+      expect(t.label[0], t.id).toBeGreaterThan(0);
+      expect(t.label[0], t.id).toBeLessThan(w);
+      expect(t.label[1], t.id).toBeGreaterThan(0);
+      expect(t.label[1], t.id).toBeLessThan(h);
+    }
+    expect(map.sea).toBeTruthy();
+  });
+
+  it('territories touch on land exactly where they border, except across the sea', () => {
+    const key = (a: string, b: string) => [a, b].sort().join('|');
+    const lanes = new Set(map.lanes.map(([a, b]) => key(a, b)));
+    const borders = new Set(map.territories.flatMap((t) => t.adj.map((n) => key(t.id, n))));
+    const land = new Set(LAND[map.id].map(([a, b]) => key(a, b)));
+    const missing = [...borders].filter((b) => !lanes.has(b) && !land.has(b));
+    const extra = [...land].filter((b) => !borders.has(b));
+    const wet = [...lanes].filter((b) => land.has(b));
+    expect({ missing, extra, wet }).toEqual({ missing: [], extra: [], wet: [] });
   });
 });
 

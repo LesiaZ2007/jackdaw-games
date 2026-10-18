@@ -124,6 +124,12 @@ export interface GameModule<State, Action, View, TableView, Options> {
   onTimer?(state: State, timerId: string, rng: Rng, now: number): State;
 
   /**
+   * Optional: who the game is waiting on right now (whose turn it is, who still has to vote).
+   * Public facts only; the platform uses it to alert those players on their phones.
+   */
+  waitingOn?(state: State): string[];
+
+  /**
    * Optional chat lines for what just happened (prev is null right after setup). Public facts
    * only: everyone in the lobby reads them.
    */

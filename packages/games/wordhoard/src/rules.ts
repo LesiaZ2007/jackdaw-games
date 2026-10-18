@@ -354,6 +354,8 @@ export const wordhoard: GameModule<
     return d.rack.length === 0 && d.bag.length === 0 ? finish(next, side, playerId) : next;
   },
 
+  waitingOn: (s) => (s.over ? [] : (s.sides.find((side) => side[0] === s.turn) ?? [])),
+
   getResult(s): GameResult | null {
     if (!s.over) return null;
     const top = Math.max(...keys(s).map((id) => s.scores[id] ?? 0));

@@ -6,6 +6,7 @@ import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
 import { AvatarButton, Chits, Plaque, ReactionBar, Sheet } from '@jackdaw/ui';
 import { forgetSeat } from '@/lib/identity';
 import { ThemeToggle } from '../../theme-toggle';
+import { AlertSettings } from './alert-settings';
 
 /**
  * Ending a game takes two taps, as in Avalon: the first arms it for four seconds, the second
@@ -37,7 +38,10 @@ function EndGameButton({ onEnd }: { onEnd: () => Promise<void> }) {
   );
 }
 
-/** Less frequent things: move your seat to another phone, leave, switch day and dark. */
+/**
+ * Less frequent things: alerts for your move, move your seat to another phone, leave, switch day
+ * and dark.
+ */
 export function MenuSheet({
   open,
   onClose,
@@ -109,6 +113,8 @@ export function MenuSheet({
           />
         </section>
       )}
+
+      {me && <AlertSettings code={code} />}
 
       <section className="menu__block">
         <h3 className="jd-label">Move to another phone</h3>

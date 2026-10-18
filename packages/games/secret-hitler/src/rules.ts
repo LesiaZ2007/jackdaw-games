@@ -35,7 +35,12 @@ import { meta } from './meta';
  * failed elections in a row enact the top policy with no power and clear the term limits.
  */
 
-export type Phase = 'nominate' | 'vote' | 'president' | 'chancellor' | 'veto' | 'power' | 'over';
+/**
+ * `post` is secret-hitler.online's end of a term: whatever the round did (a failed vote, a policy,
+ * a power), the table waits until the president presses End term.
+ */
+export type Phase =
+  'nominate' | 'vote' | 'president' | 'chancellor' | 'veto' | 'power' | 'post' | 'over';
 export type Winner = 'liberal' | 'fascist';
 export type WinReason = 'liberal-policies' | 'fascist-policies' | 'hitler-elected' | 'hitler-shot';
 
@@ -51,6 +56,8 @@ export const actionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('vetoReply'), accept: z.boolean() }),
   /** President: use the power. Investigate, special election and execution need a target. */
   z.object({ type: z.literal('power'), target: z.string().min(1).max(64).optional() }),
+  /** President: end the term, once the round is done, and pass the presidency on. */
+  z.object({ type: z.literal('endTerm') }),
 ]);
 export type ShAction = z.infer<typeof actionSchema>;
 
@@ -167,6 +174,8 @@ export interface ShTableView {
   chaos: Chaos[];
   /** Counts so everyone knows the shape of the table. */
   lineup: { liberals: number; fascists: number };
+  /** The whole policy deck this game started with (17 officially, more with the house deck). */
+  deckTotal: { liberal: number; fascist: number };
   /** Counts that move on whenever a vote resolves or a policy is enacted (for moments). */
   votesResolved: number;
   enactedCount: number;
@@ -257,6 +266,12 @@ function nextRound(s: ShState): ShState {
   };
 }
 
+/** The round is done: wait for the president to end their term (unless someone has won). */
+function endTerm(s: ShState): ShState {
+  if (s.winner) return s;
+  return { ...s, phase: 'post', ballots: {}, hand: [], pending: null };
+}
+
 function checkPolicyWin(s: ShState): ShState {
   if (s.liberal >= LIBERAL_WIN)
     return { ...s, phase: 'over', winner: 'liberal', reason: 'liberal-policies' };
@@ -301,7 +316,7 @@ function chaos(s: ShState, rng: Rng): ShState {
   );
   next = { ...next, ...refill(next, rng) };
   next = checkPolicyWin(next);
-  return nextRound(next);
+  return endTerm(next);
 }
 
 /** A government enacted `policy`: count it, check for a win, then any power. */
@@ -312,7 +327,7 @@ function afterEnactment(s: ShState, policy: Policy, rng: Rng): ShState {
   if (next.winner) return next;
   const power = policy === 'fascist' ? (next.board[next.fascist - 1] ?? null) : null;
   if (power) return { ...next, phase: 'power', pending: power };
-  return nextRound(next);
+  return endTerm(next);
 }
 
 function setup(playerIds: string[], options: ShOptions, rng: Rng): ShState {
@@ -416,6 +431,7 @@ function tableView(s: ShState): ShTableView {
     governments: s.governments.map(publicGovernment),
     chaos: s.chaos,
     lineup: { liberals: s.players.length - team, fascists: team - 1 },
+    deckTotal: deckFor(s.players.length, s.options),
     votesResolved: s.governments.filter((g) => Object.keys(g.votes).length > 0).length,
     enactedCount: s.liberal + s.fascist,
     event: lastEvent(s),
@@ -518,7 +534,7 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
             },
           ],
         };
-        return failed.tracker >= 3 ? chaos(failed, rng) : nextRound(failed);
+        return failed.tracker >= 3 ? chaos(failed, rng) : endTerm(failed);
       }
       const elected: ShState = {
         ...voted,
@@ -625,7 +641,13 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
         ],
       };
       const refilled: ShState = { ...vetoed, ...refill(vetoed, rng) };
-      return refilled.tracker >= 3 ? chaos(refilled, rng) : nextRound(refilled);
+      return refilled.tracker >= 3 ? chaos(refilled, rng) : endTerm(refilled);
+    }
+
+    case 'endTerm': {
+      if (s.phase !== 'post') fail('The term is not over yet.');
+      if (me !== s.president) fail('Only the president ends the term.');
+      return nextRound(s);
     }
 
     case 'power': {
@@ -635,7 +657,7 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
       const g = current(s);
       if (power === 'peek') {
         const cards = s.deck.slice(0, 3);
-        return nextRound({
+        return endTerm({
           ...s,
           governments: updateGov(s, { power: { kind: 'peek' }, secret: { cards } }),
           recap: [
@@ -657,7 +679,7 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
         if (s.investigations.some((x) => x.target === target))
           fail('That player has already been investigated.');
         const team = teamOf(s.roles[target]!);
-        return nextRound({
+        return endTerm({
           ...s,
           investigations: [...s.investigations, { by: me, target, team }],
           governments: updateGov(s, { power: { kind: power, target }, secret: { team } }),
@@ -674,7 +696,7 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
         });
       }
       if (power === 'special') {
-        return nextRound({
+        return endTerm({
           ...s,
           special: target,
           governments: updateGov(s, { power: { kind: power, target } }),
@@ -706,7 +728,7 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
       };
       if (s.roles[target] === 'hitler')
         return { ...shot, pending: null, phase: 'over', winner: 'liberal', reason: 'hitler-shot' };
-      return nextRound(shot);
+      return endTerm(shot);
     }
   }
 }
@@ -721,6 +743,7 @@ export const reasonText = (r: WinReason) => REASON[r];
 
 /** Everything about the game, now that it's over: the reveal behind the recap screen. */
 export interface ShReveal {
+  players: string[];
   roles: Record<string, Role>;
   governments: Government[];
   chaos: Chaos[];
@@ -729,6 +752,11 @@ export interface ShReveal {
   reason: WinReason;
   liberal: number;
   fascist: number;
+  tracker: number;
+  deckCount: number;
+  discardCount: number;
+  deckTotal: { liberal: number; fascist: number };
+  lineup: { liberals: number; fascists: number };
 }
 
 export const secretHitler: GameModule<ShState, ShAction, ShPlayerView, ShTableView, ShOptions> = {
@@ -746,6 +774,7 @@ export const secretHitler: GameModule<ShState, ShAction, ShPlayerView, ShTableVi
     if (s.phase !== 'over' || !s.winner || !s.reason) return null;
     const winners = s.players.filter((id) => teamOf(s.roles[id]!) === s.winner);
     const reveal: ShReveal = {
+      players: s.players,
       roles: s.roles,
       governments: s.governments,
       chaos: s.chaos,
@@ -754,6 +783,11 @@ export const secretHitler: GameModule<ShState, ShAction, ShPlayerView, ShTableVi
       reason: s.reason,
       liberal: s.liberal,
       fascist: s.fascist,
+      tracker: s.tracker,
+      deckCount: s.deck.length,
+      discardCount: s.discard.length,
+      deckTotal: deckFor(s.players.length, s.options),
+      lineup: tableView(s).lineup,
     };
     return {
       winners,

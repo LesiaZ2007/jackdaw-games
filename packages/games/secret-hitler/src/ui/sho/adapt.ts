@@ -1,8 +1,14 @@
 import type { ScreenPlayer } from '@jackdaw/ui';
 import type { Policy, Role as ShRole } from '../../lineup';
 import type { ShPlayerView, ShReveal, ShTableView, WinReason } from '../../rules';
-import { portraitFor } from './assets';
-import { LobbyState, type GameState, type PlayerState, type PolicyType, type Role } from './types';
+import {
+  LobbyState,
+  type GameState,
+  type Look,
+  type PlayerState,
+  type PolicyType,
+  type Role,
+} from './types';
 
 /**
  * Jackdaw's Secret Hitler views, reshaped into the game state secret-hitler.online's screens
@@ -20,6 +26,13 @@ export const VICTORY: Record<WinReason, LobbyState> = {
   'hitler-elected': LobbyState.FASCIST_VICTORY_ELECTION,
 };
 
+/** A player's crest and colour, and their id for the seat animation. */
+export const lookOf = (id: string, p?: ScreenPlayer): Look => ({
+  crest: p?.avatar.crest ?? '',
+  tint: p?.avatar.tint ?? '',
+  id,
+});
+
 /** Display names by id. Jackdaw keeps names unique in a lobby, so they can key the game. */
 export function namesFor(ids: string[], players: ScreenPlayer[]) {
   const byId = new Map(players.map((p) => [p.id, p]));
@@ -28,7 +41,7 @@ export function namesFor(ids: string[], players: ScreenPlayer[]) {
   return {
     name,
     idOf: (n: string) => ids_.get(n) ?? n,
-    icon: Object.fromEntries(ids.map((id) => [name(id), portraitFor(byId.get(id)?.avatar.crest)])),
+    icon: Object.fromEntries(ids.map((id) => [name(id), lookOf(id, byId.get(id))])),
   };
 }
 

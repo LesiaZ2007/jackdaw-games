@@ -158,15 +158,23 @@ test('five phones play Secret Hitler as on secret-hitler.online, on to a win, wi
   test.setTimeout(600_000);
   const { code, pages, byId } = await table(browser);
 
-  // Change icon: the portrait stands for your crest, and someone else's is greyed out.
+  // Change icon opens Jackdaw's own look, and the new crest shows on the tile.
   const second = pages[1]!;
-  await second.getByRole('button', { name: 'CHANGE ICON' }).click();
-  await expect(popup(second).getByText('PLAYER LOOK')).toBeVisible();
-  await expect(popup(second).locator('#icon.disabled')).toHaveCount(4);
-  await popup(second).locator('#icon:not(.disabled):not(.selected)').first().click();
-  await expect(popup(second).locator('#icon.selected')).toHaveCount(1);
-  await popupButton(second, 'CONFIRM').click();
-  await expect(popup(second)).toHaveCount(0);
+  await expect(second.locator('.sho-lobby .sho-crest')).toHaveCount(5);
+  // (A tap while the seats are still flying in from Jackdaw's lobby doesn't land, so try again.)
+  const crests = second.getByRole('group', { name: 'Crest' });
+  await expect(async () => {
+    await second.getByRole('button', { name: 'CHANGE ICON' }).click({ timeout: 2000 });
+    await expect(crests).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 20_000 });
+  const free = crests.getByRole('button', { pressed: false, disabled: false }).first();
+  const crest = (await free.getAttribute('aria-label'))!.toLowerCase();
+  await free.click();
+  await second.getByRole('button', { name: 'Save' }).click();
+  await expect.poll(async () => (await read(second, code)).players[1].avatar.crest).toBe(crest);
+  // Join with the code, or share the link: no text box.
+  await expect(second.locator('.sho-lobby__url')).toContainText(`/${code}`);
+  await expect(second.locator('textarea')).toHaveCount(0);
 
   // Only the VIP (the host) can start.
   await expect(second.getByText('Only the VIP can start the game.')).toBeVisible();
@@ -187,7 +195,16 @@ test('five phones play Secret Hitler as on secret-hitler.online, on to a win, wi
   const tv = await phone(browser, 1920, 1080);
   await tv.goto(`/tv/${code}`);
   await expect(tv.locator('.sho-page--tv #player-container')).toHaveCount(5);
+  await expect(tv.locator('.sho-chat')).toHaveCount(0);
   await expect(tv.locator('#player-identity-icon')).toHaveCount(0);
+
+  // Table talk opens over the game in its look, even while a popup waits.
+  await pages[2]!.getByRole('button', { name: 'Chat' }).click();
+  const talk = pages[2]!.locator('.sho-chat.is-open');
+  await talk.getByLabel('Message').fill('I trust nobody');
+  await talk.getByRole('button', { name: 'Send' }).click();
+  await expect(talk.getByText('I trust nobody')).toBeVisible();
+  await talk.getByRole('button', { name: 'Close' }).click();
 
   // One full round through the screens: the president nominates.
   let s = await read(pages[0]!, code);

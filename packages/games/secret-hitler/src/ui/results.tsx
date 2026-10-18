@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import type { GameResultsProps } from '@jackdaw/ui';
 import type { ShReveal } from '../rules';
+import { ShFrame } from './frame';
 import GamePage from './sho/GamePage';
 import { finalGameState, namesFor } from './sho/adapt';
 import { recall } from './sho/memory';
-import './sho/sho.css';
-import './sho/jackdaw.css';
 
 /**
  * The end of the game on a phone, as secret-hitler.online ends it: the last move plays out on
@@ -22,6 +21,7 @@ export function Results({
   isHost,
   playAgain,
   backToLobby,
+  chat,
 }: GameResultsProps) {
   const reveal = result.reveal as ShReveal;
   const [final] = useState(() => finalGameState(reveal, players));
@@ -31,7 +31,7 @@ export function Results({
   const host = players.find((p) => p.id === hostId)?.name ?? 'the host';
 
   return (
-    <div className="sho sho-page">
+    <ShFrame chat={chat} players={players}>
       <GamePage
         gameState={final}
         startFrom={from}
@@ -47,6 +47,6 @@ export function Results({
           )
         }
       />
-    </div>
+    </ShFrame>
   );
 }

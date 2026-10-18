@@ -34,10 +34,13 @@ const seen = (s: ShState, id: string | null) =>
   toGameState(game.getTableView(s), id ? game.getPlayerView(s, id) : null, players);
 
 describe('the game state for secret-hitler.online’s screens', () => {
-  it('names players, and gives each the portrait for their crest', () => {
+  it('names players, and gives each their crest and colour', () => {
     const g = seen(table(), 'p2');
     expect(g.playerOrder).toEqual(NAMES);
-    expect(g.icon).toMatchObject({ the owner: 'p1', Bran: 'p2', Elin: 'p5' });
+    expect(g.icon).toMatchObject({
+      the owner: { crest: 'helm', tint: 'slate', id: 'p0' },
+      Elin: { crest: 'tower', tint: 'slate', id: 'p4' },
+    });
     expect(namesFor(ids, players).idOf('Cerys')).toBe('p2');
   });
 

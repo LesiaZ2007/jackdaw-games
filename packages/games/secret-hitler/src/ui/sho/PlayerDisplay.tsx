@@ -47,6 +47,8 @@ type PlayerDisplayProps = {
   showRoles?: boolean;
   showBusy?: boolean;
   includeUser?: boolean;
+  /** Jackdaw: name the tiles for the seat animation (one row per page). */
+  seatTransitions?: boolean;
 };
 
 /**
@@ -64,6 +66,7 @@ export default function PlayerDisplay({
   showLabels = true,
   showBusy = false,
   includeUser = true,
+  seatTransitions = false,
 }: PlayerDisplayProps): ReactElement {
   // How many players, in order, have their vote shown. This lets the sequence be animated.
   const [playerVotesVisible, setPlayerVotesVisible] = useState<number>(0);
@@ -169,6 +172,7 @@ export default function PlayerDisplay({
             showVote={showVote}
             vote={gameState.userVotes[playerName]}
             icon={gameState.icon[playerName]}
+            seatTransition={seatTransitions}
           />
         </div>
       );

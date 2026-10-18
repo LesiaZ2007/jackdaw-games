@@ -27,7 +27,7 @@ export const secretHitlerUi: GameUi = {
     pictures: [
       {
         src: '/games/secret-hitler/lobby-phone.png',
-        alt: 'Secret Hitler’s lobby on a phone: the lobby code, the invite link and everyone’s portrait tile.',
+        alt: 'Secret Hitler’s lobby on a phone: the lobby code, the invite link and everyone’s tile.',
       },
       {
         src: '/games/secret-hitler/tv.png',

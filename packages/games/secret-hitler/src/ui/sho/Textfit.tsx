@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 
 /**
  * react-textfit 1.1.1 in "multi" mode, as secret-hitler.online uses it for names on the player
@@ -11,12 +18,14 @@ import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from '
 export function Textfit({
   id,
   className,
+  style,
   children,
   min = 1,
   max = 100,
 }: {
   id?: string;
   className?: string;
+  style?: CSSProperties;
   children: ReactNode;
   min?: number;
   max?: number;
@@ -90,7 +99,7 @@ export function Textfit({
       ref={parent}
       id={id}
       className={className}
-      style={fontSize === null ? undefined : { fontSize }}
+      style={fontSize === null ? style : { ...style, fontSize }}
     >
       <div ref={child} style={{ display: ready ? 'block' : 'inline-block' }}>
         {children}

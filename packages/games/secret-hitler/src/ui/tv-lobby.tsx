@@ -3,7 +3,7 @@
 import type { GameTvLobbyProps } from '@jackdaw/ui';
 import { meta } from '../meta';
 import Player from './sho/Player';
-import { portraitFor } from './sho/assets';
+import { lookOf } from './sho/adapt';
 import './sho/sho.css';
 import './sho/jackdaw.css';
 
@@ -35,7 +35,7 @@ export function ShTvLobby({ code, players, hostId, join, status }: GameTvLobbyPr
                   key={p.id}
                   name={p.id === hostId ? p.name + ' [Host]' : p.name}
                   showRole={false}
-                  icon={portraitFor(p.avatar.crest)}
+                  icon={lookOf(p.id, p)}
                 />
               ))}
             </div>

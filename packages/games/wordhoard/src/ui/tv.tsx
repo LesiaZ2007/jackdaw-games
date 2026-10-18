@@ -3,7 +3,7 @@
 import type { GameUi, ScreenPlayer } from '@jackdaw/ui';
 import type { WordhoardTableView } from '../rules';
 import { BoardGrid } from './pieces';
-import { Scores, moveText } from './player';
+import { Scores, moveText, sideName } from './player';
 import './wordhoard.css';
 
 /** Wordhoard on the TV: the board large, the scores and the last few plays beside it. */
@@ -19,7 +19,9 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, ...props })
         <BoardGrid board={t.board} recent={last?.cells} />
       </div>
       <aside className="wh-tv__side">
-        <h2 className="jd-display">{t.over ? 'Final scores' : `${name(t.turn)} to play`}</h2>
+        <h2 className="jd-display">
+          {t.over ? 'Final scores' : `${sideName(t, t.turn, name)} to play`}
+        </h2>
         <Scores t={t} players={players} reactions={reactions} />
         <p className="wh-tv__bag">
           {t.bagCount} tile{t.bagCount === 1 ? '' : 's'} in the bag

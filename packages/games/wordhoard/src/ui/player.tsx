@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from 'react';
 import { Plaque, PlayerReaction, Tally, Token, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { Reaction } from '@jackdaw/engine';
 import { RACK, checkPlay, type Placement } from '../board';
@@ -166,6 +172,81 @@ interface Pending extends Placement {
   from: number;
 }
 
+/** Where a dragged tile came from: a rack slot, or a square it was placed on this turn. */
+type DragFrom = { rack: number } | { row: number; col: number };
+
+/**
+ * Dragging tiles with a finger or the mouse, alongside tapping: a tile follows the pointer once
+ * it has moved a little, the square under it is outlined, and letting go calls `onDrop` with the
+ * square (or null off the board). `justDragged` lets the tap handlers ignore the click a drag
+ * ends with.
+ */
+function useTileDrag(onDrop: (from: DragFrom, square: [number, number] | null) => void) {
+  const [drag, setDrag] = useState<{ from: DragFrom; letter: string; x: number; y: number } | null>(
+    null,
+  );
+  const start = useRef<{
+    from: DragFrom;
+    letter: string;
+    x: number;
+    y: number;
+    moved: boolean;
+  } | null>(null);
+  const dropRef = useRef(onDrop);
+  const justDragged = useRef(false);
+  useEffect(() => {
+    dropRef.current = onDrop;
+  });
+
+  useEffect(() => {
+    let hover: Element | null = null;
+    const squareAt = (x: number, y: number) =>
+      document.elementFromPoint(x, y)?.closest('[data-square]') ?? null;
+    const mark = (el: Element | null) => {
+      if (el === hover) return;
+      hover?.classList.remove('is-drop');
+      el?.classList.add('is-drop');
+      hover = el;
+    };
+    const move = (e: PointerEvent) => {
+      const s = start.current;
+      if (!s) return;
+      if (!s.moved && Math.hypot(e.clientX - s.x, e.clientY - s.y) < 8) return;
+      s.moved = true;
+      setDrag({ from: s.from, letter: s.letter, x: e.clientX, y: e.clientY });
+      mark(squareAt(e.clientX, e.clientY));
+    };
+    const end = (e: PointerEvent, cancelled: boolean) => {
+      const s = start.current;
+      start.current = null;
+      if (!s?.moved) return;
+      mark(null);
+      setDrag(null);
+      justDragged.current = true;
+      setTimeout(() => (justDragged.current = false), 60);
+      if (cancelled) return;
+      const at = squareAt(e.clientX, e.clientY)?.getAttribute('data-square');
+      dropRef.current(s.from, at ? (at.split(',').map(Number) as [number, number]) : null);
+    };
+    const up = (e: PointerEvent) => end(e, false);
+    const cancel = (e: PointerEvent) => end(e, true);
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+    return () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+    };
+  }, []);
+
+  const begin = (e: ReactPointerEvent, from: DragFrom, letter: string) => {
+    if (e.button !== 0) return;
+    start.current = { from, letter, x: e.clientX, y: e.clientY, moved: false };
+  };
+  return { drag, begin, justDragged };
+}
+
 function Turn({
   v,
   myTurn,
@@ -203,8 +284,30 @@ function Turn({
     }
   };
 
+  const free = (row: number, col: number) =>
+    !v.board[row]![col] && !pending.some((p) => p.row === row && p.col === col);
+
+  /** A rack tile dropped on a square goes there; a placed tile moves, or off the board goes back. */
+  const { drag, begin, justDragged } = useTileDrag((from, at) => {
+    if ('rack' in from) {
+      if (!at || !free(...at)) return;
+      const letter = v.rack[from.rack]!;
+      if (letter === '?') return setBlankAt({ row: at[0], col: at[1], from: from.rack });
+      setPending([...pending, { row: at[0], col: at[1], letter, from: from.rack }]);
+      setPicked(null);
+      return;
+    }
+    const here = pending.find((p) => p.row === from.row && p.col === from.col);
+    if (!here) return;
+    if (!at) return setPending(pending.filter((p) => p !== here));
+    if (!free(...at)) return;
+    setPending(pending.map((p) => (p === here ? { ...p, row: at[0], col: at[1] } : p)));
+  });
+  const dragging = (p: { row: number; col: number }) =>
+    Boolean(drag && 'row' in drag.from && drag.from.row === p.row && drag.from.col === p.col);
+
   function onSquare(row: number, col: number) {
-    if (!myTurn) return;
+    if (!myTurn || justDragged.current) return;
     const here = pending.find((p) => p.row === row && p.col === col);
     if (here) {
       setPending(pending.filter((p) => p !== here));
@@ -221,6 +324,7 @@ function Turn({
   }
 
   function onRack(i: number) {
+    if (justDragged.current) return;
     if (swapping) {
       setSwapping(swapping.includes(i) ? swapping.filter((x) => x !== i) : [...swapping, i]);
       return;
@@ -254,7 +358,7 @@ function Turn({
           ? 'Now tap a square on the board.'
           : partner
             ? `Your rack, shared with ${partner}. Either of you can play.`
-            : 'Tap a tile, then a square. Tap a placed tile to take it back.';
+            : 'Drag a tile onto the board, or tap it and then a square. Tap a placed tile to take it back.';
 
   return (
     <>
@@ -262,9 +366,13 @@ function Turn({
         <div className={zoom ? 'wh-boardwrap is-zoomed' : 'wh-boardwrap'}>
           <BoardGrid
             board={v.board}
-            pending={pending}
+            pending={pending.filter((p) => !dragging(p))}
             recent={last?.cells}
             onSquare={myTurn && !swapping ? onSquare : undefined}
+            onPendingDown={(e, row, col) => {
+              const p = pending.find((x) => x.row === row && x.col === col);
+              if (p) begin(e, { row, col }, p.letter);
+            }}
           />
         </div>
       </div>
@@ -286,13 +394,21 @@ function Turn({
                 <button
                   key={i}
                   type="button"
-                  className={['wh-rack__slot', chosen && 'is-picked', used.has(i) && 'is-used']
+                  className={[
+                    'wh-rack__slot',
+                    chosen && 'is-picked',
+                    used.has(i) && 'is-used',
+                    drag && 'rack' in drag.from && drag.from.rack === i && 'is-dragging',
+                  ]
                     .filter(Boolean)
                     .join(' ')}
                   aria-pressed={chosen}
                   aria-label={t === '?' ? 'Blank tile' : t}
                   disabled={(!myTurn && !swapping) || (used.has(i) && !swapping)}
                   onClick={() => onRack(i)}
+                  onPointerDown={(e) => {
+                    if (myTurn && !swapping && !used.has(i)) begin(e, { rack: i }, t);
+                  }}
                 >
                   <Tile letter={t} />
                 </button>
@@ -364,6 +480,12 @@ function Turn({
           </div>
         )}
       </section>
+
+      {drag && (
+        <div className="wh-ghost" style={{ left: drag.x, top: drag.y }} aria-hidden="true">
+          <Tile letter={drag.letter} />
+        </div>
+      )}
 
       {blankAt && (
         <div className="jd-sheet" role="presentation">

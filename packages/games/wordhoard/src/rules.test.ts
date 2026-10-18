@@ -169,6 +169,10 @@ describe('playing', () => {
     // a went out: +20 from b's Q and Z, b loses 20.
     expect(s.endBonus).toEqual({ a: 20, b: -20 });
     expect(s.scores).toEqual({ a: 30, b: -20 });
+    // CAT was the best word of the game, for the night's awards.
+    expect(game.getResult(s)!.highlights).toEqual([
+      { award: 'Best word', playerIds: ['a'], text: 'CAT for 10', value: 10 },
+    ]);
   });
 });
 

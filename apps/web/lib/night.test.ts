@@ -35,6 +35,7 @@ describe('nightSummary', () => {
       streak: null,
       favourite: null,
       minutes: 0,
+      awards: [],
     });
   });
 
@@ -105,6 +106,41 @@ describe('nightSummary', () => {
     expect(s.favourite).toEqual({ gameId: 'rps', played: 2 });
     expect(s.games).toBe(3);
     expect(s.minutes).toBe(30);
+  });
+
+  it('gives each award to the best of its kind, keeping it on a tie', () => {
+    const word = (id: string, text: string, value: number) => ({
+      ...game('wordhoard', ['a', 'b'], [id]),
+      highlights: [{ award: 'Best word', playerIds: [id], text, value }],
+    });
+    const pot = {
+      ...game('poker', ['a', 'b'], ['b']),
+      highlights: [{ award: 'Biggest pot', playerIds: ['b'], text: '900 chips', value: 900 }],
+    };
+    const s = nightSummary(
+      night(
+        word('a', 'HOARD for 24', 24),
+        pot,
+        word('b', 'JACKDAW for 98', 98),
+        word('a', 'ZAX for 98', 98),
+      ),
+      {},
+      { a: 'Ana' },
+    );
+    expect(s.awards).toEqual([
+      {
+        award: 'Best word',
+        gameId: 'wordhoard',
+        text: 'JACKDAW for 98',
+        holders: [{ playerId: 'b', name: 'B' }],
+      },
+      {
+        award: 'Biggest pot',
+        gameId: 'poker',
+        text: '900 chips',
+        holders: [{ playerId: 'b', name: 'B' }],
+      },
+    ]);
   });
 });
 

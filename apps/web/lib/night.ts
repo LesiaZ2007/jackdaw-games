@@ -25,6 +25,15 @@ export interface NightSummary {
   favourite: { gameId: string; played: number } | null;
   /** From the first game's start to the last game's end. */
   minutes: number;
+  /** The night's awards: the best of each kind of highlight games reported, first won first. */
+  awards: Award[];
+}
+
+export interface Award {
+  award: string;
+  gameId: string;
+  text: string;
+  holders: { playerId: string; name: string }[];
 }
 
 /**
@@ -79,7 +88,33 @@ export function nightSummary(
   const minutes =
     first && last ? Math.max(0, Math.round((last.endedAt - first.startedAt) / 60_000)) : 0;
 
-  return { games: history.length, table, streak, favourite, minutes };
+  // Each award goes to the best highlight of its kind; an equal one later doesn't take it away.
+  const awards = new Map<string, Award & { value: number }>();
+  for (const entry of [...history].reverse()) {
+    for (const h of entry.highlights ?? []) {
+      const held = awards.get(h.award);
+      if (held && held.value >= h.value) continue;
+      awards.set(h.award, {
+        award: h.award,
+        gameId: entry.gameId,
+        text: h.text,
+        value: h.value,
+        holders: h.playerIds.map((playerId) => ({
+          playerId,
+          name: entry.names[playerId] ?? nameOf(playerId),
+        })),
+      });
+    }
+  }
+
+  return {
+    games: history.length,
+    table,
+    streak,
+    favourite,
+    minutes,
+    awards: [...awards.values()].map(({ value: _, ...a }) => a),
+  };
 }
 
 /** "45 minutes", "1 hour", "2 hours 10 minutes". */

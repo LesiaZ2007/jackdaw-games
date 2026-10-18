@@ -113,6 +113,22 @@ export function TvNight({ code, snapshot }: { code: string; snapshot: LobbySnaps
             </span>
           </li>
         )}
+        {night.awards.map((a) => (
+          <li
+            key={a.award}
+            className="tv-mark"
+            style={band(catalogEntry(a.gameId)?.art.band ?? 'or')}
+          >
+            <span className="jd-label">{a.award}</span>
+            <b className="jd-display">{a.text}</b>
+            <span className="tv-mark__who">
+              {a.holders.map((h) => (
+                <Seal key={h.playerId} avatar={avatars.get(h.playerId)} size={52} />
+              ))}
+              {list(a.holders.map((h) => h.name))}
+            </span>
+          </li>
+        ))}
       </ul>
 
       <div className="tv-night__body">

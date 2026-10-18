@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { GameResult, Reaction, Standing } from './contract';
+import type { GameResult, Reaction, Standing, Highlight } from './contract';
 
 /**
  * Wire protocol shared by web and server. Changing message shapes affects every client: ask
@@ -144,6 +144,8 @@ export interface HistoryEntry {
   names: Record<string, string>;
   /** Every player's outcome (and team and role, when the game has them). */
   standings: Standing[];
+  /** The game's standout moments, for the night's awards. */
+  highlights?: Highlight[];
 }
 
 export interface ScoreLine {

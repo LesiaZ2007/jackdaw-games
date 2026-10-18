@@ -419,6 +419,16 @@ export const wordhoard: GameModule<
           : `${top} points${best ? `; best play ${best.words?.[0]?.word} for ${best.score}` : ''}`,
       reveal,
       recap: s.recap,
+      highlights: best
+        ? [
+            {
+              award: 'Best word',
+              playerIds: [best.player],
+              text: `${best.words?.[0]?.word} for ${best.score}`,
+              value: best.score,
+            },
+          ]
+        : [],
       standings: s.players.map((id) => ({
         playerId: id,
         outcome: winners.includes(id) ? (won.length > 1 ? 'draw' : 'win') : 'loss',

@@ -655,6 +655,7 @@ export function endGame(lobby: Lobby, result: GameResult, ctx: Ctx): Lobby {
     players: session.playerIds,
     names,
     standings,
+    ...(result.highlights?.length ? { highlights: result.highlights } : {}),
   };
   const over = touch(
     {

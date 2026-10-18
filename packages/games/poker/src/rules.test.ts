@@ -280,6 +280,9 @@ describe('the game', () => {
     expect(r).not.toBeNull();
     expect(r.standings).toHaveLength(3);
     expect(r.summary).not.toMatch(/\{/);
+    expect(r.highlights).toEqual([
+      expect.objectContaining({ award: 'Biggest pot', playerIds: [s.biggest!.player] }),
+    ]);
   });
 
   it('plays random games to the end without losing a chip', () => {

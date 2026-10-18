@@ -353,6 +353,46 @@
   }
 }
 
+/* ── The lobby: everyone round the table before the deal ──────────────── */
+.pk-table--lobby {
+  width: min(100%, 560px);
+  margin: 18px auto 34px;
+}
+.pk-lobby__blinds {
+  display: block;
+  font: 700 clamp(13px, 3.4cqw, 22px) var(--font-body);
+  letter-spacing: 0;
+  color: rgba(246, 240, 225, 0.85);
+}
+.pk-open {
+  display: block;
+  width: var(--pk-tok);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px dashed rgba(246, 240, 225, 0.45);
+  background: color-mix(in srgb, var(--sable) 70%, var(--vert));
+}
+.pk-seat__tap {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.pk-seat__tap:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+.pk-seat--landing .pk-seat__tok {
+  animation: pk-land 520ms var(--ease-out) both;
+}
+@keyframes pk-land {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(1.25);
+  }
+}
+
 /* ── Your cards and the betting dock (phone) ──────────────────────────── */
 .pk-me {
   display: flex;
@@ -552,6 +592,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .pk-seat--landing .pk-seat__tok {
+    animation: none;
+  }
   .pk-deal,
   .pk-bet,
   .pk-seat--turn .jd-token {

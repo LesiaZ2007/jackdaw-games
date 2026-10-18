@@ -269,6 +269,41 @@ Lesia's playtest list ("do timers, do alerts, do all the improvements"), all don
   Game stats > Tonight.
 - A lobby saved before a game gained an option gets that option's default (start never breaks).
 
+### Risk (2026-10-18, branch `feat/risk`)
+
+Lesia asked for Risk ("Let's add Risk") and chose: a length option (secret missions, the short
+game, or classic world domination), both the classic world map and an original one, and Roll or
+Blitz attacks. Design: `docs/superpowers/specs/2026-10-18-risk-design.md`; plan:
+`docs/superpowers/plans/2026-10-18-risk.md`.
+
+- **Rules** (`packages/games/risk`): 2–6 players (two share the board with a passive neutral).
+  Options: map (World / Realm), goal (Secret missions / World domination), setup (Quick: dealt and
+  spread; Draft: everyone places their starting armies at once, hidden until all are done), card
+  sets (Rising 4, 6, 8, 10, 12, 15, +5 / Fixed 4, 6, 8, 10), turn timer (off, 1, 2, 3 minutes;
+  out of time it trades if forced, spreads what's left, moves in the minimum and ends the turn).
+  Reinforce (territories / 3, at least 3, plus continents and sets; must trade at 5 cards; +2 on a
+  traded territory you hold), attack (Roll: one exchange; Blitz: until it falls or you're down
+  to 1; the defender wins ties), move in, fortify once along your own chain. A card for taking a
+  territory; knocking someone out takes their cards (trade down at 6+). Missions: the map's six
+  continent goals, 24 territories, 18 with 2 armies each, destroy an army (not at 2 players;
+  falls back to 24 if someone else gets there first). Awards: Bloodiest battle, Greatest conquest.
+- **Maps** (`src/maps`): the classic 42-territory world (classic borders and bonuses, Europe
+  enlarged like printed boards) and the Realm, an island kingdom of 42 provinces in 6 regions.
+  Outlines come from `scripts/build-map.mjs` (`pnpm --filter @jackdaw/game-risk maps world`):
+  coast polygons and one seed per territory in `scripts/coasts/*.json`, cut into Voronoi cells with
+  wobbled, shared borders; a test checks that territories touch on land exactly where they border
+  (sea crossings are lanes). The output (`*.shapes.ts`) is generated and kept out of Prettier.
+- **Hidden information**: hands, missions, unrevealed drafts and the deck are only in
+  `getPlayerView`; the leak test plays 20 random whole games and checks, at every step, that the
+  table view and every player's view are unchanged when everyone else's secrets are scrambled.
+- **Screens**: the phone (`fit`) is the map (pinch, drag, wheel; it opens filling the frame,
+  "Whole map" shows all; tap a territory to pick it), the turn and clock, the last dice, and a
+  dock for each step; cards and mission in sheets. Each settled battle shows the attacker and
+  defender their `VerdictMoment` (taken / repelled, lost / held); being knocked out shows a loss.
+  The TV: the whole map with names, seats with lands, armies and cards, the dice and the
+  continents; settled battles as reveals. Results: everyone's mission and the final map. Jackdaw's
+  own lobby. Kit: a `banners` glyph. e2e: `apps/web/e2e/risk.spec.ts`.
+
 ## Next
 
 1. Lesia reviews and playtests Phase 1 on the Vercel preview, then merges `feat/phase-1` to `main`. Production then serves it.

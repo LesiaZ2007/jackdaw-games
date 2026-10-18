@@ -13,16 +13,26 @@ import { meta } from './meta';
 import { isWord } from './words';
 
 /**
- * Wordhoard, a crossword tile game for 2–4 players. Each turn you lay tiles from your rack of
+ * Wordhoard, a crossword tile game for 2–4 players, or up to eight in pairs. Each turn you lay tiles from your rack of
  * seven in one line to make words joined to those on the board, and score their letters with the
  * board's bonus squares; using all seven at once earns 50 more. Every word made must be in the
  * word list. Instead of playing you can swap tiles (while the bag has at least seven) or pass.
  * The game ends when someone uses their last tile with the bag empty (they gain what's left on
  * everyone else's racks, who lose it), or after six scoreless turns in a row (everyone loses
  * what's on their rack). Most points wins.
+ *
+ * Past four players (or always, if the host picks it) everyone plays in pairs. Partners are drawn at random (with an odd number, one player is on their own). A
+ * pair shares one rack and one score, and either partner can make the pair's move.
  */
 
-export const optionsSchema = z.object({});
+/** Pairs: only once there are too many to play alone, or always. */
+const PAIRS = ['Past four players', 'Always'] as const;
+/** Most sides at the board: four racks of seven still leave the bag a game's worth. */
+const MAX_SIDES = 4;
+
+export const optionsSchema = z.object({
+  pairs: z.enum(PAIRS).describe('Pairs'),
+});
 export type WordhoardOptions = z.infer<typeof optionsSchema>;
 
 const letter = z.string().regex(/^[A-Z]$/);
@@ -68,12 +78,18 @@ export interface Move {
 
 export interface WordhoardState {
   players: string[];
+  /**
+   * Who plays together, in turn order: one player each, or pairs. A side is known by its first
+   * player's id, which keys racks, scores and turn.
+   */
+  sides: string[][];
   board: Board;
   /** Secret: the bag, in drawing order. */
   bag: string[];
-  /** Secret: each player's tiles ('?' is a blank). */
+  /** Secret: each side's tiles ('?' is a blank). */
   racks: Record<string, string[]>;
   scores: Record<string, number>;
+  /** The side to play. */
   turn: string;
   moves: Move[];
   /** Scoreless turns in a row (passes, swaps, nothing scored). */
@@ -87,6 +103,7 @@ export interface WordhoardState {
 /** Everything public: the TV and every phone render this. */
 export interface WordhoardTableView {
   players: string[];
+  sides: string[][];
   board: Board;
   bagCount: number;
   rackCounts: Record<string, number>;
@@ -100,6 +117,9 @@ export interface WordhoardTableView {
 
 export interface WordhoardPlayerView extends WordhoardTableView {
   me: string;
+  /** Your side: you, or you and your partner. */
+  side: string;
+  /** Your side's rack. */
   rack: string[];
 }
 
@@ -129,14 +149,25 @@ function takeFrom(rack: string[], tiles: string[]): string[] | null {
   return left;
 }
 
-const nextPlayer = (s: WordhoardState) =>
-  s.players[(s.players.indexOf(s.turn) + 1) % s.players.length]!;
+/** The side a player plays on, by its key. */
+export const sideOf = (t: { sides: string[][] }, playerId: string) =>
+  t.sides.find((side) => side.includes(playerId))?.[0];
 
-/** Ends the game, settling what's left on the racks. `out` used their last tile, if anyone did. */
-function finish(s: WordhoardState, out: string | null): WordhoardState {
+const keys = (s: { sides: string[][] }) => s.sides.map((side) => side[0]!);
+
+const nextSide = (s: WordhoardState) => {
+  const k = keys(s);
+  return k[(k.indexOf(s.turn) + 1) % k.length]!;
+};
+
+/**
+ * Ends the game, settling what's left on the racks. `out` is the side that used its last tile (and
+ * `who` the player who laid it), if anyone did.
+ */
+function finish(s: WordhoardState, out: string | null, who?: string): WordhoardState {
   const endBonus: Record<string, number> = {};
   let left = 0;
-  for (const id of s.players) {
+  for (const id of keys(s)) {
     const v = rackValue(s.racks[id] ?? []);
     if (id !== out) {
       endBonus[id] = -v;
@@ -145,7 +176,7 @@ function finish(s: WordhoardState, out: string | null): WordhoardState {
   }
   if (out) endBonus[out] = left;
   const scores = Object.fromEntries(
-    s.players.map((id) => [id, (s.scores[id] ?? 0) + (endBonus[id] ?? 0)]),
+    keys(s).map((id) => [id, (s.scores[id] ?? 0) + (endBonus[id] ?? 0)]),
   );
   return {
     ...s,
@@ -156,7 +187,7 @@ function finish(s: WordhoardState, out: string | null): WordhoardState {
       ...s.recap,
       {
         text: out
-          ? `{${out}} used their last tile and gained ${left} from the other racks.`
+          ? `{${who ?? out}} used the last tile and gained ${left} from the other racks.`
           : `Six scoreless turns in a row ended the game.`,
       },
     ],
@@ -166,9 +197,10 @@ function finish(s: WordhoardState, out: string | null): WordhoardState {
 function view(s: WordhoardState): WordhoardTableView {
   return {
     players: s.players,
+    sides: s.sides,
     board: s.board,
     bagCount: s.bag.length,
-    rackCounts: Object.fromEntries(s.players.map((id) => [id, s.racks[id]?.length ?? 0])),
+    rackCounts: Object.fromEntries(keys(s).map((id) => [id, s.racks[id]?.length ?? 0])),
     scores: s.scores,
     turn: s.turn,
     moves: s.moves,
@@ -190,23 +222,33 @@ export const wordhoard: GameModule<
   meta,
   optionsSchema,
   actionSchema,
-  defaultOptions: () => ({}),
+  defaultOptions: () => ({ pairs: 'Past four players' }),
+  validateOptions: (o, n) =>
+    o.pairs === 'Always' && n < 3 ? 'Pairs need at least three players.' : null,
 
-  setup({ playerIds, rng }) {
+  setup({ playerIds, options, rng }) {
+    let sides: string[][];
+    if (options.pairs === 'Always' || playerIds.length > MAX_SIDES) {
+      const drawn = rng.shuffle(playerIds);
+      sides = Array.from({ length: Math.ceil(drawn.length / 2) }, (_, i) =>
+        drawn.slice(i * 2, i * 2 + 2),
+      );
+    } else sides = playerIds.map((id) => [id]);
     let bag = rng.shuffle(Object.entries(COUNTS).flatMap(([t, n]) => Array<string>(n).fill(t)));
     const racks: Record<string, string[]> = {};
-    for (const id of playerIds) {
+    for (const id of keys({ sides })) {
       const d = draw(bag, []);
       racks[id] = d.rack;
       bag = d.bag;
     }
     return {
       players: playerIds,
+      sides,
       board: emptyBoard(),
       bag,
       racks,
-      scores: Object.fromEntries(playerIds.map((id) => [id, 0])),
-      turn: rng.pick(playerIds),
+      scores: Object.fromEntries(keys({ sides }).map((id) => [id, 0])),
+      turn: rng.pick(keys({ sides })),
       moves: [],
       scoreless: 0,
       over: false,
@@ -216,20 +258,22 @@ export const wordhoard: GameModule<
   },
 
   getPlayerView(s, playerId) {
-    return { ...view(s), me: playerId, rack: s.racks[playerId] ?? [] };
+    const side = sideOf(s, playerId) ?? playerId;
+    return { ...view(s), me: playerId, side, rack: s.racks[side] ?? [] };
   },
 
   getTableView: view,
 
   applyAction(s, playerId, action) {
     if (s.over) throw new GameError('over', 'The game is over.');
-    if (s.turn !== playerId) throw new GameError('not_your_turn', 'It’s not your turn.');
-    const rack = s.racks[playerId] ?? [];
+    const side = sideOf(s, playerId);
+    if (!side || s.turn !== side) throw new GameError('not_your_turn', 'It’s not your turn.');
+    const rack = s.racks[side] ?? [];
 
     if (action.type === 'pass') {
       const next: WordhoardState = {
         ...s,
-        turn: nextPlayer(s),
+        turn: nextSide(s),
         moves: [...s.moves, { player: playerId, kind: 'pass', score: 0 }],
         scoreless: s.scoreless + 1,
         recap: [...s.recap, { actor: playerId, text: 'passed' }],
@@ -246,9 +290,9 @@ export const wordhoard: GameModule<
       // The swapped tiles go back into the bag, below the ones still to be drawn.
       const next: WordhoardState = {
         ...s,
-        racks: { ...s.racks, [playerId]: d.rack },
+        racks: { ...s.racks, [side]: d.rack },
         bag: [...d.bag, ...action.tiles],
-        turn: nextPlayer(s),
+        turn: nextSide(s),
         moves: [
           ...s.moves,
           { player: playerId, kind: 'swap', score: 0, count: action.tiles.length },
@@ -282,9 +326,9 @@ export const wordhoard: GameModule<
       ...s,
       board,
       bag: d.bag,
-      racks: { ...s.racks, [playerId]: d.rack },
-      scores: { ...s.scores, [playerId]: (s.scores[playerId] ?? 0) + check.score },
-      turn: nextPlayer(s),
+      racks: { ...s.racks, [side]: d.rack },
+      scores: { ...s.scores, [side]: (s.scores[side] ?? 0) + check.score },
+      turn: nextSide(s),
       moves: [
         ...s.moves,
         {
@@ -305,13 +349,14 @@ export const wordhoard: GameModule<
         },
       ],
     };
-    return d.rack.length === 0 && d.bag.length === 0 ? finish(next, playerId) : next;
+    return d.rack.length === 0 && d.bag.length === 0 ? finish(next, side, playerId) : next;
   },
 
   getResult(s): GameResult | null {
     if (!s.over) return null;
-    const top = Math.max(...s.players.map((id) => s.scores[id] ?? 0));
-    const winners = s.players.filter((id) => (s.scores[id] ?? 0) === top);
+    const top = Math.max(...keys(s).map((id) => s.scores[id] ?? 0));
+    const won = keys(s).filter((id) => (s.scores[id] ?? 0) === top);
+    const winners = s.players.filter((id) => won.includes(sideOf(s, id)!));
     const best = s.moves
       .filter((m) => m.kind === 'play')
       .reduce<Move | null>((a, m) => (!a || m.score > a.score ? m : a), null);
@@ -325,15 +370,15 @@ export const wordhoard: GameModule<
     return {
       winners,
       summary:
-        winners.length > 1
+        won.length > 1
           ? `A tie on ${top} points`
           : `${top} points${best ? `; best play ${best.words?.[0]?.word} for ${best.score}` : ''}`,
       reveal,
       recap: s.recap,
       standings: s.players.map((id) => ({
         playerId: id,
-        outcome: winners.includes(id) ? (winners.length > 1 ? 'draw' : 'win') : 'loss',
-        role: `${s.scores[id] ?? 0} points`,
+        outcome: winners.includes(id) ? (won.length > 1 ? 'draw' : 'win') : 'loss',
+        role: `${s.scores[sideOf(s, id)!] ?? 0} points`,
       })),
     };
   },

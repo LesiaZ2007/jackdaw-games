@@ -192,7 +192,7 @@ Approved by Lesia for every game:
     table talk itself from `ScreenExtras.chat` / `GameResultsProps.chat`, and its tokens fly in
     and out on start and end) and `GameUi.Results` (a game's own end screen).
 
-### Poker and Wordhoard (2026-10-17, `feat/wordhoard`, which includes `feat/poker`)
+### Poker and Wordhoard (2026-10-17, merged to `main` 2026-10-18)
 
 Lesia asked for "poker and a scrabble-esque game" in the agreed style. Both use Jackdaw's own
 lobby (simple games keep it), follow day and dark through the tokens, and have rules tests with
@@ -202,12 +202,18 @@ a leak test, phone and TV screens, catalog pictures and an e2e (`e2e/cards-and-w
   (500/1000/2000), blinds (5/10, 10/20, 25/50), blinds doubling (never, every 5 or 10 hands)
   and length (15 or 30 hands, or last one standing). Full no-limit betting: min-raises, short
   all-ins that don't reopen the action, uncalled bets returned, side pots, odd chips left of the
-  button; `cards.ts` ranks hands. A busted player watches. Between hands anyone taps "Deal the
-  next hand" (there's no timer runtime). Look: a printed card table, vert baize on a sable rail,
+  button; `cards.ts` ranks hands. A busted player watches. The next hand deals itself (Lesia,
+  2026-10-18): with no timer runtime, every phone counts down 7s and sends
+  `{type:'deal', after:<hand>}`, the seat left of the button first and the rest 1.2s apart as
+  backup; a deal naming a hand already dealt does nothing. "Deal now" skips the wait. Look: a printed card table, vert baize on a sable rail,
   seats round the rim with your seat at the bottom (like Avalon's round table), cream cards with
   gules hearts and diamonds, chips as small stacks. Each hand ends with your VerdictMoment (won,
   lost at a showdown, or who won if you weren't in it; none if you folded).
-- **Wordhoard** (`packages/games/wordhoard`): a crossword tile game for 2–4, with Jackdaw's own
+- **Wordhoard** (`packages/games/wordhoard`): a crossword tile game for 2–4, or up to 8 in pairs
+  (Lesia, 2026-10-18). Past four players everyone plays in pairs; the option "Pairs: Always"
+  pairs smaller groups too (3+). Partners are
+  drawn at random (one player alone with an odd number), share a rack and a score, and either
+  can make the move; racks, scores and the turn are keyed by a side's first player. It has Jackdaw's own
   board layout (original bonus squares), tile mix (100 tiles) and values. Plays are checked on
   the server against ENABLE (public domain, 168,551 words), packed by
   `scripts/pack-words.mjs` into `src/words.packed.ts`; browsers get an empty list through the
@@ -262,9 +268,5 @@ a leak test, phone and TV screens, catalog pictures and an e2e (`e2e/cards-and-w
 - The plan's strict "reject stale seq" would reject simultaneous votes. Actions are currently rejected only when they come from an earlier game or claim a future seq. Ordering within a game is left to the rules.
 - Timers (`onTimer`) are not scheduled yet. That will be decided with the first timed game. On Vercel they'll be evaluated lazily on each poll.
 - Secret Hitler house rules for 11 to 15 players still need confirming with the group (Phase 3).
-- Poker and Wordhoard (2026-10-17), for Lesia:
-  - Poker's defaults (1,000 chips, 10/20 blinds doubling every 10 hands, 30 hands): right for
-    the group? Should a hand deal itself after a few seconds instead of "Deal the next hand"?
-  - Wordhoard is 2–4 players. Bigger nights could play in pairs (up to 8): wanted?
-  - The name "Wordhoard" (Old English for a store of words), and ENABLE's American word list
-    (it has some British spellings, like RIGOUR, but not all).
+- Wordhoard's name (Lesia wants to talk names, 2026-10-18), and ENABLE's American word list (it
+  has some British spellings, like RIGOUR, but not all). Poker's defaults stand (Lesia, 2026-10-18).

@@ -29,7 +29,7 @@ const snapshot = (over: Partial<LobbySnapshot> = {}): LobbySnapshot => ({
   players: [
     {
       id: 'p1',
-      name: 'Ana',
+      name: 'Jay',
       avatar: { crest: 'helm', tint: 'slate' },
       online: true,
       joinedAt: 0,
@@ -37,7 +37,7 @@ const snapshot = (over: Partial<LobbySnapshot> = {}): LobbySnapshot => ({
     },
     {
       id: 'p2',
-      name: 'Ben',
+      name: 'Crow',
       avatar: { crest: 'crown', tint: 'plum' },
       online: true,
       joinedAt: 1,
@@ -76,8 +76,8 @@ describe('identity', () => {
   it('remembers the last name and avatar, ignoring junk', () => {
     const store = memoryStore();
     expect(rememberedName(store)).toBeNull();
-    rememberName('  Ana  ', store);
-    expect(rememberedName(store)).toBe('Ana');
+    rememberName('  Jay  ', store);
+    expect(rememberedName(store)).toBe('Jay');
     rememberAvatar({ crest: 'owl', tint: 'moss' }, store);
     expect(rememberedAvatar(store)).toEqual({ crest: 'owl', tint: 'moss' });
     store.setItem('jackdaw:avatar', '{nope');

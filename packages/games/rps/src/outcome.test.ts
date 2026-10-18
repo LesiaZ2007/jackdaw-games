@@ -7,7 +7,7 @@ const round = (picks: Record<string, Pick>): RoundResult => ({
   picks,
   points: scoreRound(picks),
 });
-const NAMES: Record<string, string> = { a: 'Ash', b: 'Bran', c: 'Cerys', d: 'Dai' };
+const NAMES: Record<string, string> = { a: 'Lark', b: 'Rook', c: 'Magpie', d: 'Swift' };
 const name = (id: string) => NAMES[id] ?? id;
 
 describe('round outcomes', () => {
@@ -52,14 +52,14 @@ describe('round outcomes', () => {
 describe('round descriptions', () => {
   it('says who you beat, or who beat you', () => {
     const r = round({ a: 'rock', b: 'scissors', c: 'scissors' });
-    expect(describeRound(r, 'a', name)).toBe('Your rock beat Bran and Cerys. +2 points.');
-    expect(describeRound(r, 'b', name)).toBe('Ash beat your scissors with rock.');
+    expect(describeRound(r, 'a', name)).toBe('Your rock beat Rook and Magpie. +2 points.');
+    expect(describeRound(r, 'b', name)).toBe('Lark beat your scissors with rock.');
   });
 
   it('mentions who you lost to even in a round you took', () => {
     const r = round({ a: 'rock', b: 'scissors', c: 'paper', d: 'scissors' });
     expect(describeRound(r, 'a', name)).toBe(
-      'Your rock beat Bran and Dai but lost to Cerys. +2 points.',
+      'Your rock beat Rook and Swift but lost to Magpie. +2 points.',
     );
   });
 
@@ -71,8 +71,8 @@ describe('round descriptions', () => {
   });
 
   it('shortens long lists of names', () => {
-    expect(listNames(['a', 'b', 'c', 'd'], name)).toBe('Ash, Bran and 2 others');
-    expect(listNames(['a', 'b', 'c'], name)).toBe('Ash, Bran and 1 other');
-    expect(listNames(['a'], name)).toBe('Ash');
+    expect(listNames(['a', 'b', 'c', 'd'], name)).toBe('Lark, Rook and 2 others');
+    expect(listNames(['a', 'b', 'c'], name)).toBe('Lark, Rook and 1 other');
+    expect(listNames(['a'], name)).toBe('Lark');
   });
 });

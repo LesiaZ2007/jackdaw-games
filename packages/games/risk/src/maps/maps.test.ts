@@ -59,6 +59,23 @@ describe.each(Object.values(MAPS))('the $name map', (map) => {
   });
 });
 
+describe('the realm map', () => {
+  const map = MAPS.realm;
+
+  it('is its own map', () => {
+    expect(map.id).toBe('realm');
+  });
+
+  it('has bonuses spread like the classic board', () => {
+    expect(map.continents.map((c) => c.bonus).sort((a, b) => b - a)).toEqual([7, 5, 5, 3, 2, 2]);
+  });
+
+  it('names are unique across territories and regions', () => {
+    const names = [...map.territories, ...map.continents].map((x) => x.name);
+    expect(new Set(names).size).toBe(names.length);
+  });
+});
+
 describe('the world map', () => {
   const map = MAPS.world;
   const t = (id: string) => map.territories.find((x) => x.id === id)!;

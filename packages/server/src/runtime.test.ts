@@ -11,7 +11,7 @@ const TOKENS = {
   cy: 'token-cy-01234567890',
 };
 
-function setup(opts: { rateLimit?: { posts: number; polls: number; windowMs: number } } = {}) {
+function setup(opts: Partial<Parameters<typeof createRoomRuntime>[0]> = {}) {
   let t = 1_000_000;
   const clock = { now: () => t, advance: (ms: number) => (t += ms) };
   const storage = new MemoryStorage(clock.now);
@@ -276,5 +276,46 @@ describe('http handlers', () => {
       code,
     );
     expect(badJson.status).toBe(400);
+  });
+});
+
+describe('your-move notifications', () => {
+  // Stand-ins only: the send function is faked, so nothing is encrypted or signed here.
+  const sub = { endpoint: 'https://push.example.net/ben', keys: { p256dh: 'p256', auth: 'auth' } };
+  const vapid = { publicKey: 'test', privateKey: 'test', subject: 'mailto:x@example.com' };
+
+  it('pushes to a subscribed player each time the game starts waiting on them', async () => {
+    const sent: { to: string; title: string }[] = [];
+    let answer: 'ok' | 'gone' = 'ok';
+    const { runtime } = setup({
+      push: {
+        vapid,
+        send: async (s, m) => (sent.push({ to: s.endpoint, title: m.title }), answer),
+      },
+    });
+    const { code } = await runtime.create({ token: TOKENS.ana, name: 'Ana', gameId: 'rps' });
+    await runtime.post(code, TOKENS.ben, { type: 'join', name: 'Ben' });
+    await runtime.post(code, TOKENS.ana, { type: 'setOptions', options: { rounds: 3 } });
+    await expect(runtime.setPush(code, TOKENS.ben, { endpoint: 'http://x' })).rejects.toThrow();
+    await runtime.setPush(code, TOKENS.ben, sub);
+
+    let s = await runtime.post(code, TOKENS.ana, { type: 'start' });
+    expect(s.waitingOn).toHaveLength(2);
+    expect(sent).toEqual([{ to: sub.endpoint, title: 'Your move in Rock Paper Scissors' }]);
+    s = await runtime.post(code, TOKENS.ben, pick(s, 'rock'));
+    expect(sent).toHaveLength(1);
+    // Ana's pick ends the round; the next one waits on Ben again.
+    answer = 'gone';
+    s = await runtime.post(code, TOKENS.ana, pick(s, 'paper'));
+    expect(sent).toHaveLength(2);
+    // The push service said that subscription is gone, so it's forgotten.
+    s = await runtime.post(code, TOKENS.ben, pick(s, 'rock'));
+    await runtime.post(code, TOKENS.ana, pick(s, 'paper'));
+    expect(sent).toHaveLength(2);
+  });
+
+  it('refuses subscriptions when notifications aren’t set up', async () => {
+    const { runtime, code } = await threePlayerLobby();
+    await expect(runtime.setPush(code, TOKENS.ben, sub)).rejects.toThrow(/aren’t set up/);
   });
 });

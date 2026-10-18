@@ -8,6 +8,7 @@ import { BirdMark, Lid, Plaque, Toast, type LobbyChat, type ScreenPlayer } from 
 import { catalogEntry } from '@/lib/catalog';
 import { forgetSeat, rememberedSeat, rememberSeat } from '@/lib/identity';
 import { readSeen, unreadCount, writeSeen } from '@/lib/unread';
+import { useTurnAlert } from '@/lib/alerts';
 import { useLobby } from '@/lib/use-lobby';
 import { LobbyBar, type Panel } from './bar';
 import { Chat } from './chat';
@@ -140,6 +141,7 @@ export function screenPlayers(s: LobbySnapshot): ScreenPlayer[] {
 export function LobbyRoom({ code }: { code: string }) {
   const { snapshot: live, error, missing, send, clearError } = useLobby(code, 'player');
   const snapshot = useStatusSwitch(live);
+  useTurnAlert(live);
   const [panel, setPanel] = useState<Panel>(null);
   const [hadSeat, setHadSeat] = useState<string | null>(null);
 

@@ -30,6 +30,7 @@ export function TvResults({
 }) {
   const result = snapshot.results!;
   const game = catalogEntry(result.gameId)?.meta.name ?? 'The game';
+  const TvReveal = catalogEntry(result.gameId)?.ui?.TvReveal;
   const latest = snapshot.history[0];
   // Names as they were when the game ended (people may have left or renamed since).
   const names = new Map<string, string>([
@@ -113,27 +114,33 @@ export function TvResults({
         </ol>
       </section>
 
-      <section className="tv-recap" aria-label="What happened">
-        <h2 className="jd-display tv-section-title">What happened</h2>
-        {shown.length === 0 ? (
-          <p className="tv-recap__empty">No recap for this game.</p>
-        ) : (
-          <ol>
-            {shown.map((e, i) => (
-              <li key={i} className="tv-recap__event">
-                {e.round !== undefined && <span className="tv-recap__round">{e.round}</span>}
-                <span className="tv-recap__text">
-                  {withNames(e.text, names)}
-                  {e.secret && (
-                    <span className="tv-recap__secret">{withNames(e.secret, names)}</span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ol>
-        )}
-        {more > 0 && <p className="tv-recap__more">And {more} more on everyone&apos;s phones.</p>}
-      </section>
+      {TvReveal ? (
+        <section className="tv-reveal" aria-label="How it ended">
+          <TvReveal result={result} players={players} />
+        </section>
+      ) : (
+        <section className="tv-recap" aria-label="What happened">
+          <h2 className="jd-display tv-section-title">What happened</h2>
+          {shown.length === 0 ? (
+            <p className="tv-recap__empty">No recap for this game.</p>
+          ) : (
+            <ol>
+              {shown.map((e, i) => (
+                <li key={i} className="tv-recap__event">
+                  {e.round !== undefined && <span className="tv-recap__round">{e.round}</span>}
+                  <span className="tv-recap__text">
+                    {withNames(e.text, names)}
+                    {e.secret && (
+                      <span className="tv-recap__secret">{withNames(e.secret, names)}</span>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+          {more > 0 && <p className="tv-recap__more">And {more} more on everyone&apos;s phones.</p>}
+        </section>
+      )}
 
       <p className="tv-waiting tv-results__waiting">
         Waiting for {hostName} to play again or go back to the lobby

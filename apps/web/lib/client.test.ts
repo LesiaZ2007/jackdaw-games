@@ -54,6 +54,7 @@ const snapshot = (over: Partial<LobbySnapshot> = {}): LobbySnapshot => ({
   reactions: [],
   me: 'p1',
   session: null,
+  serverNow: 0,
   ...over,
 });
 
@@ -99,9 +100,21 @@ describe('mergeUnchanged', () => {
   it('updates who is online and keeps the same object when nothing moved', () => {
     const s = snapshot();
     expect(
-      mergeUnchanged(s, { unchanged: true, version: 1, online: ['p1', 'p2'], displays: 0 }),
+      mergeUnchanged(s, {
+        unchanged: true,
+        version: 1,
+        online: ['p1', 'p2'],
+        displays: 0,
+        serverNow: 0,
+      }),
     ).toBe(s);
-    const merged = mergeUnchanged(s, { unchanged: true, version: 1, online: ['p1'], displays: 1 });
+    const merged = mergeUnchanged(s, {
+      unchanged: true,
+      version: 1,
+      online: ['p1'],
+      displays: 1,
+      serverNow: 0,
+    });
     expect(merged.players.map((p) => p.online)).toEqual([true, false]);
     expect(merged.displays).toBe(1);
   });

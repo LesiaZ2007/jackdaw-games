@@ -9,7 +9,7 @@ import { CodenamesTvLobby } from './tv-lobby';
 
 /** Codenames: catalog art, detail page, its own lobby, and the screens. */
 export const codenamesUi: GameUi = {
-  art: { band: 'gules', field: 'checky', glyph: 'grid' },
+  art: { band: 'gules', field: 'checky', glyph: 'agent' },
   about: {
     description:
       'Two teams race to find their agents among 25 words. Only the two spymasters can see which word is whose, and each turn they get one word and one number to steer their team. Find a bystander and your turn ends; find the assassin and you lose on the spot.',

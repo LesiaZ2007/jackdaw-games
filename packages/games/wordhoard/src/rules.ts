@@ -27,11 +27,13 @@ import { isWord } from './words';
 
 /** Pairs: only once there are too many to play alone, or always. */
 const PAIRS = ['Past four players', 'Always'] as const;
+const CLOCKS = ['Off', '1 minute', '2 minutes', '3 minutes'] as const;
 /** Most sides at the board: four racks of seven still leave the bag a game's worth. */
 const MAX_SIDES = 4;
 
 export const optionsSchema = z.object({
   pairs: z.enum(PAIRS).describe('Pairs'),
+  turnTimer: z.enum(CLOCKS).describe('Turn timer'),
 });
 export type WordhoardOptions = z.infer<typeof optionsSchema>;
 
@@ -74,6 +76,8 @@ export interface Move {
   /** Tiles swapped. */
   count?: number;
   bingo?: boolean;
+  /** A pass because the turn timer ran out. */
+  late?: boolean;
 }
 
 export interface WordhoardState {
@@ -98,6 +102,10 @@ export interface WordhoardState {
   /** At the end: what each player gained or lost from the tiles left on racks. */
   endBonus: Record<string, number>;
   recap: RecapEvent[];
+  /** Seconds each turn may take, 0 or absent for no limit. */
+  turnSecs?: number;
+  /** When the side to play runs out of time (server time), with a turn timer. */
+  turnBy?: number | null;
 }
 
 /** Everything public: the TV and every phone render this. */
@@ -113,6 +121,8 @@ export interface WordhoardTableView {
   scoreless: number;
   over: boolean;
   endBonus: Record<string, number>;
+  /** When the side to play runs out of time (server time), with a turn timer. */
+  turnBy: number | null;
 }
 
 export interface WordhoardPlayerView extends WordhoardTableView {
@@ -209,10 +219,106 @@ function view(s: WordhoardState): WordhoardTableView {
     scoreless: s.scoreless,
     over: s.over,
     endBonus: s.endBonus,
+    turnBy: s.turnBy ?? null,
   };
 }
 
+/** Starts the turn timer for whoever plays next, after any move. */
+function clock(prev: WordhoardState | null, s: WordhoardState, now: number): WordhoardState {
+  if (s === prev) return s;
+  const moved = !prev || s.moves.length !== prev.moves.length;
+  const turnBy =
+    s.over || !s.turnSecs ? null : moved ? now + s.turnSecs * 1000 : (s.turnBy ?? null);
+  return { ...s, turnBy };
+}
+
 const words = (ws: FormedWord[]) => ws.map((w) => w.word).join(', ');
+
+/** One player's move, before the turn timer is set (see `clock`). */
+function act(s: WordhoardState, playerId: string, action: WordhoardAction): WordhoardState {
+  if (s.over) throw new GameError('over', 'The game is over.');
+  const side = sideOf(s, playerId);
+  if (!side || s.turn !== side) throw new GameError('not_your_turn', 'It’s not your turn.');
+  const rack = s.racks[side] ?? [];
+
+  if (action.type === 'pass') {
+    const next: WordhoardState = {
+      ...s,
+      turn: nextSide(s),
+      moves: [...s.moves, { player: playerId, kind: 'pass', score: 0 }],
+      scoreless: s.scoreless + 1,
+      recap: [...s.recap, { actor: playerId, text: 'passed' }],
+    };
+    return next.scoreless >= SCORELESS_END ? finish(next, null) : next;
+  }
+
+  if (action.type === 'swap') {
+    if (s.bag.length < RACK)
+      throw new GameError('bag_low', 'You can only swap while the bag has at least seven tiles.');
+    const left = takeFrom(rack, action.tiles);
+    if (!left) throw new GameError('not_yours', 'Those tiles aren’t on your rack.');
+    const d = draw(s.bag, left);
+    // The swapped tiles go back into the bag, below the ones still to be drawn.
+    const next: WordhoardState = {
+      ...s,
+      racks: { ...s.racks, [side]: d.rack },
+      bag: [...d.bag, ...action.tiles],
+      turn: nextSide(s),
+      moves: [...s.moves, { player: playerId, kind: 'swap', score: 0, count: action.tiles.length }],
+      scoreless: s.scoreless + 1,
+      recap: [...s.recap, { actor: playerId, text: `swapped ${action.tiles.length} tiles` }],
+    };
+    return next.scoreless >= SCORELESS_END ? finish(next, null) : next;
+  }
+
+  // A play.
+  const used = action.tiles.map((t) => (t.blank ? '?' : t.letter));
+  const left = takeFrom(rack, used);
+  if (!left) throw new GameError('not_yours', 'Those tiles aren’t on your rack.');
+  const check = checkPlay(s.board, action.tiles);
+  if (!check.ok) throw new GameError('bad_play', check.reason);
+  const wrong = check.words.filter((w) => !isWord(w.word));
+  if (wrong.length > 0) {
+    throw new GameError(
+      'not_a_word',
+      wrong.length === 1
+        ? `${wrong[0]!.word} isn’t in the word list.`
+        : `${words(wrong)} aren’t in the word list.`,
+    );
+  }
+  const board = s.board.map((row) => [...row]);
+  for (const t of action.tiles)
+    board[t.row]![t.col] = { letter: t.letter, ...(t.blank ? { blank: true } : {}) };
+  const d = draw(s.bag, left);
+  const next: WordhoardState = {
+    ...s,
+    board,
+    bag: d.bag,
+    racks: { ...s.racks, [side]: d.rack },
+    scores: { ...s.scores, [side]: (s.scores[side] ?? 0) + check.score },
+    turn: nextSide(s),
+    moves: [
+      ...s.moves,
+      {
+        player: playerId,
+        kind: 'play',
+        words: check.words.map((w) => ({ word: w.word, score: w.score })),
+        cells: action.tiles.map((t) => [t.row, t.col] as [number, number]),
+        score: check.score,
+        bingo: check.bingo,
+      },
+    ],
+    scoreless: 0,
+    recap: [
+      ...s.recap,
+      {
+        actor: playerId,
+        text: `played ${words(check.words)} for ${check.score}${check.bingo ? ' (all seven tiles)' : ''}`,
+      },
+    ],
+  };
+  return d.rack.length === 0 && d.bag.length === 0 ? finish(next, side, playerId) : next;
+}
 
 export const wordhoard: GameModule<
   WordhoardState,
@@ -224,11 +330,11 @@ export const wordhoard: GameModule<
   meta,
   optionsSchema,
   actionSchema,
-  defaultOptions: () => ({ pairs: 'Past four players' }),
+  defaultOptions: () => ({ pairs: 'Past four players', turnTimer: 'Off' }),
   validateOptions: (o, n) =>
     o.pairs === 'Always' && n < 3 ? 'Pairs need at least three players.' : null,
 
-  setup({ playerIds, options, rng }) {
+  setup({ playerIds, options, rng, now }) {
     let sides: string[][];
     if (options.pairs === 'Always' || playerIds.length > MAX_SIDES) {
       const drawn = rng.shuffle(playerIds);
@@ -243,7 +349,8 @@ export const wordhoard: GameModule<
       racks[id] = d.rack;
       bag = d.bag;
     }
-    return {
+    const start: WordhoardState = {
+      turnSecs: options.turnTimer === 'Off' ? 0 : 60 * Number(options.turnTimer.split(' ')[0]),
       players: playerIds,
       sides,
       board: emptyBoard(),
@@ -257,6 +364,7 @@ export const wordhoard: GameModule<
       endBonus: {},
       recap: [],
     };
+    return clock(null, start, now);
   },
 
   getPlayerView(s, playerId) {
@@ -266,92 +374,23 @@ export const wordhoard: GameModule<
 
   getTableView: view,
 
-  applyAction(s, playerId, action) {
-    if (s.over) throw new GameError('over', 'The game is over.');
-    const side = sideOf(s, playerId);
-    if (!side || s.turn !== side) throw new GameError('not_your_turn', 'It’s not your turn.');
-    const rack = s.racks[side] ?? [];
+  applyAction(s, playerId, action, _rng, now) {
+    return clock(s, act(s, playerId, action), now);
+  },
 
-    if (action.type === 'pass') {
-      const next: WordhoardState = {
-        ...s,
-        turn: nextSide(s),
-        moves: [...s.moves, { player: playerId, kind: 'pass', score: 0 }],
-        scoreless: s.scoreless + 1,
-        recap: [...s.recap, { actor: playerId, text: 'passed' }],
-      };
-      return next.scoreless >= SCORELESS_END ? finish(next, null) : next;
-    }
+  nextTimer: (s) => (!s.over && s.turnBy ? { id: 'turn', at: s.turnBy } : null),
 
-    if (action.type === 'swap') {
-      if (s.bag.length < RACK)
-        throw new GameError('bag_low', 'You can only swap while the bag has at least seven tiles.');
-      const left = takeFrom(rack, action.tiles);
-      if (!left) throw new GameError('not_yours', 'Those tiles aren’t on your rack.');
-      const d = draw(s.bag, left);
-      // The swapped tiles go back into the bag, below the ones still to be drawn.
-      const next: WordhoardState = {
-        ...s,
-        racks: { ...s.racks, [side]: d.rack },
-        bag: [...d.bag, ...action.tiles],
-        turn: nextSide(s),
-        moves: [
-          ...s.moves,
-          { player: playerId, kind: 'swap', score: 0, count: action.tiles.length },
-        ],
-        scoreless: s.scoreless + 1,
-        recap: [...s.recap, { actor: playerId, text: `swapped ${action.tiles.length} tiles` }],
-      };
-      return next.scoreless >= SCORELESS_END ? finish(next, null) : next;
-    }
-
-    // A play.
-    const used = action.tiles.map((t) => (t.blank ? '?' : t.letter));
-    const left = takeFrom(rack, used);
-    if (!left) throw new GameError('not_yours', 'Those tiles aren’t on your rack.');
-    const check = checkPlay(s.board, action.tiles);
-    if (!check.ok) throw new GameError('bad_play', check.reason);
-    const wrong = check.words.filter((w) => !isWord(w.word));
-    if (wrong.length > 0) {
-      throw new GameError(
-        'not_a_word',
-        wrong.length === 1
-          ? `${wrong[0]!.word} isn’t in the word list.`
-          : `${words(wrong)} aren’t in the word list.`,
-      );
-    }
-    const board = s.board.map((row) => [...row]);
-    for (const t of action.tiles)
-      board[t.row]![t.col] = { letter: t.letter, ...(t.blank ? { blank: true } : {}) };
-    const d = draw(s.bag, left);
+  onTimer(s, id, _rng, now) {
+    if (id !== 'turn' || s.over) return s;
+    // Out of time: the side to play passes.
     const next: WordhoardState = {
       ...s,
-      board,
-      bag: d.bag,
-      racks: { ...s.racks, [side]: d.rack },
-      scores: { ...s.scores, [side]: (s.scores[side] ?? 0) + check.score },
       turn: nextSide(s),
-      moves: [
-        ...s.moves,
-        {
-          player: playerId,
-          kind: 'play',
-          words: check.words.map((w) => ({ word: w.word, score: w.score })),
-          cells: action.tiles.map((t) => [t.row, t.col] as [number, number]),
-          score: check.score,
-          bingo: check.bingo,
-        },
-      ],
-      scoreless: 0,
-      recap: [
-        ...s.recap,
-        {
-          actor: playerId,
-          text: `played ${words(check.words)} for ${check.score}${check.bingo ? ' (all seven tiles)' : ''}`,
-        },
-      ],
+      moves: [...s.moves, { player: s.turn, kind: 'pass', score: 0, late: true }],
+      scoreless: s.scoreless + 1,
+      recap: [...s.recap, { actor: s.turn, text: 'ran out of time' }],
     };
-    return d.rack.length === 0 && d.bag.length === 0 ? finish(next, side, playerId) : next;
+    return clock(s, next.scoreless >= SCORELESS_END ? finish(next, null) : next, now);
   },
 
   waitingOn: (s) => (s.over ? [] : (s.sides.find((side) => side[0] === s.turn) ?? [])),

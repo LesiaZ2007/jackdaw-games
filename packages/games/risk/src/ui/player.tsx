@@ -5,7 +5,6 @@ import {
   Toast,
   Token,
   VerdictMoment,
-  useCountdown,
   useMoment,
   type GameUi,
   type ScreenPlayer,
@@ -17,7 +16,7 @@ import { getMap } from '../maps';
 import { battleMoment, type Moment } from '../moments';
 import type { RiskAction, RiskTableView, RiskView } from '../rules';
 import { CardsSheet, MissionSheet } from './cards';
-import { Continents, DiceStrip, PHASE_LABEL, clock, namer } from './common';
+import { Continents, DiceStrip, PHASE_LABEL, TurnClock, namer } from './common';
 import { AttackDock, FortifyDock, OccupyDock, PlaceDock, WaitDock } from './dock';
 import { RiskMap } from './map';
 import './risk.css';
@@ -142,7 +141,6 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     if (m) moment = { ...m, done: dismissBattle };
   }
 
-  const secs = useCountdown(t.actBy, now);
   const turnP = players.find((x) => x.id === t.turn);
   const waitingDraft = t.seats.filter((x) => !t.draftDone.includes(x)).map(name);
 
@@ -228,7 +226,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               <span className="rk-turn__phase">{PHASE_LABEL[t.phase]}</span>
             </>
           )}
-          {secs !== null && <span className="rk-turn__clock">{clock(secs)}</span>}
+          <TurnClock at={t.actBy} now={now} />
         </p>
         <nav className="rk-tools" aria-label="Your things">
           <button type="button" className="rk-tool" onClick={() => setSheet('cards')}>

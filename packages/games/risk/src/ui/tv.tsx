@@ -4,7 +4,6 @@ import {
   PlayerReaction,
   Token,
   VerdictMoment,
-  useCountdown,
   useMoment,
   type GameUi,
   type ScreenPlayer,
@@ -13,7 +12,7 @@ import { territoriesOf } from '../board';
 import { getMap } from '../maps';
 import { battleMoment } from '../moments';
 import type { RiskTableView } from '../rules';
-import { Continents, DiceStrip, PHASE_LABEL, clock, namer } from './common';
+import { Continents, DiceStrip, PHASE_LABEL, TurnClock, namer } from './common';
 import { RiskMap } from './map';
 import './risk.css';
 
@@ -28,7 +27,6 @@ export const TvScreen: GameUi['TvScreen'] = ({
   const players = shellPlayers as ScreenPlayer[];
   const map = getMap(t.map);
   const name = namer(players);
-  const secs = useCountdown(t.actBy, now);
   const [fresh, dismiss] = useMoment(t.battle?.ended ? t.battle.seq : 0);
   const moment = fresh ? battleMoment(t.battle, null, map, name) : null;
   return (
@@ -54,7 +52,7 @@ export const TvScreen: GameUi['TvScreen'] = ({
               ? `${t.draftDone.length} of ${t.seats.length} done`
               : PHASE_LABEL[t.phase]}
           </span>
-          {secs !== null && <span className="rk-turn__clock">{clock(secs)}</span>}
+          <TurnClock at={t.actBy} now={now} />
         </p>
         <ol className="rk-seats">
           {t.seats.map((id) => {

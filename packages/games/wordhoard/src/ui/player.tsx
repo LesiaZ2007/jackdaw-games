@@ -7,7 +7,15 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
-import { Plaque, PlayerReaction, Tally, Token, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
+import {
+  Plaque,
+  PlayerReaction,
+  Tally,
+  Token,
+  useCountdown,
+  type GameUi,
+  type ScreenPlayer,
+} from '@jackdaw/ui';
 import type { Reaction } from '@jackdaw/engine';
 import { RACK, checkPlay, type Placement } from '../board';
 import type { Move, WordhoardAction, WordhoardPlayerView, WordhoardTableView } from '../rules';
@@ -19,7 +27,7 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 /** "Bran played HOARD for 24", in words. */
 export function moveText(m: Move, name: (id: string) => string): string {
   const who = name(m.player);
-  if (m.kind === 'pass') return `${who} passed.`;
+  if (m.kind === 'pass') return m.late ? `${who} ran out of time.` : `${who} passed.`;
   if (m.kind === 'swap') return `${who} swapped ${m.count} tile${m.count === 1 ? '' : 's'}.`;
   const words = (m.words ?? []).map((w) => w.word).join(', ');
   return `${who} played ${words} for ${m.score}${m.bingo ? ', all seven tiles' : ''}.`;
@@ -96,7 +104,27 @@ export function Scores({
  * play. It fits the screen without scrolling: on a laptop the board takes the left and the rack
  * sits beside it.
  */
-export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactions, ...props }) => {
+/** The turn timer's time left, as "1:05", with a printed tag that turns gules near the end. */
+export function TurnClock({ at, now }: { at: number | null; now: () => number }) {
+  const left = useCountdown(at, now);
+  if (left === null) return null;
+  return (
+    <span
+      className={left <= 10 ? 'wh-clock is-low' : 'wh-clock'}
+      aria-label={`${left} seconds left`}
+    >
+      {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
+    </span>
+  );
+}
+
+export const PlayerScreen: GameUi['PlayerScreen'] = ({
+  view,
+  sendAction,
+  reactions,
+  now,
+  ...props
+}) => {
   const v = view as WordhoardPlayerView;
   const players = props.players as ScreenPlayer[];
   const byId = new Map(players.map((p) => [p.id, p]));
@@ -110,6 +138,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactio
       <header className="wh__head">
         <h2 className="jd-display">
           {myTurn ? 'Your turn' : `${sideName(v, v.turn, name)}’s turn`}
+          <TurnClock at={v.turnBy} now={now} />
         </h2>
         <p>
           {v.bagCount} tile{v.bagCount === 1 ? '' : 's'} in the bag

@@ -19,6 +19,22 @@
   font-size: var(--step-3);
   line-height: 1.05;
 }
+/* The turn timer beside the heading. */
+.wh-clock {
+  display: inline-block;
+  margin-left: 0.4em;
+  padding: 0 0.3em;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font: 800 0.62em/1.3 var(--font-code);
+  font-variant-numeric: tabular-nums;
+  vertical-align: 0.12em;
+}
+.wh-clock.is-low {
+  background: var(--gules);
+  border-color: var(--gules);
+  color: var(--on-fill);
+}
 .wh__head p {
   margin: var(--space-1) 0 0;
   color: var(--ink-2);

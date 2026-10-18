@@ -17,7 +17,7 @@ import {
   type Armies,
   type Owner,
 } from './board';
-import { isSet, makeDeck, setValue, type Card, type CardSets } from './cards';
+import { allSets, bestSet, isSet, makeDeck, setValue, type Card, type CardSets } from './cards';
 import { getMap, type MapDef, type MapId } from './maps';
 import { meta } from './meta';
 import {
@@ -648,6 +648,122 @@ function applyAction(s: RiskState, pid: string, a: RiskAction, rng: Rng): RiskSt
   }
 }
 
+/** `n` armies spread at random over `pid`'s territories. */
+function spread(s: RiskState, pid: string, n: number, rng: Rng): Record<string, number> {
+  const mine = territoriesOf(s.owner, pid);
+  const out: Record<string, number> = {};
+  for (let k = 0; k < n; k++) {
+    const t = rng.pick(mine);
+    out[t] = (out[t] ?? 0) + 1;
+  }
+  return out;
+}
+
+/**
+ * Out of time. A draft spreads whatever's unplaced; a turn makes any forced trade, spreads the
+ * armies left to place, moves the fewest in after a conquest, and ends (with a card if earned).
+ */
+function timeUp(s: RiskState, rng: Rng): RiskState {
+  if (s.phase === 'draft') {
+    return s.seats.reduce((next, p) => {
+      const d = next.drafts?.[p];
+      return d && !d.placed ? draft(next, p, spread(next, p, d.left, rng)) : next;
+    }, s);
+  }
+  const who = s.turn;
+  let next = s;
+  for (let guard = 0; guard < 20 && next.turn === who && next.phase !== 'over'; guard++) {
+    if (next.phase === 'occupy') next = settle(occupy(next, next.occupy!.min));
+    else if (next.phase === 'reinforce') {
+      while ((next.hands[who]?.length ?? 0) >= 5) {
+        const set = bestSet(next.hands[who]!, next.cardSets, next.setsTraded)!;
+        next = trade(
+          next,
+          who,
+          set.map((c) => c.id),
+        );
+      }
+      next = settle(reinforce(next, who, spread(next, who, next.toPlace, rng)));
+    } else next = endTurn(next, rng);
+  }
+  return next;
+}
+
+function waitingOn(s: RiskState): string[] {
+  if (s.phase === 'over') return [];
+  if (s.phase === 'draft') return s.seats.filter((p) => s.drafts?.[p] && !s.drafts[p].placed);
+  return [s.turn];
+}
+
+/**
+ * A handful of moves `pid` could make now (not every one: a few placements and fortifies, but
+ * every attack). Used to play random games in tests and to drive end-to-end runs.
+ */
+export function legalMoves(s: RiskState, pid: string): RiskAction[] {
+  if (s.phase === 'over' || !waitingOn(s).includes(pid)) return [];
+  const map = mapOf(s);
+  const mine = territoriesOf(s.owner, pid);
+  const fronts = mine.filter(
+    (t) => attackTargets(map, s.owner, { ...s.armies, [t]: 2 }, pid, t).length,
+  );
+  switch (s.phase) {
+    case 'draft': {
+      const left = s.drafts![pid]!.left;
+      const spots = (fronts.length ? fronts : mine).slice(0, 3);
+      return spots.map((t) => ({ type: 'draft', placements: left ? { [t]: left } : {} }));
+    }
+    case 'reinforce': {
+      const hand = s.hands[pid] ?? [];
+      const trades: RiskAction[] = allSets(hand)
+        .slice(0, 2)
+        .map((set) => ({ type: 'trade', cards: set.map((c) => c.id) as [string, string, string] }));
+      if (hand.length >= 5) return trades;
+      const spots = (fronts.length ? fronts : mine).slice(0, 4);
+      return [
+        ...trades,
+        ...spots.map((t): RiskAction => ({
+          type: 'reinforce',
+          placements: s.toPlace ? { [t]: s.toPlace } : {},
+        })),
+      ];
+    }
+    case 'attack':
+      return [
+        ...mine.flatMap((from) =>
+          attackTargets(map, s.owner, s.armies, pid, from).flatMap((to) =>
+            (['roll', 'blitz'] as const).map((mode): RiskAction => ({
+              type: 'attack',
+              from,
+              to,
+              mode,
+            })),
+          ),
+        ),
+        { type: 'endAttack' },
+        { type: 'endTurn' },
+      ];
+    case 'occupy': {
+      const { min, max } = s.occupy!;
+      return min === max
+        ? [{ type: 'occupy', n: min }]
+        : [
+            { type: 'occupy', n: min },
+            { type: 'occupy', n: max },
+          ];
+    }
+    case 'fortify': {
+      const from = [...mine].sort((x, y) => s.armies[y]! - s.armies[x]!)[0]!;
+      const to = reachable(map, s.owner, pid, from).find((t) => fronts.includes(t));
+      return [
+        { type: 'endTurn' },
+        ...(to && s.armies[from]! > 1
+          ? [{ type: 'fortify', from, to, n: s.armies[from]! - 1 } as RiskAction]
+          : []),
+      ];
+    }
+  }
+}
+
 /** Everything safe to show once the game is over. */
 export interface RiskReveal {
   map: MapId;
@@ -744,4 +860,9 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
   applyAction: (s, pid, a, rng, now) => stamp(s, settle(applyAction(s, pid, a, rng)), now),
   getResult,
   announce,
+  waitingOn,
+  nextTimer: (s) =>
+    s.turnSecs && s.actBy !== null && s.phase !== 'over' ? { id: 'turn', at: s.actBy } : null,
+  onTimer: (s, id, rng, now) =>
+    id !== 'turn' || s.phase === 'over' ? s : stamp(s, settle(timeUp(s, rng)), now),
 };

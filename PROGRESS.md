@@ -192,7 +192,11 @@ Approved by Lesia for every game:
     table talk itself from `ScreenExtras.chat` / `GameResultsProps.chat`, and its tokens fly in
     and out on start and end) and `GameUi.Results` (a game's own end screen).
 
-### Poker and Wordhoard (2026-10-17, merged to `main` 2026-10-18)
+### Poker and Letterhoard (2026-10-17, merged to `main` 2026-10-18)
+
+The word game was built as Wordhoard and renamed **Letterhoard** (Lesia, 2026-10-18). Only the
+name players see changed: its id, package and storage stay `wordhoard`, so saved lobbies and
+history keep working.
 
 Lesia asked for "poker and a scrabble-esque game" in the agreed style. Both use Jackdaw's own
 lobby (simple games keep it), follow day and dark through the tokens, and have rules tests with
@@ -208,7 +212,7 @@ a leak test, phone and TV screens, catalog pictures and an e2e (`e2e/cards-and-w
   seats round the rim with your seat at the bottom (like Avalon's round table), cream cards with
   gules hearts and diamonds, chips as small stacks. Each hand ends with your VerdictMoment (won,
   lost at a showdown, or who won if you weren't in it; none if you folded).
-- **Wordhoard** (`packages/games/wordhoard`): a crossword tile game for 2–4, or up to 8 in pairs
+- **Letterhoard** (`packages/games/wordhoard`): a crossword tile game for 2–4, or up to 8 in pairs
   (Lesia, 2026-10-18). Past four players everyone plays in pairs; the option "Pairs: Always"
   pairs smaller groups too (3+). Partners are
   drawn at random (one player alone with an odd number), share a rack and a score, and either
@@ -233,11 +237,11 @@ Lesia's playtest list ("do timers, do alerts, do all the improvements"), all don
   `now()`) and poll just after a timer is due, so it fires within a moment while anyone has the
   game open (a TV counts). Nothing fires while every screen is closed; it fires on the next one.
   The kit's `useCountdown(at, now)` counts down to a deadline.
-- **Screens that fit** (`GameUi.fit`): Wordhoard's and poker's phone screens fill the height under
+- **Screens that fit** (`GameUi.fit`): Letterhoard's and poker's phone screens fill the height under
   the bar and never scroll; on a laptop the rack or betting dock sits beside the board or table
   (container queries on the `game` container). Toasts moved under the bar and clear on a tap
-  (they used to cover Wordhoard's rack).
-- **Your-move alerts.** `GameModule.waitingOn` (public; poker, Wordhoard, Codenames, Secret
+  (they used to cover Letterhoard's rack).
+- **Your-move alerts.** `GameModule.waitingOn` (public; poker, Letterhoard, Codenames, Secret
   Hitler, RPS) feeds `snapshot.waitingOn`. Phones chime (Web Audio, no files), buzz, and mark the
   tab title when a game starts waiting on them; chime and buzz can be switched off in the lobby
   menu. **Notifications**: Web Push sent by the server itself (`packages/server/src/push.ts`,
@@ -252,7 +256,7 @@ Lesia's playtest list ("do timers, do alerts, do all the improvements"), all don
   seats everyone round the card table (`GameUi.LobbySeats`; the TV keeps its track); your two
   cards are named before the flop ("Ace and six, same suit"). The winning five were already
   lifted at a showdown.
-- **Wordhoard**: words are checked as you place them (`GET /api/words?w=…`, so the 540 KB list
+- **Letterhoard**: words are checked as you place them (`GET /api/words?w=…`, so the 540 KB list
   stays on the server); newer words ENABLE lacks (QI, ZA, OK, EW, ZEN, EMOJI… in `words.ts`;
   the official NWL and Collins lists are copyrighted and can't be shipped); drag tiles as well
   as tap; the TV animates each move (tiles drop in, the word card stamps the score); results show
@@ -307,7 +311,6 @@ Lesia's playtest list ("do timers, do alerts, do all the improvements"), all don
 - Should `actionSchema` stay on the game contract? It was added so every incoming action is checked with Zod.
 - The plan's strict "reject stale seq" would reject simultaneous votes. Actions are currently rejected only when they come from an earlier game or claim a future seq. Ordering within a game is left to the rules.
 - Secret Hitler house rules for 11 to 15 players still need confirming with the group (Phase 3).
-- Wordhoard's name (Lesia wants to talk names, 2026-10-18). Poker's defaults stand (Lesia,
-  2026-10-18). Lesia asked for the official Scrabble dictionary (2026-10-18): NWL and Collins are
-  licensed, so Wordhoard keeps ENABLE plus a short list of newer words; a licensed copy could be
+- Poker's defaults stand (Lesia, 2026-10-18). Lesia asked for the official Scrabble dictionary (2026-10-18): NWL and Collins are
+  licensed, so Letterhoard keeps ENABLE plus a short list of newer words; a licensed copy could be
   loaded per lobby if Lesia has one.

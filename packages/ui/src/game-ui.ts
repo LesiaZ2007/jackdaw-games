@@ -56,7 +56,7 @@ export interface GameUi {
   /** Optional game-specific end-of-game reveal; the shell shows the recap timeline otherwise. */
   Reveal?: ComponentType<{ result: GameResult; players: ScreenPlayer[]; me: string | null }>;
   /**
-   * Optional: drawn on the TV's results in place of the recap, beside the standings (Wordhoard:
+   * Optional: drawn on the TV's results in place of the recap, beside the standings (Letterhoard:
    * the finished board). It fills a size container, so it can fit itself to the space.
    */
   TvReveal?: ComponentType<{ result: GameResult; players: ScreenPlayer[] }>;
@@ -96,7 +96,7 @@ export interface GameUi {
    */
   fullBleed?: boolean;
   /**
-   * The phone screen fits the height under Jackdaw's bar and never scrolls (Wordhoard: the whole
+   * The phone screen fits the height under Jackdaw's bar and never scrolls (Letterhoard: the whole
    * board, the rack and the buttons at once). The screen's root should fill its parent (`flex: 1`
    * in a flex column); it is a size container named `game` for container queries.
    */

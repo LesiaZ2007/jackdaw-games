@@ -707,6 +707,8 @@ export const poker: GameModule<
     return stamp(s, move(s, playerId, action, rng), now);
   },
 
+  waitingOn: (s) => (s.toAct ? [s.toAct] : []),
+
   nextTimer(s) {
     if (s.phase === 'done' && s.dealAt) return { id: 'deal', at: s.dealAt };
     if (s.toAct && s.actBy) return { id: 'act', at: s.actBy };

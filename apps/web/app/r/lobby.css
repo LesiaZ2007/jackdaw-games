@@ -851,6 +851,22 @@
   margin: 0;
   color: var(--ink-2);
 }
+/* A setting with its On/Off plaque at the end of the row. */
+.menu__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  font-weight: 700;
+}
+.menu__toggle .jd-plaque {
+  min-width: 76px;
+}
+.menu__toggle .jd-plaque[aria-pressed='true'] {
+  background: var(--vert);
+  color: var(--on-fill);
+}
 /* Ending a game: gules once armed, so the second tap is plainly the serious one */
 .menu__end.jd-plaque.is-armed {
   background: var(--gules);

@@ -132,6 +132,8 @@ export const rps: GameModule<RpsState, RpsAction, RpsPlayerView, RpsTableView, R
     };
   },
 
+  waitingOn: (s) => (s.round > s.rounds ? [] : s.players.filter((id) => !(id in s.picks))),
+
   getResult(state): GameResult | null {
     if (state.round <= state.rounds) return null;
     const best = Math.max(...state.players.map((id) => state.scores[id]!));

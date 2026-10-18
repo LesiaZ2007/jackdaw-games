@@ -770,6 +770,20 @@ export const secretHitler: GameModule<ShState, ShAction, ShPlayerView, ShTableVi
   getTableView: tableView,
   applyAction: (state, playerId, action, rng) => apply(state, playerId, action, rng),
 
+  waitingOn(s) {
+    switch (s.phase) {
+      case 'vote':
+        return alive(s).filter((id) => !(id in s.ballots));
+      case 'chancellor':
+        return s.nominee ? [s.nominee] : [];
+      case 'over':
+        return [];
+      default:
+        // Nominating, discarding, answering a veto, using a power, ending the term.
+        return [s.president];
+    }
+  },
+
   getResult(s): GameResult | null {
     if (s.phase !== 'over' || !s.winner || !s.reason) return null;
     const winners = s.players.filter((id) => teamOf(s.roles[id]!) === s.winner);

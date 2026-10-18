@@ -562,6 +562,13 @@ export function applyGameAction(
   return finishIfOver(next, ctx);
 }
 
+/** Who the running game is waiting on (see GameModule.waitingOn); empty between games. */
+export function waitingFor(lobby: Lobby, ctx: Pick<Ctx, 'games'>): string[] {
+  const session = lobby.session;
+  if (lobby.status !== 'in_game' || !session) return [];
+  return ctx.games[session.gameId]?.waitingOn?.(session.state) ?? [];
+}
+
 /** At most this many timers fire in one go, in case a game keeps scheduling ones already due. */
 const TIMER_BURST = 20;
 
@@ -762,6 +769,7 @@ export function snapshotFor(
   };
   const timerAt = nextTimerAt(lobby, ctx);
   if (timerAt !== null) snapshot.timerAt = timerAt;
+  if (lobby.status === 'in_game') snapshot.waitingOn = waitingFor(lobby, ctx);
   if (session && lobby.status === 'in_game') {
     const game = gameFor(ctx, session.gameId);
     snapshot.tableView = game.getTableView(session.state);

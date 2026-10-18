@@ -178,6 +178,8 @@ export interface LobbySnapshot {
   serverNow: number;
   /** When the running game's next timer fires (server time), so clients can poll right then. */
   timerAt?: number;
+  /** Who the running game is waiting on, so their phones can alert them. */
+  waitingOn?: string[];
   /** This player's private view. Only for seated players during a game. */
   view?: unknown;
   /** Public table view. Everyone gets it during a game. */

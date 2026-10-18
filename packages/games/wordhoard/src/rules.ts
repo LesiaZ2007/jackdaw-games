@@ -13,7 +13,7 @@ import { meta } from './meta';
 import { isWord } from './words';
 
 /**
- * Wordhoard, a crossword tile game for 2–4 players, or up to eight in pairs. Each turn you lay tiles from your rack of
+ * Letterhoard, a crossword tile game for 2–4 players, or up to eight in pairs. Each turn you lay tiles from your rack of
  * seven in one line to make words joined to those on the board, and score their letters with the
  * board's bonus squares; using all seven at once earns 50 more. Every word made must be in the
  * word list. Instead of playing you can swap tiles (while the bag has at least seven) or pass.

@@ -1,7 +1,7 @@
 import { isWord } from '@jackdaw/game-wordhoard';
 
 /**
- * Wordhoard's word list, asked a few words at a time, so a phone can say "not in the word list"
+ * Letterhoard's word list, asked a few words at a time, so a phone can say "not in the word list"
  * before Play without downloading the whole list. `GET /api/words?w=HOARD,QZX` returns
  * `{ unknown: ["QZX"] }`. The list never changes between deploys, so answers cache well.
  */

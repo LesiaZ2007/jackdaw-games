@@ -2,7 +2,7 @@ import type { GameMeta } from '@jackdaw/engine';
 
 export const meta: GameMeta = {
   id: 'wordhoard',
-  name: 'Wordhoard',
+  name: 'Letterhoard',
   tagline: 'Lay your letters across the board. Hoard the points.',
   minPlayers: 2,
   maxPlayers: 8,

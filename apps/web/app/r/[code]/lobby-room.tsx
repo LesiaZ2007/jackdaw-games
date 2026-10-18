@@ -193,7 +193,7 @@ export function LobbyRoom({ code }: { code: string }) {
   const bleed =
     (status === 'in_game' && Boolean(catalogEntry(snapshot?.session?.gameId)?.ui?.fullBleed)) ||
     (status === 'results' && Boolean(catalogEntry(snapshot?.results?.gameId)?.ui?.Results));
-  // A game that fits the screen (Wordhoard's board, rack and buttons) never scrolls.
+  // A game that fits the screen (Letterhoard's board, rack and buttons) never scrolls.
   const fit = status === 'in_game' && Boolean(catalogEntry(snapshot?.session?.gameId)?.ui?.fit);
   const wide = useMedia(WIDE);
   const wideOwn = useMedia(WIDE_OWN);

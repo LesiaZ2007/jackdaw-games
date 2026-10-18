@@ -12,11 +12,11 @@ import {
   SeatTrack,
   Sheet,
   Token,
-  useTheme,
   type LobbyChat,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
+import { useStartLook } from '@/lib/game-ui';
 import { games } from '@/lib/registry';
 import { useOptionsDraft } from '@/lib/use-options-draft';
 import type { Panel } from './bar';
@@ -147,7 +147,7 @@ export function Waiting({
   // A game with its own lobby (Avalon's round table) draws the players and the options itself,
   // and fills the screen under Jackdaw's bar. The host can still go back to the list of games.
   const themed = Boolean(entry && ThemedLobby && showOwnLobby);
-  const look = useTheme();
+  const look = useStartLook(entry);
   const [lobbyOptions, setLobbyOptions] = useOptionsDraft(s.gameOptions, (o) =>
     send({ type: 'setOptions', options: o }),
   );
@@ -217,7 +217,7 @@ export function Waiting({
               <AvatarButton avatar={mine.avatar} size={44} onClick={() => onOpen('me')} />
               <span className="you-strip__who">
                 <b>{mine.name}</b>
-                <span>That&rsquo;s you. Tap your token to change your name, crest or colour.</span>
+                <span>That&rsquo;s you. Tap to change your look.</span>
               </span>
               {isHost && count > 1 && (
                 <button

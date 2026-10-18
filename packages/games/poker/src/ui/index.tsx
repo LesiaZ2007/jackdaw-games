@@ -18,6 +18,17 @@ export const pokerUi: GameUi = {
       'Out of chips, out of the game. Most chips when the hands run out wins, or the last player with any.',
     ],
     credit: 'Texas Hold’em is a traditional card game. Jackdaw’s own cards and table.',
+    pictures: [
+      {
+        src: '/games/poker/game-phone.png',
+        alt: 'Poker on a phone: the table from your seat with the flop and the pot, your two cards, and Fold, Call and Raise at the bottom.',
+      },
+      {
+        src: '/games/poker/tv.png',
+        alt: 'Poker on a TV: the oval table with every seat, the shared cards, the bets and the pot.',
+        wide: true,
+      },
+    ],
   },
   PlayerScreen,
   TvScreen,

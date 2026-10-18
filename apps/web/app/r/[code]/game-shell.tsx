@@ -42,7 +42,7 @@ export function GameShell({
   if (!seated || s.view === undefined) {
     const Tv = ui.TvScreen;
     return (
-      <div className="game-shell">
+      <div className={ui.fullBleed ? 'game-shell game-shell--bleed' : 'game-shell'}>
         <p className="spectator" role="status">
           You&rsquo;re watching this round of {entry.meta.name}. You&rsquo;ll be seated in the next
           game.
@@ -54,7 +54,7 @@ export function GameShell({
 
   const Screen = ui.PlayerScreen;
   return (
-    <div className="game-shell">
+    <div className={ui.fullBleed ? 'game-shell game-shell--bleed' : 'game-shell'}>
       <Screen
         view={s.view}
         tableView={s.tableView}

@@ -176,6 +176,22 @@ export const GLYPHS: Record<string, ReactNode> = {
       <circle cx="21" cy="56" r="4" />
     </g>
   ),
+  cards: (
+    <g {...stroke(3.4)}>
+      <path d="M12 16l18-6 10 30-18 6z" />
+      <path d="M30 12h20v34H30" />
+      <path d="M40 22c-4 4-7 6-7 9a3.5 3.5 0 0 0 7 0 3.5 3.5 0 0 0 7 0c0-3-3-5-7-9zM40 34v5" />
+      <path d="M8 56h48" />
+    </g>
+  ),
+  tiles: (
+    <g {...stroke(3.4)}>
+      <path d="M8 18h22v22H8zM34 24h22v22H34z" />
+      <path d="M13 34l6-12 6 12M15 30h8M40 30h8l-8 10h8" />
+      <circle cx="26" cy="36" r="1.2" fill="currentColor" />
+      <path d="M8 50h48" />
+    </g>
+  ),
   dial: (
     <g {...stroke(3.4)}>
       <path d="M8 46a24 24 0 0 1 48 0" />

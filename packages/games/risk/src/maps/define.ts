@@ -15,6 +15,7 @@ export interface MapSource {
   /** Outlines and label points from `scripts/build-map.mjs`. */
   shapes: Record<string, { path: string; label: [number, number] }>;
   sea?: string;
+  regions?: Record<string, string>;
 }
 
 /** Builds a `MapDef` from a border list, so neighbours always go both ways. */
@@ -41,5 +42,6 @@ export function defineMap(src: MapSource): MapDef {
     lanes: src.lanes,
     missionPairs: src.missionPairs,
     sea: src.sea,
+    regions: src.regions,
   };
 }

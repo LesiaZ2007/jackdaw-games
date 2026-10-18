@@ -40,4 +40,6 @@ export interface MapDef {
   missionPairs: [string, string, 'any'?][];
   /** Decorative sea and coast path data. */
   sea?: string;
+  /** Each continent's outline, by continent id (drawn as the heavier rule between continents). */
+  regions?: Record<string, string>;
 }

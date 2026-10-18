@@ -303,6 +303,31 @@ Blitz attacks. Design: `docs/superpowers/specs/2026-10-18-risk-design.md`; plan:
   The TV: the whole map with names, seats with lands, armies and cards, the dice and the
   continents; settled battles as reveals. Results: everyone's mission and the final map. Jackdaw's
   own lobby. Kit: a `banners` glyph. e2e: `apps/web/e2e/risk.spec.ts`.
+- **First playtest feedback** (Lesia, 2026-10-18; design approved in chat, "Yes, perfect"):
+  - **Whose land**: each seat marches under one of six heraldic army colours in seat order (red,
+    blue, green, gold, purple, orange; the neutral grey; `src/ui/armies.ts`). Territories are
+    filled with their owner's colour. Players' own tints were too muted and alike to tell apart;
+    their crest tokens keep them. Continents are ruled round in a heavy double line (`*_REGIONS`
+    from the map generator) and lettered in the sea with their bonus.
+  - **Dice**: they tumble as a battle lands (faces turning), then settle with the beaten dice
+    struck through; a blitz says how many throws it took (`Battle.throws`). The TV shows the last
+    battle as a card. Reduced motion: no tumble.
+  - **Your orders**: the game opens on a sealed letter in your army's colour (tap to break the
+    seal), your mission or "Conquer the world", your colour and land count, then "To battle".
+    Shown at the start (round one, before any battle), remembered per deal on the device.
+  - **Option explanations**: `GameUi.optionHelp` (new, optional) puts one line under each option
+    in Jackdaw's lobby, following the choice made. Risk explains all five.
+  - **Lobby layout (every game in Jackdaw's lobby)**: the game column is now the wider one, the
+    opened Next up stacks the box above the words when narrow, and the seat track draws only the
+    chosen game's seats (Risk 6, not 15).
+  - **Themed seating**: `LobbySeats` is the war council, each seat a banner in its army colour with
+    the crest on it over a faint engraving of the chosen map, open seats furled. `TvLobby`: the
+    map large and faint, the banners across it, joining on a cartouche.
+  - **TV text**: names grow less than the roundels on the TV and long ones break onto two lines.
+  - **Landmarks** (`src/ui/decor.tsx`): World: title cartouche, compass rose, three galleons, a
+    sea serpent, the Rockies, Andes, Alps and Himalayas, Siberian forest. Realm: cartouche, compass,
+    ships, a serpent in the strait, castles at Kingsreach and Highcairn, a dragon over the Wolds,
+    Elderwood's pines, the Fells' peaks, Saltmarsh reeds and the Lantern Isle lighthouse.
 
 ## Next
 

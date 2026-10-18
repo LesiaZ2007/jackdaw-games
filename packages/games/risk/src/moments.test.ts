@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MAPS } from './maps';
-import { battleMoment } from './moments';
+import { battleMoment, beaten } from './moments';
 import type { Battle } from './rules';
 
 const names = (p: string) => ({ a: 'Ada', b: 'Bram' })[p] ?? p;
@@ -13,6 +13,7 @@ const battle = (o: Partial<Battle>): Battle => ({
   mode: 'blitz',
   attackDice: [6, 5],
   defendDice: [3],
+  throws: 4,
   attackerLost: 1,
   defenderLost: 4,
   conquered: true,
@@ -63,5 +64,15 @@ describe('battle moments', () => {
   it('nothing until a battle is settled', () => {
     expect(battleMoment(battle({ ended: false, conquered: false }), 'a', map, names)).toBeNull();
     expect(battleMoment(null, 'a', map, names)).toBeNull();
+  });
+});
+
+describe('beaten dice', () => {
+  it('pairs highest with highest, the defender winning ties', () => {
+    expect(beaten([6, 4, 2], [5, 4])).toEqual({
+      attack: [false, true, false],
+      defend: [true, false],
+    });
+    expect(beaten([3], [3, 1])).toEqual({ attack: [true], defend: [false, false] });
   });
 });

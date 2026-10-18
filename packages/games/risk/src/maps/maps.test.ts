@@ -74,6 +74,11 @@ describe.each(Object.values(MAPS))('the $name map', (map) => {
     expect(map.sea).toBeTruthy();
   });
 
+  it('every continent has one outline, for the rule between continents', () => {
+    expect(Object.keys(map.regions ?? {}).sort()).toEqual(map.continents.map((c) => c.id).sort());
+    for (const path of Object.values(map.regions ?? {})) expect(path).toMatch(/^M[\d.]/);
+  });
+
   it('territories touch on land exactly where they border, except across the sea', () => {
     const key = (a: string, b: string) => [a, b].sort().join('|');
     const lanes = new Set(map.lanes.map(([a, b]) => key(a, b)));

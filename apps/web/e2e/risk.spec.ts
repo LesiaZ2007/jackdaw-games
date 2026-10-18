@@ -29,6 +29,13 @@ async function phone(browser: Browser, key: string, code: string) {
   const page = await context.newPage();
   await page.goto(`/r/${code}`);
   await expect(page.locator('.rk-dock')).toBeVisible();
+  // The game opens with your orders under a seal: break it, read the mission, go to battle.
+  const orders = page.getByRole('dialog');
+  await expect(orders.getByText('Secret orders')).toBeVisible();
+  await orders.getByRole('button', { name: 'Break the seal and read your orders' }).click();
+  await expect(orders.getByRole('heading', { name: 'Your mission' })).toBeVisible();
+  await orders.getByRole('button', { name: 'To battle' }).click();
+  await expect(orders).toBeHidden();
   return page;
 }
 
@@ -40,6 +47,18 @@ test('risk: a whole turn on the phone, seen by the other phone and the TV', asyn
   const keys = [token('lesia'), token('bran')];
   const { code } = await call(request, '/api/lobby', keys[0]!, { name: 'Lesia', gameId: 'risk' });
   await call(request, `/api/lobby/${code}`, keys[1]!, { type: 'join', name: 'Bran' });
+
+  // The lobby: each seat a banner in the colour its armies will be, and every option explained.
+  const host = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await host.addInitScript((t) => localStorage.setItem('jackdaw:token', t), keys[0]!);
+  const lobby = await host.newPage();
+  await lobby.goto(`/r/${code}`);
+  await expect(lobby.getByLabel('Lesia (you), host, Red armies')).toBeVisible();
+  await expect(lobby.getByLabel('Bran, Blue armies')).toBeVisible();
+  await lobby.getByRole('button', { name: 'Show options and rules' }).click();
+  await expect(lobby.getByText(/Everyone gets a hidden goal/)).toBeVisible();
+  await host.close();
+
   await call(request, `/api/lobby/${code}`, keys[0]!, { type: 'start', look: 'light' });
 
   // Hidden things stay hidden: the TV's read has no cards or missions; each phone has its own.

@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Wordhoard: build words on a 15 by 15 board, 2 to 4 players",
+  "description": "Letterhoard: build words on a 15 by 15 board, 2 to 4 players",
   "exports": {
     ".": "./src/index.ts",
     "./ui": "./src/ui/index.tsx"

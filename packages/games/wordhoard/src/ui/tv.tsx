@@ -10,7 +10,7 @@ import './wordhoard.css';
 const DROP_GAP = 140;
 
 /**
- * Wordhoard on the TV: the board large, the scores and the last few plays beside it. When a word
+ * Letterhoard on the TV: the board large, the scores and the last few plays beside it. When a word
  * is played its tiles drop onto the board one by one, then the word rises over the board with who
  * played it and the score; a pass or a swap gets a quieter card.
  */

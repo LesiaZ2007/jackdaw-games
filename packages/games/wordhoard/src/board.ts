@@ -1,5 +1,5 @@
 /**
- * Wordhoard's board, tiles and scoring: pure functions shared by the rules and the screens (the
+ * Letterhoard's board, tiles and scoring: pure functions shared by the rules and the screens (the
  * phone previews a play's score before sending it). No word list here; that's server-side only.
  */
 

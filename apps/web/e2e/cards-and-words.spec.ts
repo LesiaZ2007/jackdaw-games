@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext, type Browser } from '@playwright/test';
 
-// Poker and Wordhoard on real phones, set up through the lobby API: a hand folded and the next
+// Poker and Letterhoard on real phones, set up through the lobby API: a hand folded and the next
 // one dealt, a tile placed and a turn passed. Public reads (the TV) never carry anyone's hole
 // cards or rack.
 

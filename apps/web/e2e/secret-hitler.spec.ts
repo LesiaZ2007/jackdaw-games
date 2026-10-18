@@ -247,9 +247,14 @@ test('five phones play Secret Hitler as on secret-hitler.online, on to a win, wi
   const end = await playOut(code, byId);
   expect(end.status).toBe('results');
 
-  // The victory popup: the winning side's header, and everyone's role.
+  // The last move plays out first (a policy or an execution waits for OKAY), then the victory
+  // popup: the winning side's header, and everyone's role.
   for (const p of pages) {
-    await expect(popup(p).locator('#victory-header')).toBeVisible({ timeout: 60_000 });
+    await expect(async () => {
+      const okay = popupButton(p, 'OKAY');
+      if (await okay.count()) await okay.click({ timeout: 1000 });
+      await expect(popup(p).locator('#victory-header')).toBeVisible({ timeout: 1000 });
+    }).toPass({ timeout: 60_000 });
     await expect(popup(p).getByText(/successfully/)).toBeVisible();
     await expect(popup(p).locator('#player-identity-icon')).toHaveCount(5);
   }

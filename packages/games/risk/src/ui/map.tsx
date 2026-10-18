@@ -1,17 +1,19 @@
 'use client';
 
-import type { ScreenPlayer } from '@jackdaw/ui';
-import { useEffect, useId, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+} from 'react';
 import { NEUTRAL, type Armies, type Owner } from '../board';
 import type { MapDef } from '../maps';
+import { armyColour } from './armies';
+import { LandDecor, SeaDecor } from './decor';
 import './risk.css';
-
-/** A player's colour as CSS (the neutral army is drawn in the rule colour). */
-export function tintOf(pid: string, players: ScreenPlayer[]): string {
-  if (pid === NEUTRAL) return 'var(--rule)';
-  const p = players.find((x) => x.id === pid);
-  return p ? `var(--tint-${p.avatar.tint}, var(--sable))` : 'var(--sable)';
-}
 
 /** What's in the frame: the map point at its centre, and the zoom (1 = the whole map fits). */
 interface View {
@@ -26,7 +28,8 @@ export interface RiskMapProps {
   map: MapDef;
   owner: Owner;
   armies: Armies;
-  players: ScreenPlayer[];
+  /** The players in seat order: each seat's armies have their own colour. */
+  seats: readonly string[];
   /** The territory picked (drawn raised). */
   selected?: string | null;
   /** Territories you can pick next (outlined); everything else dims while there are some. */
@@ -43,21 +46,36 @@ export interface RiskMapProps {
   zoomable?: boolean;
   /** Always show names (the TV, the results). */
   names?: boolean;
-  /** Roundels and names this many times their phone size (the TV, seen from the sofa). */
+  /** Roundels this many times their phone size (the TV, seen from the sofa); names grow less. */
   scale?: number;
   className?: string;
 }
 
+/** "Northwest Territory" on two lines, so long names don't run into their neighbours. */
+function nameLines(name: string): string[] {
+  const words = name.split(' ');
+  if (name.length < 11 || words.length < 2) return [name];
+  let best = 1;
+  for (let i = 1; i < words.length; i++) {
+    const a = words.slice(0, i).join(' ').length;
+    const b = words.slice(i).join(' ').length;
+    const was = Math.max(words.slice(0, best).join(' ').length, words.slice(best).join(' ').length);
+    if (Math.max(a, b) < was) best = i;
+  }
+  return [words.slice(0, best).join(' '), words.slice(best).join(' ')];
+}
+
 /**
- * The board: territories washed in their continent's colour and edged inside with their
- * owner's, an army roundel on each, the coast inked over an engraved sea. Roundels and names keep
- * the same size on screen whatever the zoom.
+ * The board: every territory filled with its owner's army colour, an army roundel on each, each
+ * continent ruled round in a heavier double line with its name lettered in the sea, the coast
+ * inked over an engraved sea with the cartographer's ornaments. Roundels and names keep the same
+ * size on screen whatever the zoom.
  */
 export function RiskMap({
   map,
   owner,
   armies,
-  players,
+  seats,
   selected,
   targets = [],
   staged = {},
@@ -195,11 +213,12 @@ export function RiskMap({
     onPick?.(t);
   };
 
-  // Roundels about 22px across on screen, names about 11px tall, whatever the zoom.
+  // Roundels about 22px across on screen, names about 11px tall, whatever the zoom. On the TV
+  // the roundels grow with `scale` but the names only a little, so they don't run together.
   const r = (11 * scale) / px;
   const showNames = names || px > 1.15;
-  const font = (11 * scale) / px;
-  const tint = new Map(map.continents.map((c) => [c.id, c.tint]));
+  const font = (11 * (1 + (scale - 1) * 0.35)) / px;
+  const colour = (pid: string) => armyColour(pid, seats);
   const aiming = targets.length > 0;
 
   return (
@@ -228,6 +247,7 @@ export function RiskMap({
         <rect x={-w} y={-h} width={3 * w} height={3 * h} className="rk-sea" />
         <rect x={-w} y={-h} width={3 * w} height={3 * h} fill={`url(#${uid}-sea)`} />
         <path d={map.sea} className="rk-coast-halo" strokeWidth={14 / Math.sqrt(px * 2.5)} />
+        <SeaDecor map={map} />
         {map.lanes.map(([a, b]) => {
           const ta = map.territories.find((t) => t.id === a)!;
           const tb = map.territories.find((t) => t.id === b)!;
@@ -249,7 +269,6 @@ export function RiskMap({
           const isTarget = targets.includes(t.id);
           const cls = [
             'rk-terr',
-            `rk-wash--${tint.get(t.continent)}`,
             t.id === selected && 'is-selected',
             isTarget && 'is-target',
             aiming && !isTarget && t.id !== selected && 'is-dim',
@@ -259,15 +278,21 @@ export function RiskMap({
             .filter(Boolean)
             .join(' ');
           return (
-            <g key={t.id} className={cls} data-t={t.id} onClick={() => pick(t.id)}>
+            <g
+              key={t.id}
+              className={cls}
+              data-t={t.id}
+              data-owner={who}
+              style={{ '--rk-own': colour(who) } as CSSProperties}
+              onClick={() => pick(t.id)}
+            >
               <title>{t.name}</title>
               <path d={t.path} className="rk-terr__land" />
               <path
                 d={t.path}
                 className="rk-terr__edge"
                 clipPath={`url(#${uid}-${t.id})`}
-                style={{ stroke: tintOf(who, players) }}
-                strokeWidth={Math.max(4, 8 / px)}
+                strokeWidth={Math.max(3, 6 / px)}
               />
               <path
                 d={t.path}
@@ -277,6 +302,13 @@ export function RiskMap({
             </g>
           );
         })}
+        {Object.entries(map.regions ?? {}).map(([id, d]) => (
+          <g key={id} className="rk-region">
+            <path d={d} className="rk-region__outer" strokeWidth={3.4 / Math.sqrt(px)} />
+            <path d={d} className="rk-region__inner" strokeWidth={1.1 / Math.sqrt(px)} />
+          </g>
+        ))}
+        <LandDecor map={map} />
         <path d={map.sea} className="rk-coast" strokeWidth={1.8 / Math.sqrt(px)} />
         {map.territories.map((t) => {
           const who = owner[t.id] ?? NEUTRAL;
@@ -284,7 +316,7 @@ export function RiskMap({
           const extra = staged[t.id] ?? 0;
           return (
             <g key={t.id} className="rk-roundel" data-roundel={t.id} onClick={() => pick(t.id)}>
-              <circle cx={x} cy={y} r={r} style={{ fill: tintOf(who, players) }} />
+              <circle cx={x} cy={y} r={r} style={{ fill: colour(who) }} />
               <text x={x} y={y} dy="0.36em" fontSize={r * 1.15}>
                 {(armies[t.id] ?? 0) + extra}
               </text>
@@ -294,8 +326,12 @@ export function RiskMap({
                 </text>
               )}
               {showNames && (
-                <text x={x} y={y + r + font * 1.1} className="rk-name" fontSize={font}>
-                  {t.name}
+                <text x={x} y={y + r + font * 1.05} className="rk-name" fontSize={font}>
+                  {nameLines(t.name).map((line, i) => (
+                    <tspan key={i} x={x} dy={i ? '1.05em' : 0}>
+                      {line}
+                    </tspan>
+                  ))}
                 </text>
               )}
             </g>

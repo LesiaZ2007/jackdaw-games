@@ -149,6 +149,8 @@ export interface PokerState {
   buyBackUntil?: number;
   /** Buy-backs each player has made. */
   buyIns?: Record<string, number>;
+  /** The most anyone has won in one hand, for the night's awards. */
+  biggest?: { player: string; amount: number; hand: number; with?: string };
 }
 
 /** Everything public: the TV and every phone render this. */
@@ -483,8 +485,20 @@ function finishHand(s: PokerState): PokerState {
       : undefined,
     data: { board, shown },
   };
+  // The biggest single win so far, for the night's awards.
+  let biggest = s.biggest;
+  for (const [id, amount] of Object.entries(won)) {
+    if (amount > (biggest?.amount ?? 0))
+      biggest = {
+        player: id,
+        amount,
+        hand: s.hand,
+        with: showdown ? best[id]?.name.toLowerCase() : undefined,
+      };
+  }
   return {
     ...s,
+    biggest,
     phase: 'done',
     board,
     deck,
@@ -741,6 +755,16 @@ export const poker: GameModule<
             : `Most chips after ${s.hand} hands: ${top}`,
       reveal,
       recap: s.recap,
+      highlights: s.biggest
+        ? [
+            {
+              award: 'Biggest pot',
+              playerIds: [s.biggest.player],
+              text: `${s.biggest.amount.toLocaleString('en-GB')} chips${s.biggest.with ? ` with ${s.biggest.with}` : ''}`,
+              value: s.biggest.amount,
+            },
+          ]
+        : [],
       standings: s.players.map((id) => ({
         playerId: id,
         outcome: winners.includes(id) ? (winners.length > 1 ? 'draw' : 'win') : 'loss',

@@ -1,5 +1,12 @@
 import type { Metadata, Viewport } from 'next';
-import { Alegreya_Sans, Big_Shoulders, Grenze, Grenze_Gotisch } from 'next/font/google';
+import {
+  Alegreya_Sans,
+  Big_Shoulders,
+  Germania_One,
+  Grenze,
+  Grenze_Gotisch,
+  Montserrat,
+} from 'next/font/google';
 import '@jackdaw/ui/tokens.css';
 import '@jackdaw/ui/kit.css';
 import './globals.css';
@@ -20,6 +27,20 @@ const body = Alegreya_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '700', '800'],
   variable: '--ff-body',
+});
+
+// Secret Hitler's own fonts, as on secret-hitler.online (loaded only where they're used).
+const shoHeader = Germania_One({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--ff-sho-header',
+  preload: false,
+});
+const shoText = Montserrat({
+  subsets: ['latin'],
+  weight: ['500', '700'],
+  variable: '--ff-sho-text',
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -47,7 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${display.variable} ${code.variable} ${plaque.variable} ${body.variable}`}
+      className={`${display.variable} ${code.variable} ${plaque.variable} ${body.variable} ${shoHeader.variable} ${shoText.variable}`}
       suppressHydrationWarning
     >
       <head>

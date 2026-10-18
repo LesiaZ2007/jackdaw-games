@@ -133,6 +133,10 @@ export function LobbyRoom({ code }: { code: string }) {
   const players = useMemo(() => (snapshot ? screenPlayers(snapshot) : []), [snapshot]);
   useLobbySwitch(wantFull, shownFull, setShownFull);
   const full = status === 'waiting' && shownFull;
+  // A game drawn edge to edge (Secret Hitler, as secret-hitler.online) fills the main column.
+  const bleed =
+    (status === 'in_game' && Boolean(catalogEntry(snapshot?.session?.gameId)?.ui?.fullBleed)) ||
+    (status === 'results' && Boolean(catalogEntry(snapshot?.results?.gameId)?.ui?.Results));
   const wide = useMedia(WIDE);
   const wideOwn = useMedia(WIDE_OWN);
   // True when the chat is on screen without opening it.
@@ -211,7 +215,11 @@ export function LobbyRoom({ code }: { code: string }) {
   const unread = unreadCount(snapshot.chat, me, seenAt);
 
   return (
-    <div className={full ? 'lobby-page lobby-page--full' : 'lobby-page'}>
+    <div
+      className={
+        full ? 'lobby-page lobby-page--full' : bleed ? 'lobby-page lobby-page--bleed' : 'lobby-page'
+      }
+    >
       <LobbyBar code={code} status={snapshot.status} onOpen={setPanel} unread={unread} />
       <div className="lobby-layout">
         <main className="lobby-main">

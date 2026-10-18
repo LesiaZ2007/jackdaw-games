@@ -1,0 +1,824 @@
+/*
+ * UNO: a printed play mat in the compendium. The cards are cream stock with charcoal ink and a
+ * field in one of four heraldic tinctures (gules, or, vert, azure), wilds sable with a quartered
+ * shield, the back sable with the jackdaw. Cards look the same day and dark (they're printed), so
+ * their colours are set here; everything else comes from @jackdaw/ui tokens.
+ */
+.uno,
+.uno-table {
+  --uno-ink: #1d1d1c;
+  --uno-stock: #f6f0e1;
+  --uno-r: #a63a30;
+  --uno-y: #b8892a;
+  --uno-g: #30634a;
+  --uno-b: #2b5683;
+  --uno-k: #26282b;
+}
+.uno {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 640px;
+  margin-inline: auto;
+  width: 100%;
+}
+/* On a phone it fits under the bar without scrolling: the heading, the table as big as the space
+   left allows, your hand, then the dock. */
+.uno--phone {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+}
+.uno__head h2 {
+  font-size: var(--step-2);
+  line-height: 1.05;
+}
+.uno__head p {
+  margin: var(--space-1) 0 0;
+  color: var(--ink-2);
+  font: 700 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.uno-stage {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
+.uno-stage .uno-table {
+  width: max(200px, min(100cqw - 24px, (100cqh - 64px) / 1.02));
+  margin: 14px auto 0;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+.uno-card {
+  --w: 56px;
+  --field: var(--uno-k);
+  position: relative;
+  display: inline-block;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--w);
+  aspect-ratio: 5 / 7.4;
+  padding: calc(var(--w) * 0.06);
+  border: max(1.5px, calc(var(--w) * 0.03)) solid var(--uno-ink);
+  border-radius: calc(var(--w) * 0.1);
+  background: var(--uno-stock);
+  color: var(--uno-stock);
+  box-shadow: 0 calc(var(--w) * 0.05) 0 var(--shadow);
+  font: inherit;
+  transition:
+    transform 220ms var(--ease-out),
+    opacity 220ms,
+    filter 220ms;
+}
+button.uno-card {
+  cursor: pointer;
+}
+button.uno-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+.uno-card--r {
+  --field: var(--uno-r);
+}
+.uno-card--y {
+  --field: var(--uno-y);
+}
+.uno-card--g {
+  --field: var(--uno-g);
+}
+.uno-card--b {
+  --field: var(--uno-b);
+}
+.uno-card__field {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 100%;
+  border-radius: calc(var(--w) * 0.06);
+  background: var(--field);
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.035) var(--field),
+    inset 0 0 0 calc(var(--w) * 0.055) var(--uno-stock);
+  overflow: hidden;
+}
+.uno-card__big {
+  display: grid;
+  place-items: center;
+  font: 400 calc(var(--w) * 0.62) / 1 var(--font-display);
+  text-shadow: 0 calc(var(--w) * 0.03) 0 rgba(0, 0, 0, 0.35);
+}
+.uno-card__big svg {
+  width: calc(var(--w) * 0.55);
+  height: calc(var(--w) * 0.55);
+}
+.uno-card__corner {
+  position: absolute;
+  top: 7%;
+  left: 12%;
+  font: 800 calc(var(--w) * 0.2) / 1 var(--font-code);
+}
+.uno-card__corner svg {
+  width: calc(var(--w) * 0.2);
+  height: calc(var(--w) * 0.2);
+}
+.uno-card__corner--end {
+  top: auto;
+  left: auto;
+  bottom: 7%;
+  right: 12%;
+  rotate: 180deg;
+}
+.uno-under {
+  text-decoration: underline;
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.08em;
+}
+.uno-shield {
+  width: calc(var(--w) * 0.62);
+  height: auto;
+  overflow: visible;
+}
+.uno-shield__n {
+  fill: var(--uno-stock);
+  stroke: var(--uno-ink);
+  stroke-width: 1.2px;
+  paint-order: stroke;
+  font: 800 15px var(--font-code);
+}
+/* A wild on the pile wears the colour it called as a ring. */
+.uno-card[class*='uno-card--called-'] {
+  box-shadow:
+    0 0 0 calc(var(--w) * 0.07) var(--called),
+    0 calc(var(--w) * 0.05) 0 var(--shadow);
+}
+.uno-card--called-r {
+  --called: var(--uno-r);
+}
+.uno-card--called-y {
+  --called: var(--uno-y);
+}
+.uno-card--called-g {
+  --called: var(--uno-g);
+}
+.uno-card--called-b {
+  --called: var(--uno-b);
+}
+.uno-card--back .uno-card__field {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 calc(var(--w) * 0.08),
+      rgba(246, 240, 225, 0.07) calc(var(--w) * 0.08) calc(var(--w) * 0.16)
+    ),
+    var(--uno-k);
+}
+.uno-card__bird {
+  width: 70%;
+  height: auto;
+  color: var(--uno-stock);
+}
+.uno-card--can {
+  transform: translateY(calc(var(--w) * -0.16));
+}
+.uno-card--dim {
+  filter: brightness(0.72);
+}
+
+.uno-swatch {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  border-radius: 50%;
+  border: 2px solid var(--uno-stock);
+  box-shadow: 0 0 0 1.5px var(--uno-ink);
+  vertical-align: -0.1em;
+}
+.uno-swatch--r {
+  background: var(--uno-r);
+}
+.uno-swatch--y {
+  background: var(--uno-y);
+}
+.uno-swatch--g {
+  background: var(--uno-g);
+}
+.uno-swatch--b {
+  background: var(--uno-b);
+}
+
+/* ── The table ─────────────────────────────────────────────────────────── */
+.uno-table {
+  --uno-tok: clamp(30px, 11cqw, 60px);
+  --uno-pile: min(15cqw, 84px);
+  --uno-now: var(--uno-r);
+  container-type: inline-size;
+  position: relative;
+  width: max(280px, min(100%, calc(100dvh - 430px)));
+  aspect-ratio: 1 / 1.02;
+  margin: 12px auto 30px;
+}
+/* A round paper mat with a double ink rule, ringed in the colour in play. */
+.uno-mat {
+  position: absolute;
+  inset: 3% 2%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(closest-side, var(--paper) 72%, transparent 72.5%), var(--uno-now);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 0 0 0 4px var(--paper),
+    inset 0 0 0 5.5px var(--ink),
+    0 18px 40px -24px var(--shadow);
+  transition: background-color 400ms;
+}
+.uno-arrows {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--uno-stock);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: uno-turn 24s linear infinite;
+}
+.uno-arrows--back {
+  animation-direction: reverse;
+}
+@keyframes uno-turn {
+  to {
+    rotate: 360deg;
+  }
+}
+.uno-middle {
+  position: absolute;
+  inset: 22% 20%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2.4cqw;
+  text-align: center;
+}
+.uno-piles {
+  display: flex;
+  align-items: center;
+  gap: 4cqw;
+}
+.uno-piles .uno-card {
+  --w: var(--uno-pile);
+}
+.uno-deck {
+  position: relative;
+  display: grid;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: calc(var(--uno-pile) * 0.1);
+}
+.uno-deck > * {
+  grid-area: 1 / 1;
+}
+.uno-deck:disabled {
+  cursor: default;
+}
+.uno-deck:not(:disabled) .uno-card:last-of-type {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+  animation: uno-nudge 1.6s var(--ease-out) infinite;
+}
+@keyframes uno-nudge {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+.uno-deck__under {
+  translate: 3px 3px;
+}
+.uno-deck__n {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  translate: -50% 55%;
+  z-index: 1;
+  padding: 0 6px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 clamp(12px, 3cqw, 20px) / 1.3 var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+.uno-discard {
+  display: grid;
+  min-width: var(--uno-pile);
+}
+.uno-land {
+  animation: uno-land 380ms var(--ease-out) both;
+}
+@keyframes uno-land {
+  from {
+    opacity: 0;
+    transform: translateY(-40%) rotate(-14deg) scale(1.2);
+  }
+}
+.uno-now {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+  font: 800 clamp(14px, 4cqw, 26px) / 1.1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+/* A word stamped over the pile when an action card goes down. */
+.uno-flash {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  translate: -50% -50%;
+  z-index: 3;
+  padding: 0.05em 0.35em;
+  background: var(--uno-now);
+  color: var(--uno-stock);
+  border: 3px solid var(--uno-stock);
+  box-shadow: 0 0 0 2px var(--uno-ink);
+  font: 400 clamp(26px, 11cqw, 72px) / 1 var(--font-display);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: uno-flash 1.3s var(--ease-out) both;
+}
+@keyframes uno-flash {
+  0% {
+    opacity: 0;
+    scale: 1.8;
+    rotate: -8deg;
+  }
+  18% {
+    opacity: 1;
+    scale: 1;
+    rotate: -5deg;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 0.9;
+    rotate: -5deg;
+  }
+}
+
+.uno-seat {
+  --ring-bg: var(--paper);
+  position: absolute;
+  z-index: 2;
+  width: calc(var(--uno-tok) * 2.1);
+  translate: -50% calc(var(--uno-tok) * -0.5);
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  text-align: center;
+}
+.uno-seat__tok {
+  position: relative;
+  display: inline-grid;
+}
+.uno-seat .jd-token {
+  --z: var(--uno-tok);
+}
+.uno-seat__name {
+  max-width: 100%;
+  padding: 1px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  color: var(--ink);
+  font: 800 clamp(12px, 3.6cqw, 22px) / 1.25 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.uno-seat--me .uno-seat__name {
+  background: var(--ink);
+  color: var(--paper);
+}
+.uno-seat__score {
+  margin-left: 0.4em;
+  padding-left: 0.4em;
+  border-left: 1.5px solid currentColor;
+  font-family: var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+.uno-seat--turn .jd-token {
+  outline: 3px solid var(--uno-now);
+  outline-offset: calc(var(--uno-tok) * 0.12);
+  animation: uno-turn-ring 1.4s var(--ease-out) infinite;
+}
+@keyframes uno-turn-ring {
+  50% {
+    outline-offset: calc(var(--uno-tok) * 0.2);
+  }
+}
+/* Everyone else's hand: a few backs fanned behind the token, and the count on a chit. */
+.uno-seat__fan {
+  position: absolute;
+  left: 50%;
+  bottom: 78%;
+  translate: -50% 0;
+  display: flex;
+  z-index: -1;
+}
+.uno-seat__fan .uno-card {
+  --w: calc(var(--uno-tok) * 0.36);
+  transform-origin: 50% 100%;
+}
+.uno-seat__fan .uno-card + .uno-card {
+  margin-left: calc(var(--w) * -0.7);
+}
+.uno-seat__count {
+  position: absolute;
+  right: -14%;
+  bottom: -6%;
+  min-width: 1.6em;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--uno-stock);
+  color: var(--uno-ink);
+  border: 1.5px solid var(--uno-ink);
+  font: 800 calc(var(--uno-tok) * 0.3) / 1.25 var(--font-code);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.uno-call {
+  position: absolute;
+  top: calc(var(--uno-tok) * -0.62);
+  z-index: 3;
+  padding: 1px 7px;
+  background: var(--uno-now);
+  color: var(--uno-stock);
+  border: 1.5px solid var(--uno-ink);
+  font: 400 clamp(13px, 3.6cqw, 24px) / 1.1 var(--font-display);
+  white-space: nowrap;
+  rotate: -4deg;
+  animation: uno-pop 320ms var(--ease-out) both;
+}
+/* Down to one card without calling it: anyone can catch them. */
+.uno-call--open {
+  background: var(--paper);
+  color: var(--gules);
+  border-color: var(--gules);
+  font: 800 clamp(11px, 2.8cqw, 18px) / 1.2 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: uno-warn 900ms ease-in-out infinite;
+}
+@keyframes uno-warn {
+  50% {
+    scale: 1.08;
+  }
+}
+.uno-tag {
+  position: absolute;
+  bottom: calc(var(--uno-tok) * -0.62);
+  padding: 1px 6px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 clamp(11px, 2.8cqw, 18px) / 1.2 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  z-index: 3;
+  animation: uno-pop 320ms var(--ease-out) both;
+}
+.uno-tag--bad {
+  background: var(--gules);
+  color: var(--on-fill);
+}
+.uno-tag--won {
+  background: var(--vert);
+  color: var(--on-fill);
+}
+.uno-seat--won .jd-token {
+  outline: 3px solid var(--vert);
+  outline-offset: calc(var(--uno-tok) * 0.12);
+}
+@keyframes uno-pop {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+/* ── The lobby: everyone round the mat before the deal ────────────────── */
+.uno-table--lobby {
+  width: min(100%, 560px);
+  margin: 18px auto 34px;
+}
+.uno-open {
+  display: block;
+  width: var(--uno-tok);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px dashed var(--rule);
+  background: var(--table-2);
+}
+.uno-seat__tap {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.uno-seat__tap:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+.uno-seat--landing .uno-seat__tok {
+  animation: uno-seat-land 520ms var(--ease-out) both;
+}
+@keyframes uno-seat-land {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(1.25);
+  }
+}
+
+/* ── Your hand and the dock (phone) ───────────────────────────────────── */
+/* The whole hand always fits the width: cards overlap more as it grows. */
+.uno-hand {
+  --w: clamp(52px, 16cqw, 84px);
+  container-type: inline-size;
+  display: flex;
+  justify-content: center;
+  padding-top: calc(var(--w) * 0.2);
+  min-height: calc(var(--w) * 1.48);
+}
+.uno-hand .uno-card {
+  --w: inherit;
+  width: var(--w);
+}
+.uno-hand .uno-card + .uno-card {
+  margin-left: min(
+    calc(var(--w) * -0.1),
+    calc((100cqw - var(--w)) / max(1, var(--n) - 1) - var(--w))
+  );
+}
+.uno-hand__card {
+  animation: uno-deal 340ms var(--ease-out) both;
+  animation-delay: calc(min(var(--i), 10) * 30ms);
+}
+@keyframes uno-deal {
+  from {
+    opacity: 0;
+    transform: translateY(40%);
+  }
+}
+.uno-hand__card--drawn {
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 5.5px var(--ink);
+}
+.uno-hand__card--picked {
+  transform: translateY(calc(var(--w) * -0.3));
+}
+.uno-hand--empty {
+  margin: 0;
+  color: var(--ink-2);
+  text-align: center;
+}
+.uno-dock {
+  display: grid;
+  gap: var(--space-2);
+}
+.uno-dock__say {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--ink-2);
+  font-weight: 700;
+}
+.uno-dock__count {
+  margin: 0;
+  font: 800 var(--step-1) / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.uno-dock__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.uno-dock__row > :only-child,
+.uno-dock__row--one {
+  grid-column: 1 / -1;
+}
+.uno-dock__row--one {
+  grid-template-columns: 1fr;
+}
+.uno-clock {
+  min-width: 3.2em;
+  padding: 2px 8px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 16px/1.2 var(--font-code);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.uno-clock.is-low {
+  background: var(--gules);
+  border-color: var(--gules);
+  color: var(--on-fill);
+}
+/* The UNO! call and the catch: the loudest things on the screen while they last. */
+.jd-plaque.uno-uno,
+.jd-plaque.uno-catch {
+  min-height: 56px;
+  font-size: var(--step-1);
+  animation: uno-warn 900ms ease-in-out infinite;
+}
+.jd-plaque.uno-uno {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: var(--step-2);
+}
+.jd-plaque.uno-catch {
+  background: var(--gules);
+  border-color: var(--gules);
+  color: var(--on-fill);
+}
+.uno-arm {
+  min-height: 48px;
+  border: 2px dashed var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 var(--step-1) / 1 var(--font-display);
+  cursor: pointer;
+}
+.uno-arm[aria-pressed='true'] {
+  border-style: solid;
+  background: var(--ink);
+  color: var(--paper);
+}
+.uno-colours {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.uno-colour {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px solid var(--uno-ink);
+  color: var(--uno-stock);
+  font: 800 var(--step-0) var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 3px var(--uno-stock);
+}
+.uno-colour .uno-swatch {
+  display: none;
+}
+.uno-colour--r {
+  background: var(--uno-r);
+}
+.uno-colour--y {
+  background: var(--uno-y);
+}
+.uno-colour--g {
+  background: var(--uno-g);
+}
+.uno-colour--b {
+  background: var(--uno-b);
+}
+
+/* ── TV ────────────────────────────────────────────────────────────────── */
+.uno--tv {
+  max-width: none;
+  min-height: 0;
+  height: 100%;
+  padding: 2vh 3vw;
+  box-sizing: border-box;
+}
+.uno--tv .uno__head {
+  display: flex;
+  align-items: baseline;
+  gap: 2vw;
+}
+.uno--tv .uno__head h2 {
+  font-size: var(--step-4);
+}
+.uno--tv .uno__head p {
+  font-size: 26px;
+}
+.uno-table--tv {
+  --uno-tok: clamp(48px, 6cqw, 100px);
+  --uno-pile: min(9cqw, 170px);
+  aspect-ratio: 2.05 / 1;
+  width: min(100%, calc((100vh - 360px) * 2.05));
+  margin: 6vh auto 8vh;
+}
+.uno-table--tv .uno-mat {
+  background: radial-gradient(closest-side, var(--paper) 80%, transparent 80.5%), var(--uno-now);
+}
+.uno-table--tv .uno-arrows {
+  animation: none;
+}
+.uno-table--tv .uno-middle {
+  inset: 20% 30%;
+  gap: 1.4cqw;
+}
+.uno-table--tv .uno-now {
+  font-size: clamp(20px, 2cqw, 40px);
+}
+.uno-table--tv .uno-flash {
+  font-size: clamp(40px, 6cqw, 140px);
+}
+.uno-table--tv .uno-seat__name {
+  font-size: clamp(16px, 1.7cqw, 30px);
+}
+.uno-table--tv .uno-seat__score,
+.uno-table--tv .uno-tag,
+.uno-table--tv .uno-call {
+  font-size: clamp(16px, 1.5cqw, 28px);
+}
+
+/* Wide and landscape (a laptop): the table on the left, your hand and the dock beside it. */
+@container game (min-width: 700px) and (orientation: landscape) {
+  .uno--phone {
+    max-width: 1180px;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    column-gap: var(--space-5);
+    row-gap: var(--space-3);
+  }
+  .uno--phone > .uno-stage {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    place-items: center;
+  }
+  .uno--phone > .uno__head,
+  .uno--phone > .uno-hand,
+  .uno--phone > .uno-dock {
+    grid-column: 2;
+  }
+  .uno--phone > .uno-hand {
+    grid-row: 3;
+    align-self: end;
+  }
+  .uno--phone > .uno-dock {
+    grid-row: 4;
+  }
+}
+
+/* Short phones: a smaller hand, so the table keeps as much room as it can. */
+@container game (max-height: 640px) and (orientation: portrait) {
+  .uno--phone .uno-hand {
+    --w: clamp(44px, 13cqw, 64px);
+  }
+  .uno--phone {
+    gap: var(--space-1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uno-arrows,
+  .uno-land,
+  .uno-hand__card,
+  .uno-seat--turn .jd-token,
+  .uno-seat--landing .uno-seat__tok,
+  .uno-deck:not(:disabled) .uno-card:last-of-type,
+  .uno-call,
+  .uno-tag,
+  .jd-plaque.uno-uno,
+  .jd-plaque.uno-catch {
+    animation: none;
+  }
+  .uno-flash {
+    animation: uno-fade 1.3s both;
+  }
+  @keyframes uno-fade {
+    0%,
+    75% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}

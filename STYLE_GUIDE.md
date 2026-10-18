@@ -172,8 +172,9 @@ Check every screen at **375, 768, 1280, 1920**.
 - **Phone (375):** portrait, one hand. Bar on top (mark, code chits, icon buttons), content,
   dock at the bottom with the primary plaque. Safe-area padding.
 - **Tablet (768):** two columns where it helps (seat track beside the game picker).
-- **Laptop (1280):** home is the welcome screen with its nav in one row, then shelves of game
-  covers ("Browse the games" scrolls there). Catalog = filters | shelf | detail panel.
+- **Laptop (1280):** home is the welcome screen with its nav in one row, then one grid of game
+  covers under a row of filters ("Browse the games" scrolls there). Catalog = filters over the
+  grid | detail panel. (Shelves come back once there are enough games to fill them.)
   Lobby = table (the wider column, tokens about 84px) | game | chat.
 - **TV (1920):** no hover. Huge code chits + QR, the seat track along the bottom, the next game
   on the right, all on one screen. Only the lobby scrolls: below its first screen is **the night

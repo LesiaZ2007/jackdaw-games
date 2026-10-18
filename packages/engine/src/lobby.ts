@@ -438,6 +438,14 @@ export function setGame(lobby: Lobby, hostId: string, gameId: string | null, ctx
   );
 }
 
+/**
+ * The lobby's options for a game, with the game's defaults filling any it doesn't have, so a
+ * lobby saved before a game gained an option still starts (and shows the new option's default).
+ */
+function optionsWithDefaults(lobby: Lobby, game: AnyGameModule): Record<string, unknown> {
+  return { ...game.defaultOptions(lobby.players.length), ...lobby.gameOptions };
+}
+
 export function setOptions(
   lobby: Lobby,
   hostId: string,
@@ -447,7 +455,7 @@ export function setOptions(
   requireHost(lobby, hostId);
   requireStatus(lobby, 'waiting');
   const game = gameFor(ctx, lobby.selectedGameId);
-  const parsed = game.optionsSchema.safeParse(options);
+  const parsed = game.optionsSchema.safeParse({ ...optionsWithDefaults(lobby, game), ...options });
   if (!parsed.success)
     fail('BAD_OPTIONS', parsed.error.issues[0]?.message ?? 'Those options are not valid.');
   return touch({ ...lobby, gameOptions: parsed.data as Record<string, unknown> }, ctx.now);
@@ -465,7 +473,7 @@ export function startBlocker(lobby: Lobby, ctx: Pick<Ctx, 'games'>): string | nu
       ? `Needs exactly ${minPlayers} players.`
       : `Needs ${minPlayers} to ${maxPlayers} players.`;
   }
-  const parsed = game.optionsSchema.safeParse(lobby.gameOptions);
+  const parsed = game.optionsSchema.safeParse(optionsWithDefaults(lobby, game));
   if (!parsed.success) return parsed.error.issues[0]?.message ?? 'Those options are not valid.';
   return game.validateOptions?.(parsed.data, n) ?? null;
 }
@@ -487,7 +495,7 @@ function beginSession(lobby: Lobby, input: StartInput, ctx: Ctx): Lobby {
   const blocker = startBlocker(lobby, ctx);
   if (blocker) fail('PLAYER_COUNT', blocker);
   const game = gameFor(ctx, lobby.selectedGameId);
-  const options = game.optionsSchema.parse(lobby.gameOptions);
+  const options = game.optionsSchema.parse(optionsWithDefaults(lobby, game));
   if (game.linked && input.linked === undefined)
     fail('NOT_SET_UP', `${game.meta.name} isn't set up on this server yet.`);
   const rng = createRng(input.seed);
@@ -552,6 +560,47 @@ export function applyGameAction(
     ctx.now,
   );
   return finishIfOver(next, ctx);
+}
+
+/** At most this many timers fire in one go, in case a game keeps scheduling ones already due. */
+const TIMER_BURST = 20;
+
+/** When the running game's next timer is due (server time), or null if it has none. */
+export function nextTimerAt(lobby: Lobby, ctx: Pick<Ctx, 'games'>): number | null {
+  const session = lobby.session;
+  if (lobby.status !== 'in_game' || !session) return null;
+  return ctx.games[session.gameId]?.nextTimer?.(session.state)?.at ?? null;
+}
+
+/**
+ * Fires every game timer that is due (there are no alarms on Vercel, so the runtime calls this on
+ * reads and writes). Each one counts as a move: the seq goes up, the game may announce it, and the
+ * game can end. Returns the same lobby when nothing was due.
+ */
+export function runTimers(lobby: Lobby, ctx: Ctx): Lobby {
+  let out = lobby;
+  for (let i = 0; i < TIMER_BURST; i++) {
+    const session = out.session;
+    if (out.status !== 'in_game' || !session) return out;
+    const game = gameFor(ctx, session.gameId);
+    const timer = game.nextTimer?.(session.state);
+    if (!timer || timer.at > ctx.now || !game.onTimer) return out;
+    const rng = createRng(session.rngState);
+    const state = game.onTimer(session.state, timer.id, rng, ctx.now);
+    if (state === session.state) return out;
+    out = finishIfOver(
+      say(
+        touch(
+          { ...out, session: { ...session, state, seq: session.seq + 1, rngState: rng.state } },
+          ctx.now,
+        ),
+        game.announce?.(session.state, state) ?? [],
+        ctx.now,
+      ),
+      ctx,
+    );
+  }
+  return out;
 }
 
 function finishIfOver(lobby: Lobby, ctx: Ctx): Lobby {
@@ -695,7 +744,10 @@ export function snapshotFor(
     })),
     displays,
     selectedGameId: lobby.selectedGameId,
-    gameOptions: lobby.gameOptions,
+    gameOptions:
+      lobby.selectedGameId && ctx.games[lobby.selectedGameId]
+        ? optionsWithDefaults(lobby, ctx.games[lobby.selectedGameId]!)
+        : lobby.gameOptions,
     // Polls carry only the latest games; the full record is served separately as stats.
     history: lobby.history.slice(0, SNAPSHOT_HISTORY),
     historyCount: lobby.history.length,
@@ -706,7 +758,10 @@ export function snapshotFor(
     session: session
       ? { id: session.id, gameId: session.gameId, seq: session.seq, startedAt: session.startedAt }
       : null,
+    serverNow: ctx.now,
   };
+  const timerAt = nextTimerAt(lobby, ctx);
+  if (timerAt !== null) snapshot.timerAt = timerAt;
   if (session && lobby.status === 'in_game') {
     const game = gameFor(ctx, session.gameId);
     snapshot.tableView = game.getTableView(session.state);

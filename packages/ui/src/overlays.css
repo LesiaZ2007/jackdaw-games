@@ -82,11 +82,13 @@
   }
 }
 
+/* Under the bar at the top, so it never covers a game's rack or buttons. A tap clears it. */
 .jd-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  top: calc(76px + env(safe-area-inset-top, 0px));
   z-index: 60;
+  cursor: pointer;
   translate: -50% 0;
   width: max-content;
   max-width: min(92vw, 440px);
@@ -95,7 +97,13 @@
   color: var(--paper);
   font: 700 16px/1.35 var(--font-body);
   box-shadow: 0 10px 30px -10px var(--shadow);
-  animation: jd-sheet-up 260ms var(--ease-out) both;
+  animation: jd-toast-in 260ms var(--ease-out) both;
+}
+@keyframes jd-toast-in {
+  from {
+    transform: translateY(-16px);
+    opacity: 0;
+  }
 }
 
 .jd-recap {

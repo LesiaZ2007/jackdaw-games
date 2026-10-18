@@ -147,6 +147,7 @@ export function NextUp({
                 options={options}
                 editable={isHost}
                 onChange={onOptions}
+                help={entry.ui?.optionHelp}
               />
             )}
             <div className="next-up__how">

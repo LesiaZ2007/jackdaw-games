@@ -73,6 +73,11 @@ export interface GameUi {
    */
   LobbySeats?: ComponentType<LobbySeatsProps>;
   /**
+   * Optional: one plain line under each option in Jackdaw's lobby, by option key. A string
+   * explains the option; a record explains each choice (the line follows the one chosen).
+   */
+  optionHelp?: Record<string, string | Record<string, string>>;
+  /**
    * Optional themed waiting room shown in the lobby once this game is chosen (e.g. Avalon's
    * round table). The lobby shows the game's box lid and options when it's absent.
    */

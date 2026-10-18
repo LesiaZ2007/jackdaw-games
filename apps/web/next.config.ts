@@ -8,6 +8,7 @@ const config: NextConfig = {
     '@jackdaw/server',
     '@jackdaw/ui',
     '@jackdaw/game-rps',
+    '@jackdaw/game-risk',
     '@jackdaw/game-avalon',
     '@jackdaw/game-codenames',
     '@jackdaw/game-poker',

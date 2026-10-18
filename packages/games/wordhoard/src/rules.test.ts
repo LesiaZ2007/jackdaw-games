@@ -8,7 +8,7 @@ const ids = ['a', 'b'];
 const start = (seed = 1) =>
   game.setup({
     playerIds: ids,
-    options: { pairs: 'Past four players' },
+    options: { pairs: 'Past four players', turnTimer: 'Off' },
     rng: createRng(seed),
     now: 0,
   });
@@ -177,7 +177,7 @@ describe('pairs', () => {
   const pairs = (seed = 3) =>
     game.setup({
       playerIds: five,
-      options: { pairs: 'Past four players' },
+      options: { pairs: 'Past four players', turnTimer: 'Off' },
       rng: createRng(seed),
       now: 0,
     });
@@ -187,11 +187,11 @@ describe('pairs', () => {
     expect(s.sides.map((x) => x.length)).toEqual([2, 2, 1]);
     expect(s.sides.flat().sort()).toEqual(five);
     expect(Object.keys(s.racks)).toHaveLength(3);
-    expect(game.validateOptions!({ pairs: 'Always' }, 8)).toBeNull();
-    expect(game.validateOptions!({ pairs: 'Always' }, 2)).toMatch(/three/);
+    expect(game.validateOptions!({ pairs: 'Always', turnTimer: 'Off' }, 8)).toBeNull();
+    expect(game.validateOptions!({ pairs: 'Always', turnTimer: 'Off' }, 2)).toMatch(/three/);
     const four = game.setup({
       playerIds: ['a', 'b', 'c', 'd'],
-      options: { pairs: 'Always' },
+      options: { pairs: 'Always', turnTimer: 'Off' },
       rng: createRng(1),
       now: 0,
     });
@@ -223,5 +223,25 @@ describe('pairs', () => {
     const r = game.getResult(s)!;
     expect(r.winners.sort()).toEqual([x, y].sort());
     expect(r.standings!.filter((st) => st.outcome === 'win')).toHaveLength(2);
+  });
+});
+
+describe('the turn timer', () => {
+  it('passes for the side to play when time runs out, and restarts after every move', () => {
+    let s = game.setup({
+      playerIds: ids,
+      options: { pairs: 'Past four players', turnTimer: '1 minute' },
+      rng: createRng(1),
+      now: 1_000,
+    });
+    const first = s.turn;
+    expect(game.nextTimer!(s)).toEqual({ id: 'turn', at: 61_000 });
+    s = game.onTimer!(s, 'turn', createRng(2), 61_000);
+    expect(s.moves).toEqual([{ player: first, kind: 'pass', score: 0, late: true }]);
+    expect(s.turn).not.toBe(first);
+    expect(game.getTableView(s).turnBy).toBe(121_000);
+    s = game.applyAction(s, s.turn, { type: 'pass' }, createRng(3), 70_000);
+    expect(game.nextTimer!(s)).toEqual({ id: 'turn', at: 130_000 });
+    expect(game.nextTimer!(start())).toBeNull();
   });
 });

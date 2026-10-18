@@ -3,7 +3,7 @@
 import { Token, useMoment, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { Move, WordhoardTableView } from '../rules';
 import { BoardGrid, Tile } from './pieces';
-import { Scores, moveText, sideName } from './player';
+import { Scores, TurnClock, moveText, sideName } from './player';
 import './wordhoard.css';
 
 /** Milliseconds between one new tile dropping onto the board and the next. */
@@ -14,7 +14,7 @@ const DROP_GAP = 140;
  * is played its tiles drop onto the board one by one, then the word rises over the board with who
  * played it and the score; a pass or a swap gets a quieter card.
  */
-export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, ...props }) => {
+export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...props }) => {
   const t = tableView as WordhoardTableView;
   const players = props.players as ScreenPlayer[];
   const byId = new Map(players.map((p) => [p.id, p]));
@@ -53,6 +53,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, ...props })
       <aside className="wh-tv__side">
         <h2 className="jd-display">
           {t.over ? 'Final scores' : `${sideName(t, t.turn, name)} to play`}
+          {!t.over && <TurnClock at={t.turnBy} now={now} />}
         </h2>
         <Scores t={t} players={players} reactions={reactions} />
         <p className="wh-tv__bag">

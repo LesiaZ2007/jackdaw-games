@@ -1,10 +1,20 @@
 import { PACKED_WORDS } from '#packed-words';
 
 /**
- * The word list (ENABLE, public domain: 168,551 words of 2 to 15 letters), unpacked into a set the
+ * The word list (ENABLE, public domain: 168,551 words of 2 to 15 letters, plus EXTRA), unpacked into a set the
  * first time it's needed. Server-side only: the screens never import it.
  */
 let words: Set<string> | null = null;
+
+/**
+ * Newer words players expect that ENABLE (from the 1990s) doesn't have: the short words added to
+ * the tournament lists since (QI, ZA, OK, EW…) and a few everyday modern ones. The official lists
+ * themselves (NWL, Collins) are copyrighted, so they can't be shipped.
+ */
+const EXTRA =
+  `qi qis za zas ki kis ok ew ze da gi gis po pos te tes oi fe zen zens emoji emojis selfie
+selfies text texted texting blog blogs blogged blogger bloggers blogging vax bestie besties hashtag
+hashtags website websites email emails emailed emailing online internet`.split(/\s+/);
 
 function unpack(packed: string): Set<string> {
   const out = new Set<string>();
@@ -22,6 +32,6 @@ function unpack(packed: string): Set<string> {
 }
 
 export function isWord(word: string): boolean {
-  words ??= unpack(PACKED_WORDS);
+  words ??= new Set([...unpack(PACKED_WORDS), ...EXTRA]);
   return words.has(word.toLowerCase());
 }

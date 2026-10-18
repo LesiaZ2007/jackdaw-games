@@ -24,6 +24,21 @@
   color: var(--ink-2);
 }
 
+/* ── Phone and laptop layout ─────────────────────────────────────────── */
+/* It fills the game area under the bar: heading, scores, the board in whatever height is left,
+   then the rack and buttons. */
+.wh--phone {
+  flex: 1;
+  min-height: 0;
+  max-width: 640px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: var(--space-2);
+}
+.wh--phone .wh__head h2 {
+  font-size: var(--step-2);
+}
 /* ── Scores ───────────────────────────────────────────────────────────── */
 .wh-scores {
   list-style: none;
@@ -135,6 +150,18 @@
 }
 
 /* ── Board ────────────────────────────────────────────────────────────── */
+/* On a phone or laptop the board is as big a square as the space left over allows. */
+.wh-stage {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
+.wh-stage .wh-boardwrap {
+  box-sizing: border-box;
+  width: calc(min(100cqw, 100cqh) - 10px);
+  aspect-ratio: 1;
+}
 .wh-boardwrap {
   overflow: auto;
   overscroll-behavior: contain;
@@ -153,7 +180,7 @@
   background: var(--rule);
 }
 .wh-boardwrap.is-zoomed .wh-board {
-  width: 660px;
+  width: max(660px, 180%);
 }
 .wh-sq {
   position: relative;
@@ -241,13 +268,8 @@ button.wh-sq:focus-visible {
 
 /* ── Rack and dock (phone) ────────────────────────────────────────────── */
 .wh-dock {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
   display: grid;
   gap: var(--space-2);
-  padding: var(--space-2) 0 calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
-  background: var(--table);
 }
 .wh-dock__status {
   margin: 0;
@@ -396,6 +418,139 @@ button.wh-sq:focus-visible {
 }
 .wh-tv__moves li:first-child {
   font-weight: 800;
+}
+
+/* Wide and landscape (a laptop): the board on the left, everything else in a column beside it. */
+@container game (min-width: 700px) and (orientation: landscape) {
+  .wh--phone {
+    max-width: 1180px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    column-gap: var(--space-5);
+    row-gap: var(--space-3);
+  }
+  .wh--phone > .wh-stage {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  .wh--phone > .wh__head,
+  .wh--phone > .wh-scores,
+  .wh--phone > .wh-dock {
+    grid-column: 2;
+  }
+  .wh--phone > .wh-dock {
+    grid-row: 4;
+  }
+  .wh--phone .wh__head h2 {
+    font-size: var(--step-3);
+  }
+  .wh--phone .wh-scores,
+  .wh--phone .wh-scores--pairs {
+    grid-auto-flow: row;
+    grid-template-columns: 1fr;
+    align-self: start;
+  }
+  .wh--phone .wh-scores li + li,
+  .wh--phone .wh-scores--pairs li:nth-child(n) {
+    border-left: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .wh--phone .wh-scores li:first-child {
+    border-top: 0;
+  }
+  .wh--phone .wh-scores li,
+  .wh--phone .wh-scores--pairs li {
+    display: flex;
+    padding: 8px 10px;
+  }
+  .wh--phone .wh-scores__name small {
+    display: block;
+  }
+}
+
+/* ── The end of the game ──────────────────────────────────────────────── */
+.wh-final {
+  gap: var(--space-5);
+}
+.wh-final section {
+  display: grid;
+  gap: var(--space-2);
+}
+.wh-final__title {
+  font-size: var(--step-2);
+}
+.wh-final__note {
+  margin: 0;
+  color: var(--ink-2);
+}
+.wh-final__scores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+.wh-final__scores li {
+  --ring-bg: var(--paper);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+}
+.wh-final__scores li + li {
+  border-top: 1px solid var(--rule);
+}
+.wh-final__scores li:first-child {
+  background: color-mix(in srgb, var(--vert) 16%, var(--paper));
+}
+.wh-final__who {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.wh-final__name {
+  font: 800 16px/1.15 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wh-final__who small {
+  font: 600 13px var(--font-body);
+  color: var(--ink-2);
+}
+.wh-final__left {
+  display: flex;
+  gap: 2px;
+}
+.wh-final__left .wh-tile {
+  width: 24px;
+  height: 24px;
+  font-size: 15px;
+}
+.wh-final__n {
+  font: 800 26px var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+.wh-final__moves {
+  margin: 0;
+  padding-left: 1.6em;
+  display: grid;
+  gap: 4px;
+}
+/* The TV: the board as big a square as the space beside the standings allows. */
+.wh-final--tv {
+  height: 100%;
+  max-width: none;
+  display: grid;
+  place-items: center;
+}
+.wh-final--tv .wh-boardwrap {
+  box-sizing: border-box;
+  width: calc(min(100cqw, 100cqh) - 12px);
+  aspect-ratio: 1;
+  overflow: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {

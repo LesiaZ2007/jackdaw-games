@@ -31,6 +31,8 @@ describe('the word list', () => {
     expect(isWord('zyzzyvas')).toBe(true);
     expect(isWord('qzx')).toBe(false);
     expect(isWord('jackdaws')).toBe(true);
+    expect(isWord('QI')).toBe(true);
+    expect(isWord('emoji')).toBe(true);
   });
 });
 

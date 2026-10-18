@@ -2,6 +2,7 @@
 
 import type { GameUi } from '@jackdaw/ui';
 import { PlayerScreen } from './player';
+import { Reveal, TvReveal } from './reveal';
 import { TvScreen } from './tv';
 
 /** Wordhoard: catalog art, detail page and screens. It uses Jackdaw's own lobby. */
@@ -32,6 +33,9 @@ export const wordhoardUi: GameUi = {
       },
     ],
   },
+  fit: true,
   PlayerScreen,
   TvScreen,
+  Reveal,
+  TvReveal,
 };

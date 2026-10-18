@@ -170,6 +170,12 @@ Additions approved by Lesia:
   `GameUi.TvLobby` (optional) is the TV's lobby in the game's look; the platform hands it the
   join panel and keeps the night so far below. `fullTv` drops Jackdaw's strip above the TV screen. It gets the code, players, options, `start()`, `onSeat(id)` (own seat opens your look;
   the host's tap opens remove / make host) and `changeGame` for the host.
+- **Round three (Lesia, 2026-10-18: "do timers, do alerts")**: the runtime runs game timers
+  (`nextTimer`/`onTimer`, lazily on reads and writes; snapshots carry `serverNow` and `timerAt`).
+  `GameModule.waitingOn?(state)` (public) says who the game waits on, for your-move alerts and
+  Web Push (VAPID env vars; see PROGRESS.md). `GameResult.highlights?` feeds the night's
+  awards. UI types: `GameUi.fit` (phone screen fits under the bar, no scrolling), `LobbySeats`
+  (a game's own seats in Jackdaw's lobby), `TvReveal` (a game's reveal on the TV's results).
 - **Secret Hitler is secret-hitler.online, ported** (Lesia, 2026-10-17: "copy EXACTLY"). Its
   screens live in `packages/games/secret-hitler/src/ui/sho/` with the site's markup, text,
   timings and stylesheet (scoped under `.sho`); change them only to match the site, or to fit

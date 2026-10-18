@@ -203,9 +203,8 @@ a leak test, phone and TV screens, catalog pictures and an e2e (`e2e/cards-and-w
   and length (15 or 30 hands, or last one standing). Full no-limit betting: min-raises, short
   all-ins that don't reopen the action, uncalled bets returned, side pots, odd chips left of the
   button; `cards.ts` ranks hands. A busted player watches. The next hand deals itself (Lesia,
-  2026-10-18): with no timer runtime, every phone counts down 7s and sends
-  `{type:'deal', after:<hand>}`, the seat left of the button first and the rest 1.2s apart as
-  backup; a deal naming a hand already dealt does nothing. "Deal now" skips the wait. Look: a printed card table, vert baize on a sable rail,
+  2026-10-18) on the server timer, 7s after a hand ends; "Deal now" skips the wait (a deal
+  naming a hand already dealt does nothing). Look: a printed card table, vert baize on a sable rail,
   seats round the rim with your seat at the bottom (like Avalon's round table), cream cards with
   gules hearts and diamonds, chips as small stacks. Each hand ends with your VerdictMoment (won,
   lost at a showdown, or who won if you weren't in it; none if you folded).
@@ -223,6 +222,47 @@ a leak test, phone and TV screens, catalog pictures and an e2e (`e2e/cards-and-w
   Look: paper squares ruled in ink, bonus squares in heraldic fills (gules 3W, tenné 2W, azure
   3L, pale azure 2L), bone tiles in Grenze.
 - Kit: new `cards` and `tiles` glyphs for the box lids.
+
+### Round three (2026-10-18, branch `feat/round-three`)
+
+Lesia's playtest list ("do timers, do alerts, do all the improvements"), all done:
+
+- **Server timers.** The runtime fires a game's `nextTimer`/`onTimer` on every read and write
+  (`runTimers` in the engine; each counts as a move). Snapshots carry `serverNow` and `timerAt`;
+  clients correct their clock from the quickest poll (`apps/web/lib/clock.ts`, the screens'
+  `now()`) and poll just after a timer is due, so it fires within a moment while anyone has the
+  game open (a TV counts). Nothing fires while every screen is closed; it fires on the next one.
+  The kit's `useCountdown(at, now)` counts down to a deadline.
+- **Screens that fit** (`GameUi.fit`): Wordhoard's and poker's phone screens fill the height under
+  the bar and never scroll; on a laptop the rack or betting dock sits beside the board or table
+  (container queries on the `game` container). Toasts moved under the bar and clear on a tap
+  (they used to cover Wordhoard's rack).
+- **Your-move alerts.** `GameModule.waitingOn` (public; poker, Wordhoard, Codenames, Secret
+  Hitler, RPS) feeds `snapshot.waitingOn`. Phones chime (Web Audio, no files), buzz, and mark the
+  tab title when a game starts waiting on them; chime and buzz can be switched off in the lobby
+  menu. **Notifications**: Web Push sent by the server itself (`packages/server/src/push.ts`,
+  RFC 8291/8292 with web crypto, tested against the RFC's worked example), after the reply
+  (Next's `after`). Subscriptions are per lobby (`jackdaw:push:<code>`, `POST
+/api/lobby/<code>/push`); `GET /api/push` gives the public key. The service worker shows them
+  unless Jackdaw is on screen; a tap opens the lobby. On iPhone it needs Jackdaw on the Home Screen.
+  Vercel env (set 2026-10-18, Production and Preview): `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`
+  (sensitive), `VAPID_SUBJECT`. Without them the option isn't offered.
+- **Poker**: the server deals the next hand; options Turn timer (off/30s/60s: out of time checks
+  if free, else folds) and Buy back in (no/once each/any time, first half of the game); the lobby
+  seats everyone round the card table (`GameUi.LobbySeats`; the TV keeps its track); your two
+  cards are named before the flop ("Ace and six, same suit"). The winning five were already
+  lifted at a showdown.
+- **Wordhoard**: words are checked as you place them (`GET /api/words?w=…`, so the 540 KB list
+  stays on the server); newer words ENABLE lacks (QI, ZA, OK, EW, ZEN, EMOJI… in `words.ts`;
+  the official NWL and Collins lists are copyrighted and can't be shipped); drag tiles as well
+  as tap; the TV animates each move (tiles drop in, the word card stamps the score); results show
+  the final scores with leftover tiles, the finished board with the best play, and every move
+  (`GameUi.Reveal`), and the TV shows the finished board (`GameUi.TvReveal`); option Turn timer
+  (off/1/2/3 minutes; out of time passes).
+- **The night's awards**: `GameResult.highlights` (Best word, Biggest pot, Best clue) are kept in
+  history; the night summary gives each to the best of its kind. On the TV's night so far and in
+  Game stats > Tonight.
+- A lobby saved before a game gained an option gets that option's default (start never breaks).
 
 ## Next
 
@@ -266,7 +306,8 @@ a leak test, phone and TV screens, catalog pictures and an e2e (`e2e/cards-and-w
 
 - Should `actionSchema` stay on the game contract? It was added so every incoming action is checked with Zod.
 - The plan's strict "reject stale seq" would reject simultaneous votes. Actions are currently rejected only when they come from an earlier game or claim a future seq. Ordering within a game is left to the rules.
-- Timers (`onTimer`) are not scheduled yet. That will be decided with the first timed game. On Vercel they'll be evaluated lazily on each poll.
 - Secret Hitler house rules for 11 to 15 players still need confirming with the group (Phase 3).
-- Wordhoard's name (Lesia wants to talk names, 2026-10-18), and ENABLE's American word list (it
-  has some British spellings, like RIGOUR, but not all). Poker's defaults stand (Lesia, 2026-10-18).
+- Wordhoard's name (Lesia wants to talk names, 2026-10-18). Poker's defaults stand (Lesia,
+  2026-10-18). Lesia asked for the official Scrabble dictionary (2026-10-18): NWL and Collins are
+  licensed, so Wordhoard keeps ENABLE plus a short list of newer words; a licensed copy could be
+  loaded per lobby if Lesia has one.

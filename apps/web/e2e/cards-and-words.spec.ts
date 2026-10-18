@@ -95,6 +95,35 @@ test('wordhoard: a tile placed shows why it is not a play yet, then the turn is 
   await page.getByRole('button', { name: /^Row 8, column 8:/ }).click();
   await expect(page.locator('.wh-dock__status')).toContainText('at least two letters');
   await page.getByRole('button', { name: 'Undo' }).click();
+
+  // Drag two tiles onto the board instead: the phone asks the word list before Play.
+  const drag = async (from: string, to: string) => {
+    const a = (await page.locator(from).first().boundingBox())!;
+    const b = (await page.getByRole('button', { name: new RegExp(`^${to}:`) }).boundingBox())!;
+    await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(a.x + a.width / 2 + 20, a.y, { steps: 4 });
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 });
+    await page.mouse.up();
+  };
+  const letters = page.locator('.wh-rack__slot:not(.is-used):not([aria-label="Blank tile"])');
+  const first = (await letters.first().getAttribute('aria-label'))!;
+  await drag('.wh-rack__slot:not(.is-used):not([aria-label="Blank tile"])', 'Row 8, column 8');
+  const second = (await letters.first().getAttribute('aria-label'))!;
+  await drag('.wh-rack__slot:not(.is-used):not([aria-label="Blank tile"])', 'Row 8, column 9');
+  const { unknown } = await (await request.get(`/api/words?w=${first}${second}`)).json();
+  await expect(page.locator('.wh-dock__status')).toContainText(
+    unknown.length ? 'isn’t in the word list' : 'points',
+  );
+  await expect(page.getByRole('button', { name: /^Play/ })).toBeEnabled({
+    enabled: unknown.length === 0,
+  });
+  // A placed tile can be dragged to another square.
+  await drag('.wh-tile--pending', 'Row 1, column 1');
+  await expect(
+    page.getByRole('button', { name: /^Row 1, column 1: .*placed this turn/ }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Undo' }).click();
   await page.getByRole('button', { name: 'Pass', exact: true }).click();
   await expect(page.getByRole('heading', { name: /’s turn$/ })).toBeVisible({ timeout: 20_000 });
   const after = await call(request, `/api/lobby/${code}`, null);

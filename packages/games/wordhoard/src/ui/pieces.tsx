@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import type { CSSProperties, PointerEvent } from 'react';
 import { CENTRE, PREMIUM, SIZE, VALUE, type Board, type Placement } from '../board';
 
 const PREMIUM_LABEL = { tw: '3W', dw: '2W', tl: '3L', dl: '2L' } as const;
@@ -39,13 +39,15 @@ export function Tile({
 /**
  * The printed board: 15 by 15 squares with the bonus squares in heraldic colours and a star in
  * the middle. Tiles already played, tiles being placed this turn (`pending`), and the last move
- * picked out (`recent`). Empty squares are buttons when `onSquare` is given.
+ * picked out (`recent`). Empty squares are buttons when `onSquare` is given, marked with
+ * `data-square="row,col"` so a dragged tile can find the square it's dropped on.
  */
 export function BoardGrid({
   board,
   pending = [],
   recent = [],
   onSquare,
+  onPendingDown,
   label = 'The board',
   dropIn,
 }: {
@@ -58,6 +60,8 @@ export function BoardGrid({
    */
   dropIn?: number;
   onSquare?: (row: number, col: number) => void;
+  /** A finger or pointer went down on a tile placed this turn (to drag it somewhere else). */
+  onPendingDown?: (e: PointerEvent, row: number, col: number) => void;
   label?: string;
 }) {
   const pend = new Map(pending.map((p) => [`${p.row},${p.col}`, p]));
@@ -113,7 +117,9 @@ export function BoardGrid({
               type="button"
               className={cls}
               aria-label={`Row ${r + 1}, column ${c + 1}: ${name}`}
+              data-square={key}
               onClick={() => onSquare(r, c)}
+              onPointerDown={p && onPendingDown ? (e) => onPendingDown(e, r, c) : undefined}
             >
               {body}
             </button>

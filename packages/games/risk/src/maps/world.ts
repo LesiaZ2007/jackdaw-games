@@ -144,6 +144,7 @@ export const world = defineMap({
     ['western-australia', 'eastern-australia'],
   ],
   lanes: [
+    ['egypt', 'middle-east'],
     ['alaska', 'kamchatka'],
     ['northwest-territory', 'greenland'],
     ['greenland', 'ontario'],

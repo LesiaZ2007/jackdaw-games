@@ -309,6 +309,34 @@ button.wh-sq:focus-visible {
 .wh-rack__slot.is-used {
   visibility: hidden;
 }
+/* Dragging: the tile under your finger, lifted a little so the finger doesn't hide it, and the
+   square it would land on outlined. */
+.wh-rack__slot,
+.wh-tile--pending {
+  touch-action: none;
+}
+.wh-rack__slot.is-dragging {
+  opacity: 0.25;
+}
+.wh-ghost {
+  position: fixed;
+  z-index: 70;
+  width: 54px;
+  height: 54px;
+  translate: -50% -90%;
+  pointer-events: none;
+  font-size: 34px;
+  filter: drop-shadow(0 10px 12px var(--shadow));
+}
+.wh-ghost .wh-tile {
+  font-size: 34px;
+  rotate: -4deg;
+}
+.wh-sq.is-drop {
+  outline: 3px solid var(--or);
+  outline-offset: -3px;
+  z-index: 1;
+}
 .wh-rack__slot:disabled {
   cursor: default;
 }

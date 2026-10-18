@@ -99,7 +99,7 @@ export function Scores({
 }
 
 /**
- * Wordhoard on a phone: the scores, the board, and your rack at the bottom. Tap a tile on your
+ * Letterhoard on a phone: the scores, the board, and your rack at the bottom. Tap a tile on your
  * rack, then a square, to place it; tap a placed tile to take it back. The score shows before you
  * play. It fits the screen without scrolling: on a laptop the board takes the left and the rack
  * sits beside it.

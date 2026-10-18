@@ -521,7 +521,7 @@
   flex: 1;
 }
 /* A game that fits the screen: the page is exactly the viewport and the game fills what the bar
-   leaves, so nothing scrolls (Wordhoard). */
+   leaves, so nothing scrolls (Letterhoard). */
 .lobby-page--fit {
   height: 100dvh;
   min-height: 0;

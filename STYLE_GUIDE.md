@@ -156,7 +156,7 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which suits simple games
   a name plate, stack and last move, bets as small chip stacks pushed toward the middle, the
   shared cards and pot on the baize. Cards are cream stock, charcoal ink, gules for hearts and
   diamonds, an azure lozengy back; they look the same day and dark. `poker.css`.
-- **Wordhoard** uses Jackdaw's lobby. A printed board of paper squares ruled in ink, bonus
+- **Letterhoard** uses Jackdaw's lobby. A printed board of paper squares ruled in ink, bonus
   squares in heraldic fills (gules triple word, tenné double word, azure triple letter, pale
   azure double letter), a star in the middle; bone tiles with the letter in Grenze and the value
   in the corner, on a sable rack. `wordhoard.css`.

@@ -5,7 +5,7 @@ import { PlayerScreen } from './player';
 import { Reveal, TvReveal } from './reveal';
 import { TvScreen } from './tv';
 
-/** Wordhoard: catalog art, detail page and screens. It uses Jackdaw's own lobby. */
+/** Letterhoard: catalog art, detail page and screens. It uses Jackdaw's own lobby. */
 export const wordhoardUi: GameUi = {
   art: { band: 'azure', field: 'checky', glyph: 'tiles' },
   about: {
@@ -24,11 +24,11 @@ export const wordhoardUi: GameUi = {
     pictures: [
       {
         src: '/games/wordhoard/game-phone.png',
-        alt: 'Wordhoard on a phone: the scores, the board with the words so far, and your rack of seven tiles.',
+        alt: 'Letterhoard on a phone: the scores, the board with the words so far, and your rack of seven tiles.',
       },
       {
         src: '/games/wordhoard/tv.png',
-        alt: 'Wordhoard on a TV: the board large, with the scores and the latest plays beside it.',
+        alt: 'Letterhoard on a TV: the board large, with the scores and the latest plays beside it.',
         wide: true,
       },
     ],

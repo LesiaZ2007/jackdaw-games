@@ -6,7 +6,12 @@ import { isWord } from './words';
 
 const ids = ['a', 'b'];
 const start = (seed = 1) =>
-  game.setup({ playerIds: ids, options: {}, rng: createRng(seed), now: 0 });
+  game.setup({
+    playerIds: ids,
+    options: { pairs: 'Past four players' },
+    rng: createRng(seed),
+    now: 0,
+  });
 const act = (s: WordhoardState, who: string, a: WordhoardAction) =>
   game.applyAction(s, who, a, createRng(9), 0);
 const across = (row: number, col: number, word: string): Placement[] =>
@@ -162,5 +167,59 @@ describe('playing', () => {
     // a went out: +20 from b's Q and Z, b loses 20.
     expect(s.endBonus).toEqual({ a: 20, b: -20 });
     expect(s.scores).toEqual({ a: 30, b: -20 });
+  });
+});
+
+describe('pairs', () => {
+  const five = ['a', 'b', 'c', 'd', 'e'];
+  const pairs = (seed = 3) =>
+    game.setup({
+      playerIds: five,
+      options: { pairs: 'Past four players' },
+      rng: createRng(seed),
+      now: 0,
+    });
+
+  it('pairs past four players (or always), one alone with an odd number', () => {
+    const s = pairs();
+    expect(s.sides.map((x) => x.length)).toEqual([2, 2, 1]);
+    expect(s.sides.flat().sort()).toEqual(five);
+    expect(Object.keys(s.racks)).toHaveLength(3);
+    expect(game.validateOptions!({ pairs: 'Always' }, 8)).toBeNull();
+    expect(game.validateOptions!({ pairs: 'Always' }, 2)).toMatch(/three/);
+    const four = game.setup({
+      playerIds: ['a', 'b', 'c', 'd'],
+      options: { pairs: 'Always' },
+      rng: createRng(1),
+      now: 0,
+    });
+    expect(four.sides.map((x) => x.length)).toEqual([2, 2]);
+  });
+
+  it('shares a rack and a score between partners, and either can play', () => {
+    let s = pairs();
+    const [x, y] = s.sides[0]!;
+    s = { ...s, turn: x!, racks: { ...s.racks, [x!]: [...'CATSXYZ'] } };
+    expect(game.getPlayerView(s, y!).rack).toEqual(game.getPlayerView(s, x!).rack);
+    const other = s.sides[1]![0]!;
+    expect(game.getPlayerView(s, other).rack).not.toEqual(s.racks[x!]);
+    expect(() => act(s, other, { type: 'pass' })).toThrow(/not your turn/);
+    s = act(s, y!, { type: 'play', tiles: across(7, 6, 'CAT') });
+    expect(s.scores[x!]).toBe(10);
+    expect(s.moves.at(-1)?.player).toBe(y);
+    expect(s.turn).toBe(other);
+    const table = JSON.stringify(game.getTableView(s));
+    expect(table).not.toMatch(/"(bag|racks|rack)"/);
+  });
+
+  it('wins together', () => {
+    let s = pairs();
+    const [x, y] = s.sides[0]!;
+    s = { ...s, scores: { ...s.scores, [x!]: 99 } };
+    for (let i = 0; i < 6; i++)
+      s = act(s, s.sides.find((p) => p[0] === s.turn)![0]!, { type: 'pass' });
+    const r = game.getResult(s)!;
+    expect(r.winners.sort()).toEqual([x, y].sort());
+    expect(r.standings!.filter((st) => st.outcome === 'win')).toHaveLength(2);
   });
 });

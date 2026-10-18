@@ -16,6 +16,7 @@ export const wordhoardUi: GameUi = {
       'Letters score their value; bonus squares double or triple a letter or the whole word. All seven tiles at once earns 50 more.',
       'Or swap some tiles for new ones, or pass.',
       'When the bag is empty and someone plays their last tile, what’s left on the other racks goes to them. Most points wins.',
+      'With five or more (or four, if you like), play in pairs: partners are drawn at random, share a rack and a score, and either can make the move.',
     ],
     credit:
       'A classic crossword tile game, with Jackdaw’s own board and tile mix. Words from ENABLE (public domain).',

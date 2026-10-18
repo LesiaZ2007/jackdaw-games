@@ -92,8 +92,13 @@ Git Bash, run `export PATH="$HOME/.local/bin:$PATH"`. In PowerShell 5.1, chain w
   Per-row results use `OutcomeChip`; running scores use `Tally`. The end-of-game results screen
   gives everyone their own `Verdict` already. See the doc comment in `packages/ui/src/game-ui.ts`.
 - **Day and dark follow the shell.** Every game follows the day/dark choice through `useTheme()`
-  (`packages/ui/src/theme.ts`). A game with its own looks maps onto them: Avalon's day is its Parchment
-  look and dark is its Night look.
+  (`packages/ui/src/theme.ts`). A game with its own looks maps onto them. **Except Avalon**
+  (Lesia, 2026-10-18): it sets `GameUi.look = 'light'`, so it's Parchment everywhere by default,
+  and each player can switch it to Night in Avalon's lobby (`useGameLook` / `setGameLook`, kept
+  per device under `jackdaw:look:avalon`). The starter's Avalon look is what goes out with Start.
+- **Pictures.** A game's `about.pictures` holds phone shots and `desktop: true` laptop shots
+  (1440×900). Phones see only the phone ones, laptops only the desktop ones. Example players in
+  pictures, tests and copy are birds (Wren, Rook, Magpie, Robin, Finch, Heron…), never real people.
 
 ## Architecture (polling on Vercel)
 

@@ -331,6 +331,31 @@ Blitz attacks. Design: `docs/superpowers/specs/2026-10-18-risk-design.md`; plan:
     ships, a serpent in the strait, castles at Kingsreach and Highcairn, a dragon over the Wolds,
     Elderwood's pines, the Fells' peaks, Saltmarsh reeds and the Lantern Isle lighthouse.
 
+### UI polish (2026-10-18, branch `fix/ui-polish`)
+
+Lesia's list, all done:
+
+- **No scrollbars on phones** (`pointer: coarse` or ≤760px), and no sideways scrolling anywhere:
+  the detail page's picture strip is now a grid.
+- **Avalon is Parchment by default**, even with Jackdaw in dark, with a Parchment/Night choice in
+  its lobby settings (per phone). See "Day and dark" in CLAUDE.md.
+- **Pictures by device**: each game has phone shots and a 1440×900 laptop shot (`desktop: true`);
+  phones see the phone ones, laptops the laptop ones. All retaken with bird-named players (Avalon's
+  against a local Avalon app; its shots are JPEGs because the parchment texture made PNGs 1.4 MB).
+  The TV shots are gone.
+- **Plainer words**: every tagline, description, step and credit was rewritten to read like a
+  person wrote it; the dead Secret Hitler "coming soon" entry is gone.
+- **Birds, not people**: tests, comments, mockups and examples use Wren, Rook, Magpie, Robin,
+  Finch, Heron, Kestrel, Lark, Swift, Jay, Crow and Kite.
+- **Filters**: the Players stepper is now a dropdown like the others; each dropdown fills its
+  printed box with the label inside, so all four fit in one short row on a phone.
+- **Settings easy to find**: a moon/sun button in the corner of home and in the games bar, and
+  the Lobby menu's Look is a Day/Dark choice right under You (it was a link near the bottom).
+- **Detail page on phones**: the back button sits in the banner's top-left corner (it had its own
+  row, out of line with the banner), and the Start dock slides away while you scroll down and
+  comes back when you scroll up or reach the end.
+- Less clutter: shorter hints in the lobby ("That's you. Tap to change your look.") and the menu.
+
 ## Next
 
 1. Lesia reviews and playtests Phase 1 on the Vercel preview, then merges `feat/phase-1` to `main`. Production then serves it.

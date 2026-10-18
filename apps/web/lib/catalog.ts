@@ -2,6 +2,7 @@ import type { GameCategory, GameMeta } from '@jackdaw/engine';
 import { avalonUi } from '@jackdaw/game-avalon/ui';
 import { codenamesUi } from '@jackdaw/game-codenames/ui';
 import { pokerUi } from '@jackdaw/game-poker/ui';
+import { riskUi } from '@jackdaw/game-risk/ui';
 import { rpsUi } from '@jackdaw/game-rps/ui';
 import { secretHitlerUi } from '@jackdaw/game-secret-hitler/ui';
 import { wordhoardUi } from '@jackdaw/game-wordhoard/ui';
@@ -28,6 +29,7 @@ export const gameUis: Record<string, GameUi> = {
   avalon: avalonUi,
   codenames: codenamesUi,
   poker: pokerUi,
+  risk: riskUi,
   rps: rpsUi,
   'secret-hitler': secretHitlerUi,
   wordhoard: wordhoardUi,

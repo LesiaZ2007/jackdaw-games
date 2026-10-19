@@ -68,7 +68,7 @@ function fakeAvalon() {
   };
 }
 
-const NAMES = ['Wren', 'Bran', 'Cerys', 'Dafydd', 'Elin'];
+const NAMES = ['Wren', 'Rook', 'Magpie', 'Robin', 'Finch'];
 const tokenFor = (name: string) => `token-${name.toLowerCase()}-0123456789`;
 
 async function fiveAtTheTable() {
@@ -149,8 +149,8 @@ describe('the Avalon link', () => {
       });
     });
     const wren = reads[0]!.view as AvalonPlayerView;
-    expect(wren.seat).toEqual({ playerId: 'av0', token: 'secret-token-the owner' });
-    expect(seatUrl(wren)).toBe(`${BASE}/j/ABCD#seat=av0.secret-token-the owner`);
+    expect(wren.seat).toEqual({ playerId: 'av0', token: 'secret-token-Wren' });
+    expect(seatUrl(wren)).toBe(`${BASE}/j/ABCD#seat=av0.secret-token-Wren`);
     expect(reads[5]!.view).toBeUndefined();
     expect(tvUrl(reads[5]!.tableView as AvalonPlayerView)).toBe(`${BASE}/tv/ABCD`);
   });
@@ -174,7 +174,7 @@ describe('the Avalon link', () => {
       })),
     });
     clock.advance(5_000);
-    const done = await snap(runtime.poll(code, { token: tokenFor('Bran') }));
+    const done = await snap(runtime.poll(code, { token: tokenFor('Rook') }));
     expect(done.status).toBe('results');
     expect(done.results?.summary).toBe('Good wins: Merlin survived the assassination');
     expect(done.results?.winners).toEqual(ids.slice(0, 3));
@@ -194,7 +194,7 @@ describe('the Avalon link', () => {
     await runtime.post(code, tokenFor('Wren'), { type: 'start' });
     app.setStatus({ phase: 'lobby', over: true, endedEarly: true });
     clock.advance(5_000);
-    const back = await snap(runtime.poll(code, { token: tokenFor('Elin') }));
+    const back = await snap(runtime.poll(code, { token: tokenFor('Finch') }));
     expect(back.status).toBe('waiting');
     expect(back.historyCount).toBe(0);
   });

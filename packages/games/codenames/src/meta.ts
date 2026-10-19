@@ -3,7 +3,7 @@ import type { GameMeta } from '@jackdaw/engine';
 export const meta: GameMeta = {
   id: 'codenames',
   name: 'Codenames',
-  tagline: 'One-word clues, two rival spymasters.',
+  tagline: 'Give your team a one-word clue and hope they get it.',
   minPlayers: 4,
   maxPlayers: 15,
   category: 'word',

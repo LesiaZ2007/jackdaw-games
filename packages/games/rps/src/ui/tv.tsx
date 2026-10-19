@@ -183,7 +183,7 @@ function roundTitle(last: RoundResult, winners: string[], name: (id: string) => 
   return `${listNames(winners, name)} share round ${last.round}`;
 }
 
-/** "Rock beat Ash and Cerys", from the public throws only. */
+/** "Rock beat Lark and Magpie", from the public throws only. */
 function roundDetail(last: RoundResult, winners: string[], name: (id: string) => string) {
   if (winners.length === 0) return 'Nobody got ahead this round.';
   const pick = last.picks[winners[0]!]!;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTheme, type GameTvLobbyProps } from '@jackdaw/ui';
+import { useGameLook, type GameTvLobbyProps } from '@jackdaw/ui';
 import { MAX_PLAYERS, MIN_PLAYERS, MODES, ROLES, lineup } from '../lineup';
 import { defaultOptions, lineupSettings, optionsSchema, type AvalonOptions } from '../rules';
 import { Fan, RoundTable } from './lobby';
@@ -20,7 +20,7 @@ export function AvalonTvLobby({
   join,
   status,
 }: GameTvLobbyProps) {
-  const look = useTheme();
+  const look = useGameLook('avalon', 'light');
   const parsed = optionsSchema.safeParse({ ...defaultOptions(), ...raw });
   const s: AvalonOptions = parsed.success ? parsed.data : defaultOptions();
   const count = players.length;

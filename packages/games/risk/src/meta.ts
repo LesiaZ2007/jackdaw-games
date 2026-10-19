@@ -3,7 +3,7 @@ import type { GameMeta } from '@jackdaw/engine';
 export const meta: GameMeta = {
   id: 'risk',
   name: 'Risk',
-  tagline: 'Raise armies. Take the world.',
+  tagline: 'Roll dice, move armies, take over the world.',
   minPlayers: 2,
   maxPlayers: 6,
   category: 'board',

@@ -19,7 +19,7 @@ const inContinent = (c: string) =>
 const board = (mine: string[]): Owner =>
   Object.fromEntries(ids.map((t) => [t, mine.includes(t) ? 'a' : 'b']));
 const ones = Object.fromEntries(ids.map((t) => [t, 1]));
-const names = (p: string) => ({ a: 'Ada', b: 'Bram', c: 'Cy' })[p] ?? p;
+const names = (p: string) => ({ a: 'Ada', b: 'Bram', c: 'Kite' })[p] ?? p;
 
 describe('the mission deck', () => {
   it('has 6 continent goals, 2 territory goals and one destroy per player (none at 2)', () => {

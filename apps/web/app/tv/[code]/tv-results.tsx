@@ -7,7 +7,7 @@ import { catalogEntry } from '@/lib/catalog';
 const RECAP_ROWS = 8;
 const OUTCOME: Record<Standing['outcome'], string> = { win: 'Won', loss: 'Lost', draw: 'Draw' };
 
-/** Swap player ids for names in recap text, so "p_3k9 voted" reads "Bran voted". */
+/** Swap player ids for names in recap text, so "p_3k9 voted" reads "Rook voted". */
 function withNames(text: string, names: Map<string, string>): string {
   let out = text;
   for (const [id, name] of names) out = out.split(id).join(name);

@@ -10,24 +10,24 @@ export const pokerUi: GameUi = {
   art: { band: 'vert', field: 'lozengy', glyph: 'cards' },
   about: {
     description:
-      'Texas Hold’em with no limit, played with chips, not money. Everyone gets two cards nobody else sees, and five more are shared in the middle. Bet when you’re strong, bluff when you’re not, and take the pot with the best five cards, or by making everyone else fold.',
+      'No-limit Texas Hold’em with chips instead of money. You get two cards only you can see, and five more get dealt face up in the middle for everyone. Bet big when you’ve got it, bluff when you don’t, and win the pot with the best hand or by getting everyone else to fold.',
     steps: [
-      'Everyone starts with the same chips. The two players left of the button post the blinds.',
-      'You get two cards. Bet, call, raise or fold, starting left of the big blind.',
-      'Three shared cards (the flop), then one (the turn), then one more (the river), with betting after each.',
-      'The best five cards from your two and the shared five win the pot. Side pots go to whoever could win them.',
-      'Out of chips, out of the game. Most chips when the hands run out wins, or the last player with any.',
+      'Everyone starts with the same stack. The two players after the dealer put in the blinds.',
+      'You get two cards. Starting after the big blind, fold, call or raise.',
+      'Three cards go in the middle (the flop), then one (the turn), then one more (the river). There’s a round of betting after each.',
+      'Best five cards out of your two and the five in the middle takes the pot. Side pots are sorted out for you.',
+      'Run out of chips and you’re out. When the hands run out, the biggest stack wins.',
     ],
-    credit: 'Texas Hold’em is a traditional card game. Jackdaw’s own cards and table.',
+    credit: 'Texas Hold’em is a traditional card game. Cards and table drawn for Jackdaw.',
     pictures: [
       {
         src: '/games/poker/game-phone.png',
-        alt: 'Poker on a phone: the table from your seat with the flop and the pot, your two cards, and Fold, Call and Raise at the bottom.',
+        alt: 'Poker on a phone: the table from your seat, the flop and the pot, your two cards and the betting buttons.',
       },
       {
-        src: '/games/poker/tv.png',
-        alt: 'Poker on a TV: the oval table with every seat, the shared cards, the bets and the pot.',
-        wide: true,
+        src: '/games/poker/desktop.png',
+        alt: 'Poker on a laptop: the whole table with every seat, the cards in the middle and the pot.',
+        desktop: true,
       },
     ],
   },

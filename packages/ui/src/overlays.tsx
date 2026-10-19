@@ -96,7 +96,7 @@ export function Toast({
   );
 }
 
-/** Replace player ids in recap text with names, so "p_ab12 played Fail" reads "Bran played Fail". */
+/** Replace player ids in recap text with names, so "p_ab12 played Fail" reads "Rook played Fail". */
 export function withNames(text: string, names: Record<string, string>): string {
   let out = text;
   for (const [id, name] of Object.entries(names)) if (id) out = out.split(id).join(name);

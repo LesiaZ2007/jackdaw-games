@@ -68,7 +68,7 @@ function fakeAvalon() {
   };
 }
 
-const NAMES = ['Lesia', 'Bran', 'Cerys', 'Dafydd', 'Elin'];
+const NAMES = ['Wren', 'Rook', 'Magpie', 'Robin', 'Finch'];
 const tokenFor = (name: string) => `token-${name.toLowerCase()}-0123456789`;
 
 async function fiveAtTheTable() {
@@ -84,8 +84,8 @@ async function fiveAtTheTable() {
     sleep: () => new Promise((r) => setTimeout(r, 1)),
   });
   const { code } = await runtime.create({
-    token: tokenFor('Lesia'),
-    name: 'Lesia',
+    token: tokenFor('Wren'),
+    name: 'Wren',
     gameId: 'avalon',
     avatar: { crest: 'raven', tint: 'lagoon' },
   });
@@ -117,13 +117,13 @@ describe('the Avalon link', () => {
 
   it('opens a seated Avalon room and sends each phone only its own seat', async () => {
     const { runtime, code, app } = await fiveAtTheTable();
-    await runtime.post(code, tokenFor('Lesia'), {
+    await runtime.post(code, tokenFor('Wren'), {
       type: 'setOptions',
       options: { ...defaultOptions(), mode: 'full', lady: true },
     });
     const started = await runtime.post(
       code,
-      tokenFor('Lesia'),
+      tokenFor('Wren'),
       { type: 'start', look: 'dark' },
       { origin: 'https://jackdaw.test' },
     );
@@ -148,16 +148,16 @@ describe('the Avalon link', () => {
         if (i !== j) expect(json).not.toContain(`secret-token-${other}`);
       });
     });
-    const lesia = reads[0]!.view as AvalonPlayerView;
-    expect(lesia.seat).toEqual({ playerId: 'av0', token: 'secret-token-Lesia' });
-    expect(seatUrl(lesia)).toBe(`${BASE}/j/ABCD#seat=av0.secret-token-Lesia`);
+    const wren = reads[0]!.view as AvalonPlayerView;
+    expect(wren.seat).toEqual({ playerId: 'av0', token: 'secret-token-Wren' });
+    expect(seatUrl(wren)).toBe(`${BASE}/j/ABCD#seat=av0.secret-token-Wren`);
     expect(reads[5]!.view).toBeUndefined();
     expect(tvUrl(reads[5]!.tableView as AvalonPlayerView)).toBe(`${BASE}/tv/ABCD`);
   });
 
   it('records the game when Avalon says it is over, with teams and roles, and leaks no seat', async () => {
     const { runtime, code, clock, app } = await fiveAtTheTable();
-    const started = await runtime.post(code, tokenFor('Lesia'), { type: 'start' });
+    const started = await runtime.post(code, tokenFor('Wren'), { type: 'start' });
     const ids = started.players.map((p) => p.id);
     const roles = ['merlin', 'servant', 'percival', 'assassin', 'minion'];
     app.setStatus({
@@ -174,7 +174,7 @@ describe('the Avalon link', () => {
       })),
     });
     clock.advance(5_000);
-    const done = await snap(runtime.poll(code, { token: tokenFor('Bran') }));
+    const done = await snap(runtime.poll(code, { token: tokenFor('Rook') }));
     expect(done.status).toBe('results');
     expect(done.results?.summary).toBe('Good wins: Merlin survived the assassination');
     expect(done.results?.winners).toEqual(ids.slice(0, 3));
@@ -191,18 +191,18 @@ describe('the Avalon link', () => {
 
   it("goes back to the lobby unscored when Avalon's host ends the game early", async () => {
     const { runtime, code, clock, app } = await fiveAtTheTable();
-    await runtime.post(code, tokenFor('Lesia'), { type: 'start' });
+    await runtime.post(code, tokenFor('Wren'), { type: 'start' });
     app.setStatus({ phase: 'lobby', over: true, endedEarly: true });
     clock.advance(5_000);
-    const back = await snap(runtime.poll(code, { token: tokenFor('Elin') }));
+    const back = await snap(runtime.poll(code, { token: tokenFor('Finch') }));
     expect(back.status).toBe('waiting');
     expect(back.historyCount).toBe(0);
   });
 
   it("closes the Avalon game when Jackdaw's host ends it, unscored", async () => {
     const { runtime, code, app } = await fiveAtTheTable();
-    await runtime.post(code, tokenFor('Lesia'), { type: 'start' });
-    const back = await runtime.post(code, tokenFor('Lesia'), { type: 'endGame' });
+    await runtime.post(code, tokenFor('Wren'), { type: 'start' });
+    const back = await runtime.post(code, tokenFor('Wren'), { type: 'endGame' });
     expect(back.status).toBe('waiting');
     expect(back.historyCount).toBe(0);
     expect(app.ended).toEqual(['ABCD']);
@@ -211,14 +211,14 @@ describe('the Avalon link', () => {
   it("keeps waiting while Avalon can't be reached, and shows Avalon's own error on Start", async () => {
     const { runtime, code, clock, app } = await fiveAtTheTable();
     app.failCreate({ status: 400, error: 'Avalon needs at least 5 players.' });
-    await expect(runtime.post(code, tokenFor('Lesia'), { type: 'start' })).rejects.toThrow(
+    await expect(runtime.post(code, tokenFor('Wren'), { type: 'start' })).rejects.toThrow(
       'Avalon needs at least 5 players.',
     );
     app.failCreate(null);
-    await runtime.post(code, tokenFor('Lesia'), { type: 'start' });
+    await runtime.post(code, tokenFor('Wren'), { type: 'start' });
     app.setStatus({ error: 'boom' }, 500);
     clock.advance(5_000);
-    const still = await snap(runtime.poll(code, { token: tokenFor('Lesia') }));
+    const still = await snap(runtime.poll(code, { token: tokenFor('Wren') }));
     expect(still.status).toBe('in_game');
   });
 

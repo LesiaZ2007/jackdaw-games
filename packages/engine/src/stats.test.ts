@@ -9,7 +9,7 @@ const entry = (
   summary: '',
   winners: over.standings.filter((s) => s.outcome === 'win').map((s) => s.playerId),
   players: over.standings.map((s) => s.playerId),
-  names: { a: 'Ana', b: 'Bran', c: 'Cerys' },
+  names: { a: 'Jay', b: 'Rook', c: 'Magpie' },
   ...over,
 });
 
@@ -18,7 +18,7 @@ const history: HistoryEntry[] = [
   entry({
     gameId: 'avalon',
     endedAt: 300,
-    names: { a: 'Ana R', b: 'Bran', c: 'Cerys' },
+    names: { a: 'Jay R', b: 'Rook', c: 'Magpie' },
     standings: [
       { playerId: 'a', outcome: 'win', team: 'Evil', role: 'Assassin' },
       { playerId: 'b', outcome: 'loss', team: 'Good', role: 'Merlin' },
@@ -49,7 +49,7 @@ describe('lobbyStats', () => {
 
   it('totals each player and uses their latest name', () => {
     const ana = stats.players.find((p) => p.playerId === 'a')!;
-    expect(ana).toMatchObject({ name: 'Ana R', played: 3, wins: 1, losses: 1, draws: 1 });
+    expect(ana).toMatchObject({ name: 'Jay R', played: 3, wins: 1, losses: 1, draws: 1 });
     expect(stats.players.find((p) => p.playerId === 'c')).toMatchObject({
       played: 2,
       wins: 0,
@@ -74,7 +74,7 @@ describe('lobbyStats', () => {
       { gameId: 'avalon', played: 2, lastPlayedAt: 300 },
       { gameId: 'rps', played: 1, lastPlayedAt: 200 },
     ]);
-    // Ana and Bran both have 1 win from 3 games; the name breaks the tie. Cerys has none.
+    // Jay and Rook both have 1 win from 3 games; the name breaks the tie. Magpie has none.
     expect(stats.players.map((p) => p.playerId)).toEqual(['a', 'b', 'c']);
   });
 

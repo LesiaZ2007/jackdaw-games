@@ -63,7 +63,7 @@ export type PokerAction = z.infer<typeof actionSchema>;
 export type Street = 'preflop' | 'flop' | 'turn' | 'river';
 export type Phase = Street | 'done' | 'over';
 
-/** One public line of the hand: "Bran raises to 60". */
+/** One public line of the hand: "Rook raises to 60". */
 export interface ActionLine {
   player: string;
   /** fold, check, call, bet, raise, allIn, blind */

@@ -14,6 +14,16 @@ a {
   color: inherit;
 }
 
+/* Phones and tablets scroll by touch, so no scrollbars there (laptops keep theirs). */
+@media (pointer: coarse), (max-width: 760px) {
+  * {
+    scrollbar-width: none;
+  }
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Home */
 .home-fan {
   position: relative;
@@ -195,4 +205,43 @@ a {
   margin: 0;
   padding-left: 1.4em;
   font-size: var(--step-0);
+}
+
+/* Day or dark: two printed halves, the chosen one inked in */
+.look-choice {
+  display: inline-flex;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+.look-choice__opt {
+  appearance: none;
+  min-width: 72px;
+  min-height: var(--tap);
+  padding: 0 14px;
+  font: 800 16px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.look-choice__opt + .look-choice__opt {
+  border-left: 2px solid var(--ink);
+}
+.look-choice__opt[aria-checked='true'] {
+  color: var(--paper);
+  background: var(--ink);
+}
+.look-choice__opt:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+
+/* The day/dark button in the top corner of the home page */
+.home-corner {
+  position: absolute;
+  top: max(var(--space-3), env(safe-area-inset-top, 0px));
+  right: var(--gutter);
+  z-index: 2;
 }

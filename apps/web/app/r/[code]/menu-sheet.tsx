@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
 import { AvatarButton, Chits, Plaque, ReactionBar, Sheet } from '@jackdaw/ui';
 import { forgetSeat } from '@/lib/identity';
-import { ThemeToggle } from '../../theme-toggle';
+import { ThemeChoice } from '../../theme-toggle';
 import { AlertSettings } from './alert-settings';
 
 /**
@@ -89,6 +89,13 @@ export function MenuSheet({
         </section>
       )}
 
+      <section className="menu__block">
+        <div className="menu__toggle">
+          <h3 className="jd-label">Look</h3>
+          <ThemeChoice />
+        </div>
+      </section>
+
       {me && s.status !== 'waiting' && (
         <section className="menu__block">
           <h3 className="jd-label">React</h3>
@@ -128,20 +135,12 @@ export function MenuSheet({
           </>
         ) : (
           <>
-            <p>
-              Get a one-time code that moves your seat, and everything you can see, to a different
-              phone.
-            </p>
+            <p>Get a one-time code to carry your seat over to another phone.</p>
             <Plaque small onClick={() => send({ type: 'createRejoinCode' })}>
               Get a rejoin code
             </Plaque>
           </>
         )}
-      </section>
-
-      <section className="menu__block">
-        <h3 className="jd-label">Look</h3>
-        <ThemeToggle />
       </section>
 
       <section className="menu__block">

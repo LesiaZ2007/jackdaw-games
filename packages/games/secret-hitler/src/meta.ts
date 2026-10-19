@@ -3,7 +3,7 @@ import type { GameMeta } from '@jackdaw/engine';
 export const meta: GameMeta = {
   id: 'secret-hitler',
   name: 'Secret Hitler',
-  tagline: 'Elect a government. Find the fascists.',
+  tagline: 'Pass laws, lie about your cards, find Hitler.',
   minPlayers: 5,
   maxPlayers: 15,
   category: 'social-deduction',

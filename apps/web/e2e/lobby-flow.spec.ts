@@ -21,29 +21,29 @@ test('three phones play a round, a refresh keeps its seat, and Play again keeps 
 }) => {
   const host = await newPlayer(browser);
   await host.goto('/');
-  await host.getByLabel('Your name').fill('Lesia');
+  await host.getByLabel('Your name').fill('Wren');
   await host.getByRole('button', { name: 'Create a lobby' }).click();
   await host.waitForURL(/\/r\/[A-Z]{4}$/);
   const code = host.url().split('/').pop()!;
 
-  const bran = await newPlayer(browser);
-  const cerys = await newPlayer(browser);
-  await join(bran, code, 'Bran');
-  await join(cerys, code, 'Cerys');
+  const rook = await newPlayer(browser);
+  const magpie = await newPlayer(browser);
+  await join(rook, code, 'Rook');
+  await join(magpie, code, 'Magpie');
   await expect(host.getByText('3 of 15 seats')).toBeVisible();
 
-  // Bran changes name, crest and colour from the lobby; the host sees the owl is now taken.
-  await bran.getByRole('button', { name: 'Change your crest and colour' }).click();
-  const mine = bran.getByRole('dialog', { name: 'You at the table' });
-  await mine.getByLabel('Your name').fill('Branwen');
+  // Rook changes name, crest and colour from the lobby; the host sees the owl is now taken.
+  await rook.getByRole('button', { name: 'Change your crest and colour' }).click();
+  const mine = rook.getByRole('dialog', { name: 'You at the table' });
+  await mine.getByLabel('Your name').fill('Kestrel');
   await mine.getByRole('button', { name: 'Owl', exact: true }).click();
   await mine.getByRole('button', { name: 'Lagoon', exact: true }).click();
   await mine.getByRole('button', { name: 'Save' }).click();
   await expect(mine).toBeHidden();
-  await expect(host.getByRole('listitem', { name: /Branwen/ })).toBeVisible();
+  await expect(host.getByRole('listitem', { name: /Kestrel/ })).toBeVisible();
   await host.getByRole('button', { name: 'Change your crest and colour' }).click();
   await expect(
-    host.getByRole('dialog').getByRole('button', { name: 'Owl, taken by Branwen' }),
+    host.getByRole('dialog').getByRole('button', { name: 'Owl, taken by Kestrel' }),
   ).toBeDisabled();
   await host.keyboard.press('Escape');
 
@@ -60,23 +60,23 @@ test('three phones play a round, a refresh keeps its seat, and Play again keeps 
   await expect(host.getByText('Rounds: 1')).toBeVisible();
   await host.getByRole('button', { name: 'Start Rock Paper Scissors' }).click();
 
-  for (const p of [host, bran, cerys])
+  for (const p of [host, rook, magpie])
     await expect(p.getByRole('radiogroup', { name: 'Throw' })).toBeVisible();
 
   await throwPick(host, 'Rock');
   // A refreshed phone drops straight back into its seat, mid-game.
-  await bran.reload();
-  await expect(bran.getByRole('radiogroup', { name: 'Throw' })).toBeVisible();
-  await throwPick(bran, 'Scissors');
-  await throwPick(cerys, 'Scissors');
+  await rook.reload();
+  await expect(rook.getByRole('radiogroup', { name: 'Throw' })).toBeVisible();
+  await throwPick(rook, 'Scissors');
+  await throwPick(magpie, 'Scissors');
 
-  // Rock beats both scissors: Lesia wins, and everyone sees it.
-  for (const p of [host, bran, cerys])
-    await expect(p.getByRole('list', { name: 'Winners' })).toContainText('Lesia');
-  await expect(bran.getByText(/Waiting for Lesia/)).toBeVisible();
+  // Rock beats both scissors: Wren wins, and everyone sees it.
+  for (const p of [host, rook, magpie])
+    await expect(p.getByRole('list', { name: 'Winners' })).toContainText('Wren');
+  await expect(rook.getByText(/Waiting for Wren/)).toBeVisible();
 
   await host.getByRole('button', { name: 'Play Rock Paper Scissors again' }).click();
-  for (const p of [host, bran, cerys])
+  for (const p of [host, rook, magpie])
     await expect(p.getByRole('radiogroup', { name: 'Throw' })).toBeVisible();
-  await expect(cerys.getByText(/Round 1 of 1/)).toBeVisible();
+  await expect(magpie.getByText(/Round 1 of 1/)).toBeVisible();
 });

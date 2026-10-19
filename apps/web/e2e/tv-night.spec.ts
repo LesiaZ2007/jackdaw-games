@@ -19,17 +19,17 @@ async function throwPick(page: Page, pick: 'Rock' | 'Paper' | 'Scissors') {
   await page.getByRole('radiogroup', { name: 'Throw' }).getByRole('radio', { name: pick }).click();
 }
 
-/** One single-round game: Lesia's throw against Bran's. */
+/** One single-round game: Wren's throw against Rook's. */
 async function playRound(
   host: Page,
-  bran: Page,
+  rook: Page,
   mine: 'Rock' | 'Paper' | 'Scissors',
   theirs: 'Rock' | 'Paper' | 'Scissors',
 ) {
-  for (const p of [host, bran])
+  for (const p of [host, rook])
     await expect(p.getByRole('radiogroup', { name: 'Throw' })).toBeVisible();
   await throwPick(host, mine);
-  await throwPick(bran, theirs);
+  await throwPick(rook, theirs);
   await expect(host.getByRole('button', { name: 'Back to lobby' })).toBeVisible();
   await host.getByRole('button', { name: 'Back to lobby' }).click();
 }
@@ -39,17 +39,17 @@ for (const scheme of SCHEMES) {
     const host = await open(browser, 390, 844, scheme);
     await host.goto('/');
     await host.waitForLoadState('networkidle');
-    await host.getByLabel('Your name').fill('Lesia');
+    await host.getByLabel('Your name').fill('Wren');
     await host.getByRole('button', { name: 'Create a lobby' }).click();
     await host.waitForURL(/\/r\/[A-Z]{4}$/);
     const code = host.url().split('/').pop()!;
 
-    const bran = await open(browser, 390, 844, scheme);
-    await bran.goto(`/r/${code}`);
-    await bran.waitForLoadState('networkidle');
-    await bran.getByLabel('Your name').fill('Bran');
-    await bran.getByRole('button', { name: 'Take a seat' }).click();
-    await expect(bran.getByText('At the table')).toBeVisible();
+    const rook = await open(browser, 390, 844, scheme);
+    await rook.goto(`/r/${code}`);
+    await rook.waitForLoadState('networkidle');
+    await rook.getByLabel('Your name').fill('Rook');
+    await rook.getByRole('button', { name: 'Take a seat' }).click();
+    await expect(rook.getByText('At the table')).toBeVisible();
 
     const tv = await open(browser, 1920, 1080, scheme);
     await tv.goto(`/tv/${code}`);
@@ -92,9 +92,9 @@ for (const scheme of SCHEMES) {
     expect(Object.keys(live.session).sort()).toEqual(['gameId', 'id', 'seq', 'startedAt']);
     expect(live.tableView).toBeDefined();
 
-    await playRound(host, bran, 'Rock', 'Scissors');
+    await playRound(host, rook, 'Rock', 'Scissors');
     await host.getByRole('button', { name: 'Start Rock Paper Scissors' }).click();
-    await playRound(host, bran, 'Rock', 'Paper');
+    await playRound(host, rook, 'Rock', 'Paper');
 
     const stats = await (await tv.request.get(`/api/lobby/${code}/stats`)).json();
     expect(Object.keys(stats).sort()).toEqual(['history', 'stats']);

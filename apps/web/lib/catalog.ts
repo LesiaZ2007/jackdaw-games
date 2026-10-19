@@ -40,33 +40,9 @@ export const gameUis: Record<string, GameUi> = {
 const upcoming: Omit<CatalogEntry, 'playable'>[] = [
   {
     meta: {
-      id: 'secret-hitler',
-      name: 'Secret Hitler',
-      tagline: 'Elect a government. Find the fascists.',
-      minPlayers: 5,
-      maxPlayers: 15,
-      category: 'social-deduction',
-      minutes: [45, 60],
-      complexity: 2,
-    },
-    art: { band: 'gules', field: 'lozengy', glyph: 'ballot' },
-    about: {
-      description:
-        'Liberals and fascists sit in one parliament, and only the fascists know who is who. Each round a president and chancellor pass one policy from a stacked deck, and everyone argues about what they really drew.',
-      steps: [
-        'The president nominates a chancellor; everyone votes Ja or Nein at once.',
-        'The president draws three policies and discards one.',
-        'The chancellor enacts one of the last two.',
-        'Fascist policies unlock presidential powers: peek, investigate, execute.',
-      ],
-      credit: 'Secret Hitler by Goat, Wolf & Cabbage, used under CC BY-NC-SA 4.0.',
-    },
-  },
-  {
-    meta: {
       id: 'werewolf',
       name: 'Werewolf',
-      tagline: 'The app narrates. Nobody sits out.',
+      tagline: 'Nobody has to sit out and narrate.',
       minPlayers: 6,
       maxPlayers: 15,
       category: 'social-deduction',
@@ -76,12 +52,12 @@ const upcoming: Omit<CatalogEntry, 'playable'>[] = [
     art: { band: 'sable', field: 'semee', glyph: 'wolf' },
     about: {
       description:
-        'By night the wolves choose a victim while the seer and doctor work in secret. By day the village argues and votes someone out. The app runs the night, so everyone gets to play.',
+        'At night the wolves pick someone to eat while the seer and the doctor do their thing. In the morning the village finds out who’s gone, argues about it and votes someone out. The app runs the night, so everyone gets to play.',
       steps: [
-        'Night: wolves pick a target; special roles act.',
-        'Morning: the village learns who died.',
-        'Day: discuss, then vote to eliminate a suspect.',
-        'Villagers win when the wolves are gone; wolves win when they match the village.',
+        'Night: the wolves pick a target and the special roles act.',
+        'Morning: everyone finds out who died.',
+        'Day: talk it over, then vote someone out.',
+        'The village wins when the wolves are gone. The wolves win once there are as many of them as villagers.',
       ],
       credit: 'A classic party game in the public domain.',
     },
@@ -90,7 +66,7 @@ const upcoming: Omit<CatalogEntry, 'playable'>[] = [
     meta: {
       id: 'spyfall',
       name: 'Spyfall',
-      tagline: 'Everyone knows where you are. Except one.',
+      tagline: 'Everyone knows where you are, except the spy.',
       minPlayers: 3,
       maxPlayers: 15,
       category: 'social-deduction',
@@ -100,12 +76,12 @@ const upcoming: Omit<CatalogEntry, 'playable'>[] = [
     art: { band: 'tenne', field: 'fretty', glyph: 'spy' },
     about: {
       description:
-        'Everyone but the spy sees the same location. Take turns asking each other questions that prove you know it without giving it away, while the spy tries to work out where everyone is.',
+        'Everyone except the spy knows where you all are. Ask each other questions that show you know the place without giving it away, while the spy bluffs along and tries to work it out.',
       steps: [
-        'Everyone sees the location and a role, except the spy.',
-        'Players take turns asking one another questions.',
-        'Anyone can call a vote on a suspect, once a round.',
-        'The spy can stop the round at any time and guess the location.',
+        'Everyone gets the location and a role, except the spy.',
+        'Take turns asking each other questions.',
+        'Once a round, anyone can call a vote on who they think the spy is.',
+        'The spy can stop the round at any time and guess where you are.',
       ],
       credit: 'Based on Spyfall by Alexandr Ushan. Original locations.',
     },

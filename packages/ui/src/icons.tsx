@@ -199,6 +199,15 @@ export const GLYPHS: Record<string, ReactNode> = {
       <circle cx="32" cy="46" r="3" />
     </g>
   ),
+  /** Two cards fanned, the front one with a Reverse's arrows (UNO). */
+  uno: (
+    <g {...stroke(3.4)}>
+      <path d="M10 18l16-6 10 28-16 6z" />
+      <path d="M30 12h22v34H30z" />
+      <path d="M35 27a6 6 0 0 1 10.5-3M47 31a6 6 0 0 1-10.5 3M46 19.5l-.5 4.5-4.4-.9M36 38.5l.5-4.5 4.4.9" />
+      <path d="M8 56h48" />
+    </g>
+  ),
   /** Two war banners crossed (Risk). */
   banners: (
     <g {...stroke(3.4)}>

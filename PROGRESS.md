@@ -331,6 +331,32 @@ Blitz attacks. Design: `docs/superpowers/specs/2026-10-18-risk-design.md`; plan:
     ships, a serpent in the strait, castles at Kingsreach and Highcairn, a dragon over the Wolds,
     Elderwood's pines, the Fells' peaks, Saltmarsh reeds and the Lantern Isle lighthouse.
 
+### UNO (2026-10-18, branch `feat/uno`, merged to `main` with Lesia's go-ahead)
+
+Lesia asked to "Make UNO" and to call it UNO (it's Mattel's trademark; the credit line says so).
+
+- **Rules** (`packages/games/uno`): 2–10 players, the official 108-card deck (`src/cards.ts`, a
+  card is its id 0–107). Seven each, a number card turned up, play from the dealer's left; match
+  colour, number or symbol, or a Wild. Draw one and play it if it goes. Skip, Reverse (a Skip at
+  two players), Draw Two. Wild Draw Four can be challenged: a bluff (holding the colour in play)
+  costs the bluffer the cards, a fair one costs the challenger six. "UNO!" is called with the
+  play (or straight after); anyone can catch an uncalled last card for two until the next player
+  moves. Going out on a draw card still makes the next player draw. The round winner scores the
+  other hands (face value, actions 20, wilds 50); the deal moves round and the next round deals
+  itself after 8s. Options: length (one round / to 200, the default / to 500), drawing (one /
+  until you can play), stacking draw cards (house rule, off), turn timer (off/30s/60s: out of time
+  you draw or take, and play moves on). Award: Biggest round.
+- **Hidden information**: hands, the draw pile, the card you just drew and whether a Wild Draw
+  Four was a bluff are never in the table view; a fuzz test plays 25 seeded games checking every
+  card is accounted for and nothing leaks.
+- **Screens** (`fit`): a printed paper mat ringed in the colour in play with arrows turning the way
+  play goes, both piles in the middle (tap the draw pile to draw), seats round the rim with a fan of
+  backs, the card count, the score and tags (Skipped, +2, Caught!, Bluffed!), a stamp over the pile
+  for action cards, your hand fanned to fit any size (playable cards lifted), and the dock: Draw,
+  Keep it, Take N / Challenge, a colour picker for wilds, Say UNO!, and a loud Catch button.
+  Round moments for everyone; TV shows the table; lobby seats round the same mat. Kit: `uno` glyph.
+  e2e: `apps/web/e2e/uno.spec.ts`.
+
 ## Next
 
 1. Lesia reviews and playtests Phase 1 on the Vercel preview, then merges `feat/phase-1` to `main`. Production then serves it.

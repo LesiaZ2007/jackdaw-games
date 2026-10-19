@@ -17,24 +17,24 @@ export const riskUi: GameUi = {
   art: { band: 'tenne', field: 'checky', glyph: 'banners' },
   about: {
     description:
-      'Raise armies, roll the dice and take the world, one territory at a time. Play the classic world map or Jackdaw’s own island realm. With secret missions (the quick game) the first to complete theirs wins; in world domination, the last army standing.',
+      'Build up armies, attack your neighbours and try to take over the map. Play the classic world map or our own island kingdom. With secret missions the first person to finish theirs wins, which keeps it to about an hour. World domination goes until one player owns everything.',
     steps: [
-      'The territories are dealt at random and everyone’s armies spread across them (or place your own, all at once).',
-      'Each turn, add armies: a third of your territories (at least 3), plus bonuses for whole continents and sets of cards.',
-      'Attack your neighbours: Roll for one throw of the dice, or Blitz to fight it out. The defender wins ties.',
-      'Take a territory and earn a card. Three that match, or one of each, trade in for more armies.',
-      'End your turn with one move between your joined-up territories. Complete your mission, or take everything, to win.',
+      'Territories are handed out at random and your armies are spread across them (or everyone places their own, all at once).',
+      'At the start of your turn you get new armies: a third of your territories (at least 3), plus extra for whole continents and traded-in cards.',
+      'Attack next door. Roll once at a time, or Blitz to fight until it’s settled. The defender wins ties.',
+      'Take at least one territory and you get a card. Three of a kind, or one of each, trade in for more armies.',
+      'Finish with one move between territories you hold that connect. Complete your mission, or take everything, to win.',
     ],
-    credit: 'Based on Risk by Albert Lamorisse. Jackdaw’s own maps and pieces.',
+    credit: 'Based on Risk by Albert Lamorisse, with our own maps and pieces.',
     pictures: [
       {
         src: '/games/risk/game-phone.png',
-        alt: 'Risk on a phone: the map zoomed in on Asia, Irkutsk picked to attack Siberia, with Back, Stop, Blitz and Roll at the bottom.',
+        alt: 'Risk on a phone: the map zoomed in, a territory picked to attack, and Roll and Blitz at the bottom.',
       },
       {
-        src: '/games/risk/tv.png',
-        alt: 'Risk on a TV: the whole world map with every army, the players’ lands, armies and cards, the last dice and who holds each continent.',
-        wide: true,
+        src: '/games/risk/desktop.png',
+        alt: 'Risk on a laptop: the whole map with every army, and each player’s lands, armies and cards.',
+        desktop: true,
       },
     ],
   },

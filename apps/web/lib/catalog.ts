@@ -1,6 +1,7 @@
 import type { GameCategory, GameMeta } from '@jackdaw/engine';
 import { avalonUi } from '@jackdaw/game-avalon/ui';
 import { codenamesUi } from '@jackdaw/game-codenames/ui';
+import { unoUi } from '@jackdaw/game-uno/ui';
 import { pokerUi } from '@jackdaw/game-poker/ui';
 import { riskUi } from '@jackdaw/game-risk/ui';
 import { rpsUi } from '@jackdaw/game-rps/ui';
@@ -28,6 +29,7 @@ export interface CatalogEntry {
 export const gameUis: Record<string, GameUi> = {
   avalon: avalonUi,
   codenames: codenamesUi,
+  uno: unoUi,
   poker: pokerUi,
   risk: riskUi,
   rps: rpsUi,

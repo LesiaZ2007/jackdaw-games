@@ -156,6 +156,11 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which suits simple games
   a name plate, stack and last move, bets as small chip stacks pushed toward the middle, the
   shared cards and pot on the baize. Cards are cream stock, charcoal ink, gules for hearts and
   diamonds, an azure lozengy back; they look the same day and dark. `poker.css`.
+- **UNO** uses Jackdaw's lobby, seated round its mat. In play it's a round paper mat with a double
+  ink rule, its ring in the colour in play and cream arrows turning the way play goes; both piles in
+  the middle. Cards are cream stock with a field in gules, or, vert or azure inside a cream double
+  rule, the number in Grenze Gotisch; wilds are sable with a quartered shield; the back is sable
+  with the jackdaw. They look the same day and dark. `uno.css`.
 - **Letterhoard** uses Jackdaw's lobby. A printed board of paper squares ruled in ink, bonus
   squares in heraldic fills (gules triple word, tenné double word, azure triple letter, pale
   azure double letter), a star in the middle; bone tiles with the letter in Grenze and the value

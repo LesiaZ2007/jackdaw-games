@@ -25,7 +25,7 @@ const vars = (v: Record<string, string | number>) => v as CSSProperties;
 
 export interface VerdictProps {
   outcome: Outcome;
-  /** Short and plain: "You won the round", "Bran wins". */
+  /** Short and plain: "You won the round", "Rook wins". */
   title: string;
   /** One line under the banner: who beat whom, the score. */
   detail?: ReactNode;

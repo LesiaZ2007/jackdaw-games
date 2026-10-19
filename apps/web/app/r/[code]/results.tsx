@@ -8,17 +8,17 @@ import {
   RecapTimeline,
   Token,
   Verdict,
-  useTheme,
   type LobbyChat,
   type Outcome,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
+import { useStartLook } from '@/lib/game-ui';
 import '../results.css';
 
 const OUTCOME: Record<Standing['outcome'], string> = { win: 'Won', loss: 'Lost', draw: 'Draw' };
 
-/** "Bran", "Bran and Cerys", "Bran, Cerys and Dai". */
+/** "Rook", "Rook and Magpie", "Rook, Magpie and Swift". */
 const joinNames = (names: string[]) =>
   names.length <= 1
     ? (names[0] ?? '')
@@ -42,7 +42,7 @@ export function Results({
   /** Table talk, for a game that draws its own end screen. */
   chat: LobbyChat;
 }) {
-  const look = useTheme();
+  const look = useStartLook(catalogEntry(s.results?.gameId));
   const result = s.results;
   if (!result) return null;
   const entry = catalogEntry(result.gameId);

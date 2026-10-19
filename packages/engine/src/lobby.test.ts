@@ -40,7 +40,7 @@ function lobbyWith(n: number, gameId?: string): Lobby {
     {
       code: 'ABCD',
       hostId: 'p1',
-      hostName: 'Ana',
+      hostName: 'Jay',
       hostAvatar: palette[0]!,
       tokenKey: 't1',
       gameId,
@@ -288,7 +288,7 @@ describe('history and standings', () => {
     );
     const entry = lobby.history[0]!;
     expect(entry.players).toEqual(['p1', 'p2', 'p3']);
-    expect(entry.names).toEqual({ p1: 'Ana', p2: 'P2', p3: 'P3' });
+    expect(entry.names).toEqual({ p1: 'Jay', p2: 'P2', p3: 'P3' });
     expect(entry.startedAt).toBe(500);
     expect(entry.standings.map((s) => s.outcome).sort()).toEqual(['loss', 'loss', 'win']);
     const winner = entry.winners[0]!;
@@ -344,11 +344,11 @@ describe('platform additions', () => {
   it('refuses a name someone at the table already has, in any case', () => {
     const lobby = lobbyWith(2);
     expect(() =>
-      join(lobby, { tokenKey: 'tx', newPlayerId: 'px', name: ' ana ', palette }, ctx()),
-    ).toThrow('Someone at the table is already called Ana.');
-    expect(() => rename(lobby, 'p2', 'ANA', ctx())).toThrow(/already called Ana/);
+      join(lobby, { tokenKey: 'tx', newPlayerId: 'px', name: ' jay ', palette }, ctx()),
+    ).toThrow('Someone at the table is already called Jay.');
+    expect(() => rename(lobby, 'p2', 'JAY', ctx())).toThrow(/already called Jay/);
     // Changing only the case of your own name is fine.
-    expect(rename(lobby, 'p1', 'ANA', ctx()).players[0]!.name).toBe('ANA');
+    expect(rename(lobby, 'p1', 'JAY', ctx()).players[0]!.name).toBe('JAY');
   });
 
   it('lets the host end a game early without recording it', () => {
@@ -391,7 +391,7 @@ describe('platform additions', () => {
       'P3 joined.',
       'P4 joined.',
       'P4 was removed by the host.',
-      'Ana left.',
+      'Jay left.',
       'P2 is now the host.',
       'Counter started.',
     ]);

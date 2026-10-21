@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import {
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 
 const W = 1920;
 const H = 1080;
@@ -16,6 +22,11 @@ const windowSize = () => `${window.innerWidth}x${window.innerHeight}`;
  * or a 4K TV. It is at least 1920×1080 and takes the window's own shape (a 16:10 laptop gets a
  * 1920×1200 stage), so every screen fills the display edge to edge, with no bars (up to 4:3 or
  * 21:9; anything narrower or wider is centred).
+ *
+ * Viewport units would measure the window, not the stage, and a TV's browser often reports a small
+ * window (960×540) however big the set is. So the stage hands its own units down as `--vw`, `--vh`,
+ * `--vmin` and `--vmax` (1% of the stage, in TV pixels), and TV styles size things with
+ * `calc(50 * var(--vh, 1vh))` and the like, never bare `vh`. The fallback keeps phones as they are.
  *
  * With `below`, the first screen fills the window exactly and the extra content (the lobby's
  * night so far) is a second screen of at least the same height; scrolling snaps between them,
@@ -43,7 +54,7 @@ export function TvStage({ children, below }: { children: ReactNode; below?: Reac
         <div
           ref={measure}
           className="tv-stage tv-stage--scroll"
-          style={{ width: sw, transform: `scale(${scale})` }}
+          style={{ width: sw, transform: `scale(${scale})`, ...stageUnits(sw, sh) }}
         >
           <div className="tv-screen" style={{ height: sh }}>
             {children}
@@ -70,12 +81,24 @@ export function TvStage({ children, below }: { children: ReactNode; below?: Reac
           width: fw,
           height: fh,
           transform: `translate(${x}px, ${y}px) scale(${scale})`,
+          ...stageUnits(fw, fh),
         }}
       >
         {children}
       </div>
     </div>
   );
+}
+
+/** 1% of the stage each way, in TV pixels: what `vw`, `vh`, `vmin` and `vmax` mean on a TV. */
+function stageUnits(w: number, h: number): CSSProperties {
+  const px = (n: number) => `${(n / 100).toFixed(3)}px`;
+  return {
+    '--vw': px(w),
+    '--vh': px(h),
+    '--vmin': px(Math.min(w, h)),
+    '--vmax': px(Math.max(w, h)),
+  } as CSSProperties;
 }
 
 /** The stage's own height in TV pixels, kept up to date as its content grows. */

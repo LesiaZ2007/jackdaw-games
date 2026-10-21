@@ -94,7 +94,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players, reactions }) 
             const score = view.scores[id] ?? 0;
             return (
               <li key={id}>
-                {p && <Token avatar={p.avatar} size={40} />}
+                {p && <Token avatar={p.avatar} size={56} />}
                 <span className="rps-tv__who">{name(id)}</span>
                 <span className="rps-tv__bar" aria-hidden="true">
                   <i style={{ width: `${(score / top) * 100}%` }} />
@@ -120,8 +120,8 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players, reactions }) 
             return (
               <li key={id} className={done ? 'is-picked' : 'is-thinking'}>
                 <span className="rps-tv__tok">
-                  {p && <Token avatar={p.avatar} size={92} away={!p.online} />}
-                  <PlayerReaction reactions={reactions} playerId={id} name={name(id)} size={64} />
+                  {p && <Token avatar={p.avatar} size={132} away={!p.online} />}
+                  <PlayerReaction reactions={reactions} playerId={id} name={name(id)} size={84} />
                 </span>
                 <span className="rps-tv__seat-name">{name(id)}</span>
                 <span className="rps-tv__state">{done ? 'Picked' : 'Thinking'}</span>
@@ -146,7 +146,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players, reactions }) 
                   className={`rps-tv__card rps-tv__card--${outcome}`}
                   style={{ animationDelay: `${i * 110}ms` }}
                 >
-                  {pick && <Throw pick={pick} size={72} />}
+                  {pick && <Throw pick={pick} size={112} />}
                   <span className="rps-tv__throw-name">{pick ? THROW_NAME[pick] : 'No throw'}</span>
                   <span className="rps-tv__seat-name">{name(id)}</span>
                   <b className={pts > 0 ? 'rps-tv__pts rps-tv__pts--won' : 'rps-tv__pts'}>+{pts}</b>

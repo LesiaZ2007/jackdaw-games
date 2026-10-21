@@ -170,7 +170,7 @@
   container-type: inline-size;
   position: relative;
   /* As big as fits above your cards and the betting controls. */
-  width: max(280px, min(100%, calc(100dvh - 430px)));
+  width: max(280px, min(100%, calc(calc(100 * var(--vh, 1dvh)) - 430px)));
   aspect-ratio: 1 / 1.02;
   margin: 12px auto 30px;
 }
@@ -504,23 +504,40 @@
   max-width: none;
   min-height: 0;
   height: 100%;
-  padding: 2vh 3vw;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 22px 48px 26px;
   box-sizing: border-box;
 }
 .pk--tv .pk__head {
   display: flex;
   align-items: baseline;
-  gap: 2vw;
+  gap: 32px;
+}
+.pk--tv .pk__head h2 {
+  margin: 0;
+  font-size: 68px;
+  line-height: 1;
 }
 .pk--tv .pk__head p {
-  font-size: 26px;
+  margin: 0 0 0 auto;
+  font-size: 30px;
+}
+/* The table keeps its shape and fills whatever room the screen leaves. */
+.pk-tv__stage {
+  min-height: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
 }
 .pk-table--tv {
-  --pk-tok: clamp(48px, 6cqw, 100px);
-  --pk-board-card: min(8cqw, 150px);
+  --pk-tok: clamp(56px, 6.4cqw, 116px);
+  --pk-board-card: min(8.4cqw, 160px);
   aspect-ratio: 2.05 / 1;
-  width: min(100%, calc((100vh - 420px) * 2.05));
-  margin: 7vh auto 9vh;
+  /* Room above and below for the seats that sit on the rim. */
+  width: min(100cqw, (100cqh - 170px) * 2.05);
+  margin: 0;
 }
 .pk-table--tv .pk-felt {
   inset: 13% 9%;
@@ -530,20 +547,20 @@
   gap: 0.8cqw;
 }
 .pk-table--tv .pk-pot {
-  font-size: clamp(22px, 2.6cqw, 48px);
+  font-size: clamp(28px, 3cqw, 56px);
   max-width: 44cqw;
 }
 .pk-table--tv .pk-pot__line small {
-  font-size: clamp(16px, 1.6cqw, 30px);
+  font-size: clamp(22px, 1.9cqw, 34px);
 }
 .pk-table--tv .pk-seat__name {
-  font-size: clamp(16px, 1.7cqw, 30px);
+  font-size: clamp(24px, 2.1cqw, 38px);
 }
 .pk-table--tv .pk-seat__stack,
 .pk-table--tv .pk-tag,
 .pk-table--tv .pk-bet {
-  font-size: clamp(16px, 1.5cqw, 28px);
-  --pk-chip-font: clamp(16px, 1.5cqw, 28px);
+  font-size: clamp(22px, 1.9cqw, 34px);
+  --pk-chip-font: clamp(22px, 1.9cqw, 34px);
 }
 
 /* Wide and landscape (a laptop): the table on the left, your cards and the dock beside it. */

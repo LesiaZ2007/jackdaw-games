@@ -34,8 +34,12 @@ async function table(req: APIRequestContext, gameId: string) {
   return { code: code as string, byId };
 }
 
-async function phone(browser: Browser, key: string, code: string) {
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+async function phone(browser: Browser, key: string, code: string, blockServiceWorker = false) {
+  // Requests a service worker makes aren't routed, so a test that mocks one blocks the worker.
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    serviceWorkers: blockServiceWorker ? 'block' : 'allow',
+  });
   await context.addInitScript((t) => localStorage.setItem('jackdaw:token', t), key);
   const page = await context.newPage();
   await page.goto(`/r/${code}`);
@@ -138,9 +142,9 @@ test('wordhoard: the waiting player rearranges their rack, which stays put, and 
   const { code, byId } = await table(request, 'wordhoard');
   const first = (await call(request, `/api/lobby/${code}`, null)).tableView.turn as string;
   const waiting = Object.keys(byId).find((id) => id !== first)!;
-  const page = await phone(browser, byId[waiting]!, code);
+  const page = await phone(browser, byId[waiting]!, code, true);
   // The meaning comes from outside dictionaries; here it's fixed, so the test never leaves home.
-  await page.route('**/api/words/define?*', (route) => {
+  await page.route(/\/api\/words\/define\?/, (route) => {
     const w = new URL(route.request().url()).searchParams.get('w')!.split(',');
     return route.fulfill({
       json: { words: w.map((word) => ({ word, senses: [{ part: 'noun', text: `A ${word}.` }] })) },

@@ -31,7 +31,7 @@ export function TeamFiles({
   /** At the end: which team won. */
   outcome?: Team | null;
 }) {
-  const tok = size === 'tv' ? 56 : 30;
+  const tok = size === 'tv' ? 72 : 30;
   return (
     <div className={`cn-files cn-files--${size}`}>
       {TEAMS.map((t) => {

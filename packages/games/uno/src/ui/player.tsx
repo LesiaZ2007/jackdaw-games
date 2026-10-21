@@ -213,7 +213,7 @@ function Hand({
 }
 
 /** "12s" while a turn timer runs. */
-function TurnClock({ t, now }: { t: UnoTableView; now: () => number }) {
+export function TurnClock({ t, now }: { t: UnoTableView; now: () => number }) {
   const left = useCountdown(t.actBy, now);
   if (left === null) return null;
   return (

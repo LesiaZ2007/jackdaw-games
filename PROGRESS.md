@@ -355,6 +355,7 @@ Lesia's list, all done:
   row, out of line with the banner), and the Start dock slides away while you scroll down and
   comes back when you scroll up or reach the end.
 - Less clutter: shorter hints in the lobby ("That's you. Tap to change your look.") and the menu.
+
 ### UNO (2026-10-18, branch `feat/uno`, merged to `main` with Lesia's go-ahead)
 
 Lesia asked to "Make UNO" and to call it UNO (it's Mattel's trademark; the credit line says so).
@@ -380,6 +381,39 @@ Lesia asked to "Make UNO" and to call it UNO (it's Mattel's trademark; the credi
   Keep it, Take N / Challenge, a colour picker for wilds, Say UNO!, and a loud Catch button.
   Round moments for everyone; TV shows the table; lobby seats round the same mat. Kit: `uno` glyph.
   e2e: `apps/web/e2e/uno.spec.ts`.
+
+### TV screens that read from the sofa, and Letterhoard extras (2026-10-21, branch `feat/tv-scale`)
+
+Lesia: the TV display was too small for any game ("works great on a laptop but on a real TV stuff
+is tiny"), UNO's TV was "awful", all TVs should scale and be interesting, and it must keep looking
+good on a laptop. Plus Letterhoard: rearrange the tray, and a definition popup after each play.
+
+- **Why it was tiny**: TV styles used `vh`/`vw`/`vmin`, which measure the browser window, not the
+  1920×1080 stage. A TV's browser often reports 960×540, so UNO, Poker and Letterhoard tables
+  and all of Secret Hitler's port were drawn at about half size or less. `TvStage` now hands its
+  own units down (`--vw`, `--vh`, `--vmin`, `--vmax`); game CSS uses `var(--vh, 1vh)` and so on
+  (phones unchanged), and the type steps are fixed TV sizes on the stage. Secret Hitler's TV fit
+  compared a scaled rect with an unscaled height (it overflowed on small windows); it now compares
+  both on screen, and grows the page up to 1.6× when there's room, not only shrinks it.
+  One design for TV and laptop (no couch mode): the stage scales the same picture to both.
+- **UNO's TV redone** (`packages/games/uno/src/ui/tv.tsx`): the room washed in the colour in
+  play, a big discard pile with the last few cards scattered under it, the deck, a ring of arrows
+  turning the way play goes, everyone's real hand fanned face down, the player to act lifted and
+  haloed, UNO!/One card!/+4 stamps, Skip!/Reverse! across the table, and a play by play. The
+  phone's table no longer has a TV mode.
+- **Bigger everywhere**: Poker (the table fills the screen; names, stacks, pot), RPS, Codenames'
+  folders and log, Risk's side panel, Letterhoard's scores. Rules in STYLE_GUIDE.md, "TV sizes".
+- **Letterhoard rack**: drag a tile along the rack to rearrange it (also while waiting for your
+  turn); your order is kept from turn to turn (`ui/arrange.ts`, with tests). Shuffle still works.
+- **What a word means**: after every play each phone shows a card over the board with the
+  meaning of the words made (tap or about 9s to clear), and the TV keeps the last word in tiles
+  with its meaning beside the board. `GET /api/words/define?w=` asks dictionaryapi.dev and
+  Wiktionary's REST API at once (no keys; only words in the word list; cached a month on the CDN)
+  (`src/define.ts`, with tests). e2e: rearranging while waiting, the order surviving a move, and
+  the card (dictionary mocked).
+- Also fixed: main didn't build (UNO's TV picture still said `wide`, renamed `desktop` in the UI
+  polish), so Vercel couldn't deploy main after the merge.
+- Not changed on purpose: Avalon's and Secret Hitler's own lobbies (their looks are copies).
 
 ## Next
 

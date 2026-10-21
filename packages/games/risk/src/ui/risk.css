@@ -608,10 +608,11 @@
 .rk--tv {
   height: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 24vw);
-  gap: 2vw;
-  padding: 2vh 2vw;
-  font-size: clamp(16px, 1.2vw, 26px);
+  grid-template-columns: minmax(0, 1fr) 560px;
+  gap: 36px;
+  padding: 24px 40px 28px;
+  /* Read from the sofa: the side's smallest text is 24px. */
+  font-size: 30px;
 }
 .rk-tv__map {
   min-height: 0;
@@ -626,7 +627,7 @@
   min-height: 0;
   display: grid;
   align-content: start;
-  gap: 2vh;
+  gap: calc(2 * var(--vh, 1vh));
 }
 .rk-turn--tv .rk-turn__who {
   font-size: 1.5em;
@@ -687,6 +688,28 @@
 .rk--tv .rk-die {
   width: 2.6em;
   height: 2.6em;
+}
+.rk--tv .rk-seats {
+  gap: 8px;
+}
+.rk--tv .rk-seat {
+  padding: 10px 14px;
+  border-left-width: 14px;
+}
+.rk--tv .rk-seat__tok {
+  --z: 64px;
+}
+.rk--tv .rk-continents__row {
+  grid-template-columns: 22px minmax(0, 1fr) auto minmax(0, 1fr);
+  min-height: 52px;
+  border-bottom-width: 2px;
+}
+.rk--tv .rk-continents__swatch {
+  width: 22px;
+  height: 22px;
+}
+.rk--tv .rk-continents__bonus {
+  font-size: 26px;
 }
 
 /* ---------- The war council (lobby seats) ---------- */

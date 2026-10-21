@@ -31,7 +31,7 @@ export function seatTags(moves: Move[]): Map<string, { text: string; seq: number
 }
 
 /** The word stamped over the pile when an action card goes down. */
-function flashOf(m: Move | undefined): string | null {
+export function flashOf(m: Move | undefined): string | null {
   if (!m || m.kind !== 'play' || m.card === undefined) return null;
   const face = cardOf(m.card).face;
   if (face === 'skip') return 'Skip!';
@@ -46,21 +46,19 @@ function flashOf(m: Move | undefined): string | null {
  * The table seen from above: a printed paper mat with the draw pile and the discard pile in the
  * middle, ringed in the colour in play, with arrows turning the way play goes. Everyone sits round
  * the rim with their token, name, how many cards they hold, and their score in a longer game;
- * whoever is looking sits at the bottom. Shared by the phone and the TV.
+ * whoever is looking sits at the bottom. The phone's table (the TV draws its own, in tv.tsx).
  */
 export function UnoTable({
   t,
   players,
   me,
   reactions,
-  tv = false,
   onDraw,
 }: {
   t: UnoTableView;
   players: ScreenPlayer[];
   me?: string;
   reactions?: Reaction[];
-  tv?: boolean;
   /** Tapping the draw pile draws (on your turn). */
   onDraw?: () => void;
 }) {
@@ -77,7 +75,7 @@ export function UnoTable({
 
   return (
     <div
-      className={tv ? 'uno-table uno-table--tv' : 'uno-table'}
+      className="uno-table"
       data-count={n}
       style={{ '--uno-now': `var(--uno-${t.colour})` } as CSSProperties}
     >

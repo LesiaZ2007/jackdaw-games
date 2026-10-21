@@ -17,12 +17,12 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, ...props })
   return (
     <div className="pk pk--tv">
       <header className="pk__head">
-        <p>
-          {handLine(t)}
-          {t.toAct ? ` · ${name(t.toAct)} to act` : ''}
-        </p>
+        <h2 className="jd-display">{t.toAct ? `${name(t.toAct)} to act` : 'Dealing'}</h2>
+        <p>{handLine(t)}</p>
       </header>
-      <PokerTable t={t} players={players} reactions={reactions} tv />
+      <div className="pk-tv__stage">
+        <PokerTable t={t} players={players} reactions={reactions} tv />
+      </div>
       {moment && (
         <VerdictMoment
           key={t.last?.hand}

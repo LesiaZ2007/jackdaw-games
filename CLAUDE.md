@@ -67,7 +67,8 @@ Git Bash, run `export PATH="$HOME/.local/bin:$PATH"`. In PowerShell 5.1, chain w
 - No hard-coded domains: URLs come from `NEXT_PUBLIC_SITE_URL` (falling back to the request origin).
   Server code uses web-standard APIs only (`fetch`, `crypto`, `Request`/`Response`), with no `fs` or native add-ons.
 - Aesthetic is a top priority. Screens are built from `packages/ui` tokens and checked at 375,
-  768, 1280 and 1920px. Respect `prefers-reduced-motion`. Tap targets are at least 44px.
+  768, 1280 and 1920px. TV screens follow STYLE_GUIDE.md, "TV sizes": no bare viewport units,
+  nothing under 24px, checked at 1920×1080, 1440×900 and 960×540. Respect `prefers-reduced-motion`. Tap targets are at least 44px.
 - Keep `PROGRESS.md`, this file and `MIGRATION.md` current when things change.
 - Needing new env vars or Vercel/Upstash changes means telling Lesia (or noting it in PROGRESS.md).
 

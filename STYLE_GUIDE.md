@@ -187,6 +187,22 @@ Check every screen at **375, 768, 1280, 1920**.
   bar in their tint, and the games played tonight). A small "The night so far" hint shows once
   a game has finished. Games and results never scroll. Everything on the TV is also on every
   phone.
+- **TV sizes (Lesia, 2026-10-21: "on a real TV stuff is tiny").** The TV is read from the sofa
+  and also used on a laptop, so it's one design that has to work for both: sized in stage pixels
+  on the 1920×1080 stage, which `TvStage` scales to any window.
+  - **Never bare `vh`/`vw`/`vmin` in TV styles.** They measure the browser window, and a TV's
+    browser often reports 960×540 however big the set is, which shrank tables to a corner. Use
+    the stage's own units, `calc(50 * var(--vh, 1vh))` (also `--vw`, `--vmin`, `--vmax`), or
+    pixels, or `cq*` units inside a size container. The fallback keeps phones unchanged.
+  - **Nothing under 24px** on the stage (18px on a 1440px laptop); names about 34px, headings
+    about 68px. The type steps (`--step-*`) are fixed TV sizes inside the stage.
+  - **Fill the screen and keep the shape:** a table sits in a `container-type: size` box and
+    takes `min(100cqw, ratio × 100cqh)`, so a 16:10 laptop and a 16:9 TV both fill without
+    clipping a seat.
+  - **Make it lively:** the TV is the shared moment. Show what just happened big (UNO stamps
+    Skip! across the table, washes the room in the colour in play and keeps a play by play;
+    Letterhoard drops the tiles in and says what the word means).
+  - Check every TV change at 1920×1080, 1440×900 and 960×540.
 
 ## Words
 

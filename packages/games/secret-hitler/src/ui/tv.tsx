@@ -9,9 +9,13 @@ import GamePage from './sho/GamePage';
 import { toGameState } from './sho/adapt';
 
 /**
- * On a TV the page can't scroll, so it shrinks as a whole until the boards fit under the tiles
- * (secret-hitler.online's page is made for scrolling). Phones that are watching scroll as usual.
+ * On a TV the page can't scroll, so it's scaled as a whole to the largest size that fits:
+ * shrunk until the boards fit under the tiles (secret-hitler.online's page is made for
+ * scrolling), or grown, up to `MAX_TV_ZOOM`, so it fills the screen and reads from the sofa.
+ * Phones that are watching scroll as usual.
  */
+const MAX_TV_ZOOM = 1.6;
+
 function useFitOnTv() {
   const ref = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -21,12 +25,14 @@ function useFitOnTv() {
     // The largest scale that fits: tiles rewrap as the page shrinks, so it's searched for.
     const fits = (zoom: number) => {
       el.style.zoom = String(zoom);
-      return el.getBoundingClientRect().height <= host.clientHeight + 1;
+      // Both measured on screen: the TV stage is scaled, so layout sizes and rects differ.
+      return el.getBoundingClientRect().height <= host.getBoundingClientRect().height + 1;
     };
     const fit = () => {
-      if (host.clientHeight <= 0 || fits(1)) return;
+      if (host.clientHeight <= 0) return;
+      if (fits(MAX_TV_ZOOM)) return;
       let lo = 0.25;
-      let hi = 1;
+      let hi = MAX_TV_ZOOM;
       for (let i = 0; i < 9; i++) {
         const mid = (lo + hi) / 2;
         if (fits(mid)) lo = mid;

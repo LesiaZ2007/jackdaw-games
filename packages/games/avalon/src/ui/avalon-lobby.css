@@ -112,7 +112,7 @@
 }
 @container avalon (min-width: 700px) {
   .avalon .table-wrap {
-    width: min(100%, max(460px, calc(100dvh - 210px)));
+    width: min(100%, max(460px, calc(calc(100 * var(--vh, 1dvh)) - 210px)));
     /* the app subtracts its own 110px top bar; here Jackdaw's bar and the reaction band too */
   }
 }
@@ -160,7 +160,7 @@
     transform: none;
     visibility: visible;
     width: auto;
-    height: calc(100dvh - 120px);
+    height: calc(calc(100 * var(--vh, 1dvh)) - 120px);
     max-height: 900px;
     border-radius: 20px;
     box-shadow: var(--shadow);
@@ -195,7 +195,7 @@
   justify-items: center;
   gap: 14px;
   max-width: 560px;
-  margin: 8vh auto 0;
+  margin: calc(8 * var(--vh, 1vh)) auto 0;
   padding: 32px 22px;
   border-radius: var(--radius);
   text-align: center;
@@ -205,7 +205,7 @@
 }
 .avalon .av-away__title {
   font-family: var(--font-heading-stack);
-  font-size: clamp(26px, 5vw, 34px);
+  font-size: clamp(26px, calc(5 * var(--vw, 1vw)), 34px);
   line-height: 1.1;
 }
 .avalon[data-printed] .av-away__title {
@@ -219,7 +219,7 @@
 .av-tv {
   position: relative;
   height: 100%;
-  min-height: 70vh;
+  min-height: calc(70 * var(--vh, 1vh));
 }
 .av-tv__frame {
   display: block;

@@ -310,7 +310,7 @@ button.cn-card {
     0 6px 14px var(--cn-shadow);
 }
 .cn-board--tv .cn-card__covered-word {
-  font-size: 22px;
+  font-size: 28px;
 }
 .cn-board--small {
   gap: 4px;
@@ -665,7 +665,7 @@ button.cn-card {
 .cn-tv {
   height: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 540px;
+  grid-template-columns: minmax(0, 1fr) 600px;
   gap: 40px;
   padding: 32px 48px 36px;
   background:
@@ -683,14 +683,14 @@ button.cn-card {
   overflow: hidden;
 }
 .cn-turn--tv .cn-turn__team {
-  font-size: 54px;
+  font-size: 68px;
 }
 .cn-turn--tv .cn-turn__line,
 .cn-turn--tv .cn-turn__flag {
-  font-size: 28px;
+  font-size: 34px;
 }
 .cn-stamp--tv {
-  font-size: 58px;
+  font-size: 72px;
   padding: 10px 22px 6px;
   border-width: 5px;
 }
@@ -703,32 +703,32 @@ button.cn-card {
   border-top-width: 10px;
 }
 .cn-files--tv .cn-file__tab h3 {
-  font-size: 40px;
+  font-size: 50px;
 }
 .cn-files--tv .cn-file__left {
-  font-size: 24px;
+  font-size: 30px;
 }
 .cn-files--tv .cn-file__left .jd-tally {
-  font-size: 46px;
+  font-size: 58px;
 }
 .cn-files--tv .cn-file__people {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 16px;
+  gap: 12px 16px;
 }
 .cn-files--tv .cn-file__name {
-  font-size: 26px;
+  font-size: 34px;
 }
 .cn-log--tv .cn-log__title {
-  font-size: 30px;
+  font-size: 36px;
 }
 .cn-log--tv .cn-log__clue {
-  font-size: 30px;
+  font-size: 38px;
 }
 .cn-log--tv .cn-log__clue small {
-  font-size: 20px;
+  font-size: 26px;
 }
 .cn-log--tv .cn-chip {
-  font-size: 22px;
+  font-size: 28px;
   padding: 5px 10px 3px;
 }
 

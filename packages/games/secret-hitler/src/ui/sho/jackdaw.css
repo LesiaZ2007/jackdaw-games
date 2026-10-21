@@ -50,7 +50,7 @@ body:has(.sho-page),
   }
   .sho #board-container #board {
     min-width: 0;
-    width: min(90vmin, calc(50cqw - 32px));
+    width: min(calc(90 * var(--vmin, 1vmin)), calc(50cqw - 32px));
     max-width: none;
   }
 }
@@ -62,7 +62,7 @@ body:has(.sho-page),
     position: sticky;
     top: 66px;
     z-index: 1;
-    height: calc(100dvh - 66px);
+    height: calc(calc(100 * var(--vh, 1dvh)) - 66px);
     max-height: none;
   }
 }
@@ -92,7 +92,7 @@ body:has(.sho-page),
 
 /* ── The lobby: one screen, no scrolling ─────────────────────────────────── */
 .sho.sho-lobby {
-  height: calc(100dvh - 66px - env(safe-area-inset-top, 0px));
+  height: calc(calc(100 * var(--vh, 1dvh)) - 66px - env(safe-area-inset-top, 0px));
   min-height: 420px;
 }
 .sho.sho-lobby > .sho-frame__main {
@@ -344,15 +344,15 @@ body:has(.sho-page),
 .sho .sho-tvlobby__body {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-  gap: 4vmin;
+  gap: calc(4 * var(--vmin, 1vmin));
   align-items: start;
-  padding: 4vmin;
+  padding: calc(4 * var(--vmin, 1vmin));
 }
 .sho .sho-tvlobby__join {
   display: grid;
   justify-items: center;
-  gap: 2vmin;
-  padding: 3vmin;
+  gap: calc(2 * var(--vmin, 1vmin));
+  padding: calc(3 * var(--vmin, 1vmin));
   background-color: var(--backgroundDark);
   border-radius: 10px;
   color: var(--textColorWhite);

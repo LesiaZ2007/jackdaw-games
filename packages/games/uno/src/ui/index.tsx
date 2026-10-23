@@ -28,7 +28,7 @@ export const unoUi: GameUi = {
       },
       {
         src: '/games/uno/tv.png',
-        alt: 'UNO on a TV: the room washed in the colour in play, the piles large in the middle, every player’s hand fanned face down round the table, and the play by play.',
+        alt: 'UNO on a TV: the table printed in the colour in play, the piles large in the middle, every player’s hand fanned face down round it with the count on a chit, and the play by play.',
         desktop: true,
       },
     ],

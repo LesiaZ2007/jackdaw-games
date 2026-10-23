@@ -62,6 +62,15 @@ test('names are unique, joins show in chat, reactions reach other phones, and th
   await expect(host.getByText('At the table')).toBeVisible();
   await expect(rook.getByText('The host ended the game. It won’t be scored.')).toBeVisible();
   await expect(rook.getByText('At the table')).toBeVisible();
+
+  // The host can also end any game straight from the bar; nobody else gets the button.
+  await host.getByRole('button', { name: 'Start Rock Paper Scissors' }).click();
+  await expect(rook.getByText(/Round 1 of/)).toBeVisible();
+  await expect(rook.getByRole('button', { name: 'End game' })).toHaveCount(0);
+  await host.getByRole('button', { name: 'End game' }).click();
+  await host.getByRole('button', { name: 'End it for everyone' }).click();
+  await expect(host.getByText('At the table')).toBeVisible();
+  await expect(rook.getByText('At the table')).toBeVisible();
   const stats = await (await host.request.get(`/api/lobby/${code}/stats`)).json();
   expect(stats.history).toHaveLength(0);
 });

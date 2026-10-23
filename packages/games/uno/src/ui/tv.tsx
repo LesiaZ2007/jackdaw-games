@@ -21,9 +21,9 @@ import './uno.css';
 const FAN_MAX = 10;
 
 /**
- * UNO on the TV, made to be read from the sofa. The whole room takes the colour in play; the
- * discard pile is large in the middle, the last few cards scattered under it, with a ring of
- * arrows turning the way play goes. Everyone sits round it with their real number of card backs
+ * UNO on the TV, made to be read from the sofa. The table is printed in the colour in play, the
+ * discard pile large in the middle with the last few cards scattered under it, and the way play
+ * goes in the heading. Everyone sits round it with their real number of card backs
  * fanned out, and whoever plays next is lifted and lit. Action cards stamp their word across the
  * screen, and the play by play runs down the right. Nobody's cards are ever shown.
  */
@@ -49,8 +49,6 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
       className={`uno uno-tv uno-tv--${t.colour}`}
       style={{ '--uno-now': `var(--uno-${t.colour})` } as CSSProperties}
     >
-      <div className="uno-tv__wash" aria-hidden="true" />
-
       <header className="uno-tv__head">
         <h2 className="jd-display">
           {done
@@ -71,20 +69,6 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
       <div className="uno-tv__table">
         <div className="uno-tv__oval" data-count={n}>
           <div className="uno-tv__felt" aria-hidden="true" />
-          <svg
-            className={t.dir === 1 ? 'uno-tv__ring' : 'uno-tv__ring uno-tv__ring--back'}
-            viewBox="0 0 200 200"
-            aria-hidden="true"
-          >
-            <circle cx="100" cy="100" r="92" />
-            {Array.from({ length: 8 }, (_, i) => (
-              <path
-                key={i}
-                d="M100 2l7 6-7 6"
-                transform={`rotate(${i * 45} 100 100)${t.dir === 1 ? '' : ' translate(200 0) scale(-1 1)'}`}
-              />
-            ))}
-          </svg>
 
           <div className="uno-tv__middle">
             <div className="uno-tv__deck" aria-label={`${t.deckCount} cards to draw`} role="img">

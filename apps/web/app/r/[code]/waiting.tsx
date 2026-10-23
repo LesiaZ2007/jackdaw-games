@@ -151,7 +151,17 @@ export function Waiting({
   const [lobbyOptions, setLobbyOptions] = useOptionsDraft(s.gameOptions, (o) =>
     send({ type: 'setOptions', options: o }),
   );
-  const startGame = () => send({ type: 'start', look });
+  // A second tap on Start while the first is in flight does nothing.
+  const [starting, setStarting] = useState(false);
+  const startGame = async () => {
+    if (starting) return null;
+    setStarting(true);
+    try {
+      return await send({ type: 'start', look });
+    } finally {
+      setStarting(false);
+    }
+  };
   const onSeat = (id: string) => (id === s.me ? onOpen('me') : isHost && setTapped(id));
 
   async function choose(id: string) {
@@ -308,9 +318,9 @@ export function Waiting({
             <>
               <Plaque
                 go
-                disabled={Boolean(blocker)}
-                aria-disabled={Boolean(blocker)}
-                onClick={startGame}
+                disabled={Boolean(blocker) || starting}
+                aria-disabled={Boolean(blocker) || starting}
+                onClick={() => void startGame()}
               >
                 {entry ? `Start ${entry.meta.name}` : 'Start'}
               </Plaque>

@@ -4,8 +4,9 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { systemText, type ChatMessage, type LobbySnapshot } from '@jackdaw/engine';
-import { BirdMark, Lid, Plaque, Toast, type LobbyChat, type ScreenPlayer } from '@jackdaw/ui';
+import { BirdMark, Lid, Plaque, Toast, useModal, type LobbyChat } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
+import { screenPlayers } from '@/lib/lobby-view';
 import { forgetSeat, rememberedSeat, rememberSeat } from '@/lib/identity';
 import { readSeen, unreadCount, writeSeen } from '@/lib/unread';
 import { useTurnAlert } from '@/lib/alerts';
@@ -21,6 +22,9 @@ import { ShareSheet } from './share-sheet';
 import { StatsSheet } from './stats-sheet';
 import { Waiting } from './waiting';
 import '../lobby.css';
+
+/** The engine's chat line when the host ends a game early (`endGame` in lobby.ts). */
+const ENDED_EARLY = 'The host ended the game early.';
 
 /** Jackdaw's chat docks beside the lobby from here; a game's own lobby docks its chat from 1240px. */
 const WIDE = '(min-width: 1024px)';
@@ -133,10 +137,6 @@ function useChatSeen(code: string, chat: ChatMessage[] | undefined, onScreen: bo
   return seen ?? latest;
 }
 
-export function screenPlayers(s: LobbySnapshot): ScreenPlayer[] {
-  return s.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, online: p.online }));
-}
-
 /** One lobby, from joining through games and results, on this device. */
 export function LobbyRoom({ code }: { code: string }) {
   const { snapshot: live, error, missing, send, clearError } = useLobby(code, 'player');
@@ -144,6 +144,8 @@ export function LobbyRoom({ code }: { code: string }) {
   useTurnAlert(live);
   const [panel, setPanel] = useState<Panel>(null);
   const [hadSeat, setHadSeat] = useState<string | null>(null);
+  // Leaving from the menu: the seat going away is expected, not a removal.
+  const [leaving, setLeaving] = useState(false);
 
   // A seat remembered from an earlier visit means a missing seat now was a removal.
   useEffect(() => {
@@ -174,7 +176,12 @@ export function LobbyRoom({ code }: { code: string }) {
     setShownFull(
       status === 'waiting' && Boolean(catalogEntry(snapshot?.selectedGameId)?.ui?.Lobby),
     );
-    const endedEarly = lastStatus === 'in_game' && status === 'waiting';
+    // Only when the host pressed End game: a linked game abandoned elsewhere also comes back
+    // to the lobby, but without the engine's line in chat.
+    const endedEarly =
+      lastStatus === 'in_game' &&
+      status === 'waiting' &&
+      [...(snapshot?.chat ?? [])].reverse().find((m) => m.system)?.text === ENDED_EARLY;
     if (endedEarly && snapshot?.me && snapshot.hostId !== snapshot.me)
       setInfo('The host ended the game. It won’t be scored.');
   }
@@ -245,6 +252,16 @@ export function LobbyRoom({ code }: { code: string }) {
       <Centered>
         <p className="jd-label" role="status" style={{ fontSize: 16 }}>
           Finding lobby {code}…
+        </p>
+      </Centered>
+    );
+  }
+
+  if (!snapshot.me && leaving) {
+    return (
+      <Centered>
+        <p className="jd-label" role="status" style={{ fontSize: 16 }}>
+          Leaving lobby {code}…
         </p>
       </Centered>
     );
@@ -329,7 +346,13 @@ export function LobbyRoom({ code }: { code: string }) {
       </div>
 
       <ShareSheet open={panel === 'share'} onClose={close} code={code} />
-      <StatsSheet open={panel === 'stats'} onClose={close} code={code} snapshot={snapshot} />
+      <StatsSheet
+        open={panel === 'stats'}
+        onClose={close}
+        code={code}
+        snapshot={snapshot}
+        send={send}
+      />
       <MenuSheet
         open={panel === 'menu'}
         onClose={close}
@@ -337,6 +360,7 @@ export function LobbyRoom({ code }: { code: string }) {
         snapshot={snapshot}
         send={send}
         onEdit={() => setPanel('me')}
+        onLeaving={setLeaving}
       />
       <EndGameSheet
         open={panel === 'end' && snapshot.status === 'in_game' && isHost}
@@ -355,11 +379,8 @@ export function LobbyRoom({ code }: { code: string }) {
 }
 
 function ChatSheet({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  const panel = useRef<HTMLDivElement>(null);
+  useModal(true, panel, onClose);
   return (
     <div className="jd-sheet" role="presentation">
       <button
@@ -370,10 +391,12 @@ function ChatSheet({ onClose, children }: { onClose: () => void; children: React
         onClick={onClose}
       />
       <div
+        ref={panel}
         className="jd-sheet__panel chat-sheet"
         role="dialog"
         aria-modal="true"
         aria-label="Table talk"
+        tabIndex={-1}
       >
         <header className="jd-sheet__head">
           <h2 className="jd-display jd-sheet__title">Table talk</h2>

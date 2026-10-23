@@ -13,6 +13,8 @@
   --uno-g: #30634a;
   --uno-b: #2b5683;
   --uno-k: #26282b;
+  --uno-emboss: rgba(0, 0, 0, 0.35);
+  --uno-hatch: rgba(246, 240, 225, 0.07);
 }
 .uno {
   display: flex;
@@ -110,7 +112,7 @@ button.uno-card:focus-visible {
   display: grid;
   place-items: center;
   font: 400 calc(var(--w) * 0.62) / 1 var(--font-display);
-  text-shadow: 0 calc(var(--w) * 0.03) 0 rgba(0, 0, 0, 0.35);
+  text-shadow: 0 calc(var(--w) * 0.03) 0 var(--uno-emboss);
 }
 .uno-card__big svg {
   width: calc(var(--w) * 0.55);
@@ -173,7 +175,7 @@ button.uno-card:focus-visible {
     repeating-linear-gradient(
       45deg,
       transparent 0 calc(var(--w) * 0.08),
-      rgba(246, 240, 225, 0.07) calc(var(--w) * 0.08) calc(var(--w) * 0.16)
+      var(--uno-hatch) calc(var(--w) * 0.08) calc(var(--w) * 0.16)
     ),
     var(--uno-k);
 }
@@ -637,6 +639,10 @@ button.uno-card:focus-visible {
 }
 .uno-dock__row--one {
   grid-template-columns: 1fr;
+}
+/* Take, Challenge and Say UNO!: the third goes across underneath. */
+.uno-dock__row > :nth-child(3) {
+  grid-column: 1 / -1;
 }
 .uno-clock {
   min-width: 3.2em;

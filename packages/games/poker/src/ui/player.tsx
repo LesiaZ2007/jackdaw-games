@@ -22,7 +22,7 @@ import { PlayingCard, chips } from './pieces';
 import { PokerTable } from './table';
 import './poker.css';
 
-const STREET_NAME: Record<string, string> = {
+export const STREET_NAME: Record<string, string> = {
   preflop: 'Before the flop',
   flop: 'The flop',
   turn: 'The turn',
@@ -48,13 +48,28 @@ export function handLine(t: PokerTableView): string {
 export function handMoment(t: PokerTableView, me: string | null, name: (id: string) => string) {
   const last = t.last;
   if (!last) return null;
-  const top = last.pots[last.pots.length - 1] ?? last.pots[0];
+  // The main pot: everyone still in at the end played for it.
+  const main = last.pots[0];
   const winners = [...new Set(last.pots.flatMap((p) => p.winners))];
-  const headline = top
-    ? `${top.winners.map(name).join(' and ')} ${top.winners.length > 1 ? 'split' : 'wins'} ${chips(top.amount)}`
+  // Each pot's winners once, biggest first: "Rook wins 3,000 · Wren wins 200".
+  const shares = new Map<string, { who: string[]; amount: number }>();
+  for (const p of last.pots) {
+    const key = p.winners.join();
+    const got = shares.get(key);
+    if (got) got.amount += p.amount;
+    else shares.set(key, { who: p.winners, amount: p.amount });
+  }
+  const headline = main
+    ? [...shares.values()]
+        .sort((a, b) => b.amount - a.amount)
+        .map(
+          (x) =>
+            `${x.who.map(name).join(' and ')} ${x.who.length > 1 ? 'split' : 'wins'} ${chips(x.amount)}`,
+        )
+        .join(' · ')
     : 'The hand is over';
   if (!me || !t.inHand.includes(me)) {
-    return { outcome: 'reveal' as Outcome, title: headline, detail: top?.hand };
+    return { outcome: 'reveal' as Outcome, title: headline, detail: main?.hand };
   }
   const net = last.net[me] ?? 0;
   if (winners.includes(me) && net >= 0) {
@@ -69,7 +84,9 @@ export function handMoment(t: PokerTableView, me: string | null, name: (id: stri
   return {
     outcome: 'loss' as Outcome,
     title: `You lost ${chips(-net)}`,
-    detail: top ? `${top.winners.map(name).join(' and ')}: ${top.hand.toLowerCase()}` : undefined,
+    detail: main
+      ? `${main.winners.map(name).join(' and ')}: ${main.hand.toLowerCase()}`
+      : undefined,
   };
 }
 

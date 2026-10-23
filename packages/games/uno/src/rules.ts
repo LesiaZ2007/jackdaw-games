@@ -564,13 +564,16 @@ function move(s: UnoState, me: string, action: UnoAction, rng: Rng, late = false
 
 /**
  * Sets the clocks after a change: when a round has just ended the next deals itself in a few
- * seconds, and whenever play moves on the turn timer starts again.
+ * seconds, and whenever play moves on the turn timer starts again. `turned` says the change was
+ * a turn being taken (even one that comes straight back, like a Skip with two players or a
+ * caught bluff), not a call or a catch from across the table.
  */
-function stamp(prev: UnoState | null, s: UnoState, now: number): UnoState {
+function stamp(prev: UnoState | null, s: UnoState, now: number, turned = false): UnoState {
   if (s === prev) return s;
   const ended = s.phase === 'done' && (prev?.phase !== 'done' || prev.round !== s.round);
   const dealAt = s.phase === 'done' ? (ended ? now + NEXT_ROUND_MS : s.dealAt) : null;
-  const moved = !prev || s.toAct !== prev.toAct || s.drawn !== prev.drawn || s.round !== prev.round;
+  const moved =
+    !prev || turned || s.toAct !== prev.toAct || s.drawn !== prev.drawn || s.round !== prev.round;
   const actBy = s.toAct && s.turnSecs ? (moved ? now + s.turnSecs * 1000 : s.actBy) : null;
   return { ...s, dealAt, actBy };
 }
@@ -672,7 +675,8 @@ export const uno: GameModule<UnoState, UnoAction, UnoPlayerView, UnoTableView, U
   getTableView: view,
 
   applyAction(s, playerId, action, rng, now) {
-    return stamp(s, move(s, playerId, action, rng), now);
+    const turned = action.type !== 'call' && action.type !== 'catch';
+    return stamp(s, move(s, playerId, action, rng), now, turned);
   },
 
   waitingOn: (s) => (s.phase === 'play' && s.toAct ? [s.toAct] : []),
@@ -691,7 +695,7 @@ export const uno: GameModule<UnoState, UnoAction, UnoPlayerView, UnoTableView, U
       let next = move(s, who, { type: s.drawn !== null ? 'pass' : 'draw' }, rng, true);
       if (next.toAct === who && next.drawn !== null)
         next = move(next, who, { type: 'pass' }, rng, true);
-      return stamp(s, next, now);
+      return stamp(s, next, now, true);
     }
     return s;
   },

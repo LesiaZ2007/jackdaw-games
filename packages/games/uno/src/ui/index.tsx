@@ -18,6 +18,7 @@ export const unoUi: GameUi = {
       'A Wild Draw Four is only fair if you hold nothing in the colour in play. The next player can challenge it: a bluff costs the bluffer four, a fair one costs the challenger six.',
       'Down to one card, tap UNO! Anyone who catches you before the next player moves makes you take two.',
       'Go out first to win the round and score everyone’s leftover cards: numbers at face value, action cards 20, Wilds 50.',
+      'Two small changes from the printed rules: the card turned up to start is always a number card, and with stacking on, a bluffer caught out takes the whole stack.',
     ],
     credit:
       'UNO is a trademark of Mattel. Played here by its published rules, with Jackdaw’s own cards.',

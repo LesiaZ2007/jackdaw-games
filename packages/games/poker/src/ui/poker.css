@@ -3,9 +3,19 @@
  * a double rule; the cards are cream stock with charcoal ink and gules for hearts and diamonds,
  * and the same in day and dark (they're printed). Everything else comes from @jackdaw/ui tokens.
  */
-.pk {
+.pk,
+.pk-table {
   --pk-card-ink: #1d1d1c;
   --pk-card-stock: #f6f0e1;
+  /* Cream print on the baize, at a few strengths, and the dark wash under a bet. */
+  --pk-on-felt-rule: rgba(246, 240, 225, 0.55);
+  --pk-on-felt-dash: rgba(246, 240, 225, 0.4);
+  --pk-on-felt-faint: rgba(246, 240, 225, 0.75);
+  --pk-on-felt-soft: rgba(246, 240, 225, 0.85);
+  --pk-on-felt-open: rgba(246, 240, 225, 0.45);
+  --pk-bet-wash: rgba(20, 20, 19, 0.45);
+}
+.pk {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -189,7 +199,7 @@
   background: var(--vert);
   box-shadow:
     inset 0 0 0 5px var(--vert),
-    inset 0 0 0 6.5px rgba(246, 240, 225, 0.55);
+    inset 0 0 0 6.5px var(--pk-on-felt-rule);
   display: grid;
   place-content: center;
   justify-items: center;
@@ -207,7 +217,7 @@
 .pk-slot {
   width: var(--pk-board-card);
   aspect-ratio: 5 / 7;
-  border: 1.5px dashed rgba(246, 240, 225, 0.4);
+  border: 1.5px dashed var(--pk-on-felt-dash);
   border-radius: calc(var(--pk-board-card) * 0.09);
 }
 .pk-pot {
@@ -219,14 +229,14 @@
   letter-spacing: 0.03em;
 }
 .pk-pot .jd-label {
-  color: rgba(246, 240, 225, 0.75);
+  color: var(--pk-on-felt-faint);
   font-size: 0.6em;
 }
 .pk-pot__line small {
   display: block;
   font: 700 clamp(13px, 3.4cqw, 20px) var(--font-body);
   letter-spacing: 0;
-  color: rgba(246, 240, 225, 0.85);
+  color: var(--pk-on-felt-soft);
 }
 
 .pk-seat {
@@ -343,7 +353,7 @@
   translate: -50% -50%;
   --pk-chip-font: clamp(12px, 3.4cqw, 22px);
   padding: 1px 6px 1px 3px;
-  background: rgba(20, 20, 19, 0.45);
+  background: var(--pk-bet-wash);
   animation: pk-push 360ms var(--ease-out) both;
 }
 @keyframes pk-push {
@@ -362,14 +372,14 @@
   display: block;
   font: 700 clamp(13px, 3.4cqw, 22px) var(--font-body);
   letter-spacing: 0;
-  color: rgba(246, 240, 225, 0.85);
+  color: var(--pk-on-felt-soft);
 }
 .pk-open {
   display: block;
   width: var(--pk-tok);
   aspect-ratio: 1;
   border-radius: 50%;
-  border: 2px dashed rgba(246, 240, 225, 0.45);
+  border: 2px dashed var(--pk-on-felt-open);
   background: color-mix(in srgb, var(--sable) 70%, var(--vert));
 }
 .pk-seat__tap {
@@ -559,8 +569,11 @@
   font-size: clamp(28px, 3cqw, 56px);
   max-width: 44cqw;
 }
+.pk-table--tv .pk-pot .jd-label {
+  font-size: max(24px, 0.6em);
+}
 .pk-table--tv .pk-pot__line small {
-  font-size: clamp(22px, 1.9cqw, 34px);
+  font-size: clamp(24px, 1.9cqw, 34px);
 }
 .pk-table--tv .pk-seat__name {
   font-size: clamp(24px, 2.1cqw, 38px);
@@ -568,8 +581,8 @@
 .pk-table--tv .pk-seat__stack,
 .pk-table--tv .pk-tag,
 .pk-table--tv .pk-bet {
-  font-size: clamp(22px, 1.9cqw, 34px);
-  --pk-chip-font: clamp(22px, 1.9cqw, 34px);
+  font-size: clamp(24px, 1.9cqw, 34px);
+  --pk-chip-font: clamp(24px, 1.9cqw, 34px);
 }
 
 /* Wide and landscape (a laptop): the table on the left, your cards and the dock beside it. */

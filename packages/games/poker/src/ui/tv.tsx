@@ -2,7 +2,7 @@
 
 import { useMoment, VerdictMoment, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { PokerTableView } from '../rules';
-import { handLine, handMoment } from './player';
+import { STREET_NAME, handLine, handMoment } from './player';
 import { PokerTable } from './table';
 import './poker.css';
 
@@ -17,7 +17,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, ...props })
   return (
     <div className="pk pk--tv">
       <header className="pk__head">
-        <h2 className="jd-display">{t.toAct ? `${name(t.toAct)} to act` : 'Dealing'}</h2>
+        <h2 className="jd-display">{t.toAct ? `${name(t.toAct)} to act` : STREET_NAME[t.phase]}</h2>
         <p>{handLine(t)}</p>
       </header>
       <div className="pk-tv__stage">

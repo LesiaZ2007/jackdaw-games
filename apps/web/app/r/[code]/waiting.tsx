@@ -208,9 +208,10 @@ export function Waiting({
             <GameSeats
               seats={seats}
               max={seatsEntry.meta.maxPlayers}
-              options={s.gameOptions}
+              options={lobbyOptions}
               onSeat={onSeat}
               reactions={s.reactions}
+              setOptions={isHost ? setLobbyOptions : undefined}
             />
           ) : (
             <SeatTrack

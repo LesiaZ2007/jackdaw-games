@@ -1,34 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import type { ZodType } from 'zod';
 import { GameCover, GameTile, Icon } from '@jackdaw/ui';
 import { catalog, CATEGORY_LABEL, unfitReason, type CatalogEntry } from '@/lib/catalog';
+import { optionsSummary } from '@/lib/lobby-view';
 import { games } from '@/lib/registry';
 import { OptionsPanel } from './options-panel';
 import '../next-up.css';
 
 const range = ([a, b]: [number, number]) => (a === b ? `${a}` : `${a}–${b}`);
-
-/** "roundsToWin" → "Rounds to win". */
-function words(key: string) {
-  const w = key.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
-  return w.charAt(0).toUpperCase() + w.slice(1);
-}
-
-/** The chosen options in one line, e.g. "Rounds: 3". Mirrors what OptionsPanel shows. */
-export function optionsSummary(schema: ZodType, options: Record<string, unknown>): string {
-  const shape = (schema as unknown as { shape?: Record<string, { description?: string }> }).shape;
-  if (!shape) return '';
-  return Object.entries(shape)
-    .map(([key, field]) => {
-      const v = options[key];
-      const shown =
-        typeof v === 'boolean' ? (v ? 'on' : 'off') : typeof v === 'string' ? words(v) : String(v);
-      return `${field.description ?? words(key)}: ${shown}`;
-    })
-    .join(', ');
-}
 
 /** The host's shelf of games to choose from, as box covers. */
 export function GamePicker({

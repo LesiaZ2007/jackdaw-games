@@ -5,7 +5,7 @@
  */
 .jd-cover {
   --edge: 7px;
-  --box-side: color-mix(in srgb, var(--band) 62%, #000);
+  --box-side: color-mix(in srgb, var(--band) 62%, var(--shade-base));
   appearance: none;
   position: relative;
   display: grid;
@@ -64,7 +64,7 @@
   content: '';
   position: absolute;
   inset: 6px;
-  border: 1px solid rgba(246, 240, 225, 0.6);
+  border: 1px solid color-mix(in srgb, var(--on-fill) 60%, transparent);
   pointer-events: none;
 }
 .jd-cover__dev {
@@ -75,9 +75,9 @@
   border-radius: 50%;
   background: var(--band);
   box-shadow:
-    0 0 0 3px rgba(246, 240, 225, 0.85),
+    0 0 0 3px color-mix(in srgb, var(--on-fill) 85%, transparent),
     0 0 0 7px var(--band),
-    0 0 0 8px rgba(246, 240, 225, 0.45);
+    0 0 0 8px color-mix(in srgb, var(--on-fill) 45%, transparent);
 }
 .jd-cover__dev svg {
   width: 64%;
@@ -188,7 +188,7 @@
   content: '';
   position: absolute;
   inset: 3px;
-  border: 1px solid rgba(246, 240, 225, 0.55);
+  border: 1px solid color-mix(in srgb, var(--on-fill) 55%, transparent);
 }
 .jd-tile svg {
   width: 62%;

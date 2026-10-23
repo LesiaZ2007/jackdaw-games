@@ -478,6 +478,10 @@ build` refused to run on 16.4.0). The Phase 0 echo endpoint is gone. Push endpoi
   last bettor to act against a short all-in; Codenames needs a guess before ending a turn; Risk's
   +2 card bonus is once a turn and fallback missions win at once; Letterhoard shuffles swapped
   tiles back and counts 0-point plays as scoreless.
+- **Wavelength** (merged into this branch mid-round, then audited): the psychic can only end the
+  wait once a guesser has locked in or a caller has voted (they know the target, so an early
+  hurry was a free bullseye); Lock in sends the last dial move first, so a quick tap can't lock
+  the old spot; in Teams the team going second starts on 1 point, as in the box; TV tags 24px.
 - **Avalon link**: 8s timeouts; only Avalon's own "room gone" 404 drops a game unscored.
 - **Consistency**: option help in every Jackdaw-lobby game, Codenames TV moments, TV type ≥24px,
   44px catalog targets, literal colours in tokens, the host can reset scores from Stats.
@@ -521,6 +525,11 @@ build` refused to run on 16.4.0). The Phase 0 echo endpoint is gone. Push endpoi
   with the timer off) one closed phone stalls the table until the host ends it unscored. Options:
   turn timers on by default, a timer for RPS/Codenames/Secret Hitler, or a host "skip them" once a
   waited-on player has been away a few minutes. Needs Lesia's call (it touches the contract).
+- Wavelength (deep clean): a psychic who is away during the clue stalls the round (no clue timer,
+  and teammates can't skip them); with the timer off, a whole away team stalls the call; the
+  psychic, who knows the target, decides when the call ends ("Go with that"), which perhaps
+  belongs to the callers; Together on the TV lists one player per row, so past 9 players the
+  list is cut off.
 - Codenames and RPS phones still scroll (no `GameUi.fit`): fitting them needs a layout redesign.
 - UNO: after "Draw one", opponents can tell whether the drawn card was playable (the turn passes
   at once if not). Fine to keep, or always offer "Keep it"?

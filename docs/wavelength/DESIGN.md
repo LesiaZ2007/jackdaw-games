@@ -32,16 +32,24 @@ team turns the dial to where they think the target is, and scores by how close i
 
 ## Options (Jackdaw's options panel)
 
-| Key         | Label      | Choices                                    | Default        |
-| ----------- | ---------- | ------------------------------------------ | -------------- |
-| `mode`      | Mode       | Teams, Together                            | Teams if 4+    |
-| `guessing`  | Guessing   | Shared dial, Everyone guesses              | Shared dial    |
-| `length`    | Length     | Short, Standard, Long                      | Standard       |
-| `timer`     | Dial timer | Off, 60 seconds, 2 minutes                 | Off            |
+| Key        | Label      | Choices                       | Default     |
+| ---------- | ---------- | ----------------------------- | ----------- |
+| `mode`     | Mode       | Teams, Together               | Teams if 4+ |
+| `teams`    | Teams      | Random, Chosen                | Random      |
+| `guessing` | Guessing   | Shared dial, Everyone guesses | Shared dial |
+| `length`   | Length     | Short, Standard, Long         | Standard    |
+| `timer`    | Dial timer | Off, 60 seconds, 2 minutes    | Off         |
 
 Length: Teams play to 7 / 10 / 15 points; Together plays 5 / 7 / 10 rounds. Teams mode needs at
 least 4 players (`validateOptions`). The timer covers the guessing and the left/right call;
 when it runs out the dial locks where it is.
+
+Teams (Lesia, 2026-10-23: "an option to choose either random or selected teams"): Random deals
+them afresh each game; Chosen keeps the host's placings, stored in the options as `sides`
+(player id -> team), so Play again keeps them. Wavelength's `LobbySeats` draws Sun and Moon side
+by side with buttons for the host to move players (the platform passes `setOptions` to lobby
+seats for this, and the options panel skips options it can't draw). Anyone unplaced joins the
+smaller team at the start, and a team with fewer than two takes a player from the other.
 
 Group-written spectrum pairs (in the plan) wait for a text option in the lobby, which the
 options panel doesn't have yet.
@@ -57,6 +65,8 @@ options panel doesn't have yet.
   the middle).
 - **Left/right call** (Teams). Every member of the other team picks Left or Right; it's decided
   when more than half of them agree. On a timeout the larger side wins, and a tie scores nothing.
+- **Lock it in now.** Once someone has locked in (or called), the psychic can end the wait, which
+  does what the timer would. Without it a phone that drops out could stall Everyone guesses.
 
 ## The shared dial over polling
 
@@ -73,7 +83,7 @@ Phones poll every 1.5s while a game runs, and each move is a locked write. So:
 ## Phases
 
 `pick` (psychic chooses a card) → `clue` (psychic writes it) → `guess` → `call` (Teams only) →
-`reveal` (target shown, points scored; next round after 9s, or anyone taps Next) → … → `over`.
+`reveal` (target shown, points scored; next round after 12s, or anyone taps Next) → … → `over`.
 The `pick` and `clue` steps are one screen on the psychic's phone.
 
 ## Hidden information

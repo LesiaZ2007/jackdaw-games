@@ -415,6 +415,32 @@ good on a laptop. Plus Letterhoard: rearrange the tray, and a definition popup a
   polish), so Vercel couldn't deploy main after the merge.
 - Not changed on purpose: Avalon's and Secret Hitler's own lobbies (their looks are copies).
 
+### Wavelength (2026-10-23, branch `feat/wavelength`)
+
+Lesia: "Let's do wavelength", then "make sure there's an option to choose either random or
+selected teams", and allowed merging to main once done and tested. Design in
+`docs/wavelength/DESIGN.md`.
+
+- `packages/games/wavelength`: Teams (Sun and Moon, 4–15) and Together (2–15). The psychic picks
+  one of two cards with the target on their dial and writes a clue; the team turns the dial; the
+  other team calls left or right for a point; 4/3/2 by distance; the catch-up turn; first to
+  7/10/15, or 5/7/10 rounds Together with a bonus round per bullseye. About 190 original
+  spectrum pairs. 35 rules tests (scoring, rotation, locks, the call, catch-up, winning,
+  Together, chosen teams, hidden info).
+- Options: Mode, Teams (Random or Chosen), Guessing (Shared dial or Everyone guesses, averaged),
+  Length, Dial timer. The psychic can "Lock it in now" so a dropped phone can't stall a round.
+- The live dial runs over polling: the dragging phone moves at once and sends at most every
+  400ms, newest position only, one at a time (`useDialSync` in `ui/dial.tsx`); other screens
+  ease the needle. No transport or contract change.
+- **Platform additions** (lobby UI only, no contract or protocol change): `LobbySeatsProps.setOptions`
+  (host only) so a game can set options from its seats; the options panel and the "Next up"
+  summary skip options that aren't plain choices. Wavelength's `LobbySeats` draws Sun and Moon
+  with host buttons to move players when teams are Chosen, and the seat track otherwise.
+- Screens: phone (`fit`), TV (checked at 1920, 1440 dark, 960), results reveal with every
+  round's dial, catalog pictures. e2e `wavelength.spec.ts`: a clue, a dragged and locked dial,
+  the reveal, and the target never public before it.
+- Still open: group-written spectrum pairs need a text option in the lobby.
+
 ## Next
 
 1. Lesia reviews and playtests Phase 1 on the Vercel preview, then merges `feat/phase-1` to `main`. Production then serves it.

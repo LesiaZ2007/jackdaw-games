@@ -6,6 +6,7 @@ import { poker } from '@jackdaw/game-poker';
 import { risk } from '@jackdaw/game-risk';
 import { rps } from '@jackdaw/game-rps';
 import { secretHitler } from '@jackdaw/game-secret-hitler';
+import { wavelength } from '@jackdaw/game-wavelength';
 import { wordhoard } from '@jackdaw/game-wordhoard';
 
 /**
@@ -21,6 +22,7 @@ export const games: GameRegistry = {
   [risk.meta.id]: risk,
   [rps.meta.id]: rps,
   [secretHitler.meta.id]: secretHitler,
+  [wavelength.meta.id]: wavelength,
   [wordhoard.meta.id]: wordhoard,
 };
 

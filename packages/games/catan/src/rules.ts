@@ -7,7 +7,18 @@ import {
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import { DEV_DECK, RESOURCE_COUNT, makeBoard, type BoardStyle } from './board';
-import { roadSpots, settlementSpots, type Buildings, type Roads } from './build';
+import {
+  COSTS,
+  citySpots,
+  missing,
+  piecesLeft,
+  roadSpots,
+  settlementSpots,
+  type Buildings,
+  type Piece,
+  type Roads,
+} from './build';
+import { awardRoad, longestRoad } from './roads';
 import { layout, type Layout } from './geometry';
 import { meta } from './meta';
 import {
@@ -121,6 +132,8 @@ export interface CatanState {
   phase: Phase;
   /** Whose turn it is (player 1 at five and six). */
   turn: string;
+  /** Who took the first turn; a new round starts with them. */
+  first: string;
   /** The paired player, during their phase (five and six players). */
   paired: string | null;
   /** Counts turns and paired phases; a development card bought in one can't be played in it. */
@@ -277,6 +290,7 @@ function setup({ playerIds, options, rng }: Parameters<CatanModule['setup']>[0])
     turnSecs: options.turnTimer === 'Off' ? 0 : Number.parseInt(options.turnTimer, 10) * 60,
     phase: 'setup',
     turn: ordered[0]!,
+    first: ordered[0]!,
     paired: null,
     turnSeq: 0,
     round: 0,
@@ -525,10 +539,233 @@ function applyAction(s: CatanState, who: string, a: CatanAction, rng: Rng): Cata
   if (who !== actor(s)) return refuse('not-your-turn', 'It’s not your turn.');
   if (s.phase === 'roll') {
     if (a.type === 'roll') return roll(s, who, rng);
+    if (a.type === 'play' && a.card === 'knight') return play(s, who, a);
     return refuse('wrong-phase', 'Roll the dice first.');
   }
-  if (a.type === 'roll') return refuse('wrong-phase', 'You’ve already rolled.');
-  return refuse('wrong-phase', 'You can’t do that now.');
+  if (s.phase === 'roadBuilding') {
+    if (a.type === 'build' && a.kind === 'road') return build(s, who, 'road', a.at);
+    if (a.type === 'endRoads') return { ...s, phase: 'main', roadsToBuild: 0 };
+    return refuse('wrong-phase', 'Place your free roads first.');
+  }
+  switch (a.type) {
+    case 'roll':
+      return s.paired
+        ? refuse('wrong-phase', 'You don’t roll in a paired turn.')
+        : refuse('wrong-phase', 'You’ve already rolled.');
+    case 'build':
+      return build(s, who, a.kind, a.at);
+    case 'buy':
+      return buy(s, who);
+    case 'play':
+      return play(s, who, a);
+    case 'endTurn':
+      return endTurn(s);
+    case 'endRoads':
+      return refuse('wrong-phase', 'You’re not building free roads.');
+    default:
+      return refuse('wrong-phase', 'You can’t do that now.');
+  }
+}
+
+/** Recounts every road and moves Longest Road if it should change hands. */
+function recountRoads(s: CatanState): CatanState {
+  const L = layoutOf(s);
+  const lengths = Object.fromEntries(
+    s.seats.map((p) => [p, longestRoad(L, s.buildings, s.roads, p)]),
+  );
+  const holder = awardRoad(s.longest.holder, lengths);
+  const next = { ...s, longest: { holder, lengths } };
+  if (holder === s.longest.holder) return next;
+  const seq = s.eventSeq + 1;
+  const moved: CatanState = {
+    ...next,
+    eventSeq: seq,
+    award: { seq, kind: 'road', from: s.longest.holder, to: holder },
+  };
+  return holder
+    ? logged(moved, `{actor} has Longest Road (${lengths[holder]})`, holder)
+    : logged(moved, 'Nobody holds Longest Road now');
+}
+
+function build(s: CatanState, who: string, kind: Piece, at: string): CatanState {
+  const L = layoutOf(s);
+  const free = s.phase === 'roadBuilding';
+  const cost = COSTS[kind];
+  if (!free && !covers(s.hands[who]!, cost))
+    return refuse('cant-afford', `You need ${cardsText(missing(s.hands[who]!, cost))} more.`);
+  if (piecesLeft(s.buildings, s.roads, who)[kind] <= 0)
+    return refuse('no-pieces', `You have no ${kind === 'city' ? 'cities' : `${kind}s`} left.`);
+  const spots =
+    kind === 'road'
+      ? roadSpots(L, s.buildings, s.roads, who)
+      : kind === 'settlement'
+        ? settlementSpots(L, s.buildings, s.roads, who, false)
+        : citySpots(s.buildings, who);
+  if (!spots.includes(at)) return refuse('bad-spot', `You can’t build a ${kind} there.`);
+  let next: CatanState = free
+    ? s
+    : { ...s, hands: { ...s.hands, [who]: add(s.hands[who]!, cost, -1) }, bank: add(s.bank, cost) };
+  if (kind === 'road') next = { ...next, roads: { ...next.roads, [at]: who } };
+  else
+    next = {
+      ...next,
+      buildings: { ...next.buildings, [at]: { owner: who, city: kind === 'city' } },
+    };
+  next = logged(next, `{actor} built a ${kind}`, who);
+  if (kind !== 'city') next = recountRoads(next);
+  if (free) {
+    const left = next.roadsToBuild - 1;
+    const more =
+      left > 0 &&
+      piecesLeft(next.buildings, next.roads, who).road > 0 &&
+      roadSpots(L, next.buildings, next.roads, who).length > 0;
+    next = { ...next, roadsToBuild: more ? left : 0, phase: more ? 'roadBuilding' : 'main' };
+  }
+  return next;
+}
+
+function buy(s: CatanState, who: string): CatanState {
+  if (!s.deck.length) return refuse('deck-empty', 'There are no development cards left.');
+  if (!covers(s.hands[who]!, COSTS.dev))
+    return refuse('cant-afford', `You need ${cardsText(missing(s.hands[who]!, COSTS.dev))} more.`);
+  const [card, ...deck] = s.deck;
+  return logged(
+    {
+      ...s,
+      deck,
+      hands: { ...s.hands, [who]: add(s.hands[who]!, COSTS.dev, -1) },
+      bank: add(s.bank, COSTS.dev),
+      dev: { ...s.dev, [who]: [...s.dev[who]!, { card: card!, bought: s.turnSeq }] },
+    },
+    '{actor} bought a development card',
+    who,
+  );
+}
+
+type PlayAction = Extract<CatanAction, { type: 'play' }>;
+
+function play(s: CatanState, who: string, a: PlayAction): CatanState {
+  const held = s.dev[who]!;
+  const i = held.findIndex((d) => d.card === a.card && canPlay(s, who, d));
+  if (i < 0) {
+    if (s.devPlayed) return refuse('played', 'You’ve already played a development card this turn.');
+    if (held.some((d) => d.card === a.card && d.bought === s.turnSeq))
+      return refuse('just-bought', 'You can’t play a card on the turn you bought it.');
+    if (s.phase === 'roll' && held.some((d) => d.card === a.card))
+      return refuse('roll-first', 'Only a knight can be played before rolling.');
+    return refuse('no-card', 'You don’t have that card.');
+  }
+  if (a.card === 'yearOfPlenty' && !a.take) return refuse('pick', 'Choose two resources.');
+  if (a.card === 'monopoly' && !a.resource) return refuse('pick', 'Choose a resource.');
+  let next: CatanState = {
+    ...s,
+    devPlayed: true,
+    dev: { ...s.dev, [who]: held.filter((_, k) => k !== i) },
+  };
+  switch (a.card) {
+    case 'knight': {
+      const knights = { ...next.knights, [who]: next.knights[who]! + 1 };
+      next = logged({ ...next, knights }, '{actor} played a knight', who);
+      const best = next.army ? knights[next.army]! : 2;
+      if (next.army !== who && knights[who]! > best) {
+        const seq = next.eventSeq + 1;
+        next = logged(
+          {
+            ...next,
+            army: who,
+            eventSeq: seq,
+            award: { seq, kind: 'army', from: next.army, to: who },
+          },
+          `{actor} has Largest Army (${knights[who]})`,
+          who,
+        );
+      }
+      return {
+        ...next,
+        phase: 'robber',
+        robberBy: who,
+        afterRobber: s.phase === 'roll' ? 'roll' : 'main',
+      };
+    }
+    case 'roadBuilding': {
+      const L = layoutOf(next);
+      const n = Math.min(2, piecesLeft(next.buildings, next.roads, who).road);
+      const can = n > 0 && roadSpots(L, next.buildings, next.roads, who).length > 0;
+      return logged(
+        { ...next, phase: can ? 'roadBuilding' : 'main', roadsToBuild: can ? n : 0 },
+        '{actor} played road building',
+        who,
+      );
+    }
+    case 'yearOfPlenty': {
+      const take = emptyCards();
+      for (const r of a.take!) if (next.bank[r] > take[r]) take[r]++;
+      return logged(
+        {
+          ...next,
+          hands: { ...next.hands, [who]: add(next.hands[who]!, take) },
+          bank: add(next.bank, take, -1),
+        },
+        `{actor} played year of plenty for ${cardsText(take)}`,
+        who,
+      );
+    }
+    case 'monopoly': {
+      const r = a.resource!;
+      const hands = { ...next.hands };
+      let took = 0;
+      for (const p of next.seats) {
+        if (p === who) continue;
+        took += hands[p]![r];
+        hands[p] = { ...hands[p]!, [r]: 0 };
+      }
+      hands[who] = { ...hands[who]!, [r]: hands[who]![r] + took };
+      const seq = next.eventSeq + 1;
+      return logged(
+        { ...next, hands, eventSeq: seq, monopoly: { seq, pid: who, resource: r, took } },
+        `{actor} played monopoly on ${r} and took ${took}`,
+        who,
+      );
+    }
+  }
+}
+
+/** Ends a turn or a paired phase; at five and six the paired player builds before the next roll. */
+function endTurn(s: CatanState): CatanState {
+  const n = s.seats.length;
+  const i = s.seats.indexOf(s.turn);
+  const base = { ...s, offers: [], devPlayed: false, turnSeq: s.turnSeq + 1, produced: {} };
+  if (n >= 5 && !s.paired) {
+    const paired = s.seats[(i + 3) % n]!;
+    return startOf(
+      logged({ ...base, paired, phase: 'main' }, '{actor} builds alongside', paired),
+      paired,
+    );
+  }
+  const turn = s.seats[(i + 1) % n]!;
+  const round = turn === s.first ? s.round + 1 : s.round;
+  return startOf({ ...base, turn, paired: null, phase: 'roll', round, dice: null }, turn);
+}
+
+/** A player who already has enough points wins as their turn (or paired phase) begins. */
+function startOf(s: CatanState, who: string): CatanState {
+  return points(s, who, true) >= s.target ? win(s, who) : s;
+}
+
+function win(s: CatanState, who: string): CatanState {
+  return logged(
+    { ...s, phase: 'over', winner: who, actBy: null, offers: [] },
+    `{actor} wins with ${points(s, who, true)} points`,
+    who,
+  );
+}
+
+/** After any move: the player acting on their turn (or paired phase) wins at the target. */
+function settle(s: CatanState, mover: string): CatanState {
+  if (s.phase === 'over' || s.phase === 'setup') return s;
+  const active = s.paired ? s.paired : s.turn;
+  if (mover !== active) return s;
+  return points(s, mover, true) >= s.target ? win(s, mover) : s;
 }
 
 function getTableView(s: CatanState): CatanTableView {
@@ -635,7 +872,7 @@ export const catan: CatanModule = {
   setup,
   getPlayerView,
   getTableView,
-  applyAction: (s, who, a, rng) => applyAction(s, who, a, rng),
+  applyAction: (s, who, a, rng) => settle(applyAction(s, who, a, rng), who),
   getResult,
   waitingOn,
 };

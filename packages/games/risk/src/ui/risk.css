@@ -973,7 +973,7 @@
   width: 100%;
 }
 .rk-muster__banners--tv .rk-banner__army {
-  font-size: 18px;
+  font-size: 24px;
 }
 .rk-muster__banners--tv .rk-banner__name {
   font-size: 26px;
@@ -1206,6 +1206,34 @@
 .rk-missions__row > .jd-chip,
 .rk-missions__row > :last-child:not(.rk-missions__what) {
   grid-area: chip;
+}
+/* The missions beside the map on the TV, sized to be read across the room. */
+.rk-reveal--tv .rk-missions {
+  gap: 6px;
+}
+.rk-reveal--tv .rk-missions__row {
+  column-gap: 18px;
+  padding: 12px 0;
+}
+.rk-reveal--tv .rk-missions .jd-token {
+  --z: 56px !important;
+}
+.rk-reveal--tv .rk-missions__army {
+  width: 22px;
+  height: 22px;
+  border-width: 2px;
+  right: -6px;
+  bottom: -6px;
+}
+.rk-reveal--tv .rk-missions__who {
+  font-size: 32px;
+}
+.rk-reveal--tv .rk-missions__what {
+  font-size: 26px;
+  line-height: 1.25;
+}
+.rk-reveal--tv .rk-missions .jd-chip {
+  font-size: 24px;
 }
 
 @media (prefers-reduced-motion: reduce) {

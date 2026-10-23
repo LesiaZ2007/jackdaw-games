@@ -6,6 +6,7 @@ import { pokerUi } from '@jackdaw/game-poker/ui';
 import { riskUi } from '@jackdaw/game-risk/ui';
 import { rpsUi } from '@jackdaw/game-rps/ui';
 import { secretHitlerUi } from '@jackdaw/game-secret-hitler/ui';
+import { wavelengthUi } from '@jackdaw/game-wavelength/ui';
 import { wordhoardUi } from '@jackdaw/game-wordhoard/ui';
 import type { GameAbout, GameUi } from '@jackdaw/ui';
 import { games } from './registry';
@@ -35,6 +36,7 @@ export const gameUis: Record<string, GameUi> = {
   risk: riskUi,
   rps: rpsUi,
   'secret-hitler': secretHitlerUi,
+  wavelength: wavelengthUi,
   wordhoard: wordhoardUi,
 };
 

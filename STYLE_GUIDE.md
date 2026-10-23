@@ -169,6 +169,11 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which Lesia prefers for 
   squares in heraldic fills (gules triple word, tenné double word, azure triple letter, pale
   azure double letter), a star in the middle; bone tiles with the letter in Grenze and the value
   in the corner, on a sable rack. `wordhoard.css`.
+- **Wavelength** uses Jackdaw's lobby. In play it's a printed dial board: a half-moon of sable
+  card with a cream rim, ticked like a radio tuner, the spectrum's two words on cream plaques at
+  either end, the target zone printed in bands (vert 4, tenné 3, gold 2) under a sable shutter
+  that swings away round the pivot on the reveal, and a cream needle. Sun team gules, Moon team
+  azure. It looks the same day and dark. `wavelength.css`.
 - **Rock Paper Scissors** uses Jackdaw's lobby. Its own chalk-ring lobby was tried and dropped
   (Lesia, 2026-10-13: "the old rock paper scissors lobby was miles better").
 - A game that gets its own lobby scopes its look under the game's class, keeps the bar's pieces

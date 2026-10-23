@@ -18,6 +18,7 @@ export function optionsSummary(schema: ZodType, options: Record<string, unknown>
   const shape = (schema as unknown as { shape?: Record<string, { description?: string }> }).shape;
   if (!shape) return '';
   return Object.entries(shape)
+    .filter(([key]) => ['string', 'number', 'boolean'].includes(typeof options[key]))
     .map(([key, field]) => {
       const v = options[key];
       const shown =

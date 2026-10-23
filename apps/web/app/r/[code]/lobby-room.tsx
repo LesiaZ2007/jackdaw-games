@@ -14,7 +14,7 @@ import { LobbyBar, type Panel } from './bar';
 import { Chat } from './chat';
 import { GameShell } from './game-shell';
 import { JoinCard } from './join-card';
-import { MenuSheet } from './menu-sheet';
+import { EndGameSheet, MenuSheet } from './menu-sheet';
 import { MeSheet } from './me-sheet';
 import { Results } from './results';
 import { ShareSheet } from './share-sheet';
@@ -286,7 +286,13 @@ export function LobbyRoom({ code }: { code: string }) {
               : 'lobby-page'
       }
     >
-      <LobbyBar code={code} status={snapshot.status} onOpen={setPanel} unread={unread} />
+      <LobbyBar
+        code={code}
+        status={snapshot.status}
+        onOpen={setPanel}
+        unread={unread}
+        host={isHost}
+      />
       <div className="lobby-layout">
         <main className="lobby-main">
           {snapshot.status === 'waiting' && (
@@ -331,6 +337,11 @@ export function LobbyRoom({ code }: { code: string }) {
         snapshot={snapshot}
         send={send}
         onEdit={() => setPanel('me')}
+      />
+      <EndGameSheet
+        open={panel === 'end' && snapshot.status === 'in_game' && isHost}
+        onClose={close}
+        send={send}
       />
       <MeSheet open={panel === 'me'} onClose={close} snapshot={snapshot} send={send} />
       {panel === 'chat' && !ownChat && (

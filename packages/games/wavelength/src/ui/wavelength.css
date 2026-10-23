@@ -346,11 +346,12 @@ button.wl-card:focus-visible {
   outline-offset: 1px;
 }
 
-/* The points, stamped on the reveal. */
+/* The points, stamped on the reveal: printed on cream, so the inks read day and dark. */
 .wl-stamp {
   justify-self: center;
   margin: 0;
   padding: 6px 18px;
+  background: var(--wl-cream);
   border: 3px solid currentColor;
   outline: 1px solid currentColor;
   outline-offset: -7px;
@@ -371,7 +372,7 @@ button.wl-card:focus-visible {
   color: var(--wl-2);
 }
 .wl-stamp--0 {
-  color: var(--ink-2);
+  color: var(--wl-card-2);
 }
 .wl-stamp__call {
   display: block;
@@ -481,7 +482,6 @@ button.wl-card:focus-visible {
   top: 34%;
   translate: -50% -50%;
   font-size: 92px;
-  background: var(--paper);
   border-width: 5px;
   outline-offset: -12px;
   padding: 14px 40px;
@@ -556,7 +556,7 @@ button.wl-card:focus-visible {
   justify-self: start;
   padding: 1px 8px;
   border: 2px solid var(--ink);
-  font: 800 20px var(--font-plaque);
+  font: 800 24px var(--font-plaque);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   animation: wl-tag 420ms var(--wl-ease) both;

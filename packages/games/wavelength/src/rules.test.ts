@@ -121,6 +121,15 @@ describe('setup', () => {
     }
   });
 
+  it('gives the team going second a point to start, in Teams only', () => {
+    for (let seed = 1; seed < 10; seed++) {
+      const s = start(six, {}, seed);
+      expect(s.scores[s.round.team]).toBe(0);
+      expect(s.scores[other(s.round.team)]).toBe(1);
+    }
+    expect(start(['a', 'b', 'c'], { mode: 'Together' }).scores).toEqual({ sun: 0, moon: 0 });
+  });
+
   it('puts everyone on one team in Together, and defaults to it under four players', () => {
     expect(game.defaultOptions(3).mode).toBe('Together');
     expect(game.defaultOptions(4).mode).toBe('Teams');
@@ -232,6 +241,17 @@ describe('shared dial', () => {
     s = act(s, gs[1]!, { type: 'lock', on: true });
     expect(s.phase).toBe('guess');
   });
+
+  it('refuses a lock on a dial that has moved since the locker saw it', () => {
+    // Two guessers: one drags to 70, the other's screen still shows the middle.
+    const g = clue(start(['a', 'b', 'c', 'd', 'e', 'f']));
+    const [x, y] = guessersOf(g);
+    let s = act(g, x!, { type: 'dial', at: 70 });
+    s = act(s, x!, { type: 'lock', on: true, at: 70 });
+    expect(() => act(s, y!, { type: 'lock', on: true, at: MIDDLE })).toThrow(/moved/);
+    s = act(s, y!, { type: 'lock', on: true, at: 70 });
+    expect(s.round.guess).toBe(70);
+  });
 });
 
 describe('everyone guesses', () => {
@@ -265,6 +285,16 @@ describe('everyone guesses', () => {
     expect(s.round.locks).not.toContain(x);
   });
 
+  it('a lock carries where your needle is, so a move still on its way can’t be lost', () => {
+    const g = clue(start(['a', 'b', 'c', 'd'], { guessing: 'Everyone guesses' }));
+    const [x] = guessersOf(g);
+    // The only guesser locks before their last move arrives; the late move changes nothing.
+    let s = act(g, x!, { type: 'lock', on: true, at: 80 });
+    expect(s.round.guess).toBe(80);
+    s = act(s, x!, { type: 'dial', at: 20 });
+    expect(s.round.guess).toBe(80);
+  });
+
   it('on a timeout averages only the dials that were turned', () => {
     const g = clue(
       start(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], {
@@ -280,8 +310,8 @@ describe('everyone guesses', () => {
   });
 
   it('with nobody turning a dial, the guess is the middle', () => {
-    const g = clue(start(six, { guessing: 'Everyone guesses' }));
-    const s = act(g, g.round.psychic, { type: 'hurry' });
+    const g = clue(start(six, { guessing: 'Everyone guesses', timer: '60 seconds' }));
+    const s = game.onTimer!(g, 'act', createRng(3), 60_000);
     expect(s.round.guess).toBe(MIDDLE);
   });
 });
@@ -303,7 +333,8 @@ describe('the left/right call', () => {
     const last = s.history[0]!;
     expect(last.points).toBe(0);
     expect(last.callPoint).toBe(1);
-    expect(s.scores[other(s.round.team)]).toBe(1);
+    // The point for going second, and one for the call.
+    expect(s.scores[other(s.round.team)]).toBe(2);
   });
 
   it('a wrong call scores nothing', () => {
@@ -311,7 +342,7 @@ describe('the left/right call', () => {
     expect(s.history[0]!.points).toBe(3);
     expect(s.history[0]!.callPoint).toBe(0);
     expect(s.scores[s.round.team]).toBe(3);
-    expect(s.scores[other(s.round.team)]).toBe(0);
+    expect(s.scores[other(s.round.team)]).toBe(1);
   });
 
   it('is skipped when the dial is dead on the target', () => {
@@ -330,6 +361,29 @@ describe('the left/right call', () => {
     const tie = game.onTimer!(s, 'act', createRng(1), 999_999);
     expect(tie.round.call).toBeNull();
     expect(tie.history[0]!.callPoint).toBe(0);
+  });
+});
+
+describe('lock it in now', () => {
+  it('lets the psychic end the wait only once someone has locked in', () => {
+    const g = clue(start());
+    const [x] = guessersOf(g);
+    expect(() => act(g, g.round.psychic, { type: 'hurry' })).toThrow(/locked in/);
+    let s = act(g, x!, { type: 'dial', at: 30 });
+    s = act(s, x!, { type: 'lock', on: true });
+    // A move after the lock takes it back, so there's nothing to go with again.
+    const moved = act(s, guessersOf(s)[1]!, { type: 'dial', at: 60 });
+    expect(() => act(moved, moved.round.psychic, { type: 'hurry' })).toThrow(/locked in/);
+    s = act(s, s.round.psychic, { type: 'hurry' });
+    expect(s.round.guess).toBe(30);
+  });
+
+  it('lets the psychic end the call only once someone has called', () => {
+    const c = guessAt(withTarget(clue(start()), 30), 50);
+    expect(c.phase).toBe('call');
+    expect(() => act(c, c.round.psychic, { type: 'hurry' })).toThrow(/called/);
+    const s = act(c, callersOf(c)[0]!, { type: 'call', side: 'left' });
+    expect(act(s, s.round.psychic, { type: 'hurry' }).round.call).toBe('left');
   });
 });
 

@@ -39,6 +39,46 @@ function EndGameButton({ onEnd }: { onEnd: () => Promise<void> }) {
 }
 
 /**
+ * The host's End game button in the bar opens this: the sheet is the confirm, so one tap ends it.
+ */
+export function EndGameSheet({
+  open,
+  onClose,
+  send,
+}: {
+  open: boolean;
+  onClose: () => void;
+  send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
+}) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Sheet open={open} onClose={onClose} title="End this game?">
+      <section className="menu__block">
+        <p>Stop the game for everyone and go back to the lobby. It won&rsquo;t be scored.</p>
+        <div className="flex flex-wrap gap-2">
+          <Plaque
+            small
+            className="menu__end is-armed"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              const out = await send({ type: 'endGame' });
+              setBusy(false);
+              if (out) onClose();
+            }}
+          >
+            End it for everyone
+          </Plaque>
+          <Plaque small onClick={onClose}>
+            Keep playing
+          </Plaque>
+        </div>
+      </section>
+    </Sheet>
+  );
+}
+
+/**
  * Less frequent things: alerts for your move, move your seat to another phone, leave, switch day
  * and dark.
  */

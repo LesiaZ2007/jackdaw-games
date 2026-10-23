@@ -67,6 +67,8 @@ test('poker: the player to act folds, the hand is settled, and the next deals it
   const other = await phone(browser, byId[t.players.find((p: string) => p !== t.toAct)]!, code);
   await expect(actor.getByRole('region', { name: 'Your move' })).toBeVisible({ timeout: 60_000 });
   await expect(other.getByText(/^Waiting for /)).toBeVisible();
+  // Everyone still in the hand sees the moves, greyed out until it's their turn.
+  await expect(other.getByRole('button', { name: 'Fold', exact: true })).toBeDisabled();
   await actor.getByRole('button', { name: 'Fold', exact: true }).click();
 
   // The other player won the blinds: their moment, a countdown, then the next hand on its own.

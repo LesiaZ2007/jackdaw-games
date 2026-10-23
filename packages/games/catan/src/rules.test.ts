@@ -1,53 +1,13 @@
-import { GameError, createRng } from '@jackdaw/engine';
+import { GameError } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
 import { roadSpots, settlementSpots } from './build';
 import { layout } from './geometry';
-import { catan, type CatanAction, type CatanOptions, type CatanState } from './rules';
-import { RESOURCES, YIELD, countCards, emptyCards, type Cards } from './types';
+import { catan } from './rules';
+import { YIELD, countCards, type Cards } from './types';
+
+import { act, hand, playSetup, ready, seedFor, start } from './testkit';
 
 const game = catan;
-
-export function start(players: string[], o: Partial<CatanOptions> = {}, seed = 1): CatanState {
-  return game.setup({
-    playerIds: players,
-    options: { ...game.defaultOptions(players.length), ...o },
-    rng: createRng(seed),
-    now: 0,
-  });
-}
-
-export const act = (s: CatanState, pid: string, a: CatanAction, seed = 1, now = 0) =>
-  game.applyAction(s, pid, a, createRng(seed), now);
-
-/** A seed whose first two dice make `total`. */
-export function seedFor(total: number): number {
-  for (let seed = 1; ; seed++) {
-    const r = createRng(seed);
-    if (r.int(6) + 1 + r.int(6) + 1 === total) return seed;
-  }
-}
-
-/** Plays the whole opening: each player takes spread-out legal corners and the first road. */
-export function playSetup(s: CatanState): CatanState {
-  const L = layout(s.size);
-  let k = 0;
-  while (s.phase === 'setup') {
-    const pid = s.setup!.order[s.setup!.step]!;
-    if (!s.setup!.corner) {
-      const spots = settlementSpots(L, s.buildings, s.roads, pid, true);
-      s = act(s, pid, { type: 'build', kind: 'settlement', at: spots[(k++ * 7) % spots.length]! });
-    } else {
-      s = act(s, pid, {
-        type: 'build',
-        kind: 'road',
-        at: roadSpots(L, s.buildings, s.roads, pid, s.setup!.corner)[0]!,
-      });
-    }
-  }
-  return s;
-}
-
-export const hand = (c: Partial<Cards> = {}): Cards => ({ ...emptyCards(), ...c });
 
 const refused = (f: () => unknown) => expect(f).toThrow(GameError);
 
@@ -113,14 +73,6 @@ describe('setup', () => {
     expect(game.waitingOn!(s)).toEqual([s.turn]);
   });
 });
-
-/** A board after setup with a known hand and no cards, ready to roll. */
-function ready(players = ['a', 'b', 'c'], seed = 1) {
-  const s = playSetup(start(players, {}, seed));
-  const bank = { ...s.bank };
-  for (const p of s.seats) for (const r of RESOURCES) bank[r] += s.hands[p]![r];
-  return { ...s, hands: Object.fromEntries(s.seats.map((p) => [p, emptyCards()])), bank };
-}
 
 describe('rolling', () => {
   it('pays settlements 1 and cities 2, nothing from the robber’s tile', () => {

@@ -157,8 +157,12 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which Lesia prefers for 
   shared cards and pot on the baize. Cards are cream stock, charcoal ink, gules for hearts and
   diamonds, an azure lozengy back; they look the same day and dark. `poker.css`.
 - **UNO** uses Jackdaw's lobby, seated round its mat. In play it's a round paper mat with a double
-  ink rule, its ring in the colour in play and cream arrows turning the way play goes; both piles in
-  the middle. Cards are cream stock with a field in gules, or, vert or azure inside a cream double
+  ink rule, its ring a light tint of the colour in play with arrows in that colour turning slowly
+  the way play goes; both piles in the middle. Everyone's card count sits on a card-shaped sable
+  chit by their token, big enough to read across the table (gules at one card). On a laptop your
+  hand runs under the table in bigger cards, the dock beside it. On the TV the room stays Jackdaw's
+  table and the card table is printed flat in the colour in play inside a cream rule, with no wash,
+  glow or spinning ring (Lesia, 2026-10-23: the gradient "doesn't fit"). Cards are cream stock with a field in gules, or, vert or azure inside a cream double
   rule, the number in Grenze Gotisch; wilds are sable with a quartered shield; the back is sable
   with the jackdaw. They look the same day and dark. `uno.css`.
 - **Letterhoard** uses Jackdaw's lobby. A printed board of paper squares ruled in ink, bonus
@@ -200,7 +204,7 @@ Check every screen at **375, 768, 1280, 1920**.
     takes `min(100cqw, ratio × 100cqh)`, so a 16:10 laptop and a 16:9 TV both fill without
     clipping a seat.
   - **Make it lively:** the TV is the shared moment. Show what just happened big (UNO stamps
-    Skip! across the table, washes the room in the colour in play and keeps a play by play;
+    Skip! across the table, prints the table in the colour in play and keeps a play by play;
     Letterhoard drops the tiles in and says what the word means).
   - Check every TV change at 1920×1080, 1440×900 and 960×540.
 

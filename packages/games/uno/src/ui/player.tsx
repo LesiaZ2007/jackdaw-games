@@ -86,6 +86,11 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const mine = v.phase === 'play' && v.toAct === v.me;
   const can = new Set(playable(v));
   const meP = byId.get(v.me);
+  // The turn ended under you (the timer, say): put the colour picker and the UNO call away.
+  if (!mine && (pick !== null || armed)) {
+    setPick(null);
+    setArmed(false);
+  }
 
   const send = async (a: UnoAction) => {
     setBusy(true);
@@ -282,9 +287,14 @@ function Dock({
   const mine = v.toAct === v.me;
   const catchable = v.uncalled && v.uncalled !== v.me ? v.uncalled : null;
   const mustCall = v.uncalled === v.me;
-  // Down to two with a card that goes: say UNO as you play it.
-  const offerCall = mine && !v.pending && v.hand.length === 2 && canPlay;
+  // Down to two with a card that goes (a stack, or the card you drew): say UNO as you play it.
+  const offerCall = mine && v.hand.length === 2 && canPlay;
   const p = v.pending;
+  const arm = offerCall && (
+    <button type="button" className="uno-arm" aria-pressed={armed} onClick={() => setArmed(!armed)}>
+      {armed ? 'UNO! said' : 'Say UNO!'}
+    </button>
+  );
 
   let say: string;
   if (!mine) say = v.toAct ? `Waiting for ${name(v.toAct)}.` : '';
@@ -336,26 +346,21 @@ function Dock({
                   Challenge
                 </Plaque>
               )}
+              {arm}
             </>
           ) : v.drawn !== null ? (
-            <Plaque disabled={busy} onClick={() => void send({ type: 'pass' })}>
-              Keep it
-            </Plaque>
+            <>
+              <Plaque disabled={busy} onClick={() => void send({ type: 'pass' })}>
+                Keep it
+              </Plaque>
+              {arm}
+            </>
           ) : (
             <>
               <Plaque go={!canPlay} disabled={busy} onClick={() => void send({ type: 'draw' })}>
                 Draw
               </Plaque>
-              {offerCall && (
-                <button
-                  type="button"
-                  className="uno-arm"
-                  aria-pressed={armed}
-                  onClick={() => setArmed(!armed)}
-                >
-                  {armed ? 'UNO! said' : 'Say UNO!'}
-                </button>
-              )}
+              {arm}
             </>
           )}
         </div>

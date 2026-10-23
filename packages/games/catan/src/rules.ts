@@ -1,0 +1,641 @@
+import {
+  GameError,
+  type GameModule,
+  type GameResult,
+  type RecapEvent,
+  type Rng,
+} from '@jackdaw/engine';
+import { z } from 'zod';
+import { DEV_DECK, RESOURCE_COUNT, makeBoard, type BoardStyle } from './board';
+import { roadSpots, settlementSpots, type Buildings, type Roads } from './build';
+import { layout, type Layout } from './geometry';
+import { meta } from './meta';
+import {
+  RESOURCES,
+  YIELD,
+  countCards,
+  emptyCards,
+  type Board,
+  type Cards,
+  type DevCard,
+  type Resource,
+  type Size,
+} from './types';
+
+/**
+ * Catan for 3–6 players (5th edition, the 5–6 extension and catan.com's paired turns). Setup in
+ * snake order; each turn you roll (everyone with buildings on that number takes cards; a 7 means
+ * discards and the robber), then trade and build in any order and play one development card.
+ * First to the target on their own turn wins.
+ */
+
+const CLOCKS = ['Off', '1 minute', '2 minutes', '3 minutes'] as const;
+
+export const optionsSchema = z.object({
+  board: z.enum(['Balanced', 'Random', 'Beginner']).describe('Board'),
+  points: z.enum(['10', '8', '12']).describe('Points to win'),
+  robber: z.enum(['Standard', 'Friendly']).describe('Robber'),
+  turnTimer: z.enum(CLOCKS).describe('Turn timer'),
+});
+export type CatanOptions = z.infer<typeof optionsSchema>;
+
+const resource = z.enum(['lumber', 'brick', 'wool', 'grain', 'ore']);
+const cards = z.partialRecord(resource, z.number().int().min(0).max(120));
+const id = z.string().min(1).max(12);
+const pid = z.string().min(1).max(64);
+
+export const actionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('build'), kind: z.enum(['road', 'settlement', 'city']), at: id }),
+  z.object({ type: z.literal('roll') }),
+  z.object({ type: z.literal('discard'), cards }),
+  z.object({
+    type: z.literal('robber'),
+    tile: z.number().int().min(0).max(40),
+    victim: pid.nullable(),
+  }),
+  z.object({ type: z.literal('buy') }),
+  z.object({
+    type: z.literal('play'),
+    card: z.enum(['knight', 'roadBuilding', 'yearOfPlenty', 'monopoly']),
+    take: z.tuple([resource, resource]).optional(),
+    resource: resource.optional(),
+  }),
+  z.object({ type: z.literal('endRoads') }),
+  z.object({ type: z.literal('offer'), give: cards, want: cards, to: pid.nullable() }),
+  z.object({
+    type: z.literal('answer'),
+    offer: z.number().int(),
+    reply: z.enum(['accept', 'decline']),
+  }),
+  z.object({ type: z.literal('counter'), offer: z.number().int(), give: cards, want: cards }),
+  z.object({ type: z.literal('propose'), give: cards, want: cards }),
+  z.object({ type: z.literal('accept'), offer: z.number().int(), with: pid }),
+  z.object({ type: z.literal('withdraw'), offer: z.number().int() }),
+  z.object({
+    type: z.literal('bank'),
+    give: resource,
+    get: resource,
+    n: z.number().int().min(1).max(20),
+  }),
+  z.object({ type: z.literal('endTurn') }),
+]);
+export type CatanAction = z.infer<typeof actionSchema>;
+
+export type Phase = 'setup' | 'roll' | 'discard' | 'robber' | 'main' | 'roadBuilding' | 'over';
+
+/** A trade on the table. `give` is what its maker gives, `want` what they want back. */
+export interface Offer {
+  id: number;
+  from: string;
+  /** One player, or null for everyone (only the player on their turn offers to everyone). */
+  to: string | null;
+  give: Partial<Cards>;
+  want: Partial<Cards>;
+  replies: Record<string, 'accept' | 'decline'>;
+}
+
+/** The last robbery. `resource` is secret: only the thief and the victim see it. */
+export interface Robbery {
+  seq: number;
+  thief: string;
+  victim: string | null;
+  resource: Resource | null;
+}
+
+/** Longest Road or Largest Army changing hands (either side may be nobody). */
+export interface AwardChange {
+  seq: number;
+  kind: 'road' | 'army';
+  from: string | null;
+  to: string | null;
+}
+
+export interface CatanState {
+  size: Size;
+  board: Board;
+  /** Players in seat order; seat order sets each player's colour. */
+  seats: string[];
+  target: number;
+  friendly: boolean;
+  turnSecs: number;
+  phase: Phase;
+  /** Whose turn it is (player 1 at five and six). */
+  turn: string;
+  /** The paired player, during their phase (five and six players). */
+  paired: string | null;
+  /** Counts turns and paired phases; a development card bought in one can't be played in it. */
+  turnSeq: number;
+  round: number;
+  setup: { order: string[]; step: number; corner: string | null } | null;
+  dice: [number, number] | null;
+  rollSeq: number;
+  /** What each player took from the last roll. */
+  produced: Record<string, Partial<Cards>>;
+  hands: Record<string, Cards>;
+  bank: Cards;
+  dev: Record<string, { card: DevCard; bought: number }[]>;
+  deck: DevCard[];
+  devPlayed: boolean;
+  knights: Record<string, number>;
+  buildings: Buildings;
+  roads: Roads;
+  robber: number;
+  /** Cards each player still has to discard after a 7. */
+  discards: Record<string, number>;
+  /** Who moves the robber in the `robber` phase. */
+  robberBy: string | null;
+  /** Where play goes once the robber has moved (a knight before the roll goes back to rolling). */
+  afterRobber: 'roll' | 'main';
+  roadsToBuild: number;
+  longest: { holder: string | null; lengths: Record<string, number> };
+  army: string | null;
+  offers: Offer[];
+  offerSeq: number;
+  /** Numbers robberies, award changes and monopolies, for the screens' moments. */
+  eventSeq: number;
+  robbery: Robbery | null;
+  award: AwardChange | null;
+  monopoly: { seq: number; pid: string; resource: Resource; took: number } | null;
+  best: { haul: { pid: string; n: number } | null };
+  log: RecapEvent[];
+  actBy: number | null;
+  winner: string | null;
+}
+
+export interface CatanTableView {
+  size: Size;
+  board: Board;
+  seats: string[];
+  target: number;
+  friendly: boolean;
+  phase: Phase;
+  turn: string;
+  paired: string | null;
+  /** Who acts now in `main`, `roll` and `roadBuilding`. */
+  actor: string;
+  turnSeq: number;
+  round: number;
+  setup: CatanState['setup'];
+  dice: [number, number] | null;
+  rollSeq: number;
+  produced: Record<string, Partial<Cards>>;
+  handCounts: Record<string, number>;
+  devCounts: Record<string, number>;
+  knights: Record<string, number>;
+  buildings: Buildings;
+  roads: Roads;
+  robber: number;
+  bank: Cards;
+  deckLeft: number;
+  discards: Record<string, number>;
+  robberBy: string | null;
+  roadsToBuild: number;
+  longest: CatanState['longest'];
+  army: string | null;
+  /** Points everyone can see (without hidden victory point cards). */
+  points: Record<string, number>;
+  offers: Offer[];
+  robbery: Omit<Robbery, 'resource'> | null;
+  award: AwardChange | null;
+  monopoly: CatanState['monopoly'];
+  log: RecapEvent[];
+  actBy: number | null;
+  winner: string | null;
+  /** Everyone's victory point cards, once the game is over. */
+  vpCards: Record<string, number> | null;
+}
+
+export interface CatanView {
+  hand: Cards;
+  /** Your development cards, and whether each can be played right now. */
+  dev: { card: DevCard; playable: boolean }[];
+  /** Points including your hidden victory point cards. */
+  points: number;
+  /** The card you took or lost in the last robbery, if you were in it. */
+  stolen: { seq: number; resource: Resource; role: 'thief' | 'victim' } | null;
+}
+
+const LOG_KEEP = 1500;
+const LOG_SHOWN = 14;
+
+export const refuse = (code: string, message: string): never => {
+  throw new GameError(code, message);
+};
+
+export const layoutOf = (s: { size: Size }): Layout => layout(s.size);
+
+/** Who acts now: the paired player in their phase, else the player whose turn it is. */
+export const actor = (s: CatanState): string =>
+  s.phase === 'setup' ? s.setup!.order[s.setup!.step]! : (s.paired ?? s.turn);
+
+/** Victory points; `withHidden` adds victory point cards (only the owner and the end see those). */
+export function points(s: CatanState, pid: string, withHidden: boolean): number {
+  let n = 0;
+  for (const b of Object.values(s.buildings)) if (b.owner === pid) n += b.city ? 2 : 1;
+  if (s.longest.holder === pid) n += 2;
+  if (s.army === pid) n += 2;
+  if (withHidden) n += (s.dev[pid] ?? []).filter((d) => d.card === 'victoryPoint').length;
+  return n;
+}
+
+function logged(s: CatanState, text: string, who?: string): CatanState {
+  const ev: RecapEvent = { round: s.round, text, ...(who ? { actor: who } : {}) };
+  return { ...s, log: [...s.log, ev].slice(-LOG_KEEP) };
+}
+
+const add = (a: Cards, b: Partial<Cards>, sign = 1): Cards => {
+  const out = { ...a };
+  for (const r of RESOURCES) out[r] += sign * (b[r] ?? 0);
+  return out;
+};
+
+const covers = (hand: Cards, c: Partial<Cards>) => RESOURCES.every((r) => hand[r] >= (c[r] ?? 0));
+
+/** "2 wool and 1 ore". */
+export function cardsText(c: Partial<Cards>): string {
+  const parts = RESOURCES.filter((r) => c[r]).map((r) => `${c[r]} ${r}`);
+  return parts.length > 1
+    ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`
+    : (parts[0] ?? 'nothing');
+}
+
+function setup({ playerIds, options, rng }: Parameters<CatanModule['setup']>[0]): CatanState {
+  const size: Size = playerIds.length >= 5 ? 'big' : 'classic';
+  const board = makeBoard(size, options.board as BoardStyle, rng);
+  const first = rng.int(playerIds.length);
+  const ordered = [...playerIds.slice(first), ...playerIds.slice(0, first)];
+  const deck = rng.shuffle(
+    Object.entries(DEV_DECK[size]).flatMap(([c, n]) => Array<DevCard>(n).fill(c as DevCard)),
+  );
+  const n = RESOURCE_COUNT[size];
+  const s: CatanState = {
+    size,
+    board,
+    seats: playerIds,
+    target: Number(options.points),
+    friendly: options.robber === 'Friendly',
+    turnSecs: options.turnTimer === 'Off' ? 0 : Number.parseInt(options.turnTimer, 10) * 60,
+    phase: 'setup',
+    turn: ordered[0]!,
+    paired: null,
+    turnSeq: 0,
+    round: 0,
+    setup: { order: [...ordered, ...[...ordered].reverse()], step: 0, corner: null },
+    dice: null,
+    rollSeq: 0,
+    produced: {},
+    hands: Object.fromEntries(playerIds.map((p) => [p, emptyCards()])),
+    bank: { lumber: n, brick: n, wool: n, grain: n, ore: n },
+    dev: Object.fromEntries(playerIds.map((p) => [p, []])),
+    deck,
+    devPlayed: false,
+    knights: Object.fromEntries(playerIds.map((p) => [p, 0])),
+    buildings: {},
+    roads: {},
+    robber: board.tiles.findIndex((t) => t.terrain === 'desert'),
+    discards: {},
+    robberBy: null,
+    afterRobber: 'main',
+    roadsToBuild: 0,
+    longest: { holder: null, lengths: Object.fromEntries(playerIds.map((p) => [p, 0])) },
+    army: null,
+    offers: [],
+    offerSeq: 0,
+    eventSeq: 0,
+    robbery: null,
+    award: null,
+    monopoly: null,
+    best: { haul: null },
+    log: [],
+    actBy: null,
+    winner: null,
+  };
+  return logged(s, '{actor} places first', ordered[0]);
+}
+
+/** Opening placements: a settlement, then a road beside it; the second settlement pays out. */
+function setupBuild(s: CatanState, who: string, kind: string, at: string): CatanState {
+  const L = layoutOf(s);
+  const st = s.setup!;
+  if (!st.corner) {
+    if (kind !== 'settlement') return refuse('wrong-piece', 'Place a settlement first.');
+    if (!settlementSpots(L, s.buildings, s.roads, who, true).includes(at))
+      return refuse('bad-spot', 'You can’t build a settlement there.');
+    let next: CatanState = {
+      ...s,
+      buildings: { ...s.buildings, [at]: { owner: who, city: false } },
+      setup: { ...st, corner: at },
+    };
+    if (st.step >= st.order.length / 2) {
+      const take = emptyCards();
+      for (const t of L.corners[at]!.tiles) {
+        const r = YIELD[s.board.tiles[t]!.terrain];
+        if (r && next.bank[r] > take[r]) take[r]++;
+      }
+      next = {
+        ...next,
+        hands: { ...next.hands, [who]: add(next.hands[who]!, take) },
+        bank: add(next.bank, take, -1),
+      };
+    }
+    return next;
+  }
+  if (kind !== 'road') return refuse('wrong-piece', 'Now place a road beside your settlement.');
+  if (!roadSpots(L, s.buildings, s.roads, who, st.corner).includes(at))
+    return refuse('bad-spot', 'The road must touch the settlement you just placed.');
+  const roads = { ...s.roads, [at]: who };
+  const step = st.step + 1;
+  if (step < st.order.length) return { ...s, roads, setup: { ...st, step, corner: null } };
+  return logged(
+    { ...s, roads, setup: null, phase: 'roll', turn: st.order[0]!, turnSeq: 1, round: 1 },
+    'Round 1',
+  );
+}
+
+function roll(s: CatanState, who: string, rng: Rng): CatanState {
+  const dice: [number, number] = [rng.int(6) + 1, rng.int(6) + 1];
+  const total = dice[0] + dice[1];
+  let next: CatanState = { ...s, dice, rollSeq: s.rollSeq + 1, produced: {} };
+  next = logged(next, `{actor} rolled ${total}`, who);
+  if (total === 7) {
+    const discards: Record<string, number> = {};
+    for (const p of s.seats) {
+      const n = countCards(s.hands[p]!);
+      if (n > 7) discards[p] = Math.floor(n / 2);
+    }
+    return {
+      ...next,
+      discards,
+      phase: Object.keys(discards).length ? 'discard' : 'robber',
+      robberBy: who,
+      afterRobber: 'main',
+    };
+  }
+  return { ...produce(next, total), phase: 'main' };
+}
+
+/** Pays out a roll. A resource the bank can't cover goes to nobody, unless only one is owed it. */
+function produce(s: CatanState, total: number): CatanState {
+  const L = layoutOf(s);
+  const owed: Partial<Record<Resource, Record<string, number>>> = {};
+  s.board.tiles.forEach((t, i) => {
+    const r = YIELD[t.terrain];
+    if (t.number !== total || i === s.robber || !r) return;
+    for (const c of L.tiles[i]!.corners) {
+      const b = s.buildings[c];
+      if (!b) continue;
+      const m = (owed[r] ??= {});
+      m[b.owner] = (m[b.owner] ?? 0) + (b.city ? 2 : 1);
+    }
+  });
+  const hands = { ...s.hands };
+  const bank = { ...s.bank };
+  const produced: Record<string, Partial<Cards>> = {};
+  for (const r of RESOURCES) {
+    const m = owed[r];
+    if (!m) continue;
+    const owners = Object.keys(m);
+    const sum = owners.reduce((n, p) => n + m[p]!, 0);
+    if (sum > bank[r] && owners.length > 1) continue;
+    for (const p of owners) {
+      const n = Math.min(m[p]!, bank[r]);
+      if (!n) continue;
+      bank[r] -= n;
+      hands[p] = { ...hands[p]!, [r]: hands[p]![r] + n };
+      produced[p] = { ...produced[p], [r]: n };
+    }
+  }
+  let best = s.best;
+  for (const [p, c] of Object.entries(produced)) {
+    const n = countCards(c);
+    if (!best.haul || n > best.haul.n) best = { ...best, haul: { pid: p, n } };
+  }
+  return { ...s, hands, bank, produced, best };
+}
+
+function discard(s: CatanState, who: string, c: Partial<Cards>): CatanState {
+  const owe = s.discards[who];
+  if (!owe) return refuse('no-discard', 'You don’t need to discard.');
+  if (countCards(c) !== owe) return refuse('wrong-count', `Discard exactly ${owe} cards.`);
+  if (!covers(s.hands[who]!, c)) return refuse('not-yours', 'You don’t have those cards.');
+  const discards = { ...s.discards };
+  delete discards[who];
+  const next = logged(
+    {
+      ...s,
+      hands: { ...s.hands, [who]: add(s.hands[who]!, c, -1) },
+      bank: add(s.bank, c),
+      discards,
+    },
+    `{actor} discarded ${owe}`,
+    who,
+  );
+  return Object.keys(discards).length ? next : { ...next, phase: 'robber' };
+}
+
+/** Tiles the robber may move to (a friendly robber spares players on 2 points or fewer). */
+export function robberTiles(s: CatanState, who: string): number[] {
+  const L = layoutOf(s);
+  const all = s.board.tiles.map((_, i) => i).filter((i) => i !== s.robber);
+  if (!s.friendly) return all;
+  const spared = (i: number) =>
+    L.tiles[i]!.corners.some((c) => {
+      const b = s.buildings[c];
+      return b && b.owner !== who && points(s, b.owner, false) <= 2;
+    });
+  const ok = all.filter((i) => !spared(i));
+  return ok.length ? ok : s.board.tiles.flatMap((t, i) => (t.terrain === 'desert' ? [i] : []));
+}
+
+/** Players with a building on a tile, other than `who`. */
+export function victimsAt(s: CatanState, tile: number, who: string): string[] {
+  const L = layoutOf(s);
+  const out = new Set<string>();
+  for (const c of L.tiles[tile]!.corners) {
+    const b = s.buildings[c];
+    if (b && b.owner !== who) out.add(b.owner);
+  }
+  return [...out];
+}
+
+function moveRobber(
+  s: CatanState,
+  who: string,
+  tile: number,
+  victim: string | null,
+  rng: Rng,
+): CatanState {
+  if (tile >= s.board.tiles.length || !robberTiles(s, who).includes(tile))
+    return refuse(
+      'bad-tile',
+      tile === s.robber ? 'Move the robber to a different tile.' : 'The robber can’t go there.',
+    );
+  const victims = victimsAt(s, tile, who);
+  if (victim !== null && !victims.includes(victim))
+    return refuse('bad-victim', 'You can only rob a player with a building on that tile.');
+  if (victim === null && victims.some((p) => countCards(s.hands[p]!) > 0))
+    return refuse('pick-victim', 'Choose who to rob.');
+  let hands = s.hands;
+  let resource: Resource | null = null;
+  if (victim && countCards(s.hands[victim]!) > 0) {
+    const pool = RESOURCES.flatMap((r) => Array<Resource>(s.hands[victim]![r]).fill(r));
+    resource = rng.pick(pool);
+    hands = {
+      ...hands,
+      [victim]: { ...hands[victim]!, [resource]: hands[victim]![resource] - 1 },
+      [who]: { ...hands[who]!, [resource]: hands[who]![resource] + 1 },
+    };
+  }
+  const seq = s.eventSeq + 1;
+  const next: CatanState = {
+    ...s,
+    hands,
+    robber: tile,
+    phase: s.afterRobber,
+    robberBy: null,
+    eventSeq: seq,
+    robbery: { seq, thief: who, victim, resource },
+  };
+  return logged(
+    next,
+    victim ? `{actor} moved the robber and robbed {${victim}}` : '{actor} moved the robber',
+    who,
+  );
+}
+
+function applyAction(s: CatanState, who: string, a: CatanAction, rng: Rng): CatanState {
+  if (s.phase === 'over') return refuse('over', 'The game is over.');
+  if (!s.seats.includes(who)) return refuse('not-playing', 'You’re not in this game.');
+  if (s.phase === 'setup') {
+    if (who !== actor(s)) return refuse('not-your-turn', 'It’s not your turn to place.');
+    if (a.type !== 'build') return refuse('wrong-phase', 'Place your opening pieces first.');
+    return setupBuild(s, who, a.kind, a.at);
+  }
+  if (a.type === 'discard') {
+    if (s.phase !== 'discard') return refuse('wrong-phase', 'Nobody is discarding now.');
+    return discard(s, who, a.cards);
+  }
+  if (s.phase === 'discard') return refuse('wrong-phase', 'Waiting for discards.');
+  if (s.phase === 'robber') {
+    if (a.type !== 'robber') return refuse('wrong-phase', 'Move the robber first.');
+    if (who !== s.robberBy) return refuse('not-your-turn', 'It’s not your robber to move.');
+    return moveRobber(s, who, a.tile, a.victim, rng);
+  }
+  if (a.type === 'robber') return refuse('wrong-phase', 'The robber isn’t moving now.');
+  if (who !== actor(s)) return refuse('not-your-turn', 'It’s not your turn.');
+  if (s.phase === 'roll') {
+    if (a.type === 'roll') return roll(s, who, rng);
+    return refuse('wrong-phase', 'Roll the dice first.');
+  }
+  if (a.type === 'roll') return refuse('wrong-phase', 'You’ve already rolled.');
+  return refuse('wrong-phase', 'You can’t do that now.');
+}
+
+function getTableView(s: CatanState): CatanTableView {
+  const over = s.phase === 'over';
+  return {
+    size: s.size,
+    board: s.board,
+    seats: s.seats,
+    target: s.target,
+    friendly: s.friendly,
+    phase: s.phase,
+    turn: s.turn,
+    paired: s.paired,
+    actor: actor(s),
+    turnSeq: s.turnSeq,
+    round: s.round,
+    setup: s.setup,
+    dice: s.dice,
+    rollSeq: s.rollSeq,
+    produced: s.produced,
+    handCounts: Object.fromEntries(s.seats.map((p) => [p, countCards(s.hands[p]!)])),
+    devCounts: Object.fromEntries(s.seats.map((p) => [p, s.dev[p]!.length])),
+    knights: s.knights,
+    buildings: s.buildings,
+    roads: s.roads,
+    robber: s.robber,
+    bank: s.bank,
+    deckLeft: s.deck.length,
+    discards: s.discards,
+    robberBy: s.robberBy,
+    roadsToBuild: s.roadsToBuild,
+    longest: s.longest,
+    army: s.army,
+    points: Object.fromEntries(s.seats.map((p) => [p, points(s, p, over)])),
+    offers: s.offers,
+    robbery: s.robbery && {
+      seq: s.robbery.seq,
+      thief: s.robbery.thief,
+      victim: s.robbery.victim,
+    },
+    award: s.award,
+    monopoly: s.monopoly,
+    log: s.log.slice(-LOG_SHOWN),
+    actBy: s.actBy,
+    winner: s.winner,
+    vpCards: over
+      ? Object.fromEntries(
+          s.seats.map((p) => [p, s.dev[p]!.filter((d) => d.card === 'victoryPoint').length]),
+        )
+      : null,
+  };
+}
+
+/** Whether `pid` may play this development card right now. */
+export function canPlay(s: CatanState, pid: string, d: { card: DevCard; bought: number }): boolean {
+  if (d.card === 'victoryPoint' || s.devPlayed || d.bought === s.turnSeq) return false;
+  if (actor(s) !== pid) return false;
+  if (s.phase === 'roll') return d.card === 'knight' && !s.paired;
+  return s.phase === 'main';
+}
+
+function getPlayerView(s: CatanState, who: string): CatanView {
+  const r = s.robbery;
+  const role = r?.resource
+    ? r.thief === who
+      ? 'thief'
+      : r.victim === who
+        ? 'victim'
+        : null
+    : null;
+  return {
+    hand: s.hands[who] ?? emptyCards(),
+    dev: (s.dev[who] ?? []).map((d) => ({ card: d.card, playable: canPlay(s, who, d) })),
+    points: s.seats.includes(who) ? points(s, who, true) : 0,
+    stolen: r && role ? { seq: r.seq, resource: r.resource!, role } : null,
+  };
+}
+
+function waitingOn(s: CatanState): string[] {
+  switch (s.phase) {
+    case 'over':
+      return [];
+    case 'discard':
+      return Object.keys(s.discards);
+    case 'robber':
+      return [s.robberBy!];
+    default:
+      return [actor(s)];
+  }
+}
+
+function getResult(s: CatanState): GameResult | null {
+  if (s.phase !== 'over' || !s.winner) return null;
+  return { winners: [s.winner], summary: '', reveal: null, recap: s.log };
+}
+
+type CatanModule = GameModule<CatanState, CatanAction, CatanView, CatanTableView, CatanOptions>;
+
+export const catan: CatanModule = {
+  meta,
+  optionsSchema,
+  actionSchema,
+  defaultOptions: () => ({ board: 'Balanced', points: '10', robber: 'Standard', turnTimer: 'Off' }),
+  setup,
+  getPlayerView,
+  getTableView,
+  applyAction: (s, who, a, rng) => applyAction(s, who, a, rng),
+  getResult,
+  waitingOn,
+};

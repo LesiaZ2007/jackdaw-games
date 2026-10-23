@@ -200,6 +200,26 @@ export async function sendPush(
   }
 }
 
+/**
+ * The browsers' push services. The server posts to whatever endpoint a phone hands it, so only
+ * these hosts are accepted (Chrome and Android, Firefox, Edge and Windows, Safari and iOS).
+ */
+const PUSH_HOSTS = [
+  /^fcm\.googleapis\.com$/,
+  /(^|\.)push\.services\.mozilla\.com$/,
+  /\.notify\.windows\.com$/,
+  /^web\.push\.apple\.com$/,
+];
+
+function isPushHost(endpoint: string): boolean {
+  try {
+    const url = new URL(endpoint);
+    return url.protocol === 'https:' && PUSH_HOSTS.some((h) => h.test(url.hostname));
+  } catch {
+    return false;
+  }
+}
+
 /** Whether a value looks like a browser push subscription worth storing. */
 export function isPushSubscription(v: unknown): v is PushSubscriptionData {
   const s = v as PushSubscriptionData;
@@ -207,7 +227,7 @@ export function isPushSubscription(v: unknown): v is PushSubscriptionData {
     typeof s === 'object' &&
     s !== null &&
     typeof s.endpoint === 'string' &&
-    s.endpoint.startsWith('https://') &&
+    isPushHost(s.endpoint) &&
     s.endpoint.length < 1000 &&
     typeof s.keys?.p256dh === 'string' &&
     s.keys.p256dh.length < 200 &&

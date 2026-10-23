@@ -228,7 +228,10 @@ button.uno-card:focus-visible {
   inset: 3% 2%;
   border-radius: 50%;
   overflow: hidden;
-  background: radial-gradient(closest-side, var(--paper) 72%, transparent 72.5%), var(--uno-now);
+  /* The ring is a light tint of the colour in play, so it says the colour without shouting. */
+  background:
+    radial-gradient(closest-side, var(--paper) 72%, transparent 72.5%),
+    color-mix(in srgb, var(--uno-now) 42%, var(--paper));
   border: 2px solid var(--ink);
   box-shadow:
     inset 0 0 0 4px var(--paper),
@@ -242,11 +245,12 @@ button.uno-card:focus-visible {
   width: 100%;
   height: 100%;
   fill: none;
-  stroke: var(--uno-stock);
-  stroke-width: 1.4;
+  stroke: var(--uno-now);
+  stroke-width: 1.2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  animation: uno-turn 24s linear infinite;
+  opacity: 0.7;
+  animation: uno-turn 60s linear infinite;
 }
 .uno-arrows--back {
   animation-direction: reverse;
@@ -442,19 +446,28 @@ button.uno-card:focus-visible {
 .uno-seat__fan .uno-card + .uno-card {
   margin-left: calc(var(--w) * -0.7);
 }
+/* How many cards they hold, on a card-shaped chit big enough to read across the table. */
 .uno-seat__count {
   position: absolute;
-  right: -14%;
-  bottom: -6%;
-  min-width: 1.6em;
-  padding: 0 3px;
-  border-radius: 999px;
-  background: var(--uno-stock);
-  color: var(--uno-ink);
-  border: 1.5px solid var(--uno-ink);
-  font: 800 calc(var(--uno-tok) * 0.3) / 1.25 var(--font-code);
+  left: 78%;
+  bottom: -8%;
+  z-index: 1;
+  min-width: 1.2em;
+  padding: 0.12em 0.16em 0.06em;
+  border-radius: 0.16em;
+  background: var(--uno-k);
+  color: var(--uno-stock);
+  border: 2px solid var(--uno-stock);
+  box-shadow:
+    0 0 0 1.5px var(--uno-ink),
+    0 2px 0 var(--shadow);
+  font: 800 max(18px, calc(var(--uno-tok) * 0.5)) / 1 var(--font-code);
   font-variant-numeric: tabular-nums;
   text-align: center;
+}
+/* Down to one card: the chit turns gules. */
+.uno-seat--last .uno-seat__count {
+  background: var(--gules);
 }
 .uno-call {
   position: absolute;
@@ -708,8 +721,8 @@ button.uno-card:focus-visible {
 }
 
 /* ── TV ────────────────────────────────────────────────────────────────── */
-/* Sizes are TV pixels on the 1920-wide stage, read from across the room. The whole screen takes
-   the colour in play: a wash behind everything, the band round the felt, the ring of arrows. */
+/* Sizes are TV pixels on the 1920-wide stage, read from across the room. The room stays Jackdaw's
+   table; the card table on it is printed in the colour in play. */
 .uno-tv {
   position: relative;
   isolation: isolate;
@@ -722,15 +735,6 @@ button.uno-card:focus-visible {
   padding: 22px 48px 30px;
   box-sizing: border-box;
   overflow: hidden;
-}
-.uno-tv__wash {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-color: var(--uno-now);
-  opacity: 0.5;
-  mask-image: radial-gradient(ellipse 66% 74% at 38% 58%, #000 0%, transparent 78%);
-  transition: background-color 700ms;
 }
 .uno-tv__head {
   grid-column: 1;
@@ -762,8 +766,9 @@ button.uno-card:focus-visible {
   font-size: 34px;
 }
 
-/* The table: a paper oval banded in the colour in play, everyone round it. It keeps its shape
-   and sits centred in whatever room the screen leaves (a 16:10 laptop's stage is taller). */
+/* The table: an oval printed flat in the colour in play inside a cream rule (like the cards), on a
+   paper rim, everyone round it. It keeps its shape and sits centred in whatever room the screen
+   leaves (a 16:10 laptop's stage is taller). */
 .uno-tv__table {
   grid-column: 1;
   min-height: 0;
@@ -780,38 +785,15 @@ button.uno-card:focus-visible {
   position: absolute;
   inset: 10% 8%;
   border-radius: 50%;
-  background: var(--paper);
-  border: 3px solid var(--ink);
+  background: var(--uno-now);
+  border: 3px solid var(--uno-ink);
   box-shadow:
-    0 0 0 26px var(--uno-now),
-    0 0 0 29px var(--ink),
-    inset 0 0 0 10px var(--paper),
-    inset 0 0 0 13px var(--rule),
-    0 50px 90px -30px var(--shadow);
-  transition: box-shadow 600ms;
-}
-.uno-tv__ring {
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  width: 540px;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  fill: none;
-  stroke: var(--uno-now);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.85;
-  animation: uno-turn 30s linear infinite;
-  transition: stroke 600ms;
-}
-.uno-tv__ring circle {
-  stroke-dasharray: 2 10;
-  stroke-width: 2.4;
-}
-.uno-tv__ring--back {
-  animation-direction: reverse;
+    inset 0 0 0 16px var(--uno-now),
+    inset 0 0 0 20px var(--uno-stock),
+    0 0 0 18px var(--paper),
+    0 0 0 21px var(--ink),
+    0 20px 50px -24px var(--shadow);
+  transition: background-color 600ms;
 }
 .uno-tv__middle {
   position: absolute;
@@ -846,9 +828,10 @@ button.uno-card:focus-visible {
   translate: -50% 55%;
   z-index: 1;
   padding: 2px 14px;
-  background: var(--ink);
-  color: var(--paper);
-  font: 800 32px / 1.2 var(--font-code);
+  background: var(--uno-stock);
+  color: var(--uno-ink);
+  border: 3px solid var(--uno-ink);
+  font: 800 34px / 1.2 var(--font-code);
   font-variant-numeric: tabular-nums;
 }
 .uno-tv__pile {
@@ -938,17 +921,21 @@ button.uno-card:focus-visible {
   display: inline-grid;
   border-radius: 50%;
 }
+/* How many cards they hold, on a card-shaped chit big enough to read from the sofa. */
 .uno-tv__count {
   position: absolute;
-  right: -22px;
-  bottom: -6px;
-  min-width: 1.5em;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--uno-stock);
-  color: var(--uno-ink);
-  border: 3px solid var(--uno-ink);
-  font: 800 36px / 1.15 var(--font-code);
+  left: 76%;
+  bottom: -14px;
+  min-width: 1.15em;
+  padding: 8px 8px 4px;
+  border-radius: 8px;
+  background: var(--uno-k);
+  color: var(--uno-stock);
+  border: 4px solid var(--uno-stock);
+  box-shadow:
+    0 0 0 3px var(--uno-ink),
+    0 5px 0 var(--shadow);
+  font: 800 64px / 1 var(--font-code);
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -974,24 +961,21 @@ button.uno-card:focus-visible {
   font-family: var(--font-code);
   font-variant-numeric: tabular-nums;
 }
-/* Whoever plays next is lifted, haloed in the colour in play, and their name goes dark. */
+/* Whoever plays next is lifted with a printed ink ring round their token, and their name goes
+   dark. */
 .uno-tv__seat.is-turn {
   z-index: 3;
   scale: 1.14;
 }
 .uno-tv__seat.is-turn .uno-tv__tok {
   box-shadow:
-    0 0 0 8px var(--paper),
-    0 0 0 14px var(--uno-now),
-    0 0 60px 26px color-mix(in srgb, var(--uno-now) 55%, transparent);
-  animation: uno-tv-glow 1.6s ease-in-out infinite;
+    0 0 0 7px var(--paper),
+    0 0 0 13px var(--ink);
+  animation: uno-tv-lift 1.6s var(--ease-out) infinite;
 }
-@keyframes uno-tv-glow {
+@keyframes uno-tv-lift {
   50% {
-    box-shadow:
-      0 0 0 8px var(--paper),
-      0 0 0 18px var(--uno-now),
-      0 0 80px 36px color-mix(in srgb, var(--uno-now) 40%, transparent);
+    translate: 0 -8px;
   }
 }
 .uno-tv__seat.is-turn .uno-tv__name {
@@ -1000,8 +984,6 @@ button.uno-card:focus-visible {
 }
 .uno-tv__seat.is-last .uno-tv__count {
   background: var(--gules);
-  border-color: var(--uno-ink);
-  color: var(--on-fill);
 }
 .uno-tv__seat.is-won .uno-tv__tok {
   box-shadow:
@@ -1146,31 +1128,34 @@ button.uno-card:focus-visible {
   font-size: 27px;
 }
 
-/* Wide and landscape (a laptop): the table on the left, your hand and the dock beside it. */
+/* Wide and landscape (a laptop): the table on top, then your hand under it in bigger cards, with
+   the dock beside the hand. */
 @container game (min-width: 700px) and (orientation: landscape) {
   .uno--phone {
-    max-width: 1180px;
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
-    column-gap: var(--space-5);
-    row-gap: var(--space-3);
-  }
-  .uno--phone > .uno-stage {
-    grid-column: 1;
-    grid-row: 1 / -1;
-    place-items: center;
+    max-width: 1280px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: var(--space-6);
+    row-gap: var(--space-2);
   }
   .uno--phone > .uno__head,
-  .uno--phone > .uno-hand,
-  .uno--phone > .uno-dock {
-    grid-column: 2;
+  .uno--phone > .uno-stage {
+    grid-column: 1 / -1;
+  }
+  /* Room under your seat for its tag ("Skipped"), clear of your hand. */
+  .uno--phone > .uno-stage {
+    padding-bottom: 36px;
   }
   .uno--phone > .uno-hand {
+    --w: clamp(92px, 9cqw, 128px);
+    grid-column: 1;
     grid-row: 3;
     align-self: end;
   }
   .uno--phone > .uno-dock {
-    grid-row: 4;
+    grid-column: 2;
+    grid-row: 3;
+    align-self: end;
   }
 }
 
@@ -1195,7 +1180,6 @@ button.uno-card:focus-visible {
   .uno-tag,
   .jd-plaque.uno-uno,
   .jd-plaque.uno-catch,
-  .uno-tv__ring,
   .uno-tv__slap,
   .uno-tv__seat.is-turn .uno-tv__tok,
   .uno-tv__call,

@@ -10,6 +10,7 @@ import {
   guessersOf,
   callersOf,
   other,
+  placeTeams,
   rating,
   scoreOf,
   sideOf,
@@ -25,7 +26,12 @@ const opts = (o: Partial<WavelengthOptions> = {}, n = 6): WavelengthOptions => (
   ...o,
 });
 const start = (players = six, o: Partial<WavelengthOptions> = {}, seed = 1) =>
-  game.setup({ playerIds: players, options: opts(o, players.length), rng: createRng(seed), now: 0 });
+  game.setup({
+    playerIds: players,
+    options: opts(o, players.length),
+    rng: createRng(seed),
+    now: 0,
+  });
 const act = (s: WavelengthState, who: string, a: WavelengthAction, now = 0) =>
   game.applyAction(s, who, a, createRng(7), now);
 
@@ -44,14 +50,16 @@ function guessAt(s: WavelengthState, at: number, now = 0): WavelengthState {
   const [first, ...rest] = guessersOf(s);
   let next = act(s, first!, { type: 'dial', at }, now);
   next = act(next, first!, { type: 'lock', on: true }, now);
-  for (const id of rest) if (next.phase === 'guess') next = act(next, id, { type: 'lock', on: true }, now);
+  for (const id of rest)
+    if (next.phase === 'guess') next = act(next, id, { type: 'lock', on: true }, now);
   return next;
 }
 
 /** The whole other team calls `side`. */
 function callAll(s: WavelengthState, side: 'left' | 'right', now = 0): WavelengthState {
   let next = s;
-  for (const id of callersOf(s)) if (next.phase === 'call') next = act(next, id, { type: 'call', side }, now);
+  for (const id of callersOf(s))
+    if (next.phase === 'call') next = act(next, id, { type: 'call', side }, now);
   return next;
 }
 
@@ -122,6 +130,42 @@ describe('setup', () => {
     expect(s.goal).toBe(GOALS.Short.rounds);
   });
 
+  it('keeps the host’s chosen teams, rotating psychics in seat order', () => {
+    const sides = { a: 'moon', b: 'moon', c: 'moon', d: 'sun', e: 'sun', f: 'sun' } as const;
+    for (let seed = 1; seed < 10; seed++) {
+      const s = start(six, { teams: 'Chosen', sides }, seed);
+      expect(s.teams).toEqual(sides);
+      expect(s.order.moon).toEqual(['a', 'b', 'c']);
+      expect(s.order.sun).toEqual(['d', 'e', 'f']);
+    }
+  });
+
+  it('puts unplaced players on the smaller team and tops a team up to two', () => {
+    const s = start(six, { teams: 'Chosen', sides: { a: 'sun', b: 'sun', c: 'sun' } });
+    expect(['d', 'e', 'f'].every((id) => s.teams[id] === 'moon')).toBe(true);
+    const lopsided = placeTeams(
+      six,
+      { a: 'sun', b: 'sun', c: 'sun', d: 'sun', e: 'sun', f: 'moon' },
+      createRng(4),
+    );
+    expect(six.filter((id) => lopsided[id] === 'moon')).toHaveLength(2);
+    expect(lopsided.f).toBe('moon');
+    // Placings for players who have left are ignored.
+    expect(
+      Object.keys(placeTeams(['a', 'b', 'c', 'd'], { z: 'sun' }, createRng(1))).sort(),
+    ).toEqual(['a', 'b', 'c', 'd']);
+  });
+
+  it('deals random teams afresh when the option is Random, whatever was placed', () => {
+    const sides = { a: 'moon', b: 'moon', c: 'moon', d: 'sun', e: 'sun', f: 'sun' } as const;
+    const differs = [1, 2, 3, 4, 5].some(
+      (seed) =>
+        JSON.stringify(start(six, { teams: 'Random', sides }, seed).teams) !==
+        JSON.stringify(sides),
+    );
+    expect(differs).toBe(true);
+  });
+
   it('refuses Teams with fewer than four players', () => {
     expect(game.validateOptions!(opts({ mode: 'Teams' }), 3)).toMatch(/at least 4/);
     expect(game.validateOptions!(opts({ mode: 'Teams' }), 4)).toBeNull();
@@ -134,7 +178,9 @@ describe('the clue', () => {
     const s = start();
     const someoneElse = six.find((id) => id !== s.round.psychic)!;
     expect(() => act(s, someoneElse, { type: 'clue', card: 0, text: 'Soup' })).toThrow(GameError);
-    expect(() => act(s, s.round.psychic, { type: 'clue', card: 1, text: '   ' })).toThrow(/Type a clue/);
+    expect(() => act(s, s.round.psychic, { type: 'clue', card: 1, text: '   ' })).toThrow(
+      /Type a clue/,
+    );
     const g = act(s, s.round.psychic, { type: 'clue', card: 1, text: '  Hot   soup ' });
     expect(g.phase).toBe('guess');
     expect(g.round.clue).toBe('Hot soup');
@@ -190,7 +236,9 @@ describe('shared dial', () => {
 
 describe('everyone guesses', () => {
   it('keeps each dial private and averages them once all have locked', () => {
-    const g = clue(start(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], { guessing: 'Everyone guesses' }));
+    const g = clue(
+      start(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], { guessing: 'Everyone guesses' }),
+    );
     const gs = guessersOf(g);
     let s = act(g, gs[0]!, { type: 'dial', at: 20 });
     s = act(s, gs[1]!, { type: 'dial', at: 40 });
@@ -218,7 +266,12 @@ describe('everyone guesses', () => {
   });
 
   it('on a timeout averages only the dials that were turned', () => {
-    const g = clue(start(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], { guessing: 'Everyone guesses', timer: '60 seconds' }));
+    const g = clue(
+      start(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], {
+        guessing: 'Everyone guesses',
+        timer: '60 seconds',
+      }),
+    );
     const gs = guessersOf(g);
     let s = act(g, gs[0]!, { type: 'dial', at: 10 });
     s = act(s, gs[1]!, { type: 'dial', at: 30 });

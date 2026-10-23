@@ -14,6 +14,7 @@ const config: NextConfig = {
     '@jackdaw/game-uno',
     '@jackdaw/game-poker',
     '@jackdaw/game-secret-hitler',
+    '@jackdaw/game-wavelength',
     '@jackdaw/game-wordhoard',
   ],
   // Put metadata in <head> for every client so link previews work.

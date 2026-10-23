@@ -145,6 +145,7 @@ export function UnoTable({
           id === me && 'uno-seat--me',
           t.toAct === id && 'uno-seat--turn',
           won && 'uno-seat--won',
+          !done && count === 1 && 'uno-seat--last',
         ]
           .filter(Boolean)
           .join(' ');

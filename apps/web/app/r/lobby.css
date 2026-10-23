@@ -53,6 +53,40 @@
     display: grid;
   }
 }
+/* The host's End game: a stop square on phones, spelt out from tablets up. */
+.lobby-bar__end {
+  color: var(--gules);
+}
+.lobby-bar__end-text {
+  display: none;
+}
+/* One more button on a narrow phone: close up the bar so the menu still fits. */
+@media (max-width: 419px) {
+  .lobby-bar:has(.lobby-bar__end) {
+    gap: 6px;
+  }
+  .lobby-bar:has(.lobby-bar__end) .lobby-bar__actions {
+    gap: 4px;
+  }
+  .lobby-bar:has(.lobby-bar__end) .lobby-bar__actions .jd-iconbtn {
+    width: 40px;
+  }
+}
+@media (min-width: 768px) {
+  .lobby-bar__actions .lobby-bar__end {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    padding: 0 12px;
+  }
+  .lobby-bar__end-text {
+    display: inline;
+    font: 800 15px var(--font-plaque);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}
 @media (min-width: 420px) {
   .lobby-bar__label {
     display: inline;

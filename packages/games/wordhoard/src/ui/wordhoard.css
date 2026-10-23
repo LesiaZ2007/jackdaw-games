@@ -8,6 +8,11 @@
   --wh-bone: #efe4c6;
   --wh-bone-edge: #c4b285;
   --wh-tile-ink: #1d1d1c;
+  /* The pale double-letter square, mixed from azure and this paper white. */
+  --wh-dl-paper: #f7f7f5;
+  --wh-dl-ink: #1d1d1c;
+  /* An empty rack slot, dashed on the sable rack. */
+  --wh-slot-edge: rgba(246, 240, 225, 0.35);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -228,8 +233,8 @@ button.wh-sq:focus-visible {
   background: var(--azure);
 }
 .wh-sq--dl {
-  background: color-mix(in srgb, var(--azure) 42%, #f7f7f5);
-  color: #1d1d1c;
+  background: color-mix(in srgb, var(--azure) 42%, var(--wh-dl-paper));
+  color: var(--wh-dl-ink);
 }
 .wh-sq__label {
   font: 800 2.4cqw / 1 var(--font-plaque);
@@ -373,7 +378,7 @@ button.wh-sq:focus-visible {
     -6px 0 0 var(--or);
 }
 .wh-rack__slot.is-empty {
-  border: 1.5px dashed rgba(246, 240, 225, 0.35);
+  border: 1.5px dashed var(--wh-slot-edge);
 }
 .wh-dock__row {
   display: grid;
@@ -486,6 +491,15 @@ button.wh-sq:focus-visible {
 .wh-tv__moves li:first-child {
   font-weight: 800;
 }
+/* Square labels and tile values would be too small to read across the room: the fills say which
+   bonus a square is, and the phones show the values. */
+.wh--tv .wh-sq__label,
+.wh--tv .wh-tile__value,
+.wh-final--tv .wh-sq__label,
+.wh-final--tv .wh-tile__value,
+.wh-mean--tv .wh-tile__value {
+  display: none;
+}
 
 /* ── The TV as a move lands ───────────────────────────────────────────── */
 .wh-tv__board {
@@ -580,7 +594,7 @@ button.wh-sq:focus-visible {
   animation: wh-stamp 420ms var(--ease-out) both;
 }
 .wh-landing__score small {
-  font: 800 2cqw/1.3 var(--font-plaque);
+  font: 800 max(24px, 2cqw) / 1.3 var(--font-plaque);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }

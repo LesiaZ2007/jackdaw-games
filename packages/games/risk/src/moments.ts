@@ -31,22 +31,24 @@ export function battleMoment(
 ): Moment | null {
   if (!b?.ended) return null;
   const to = map.territories.find((t) => t.id === b.to)?.name ?? b.to;
+  // A run of Rolls is one fight: the verdict counts all of it, not just the last throw.
+  const lost = b.runLost ?? { attacker: b.attackerLost, defender: b.defenderLost };
   if (me === b.attacker)
     return {
       outcome: b.conquered ? 'win' : 'loss',
       title: b.conquered ? `${to} taken` : `Repelled at ${to}`,
-      detail: `You lost ${b.attackerLost}, ${nameOf(b.defender)} lost ${b.defenderLost}`,
+      detail: `You lost ${lost.attacker}, ${nameOf(b.defender)} lost ${lost.defender}`,
     };
   if (me === b.defender)
     return {
       outcome: b.conquered ? 'loss' : 'win',
       title: b.conquered ? `${to} lost` : `${to} held`,
-      detail: `You lost ${b.defenderLost}, ${nameOf(b.attacker)} lost ${b.attackerLost}`,
+      detail: `You lost ${lost.defender}, ${nameOf(b.attacker)} lost ${lost.attacker}`,
     };
   if (me !== null) return null;
   return {
     outcome: 'reveal',
     title: b.conquered ? `${nameOf(b.attacker)} takes ${to}` : `${to} holds`,
-    detail: `${nameOf(b.attacker)} lost ${b.attackerLost}, ${nameOf(b.defender)} lost ${b.defenderLost}`,
+    detail: `${nameOf(b.attacker)} lost ${lost.attacker}, ${nameOf(b.defender)} lost ${lost.defender}`,
   };
 }

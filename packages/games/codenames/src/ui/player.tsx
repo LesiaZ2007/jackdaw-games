@@ -243,6 +243,8 @@ function OperativeDesk({
           .filter(([, i]) => i === loupe)
           .map(([id]) => id)
       : [];
+  // The rules ask for at least one guess under each clue before the team can stop.
+  const guessed = (v.clues[v.clues.length - 1]?.guesses.length ?? 0) > 0;
   if (!canGuess) {
     return (
       <>
@@ -274,6 +276,7 @@ function OperativeDesk({
         <p className="cn-act__wait">
           Tap a word to suggest it to your team. It&rsquo;s guessed when most of you agree, or hold
           a word to guess it straight away.
+          {!guessed && ' You can end your turn after the first guess.'}
         </p>
       )}
       <div className="cn-act__row">
@@ -286,7 +289,13 @@ function OperativeDesk({
             Guess {word}
           </button>
         )}
-        <button type="button" className="cn-btn" onClick={() => void send({ type: 'pass' })}>
+        <button
+          type="button"
+          className="cn-btn"
+          disabled={!guessed}
+          title={guessed ? undefined : 'Make at least one guess first.'}
+          onClick={() => void send({ type: 'pass' })}
+        >
           End our turn
         </button>
       </div>

@@ -32,6 +32,7 @@ export const other = (t: Team): Team => (t === 'sun' ? 'moon' : 'sun');
 export type Side = 'left' | 'right';
 
 const MODES = ['Teams', 'Together'] as const;
+const PICKS = ['Random', 'Chosen'] as const;
 const GUESSING = ['Shared dial', 'Everyone guesses'] as const;
 const LENGTHS = ['Short', 'Standard', 'Long'] as const;
 const TIMERS = ['Off', '60 seconds', '2 minutes'] as const;
@@ -50,12 +51,16 @@ export const MIDDLE = 50;
 export const TARGET_MIN = 10;
 export const TARGET_MAX = 90;
 /** Time on the reveal before the next round starts by itself. */
-export const REVEAL_MS = 9_000;
+export const REVEAL_MS = 12_000;
 /** Longest clue, in characters. */
 export const CLUE_MAX = 60;
 
 export const optionsSchema = z.object({
   mode: z.enum(MODES).describe('Mode'),
+  /** Random: dealt afresh each game. Chosen: as the host placed everyone in the lobby. */
+  teams: z.enum(PICKS).describe('Teams'),
+  /** Chosen teams: player id -> team, as the host arranged them (the lobby draws this). */
+  sides: z.record(z.string(), z.enum(TEAMS)),
   guessing: z.enum(GUESSING).describe('Guessing'),
   length: z.enum(LENGTHS).describe('Length'),
   timer: z.enum(TIMERS).describe('Dial timer'),
@@ -218,6 +223,8 @@ const cleanClue = (text: string) => text.replace(/\s+/g, ' ').trim();
 export function defaultOptions(playerCount: number): WavelengthOptions {
   return {
     mode: playerCount >= TEAMS_MIN ? 'Teams' : 'Together',
+    teams: 'Random',
+    sides: {},
     guessing: 'Shared dial',
     length: 'Standard',
     timer: 'Off',
@@ -228,6 +235,37 @@ export function validateOptions(o: WavelengthOptions, playerCount: number): stri
   if (o.mode === 'Teams' && playerCount < TEAMS_MIN)
     return `Teams needs at least ${TEAMS_MIN} players. Try Together.`;
   return null;
+}
+
+/**
+ * Chosen teams for the players actually seated. The host's placings are kept (ids of players who
+ * left are ignored); anyone not placed joins the smaller team, and a team left with fewer than
+ * two takes players from the other at random so both have a psychic and a guesser.
+ */
+export function placeTeams(
+  playerIds: string[],
+  sides: Record<string, Team>,
+  rng: Rng,
+): Record<string, Team> {
+  const teams: Record<string, Team> = {};
+  const unplaced: string[] = [];
+  for (const id of playerIds) {
+    const t = sides[id];
+    if (t === 'sun' || t === 'moon') teams[id] = t;
+    else unplaced.push(id);
+  }
+  const members = (t: Team) => playerIds.filter((id) => teams[id] === t);
+  for (const id of rng.shuffle(unplaced)) {
+    const sun = members('sun').length;
+    const moon = members('moon').length;
+    teams[id] = sun < moon ? 'sun' : moon < sun ? 'moon' : rng.pick(TEAMS);
+  }
+  for (const t of TEAMS) {
+    while (members(t).length < 2 && members(other(t)).length > 2) {
+      teams[rng.pick(members(other(t)))] = t;
+    }
+  }
+  return teams;
 }
 
 /** Everyone guessing this round: the guessing team but its psychic. */
@@ -407,9 +445,7 @@ function force(s: WavelengthState, now: number): WavelengthState {
   if (s.phase === 'guess') {
     if (s.guessing === 'shared') return lockGuess(s, s.round.dial, now);
     const guessers = guessersOf(s);
-    const set = guessers
-      .map((id) => s.round.dials[id])
-      .filter((v): v is number => v !== undefined);
+    const set = guessers.map((id) => s.round.dials[id]).filter((v): v is number => v !== undefined);
     return lockGuess(s, average(set), now);
   }
   if (s.phase === 'call') return checkCalls(s, now, true);
@@ -466,7 +502,11 @@ export const wavelength: GameModule<
     const mode = options.mode === 'Teams' && playerIds.length >= TEAMS_MIN ? 'teams' : 'together';
     const teams: Record<string, Team> = {};
     const order: Record<Team, string[]> = { sun: [], moon: [] };
-    if (mode === 'teams') {
+    if (mode === 'teams' && options.teams === 'Chosen') {
+      // As the host placed them; each team takes the psychic's seat in seat order.
+      Object.assign(teams, placeTeams(playerIds, options.sides, rng));
+      for (const id of playerIds) order[teams[id]!].push(id);
+    } else if (mode === 'teams') {
       // Dealt evenly at random; with an odd number, the first team dealt gets the extra player.
       const first = rng.pick(TEAMS);
       rng.shuffle(playerIds).forEach((id, i) => {

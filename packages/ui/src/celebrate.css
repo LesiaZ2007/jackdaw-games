@@ -3,18 +3,6 @@
  * Built from tokens.css; imported by celebrate.tsx. Every size is in --vu so the TV variant
  * is the same drawing at twice the scale.
  */
-:root {
-  /* Green text that stays readable on dark paper */
-  --win-ink: var(--vert);
-}
-:root[data-theme='dark'] {
-  --win-ink: #7fbf9a;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --win-ink: #7fbf9a;
-  }
-}
 
 /* ── Verdict: a heraldic banner with a wax seal pressed onto it ── */
 .jd-verdict {
@@ -74,7 +62,7 @@
 }
 .jd-verdict__wax circle {
   fill: none;
-  stroke: rgba(36, 33, 30, 0.35);
+  stroke: color-mix(in srgb, var(--print-ink) 35%, transparent);
   stroke-width: 2.5;
 }
 .jd-verdict__face {
@@ -90,7 +78,7 @@
   place-items: center;
   width: calc(var(--vu) * 56);
   height: calc(var(--vu) * 56);
-  color: #24211e;
+  color: var(--print-ink);
 }
 .jd-verdict--loss .jd-verdict__mark,
 .jd-verdict--draw .jd-verdict__mark {
@@ -110,7 +98,7 @@
   color: var(--on-fill);
   background: var(--v-fill);
   border: 2px solid var(--ink);
-  outline: 1px solid rgba(246, 240, 225, 0.6);
+  outline: 1px solid color-mix(in srgb, var(--on-fill) 60%, transparent);
   outline-offset: calc(var(--vu) * -7);
   box-shadow: 0 calc(var(--vu) * 4) 0 var(--shadow);
   animation: jd-unfurl 560ms 240ms var(--ease-out) both;
@@ -122,7 +110,7 @@
   top: calc(var(--vu) * 14);
   bottom: calc(var(--vu) * -14);
   width: calc(var(--vu) * 46);
-  background: color-mix(in srgb, var(--v-fill) 72%, #000);
+  background: color-mix(in srgb, var(--v-fill) 72%, var(--shade-base));
   border: 2px solid var(--ink);
   animation: jd-tail 420ms 620ms var(--ease-out) both;
 }

@@ -14,6 +14,17 @@ export interface RoomStorage {
   del(key: string): Promise<void>;
   /** Delete only if the key still holds `value` (used to release locks safely). */
   delIfEquals(key: string, value: string): Promise<void>;
+  /**
+   * Set `key` only while `guardKey` still holds `guardValue` (a save under a lock that may have
+   * expired). Returns false, writing nothing, when the guard has gone or changed.
+   */
+  setIfHeld(
+    guardKey: string,
+    guardValue: string,
+    key: string,
+    value: string,
+    ttlSeconds: number,
+  ): Promise<boolean>;
   hset(key: string, field: string, value: string, ttlSeconds: number): Promise<void>;
   hgetall(key: string): Promise<Record<string, string>>;
 }
@@ -55,6 +66,17 @@ export class MemoryStorage implements RoomStorage {
   async delIfEquals(key: string, value: string) {
     if (this.live(this.strings, key)?.value === value) this.strings.delete(key);
   }
+  async setIfHeld(
+    guardKey: string,
+    guardValue: string,
+    key: string,
+    value: string,
+    ttlSeconds: number,
+  ) {
+    if (this.live(this.strings, guardKey)?.value !== guardValue) return false;
+    await this.set(key, value, ttlSeconds);
+    return true;
+  }
   async hset(key: string, field: string, value: string, ttlSeconds: number) {
     const entry = this.live(this.hashes, key) ?? { fields: new Map(), expiresAt: 0 };
     entry.fields.set(field, value);
@@ -95,6 +117,10 @@ export class UpstashStorage implements RoomStorage {
       cache: 'no-store',
     });
     if (!res.ok) throw new Error(`Upstash pipeline failed: ${res.status}`);
+    // Upstash answers 200 with an error per command that failed.
+    const results = (await res.json()) as { error?: string }[];
+    const failed = results.find((r) => r?.error);
+    if (failed) throw new Error(`Upstash pipeline failed: ${failed.error}`);
   }
 
   get(key: string) {
@@ -119,6 +145,25 @@ export class UpstashStorage implements RoomStorage {
       key,
       value,
     ]);
+  }
+  async setIfHeld(
+    guardKey: string,
+    guardValue: string,
+    key: string,
+    value: string,
+    ttlSeconds: number,
+  ) {
+    const done = await this.command<number>([
+      'EVAL',
+      "if redis.call('GET', KEYS[1]) == ARGV[1] then redis.call('SET', KEYS[2], ARGV[2], 'EX', ARGV[3]) return 1 else return 0 end",
+      2,
+      guardKey,
+      key,
+      guardValue,
+      value,
+      ttlSeconds,
+    ]);
+    return done === 1;
   }
   async hset(key: string, field: string, value: string, ttlSeconds: number) {
     await this.pipeline([

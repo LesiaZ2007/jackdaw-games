@@ -279,9 +279,74 @@ describe('http handlers', () => {
   });
 });
 
+describe('staying up when things go wrong', () => {
+  it("keeps the lobby usable when a game's timer throws, so the host can still end it", async () => {
+    const broken = {
+      ...rps,
+      nextTimer: () => ({ id: 'tick', at: 0 }),
+      onTimer: () => {
+        throw new TypeError('boom');
+      },
+    };
+    const { runtime, code } = await (async () => {
+      const env = setup({ games: { rps: broken } });
+      const { code } = await env.runtime.create({ token: TOKENS.ana, name: 'Jay', gameId: 'rps' });
+      await env.runtime.post(code, TOKENS.ben, { type: 'join', name: 'Crow' });
+      return { ...env, code };
+    })();
+    const errors = console.error;
+    console.error = () => {};
+    try {
+      await runtime.post(code, TOKENS.ana, { type: 'start' });
+      expect((await snap(runtime.poll(code, { token: TOKENS.ben }))).status).toBe('in_game');
+      await runtime.post(code, TOKENS.ben, { type: 'chat', text: 'stuck?' });
+      const ended = await runtime.post(code, TOKENS.ana, { type: 'endGame' });
+      expect(ended.status).toBe('waiting');
+    } finally {
+      console.error = errors;
+    }
+  });
+
+  it("doesn't save over someone else's change when its lock ran out mid-request", async () => {
+    const { runtime, storage, code } = await threePlayerLobby();
+    const get = storage.get.bind(storage);
+    let steal = true;
+    storage.get = async (key) => {
+      const value = await get(key);
+      // A stalled instance: its lock expires and another request takes it before it saves.
+      if (steal && key.startsWith('jackdaw:lobby:')) {
+        steal = false;
+        await storage.set(`jackdaw:lock:${code}`, 'someone-else', 10);
+      }
+      return value;
+    };
+    await expect(runtime.post(code, TOKENS.ben, { type: 'rename', name: 'Rook' })).rejects.toThrow(
+      /busy/,
+    );
+    await storage.del(`jackdaw:lock:${code}`);
+    const s = await snap(runtime.poll(code, { token: TOKENS.ben }));
+    expect(s.players.map((p) => p.name)).toEqual(['Jay', 'Crow', 'Kite']);
+  });
+
+  it('turns away an address that keeps guessing lobby codes', async () => {
+    const { runtime, code } = await threePlayerLobby();
+    const http = createHttpHandlers(runtime);
+    const from = (ip: string, at: string) =>
+      new Request(`http://x/api/lobby/${at}`, { headers: { 'x-real-ip': ip } });
+    for (let i = 0; i < 12; i++) {
+      expect((await http.getLobby(from('10.0.0.9', 'ZZZZ'), 'ZZZZ')).status).toBe(404);
+    }
+    expect((await http.getLobby(from('10.0.0.9', code), code)).status).toBe(429);
+    expect((await http.getLobby(from('10.0.0.8', code), code)).status).toBe(200);
+  });
+});
+
 describe('your-move notifications', () => {
   // Stand-ins only: the send function is faked, so nothing is encrypted or signed here.
-  const sub = { endpoint: 'https://push.example.net/ben', keys: { p256dh: 'p256', auth: 'auth' } };
+  const sub = {
+    endpoint: 'https://fcm.googleapis.com/fcm/send/ben',
+    keys: { p256dh: 'p256', auth: 'auth' },
+  };
   const vapid = { publicKey: 'test', privateKey: 'test', subject: 'mailto:x@example.com' };
 
   it('pushes to a subscribed player each time the game starts waiting on them', async () => {
@@ -297,6 +362,10 @@ describe('your-move notifications', () => {
     await runtime.post(code, TOKENS.ben, { type: 'join', name: 'Crow' });
     await runtime.post(code, TOKENS.ana, { type: 'setOptions', options: { rounds: 3 } });
     await expect(runtime.setPush(code, TOKENS.ben, { endpoint: 'http://x' })).rejects.toThrow();
+    // Only the browsers' push services: the server posts wherever the endpoint points.
+    await expect(
+      runtime.setPush(code, TOKENS.ben, { ...sub, endpoint: 'https://169.254.169.254/latest' }),
+    ).rejects.toThrow();
     await runtime.setPush(code, TOKENS.ben, sub);
 
     let s = await runtime.post(code, TOKENS.ana, { type: 'start' });
@@ -312,6 +381,20 @@ describe('your-move notifications', () => {
     s = await runtime.post(code, TOKENS.ben, pick(s, 'rock'));
     await runtime.post(code, TOKENS.ana, pick(s, 'paper'));
     expect(sent).toHaveLength(2);
+  });
+
+  it('stops notifying the old device once the seat moves with a rejoin code', async () => {
+    const sent: string[] = [];
+    const { runtime } = setup({
+      push: { vapid, send: async (s) => (sent.push(s.endpoint), 'ok' as const) },
+    });
+    const { code } = await runtime.create({ token: TOKENS.ana, name: 'Jay', gameId: 'rps' });
+    await runtime.post(code, TOKENS.ben, { type: 'join', name: 'Crow' });
+    await runtime.setPush(code, TOKENS.ben, sub);
+    const made = await runtime.post(code, TOKENS.ben, { type: 'createRejoinCode' });
+    await runtime.redeemRejoin(code, TOKENS.cy, made.rejoinCode!.code);
+    await runtime.post(code, TOKENS.ana, { type: 'start' });
+    expect(sent).toEqual([]);
   });
 
   it('refuses subscriptions when notifications aren’t set up', async () => {

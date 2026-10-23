@@ -128,6 +128,11 @@ export interface LobbySeatsProps {
   /** A seat with an `action` was tapped (your own opens your look; the host's opens remove). */
   onSeat?: (id: string) => void;
   reactions?: Reaction[];
+  /**
+   * Host only: change the game's options from the seats (Wavelength: placing players on teams in
+   * an option the options panel doesn't draw).
+   */
+  setOptions?: (options: Record<string, unknown>) => void;
 }
 
 /** What the platform adds to the engine's screen props. */

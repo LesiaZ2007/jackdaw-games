@@ -474,6 +474,15 @@
   background: var(--ink);
   color: var(--paper);
 }
+/* What you can't do right now is greyed out, not hidden. */
+.pk-dock__presets button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pk-bet-dock.is-waiting .pk-stepper,
+.pk-bet-dock.is-waiting .pk-dock__presets {
+  opacity: 0.6;
+}
 .pk-stepper {
   display: grid;
   grid-template-columns: 44px 1fr 44px;

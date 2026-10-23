@@ -441,6 +441,23 @@ selected teams", and allowed merging to main once done and tested. Design in
   the reveal, and the target never public before it.
 - Still open: group-written spectrum pairs need a text option in the lobby.
 
+### UNO polish, poker's greyed moves, the host's End game (2026-10-23, branch `feat/uno-polish`)
+
+- **UNO on a laptop**: your hand runs under the table in bigger cards (92–128px), the dock beside it.
+- **UNO mat** (phone and laptop): the ring is a light tint of the colour in play, the arrows in that
+  colour turn slowly (60s) and quietly.
+- **UNO TV** back in the compendium look (Lesia: the gradient "doesn't fit", the spinning circle
+  "is just random"): no wash, no glows, no spinning ring. The table is printed flat in the colour in
+  play inside a cream rule on a paper rim; whoever plays next gets an ink ring and a small lift.
+- **Card counts** everywhere are a card-shaped sable chit by the token (TV 64px, phone at least
+  18px), gules at one card.
+- **Poker**: the betting dock stays up while you're in the hand. What you can't do right now is
+  greyed out, not hidden: everything while someone else acts, the raise row when you can only call
+  or fold ("No raise now"), and ½ pot / Pot when they come to the same as Min or All in.
+- **The host's End game**: a button in the bar during any game (a stop square on phones, "End game"
+  from 768px), opening a confirm sheet ("End it for everyone"). The two-tap one in the menu stays.
+  e2e covers both, and that nobody else gets the button.
+
 ## Next
 
 1. Lesia reviews and playtests Phase 1 on the Vercel preview, then merges `feat/phase-1` to `main`. Production then serves it.

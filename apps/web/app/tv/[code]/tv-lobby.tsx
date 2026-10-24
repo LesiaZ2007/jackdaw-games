@@ -152,6 +152,7 @@ export function TvLobby({ code }: { code: string }) {
     avatar: p.avatar,
     host: p.id === snapshot.hostId,
     away: !p.online,
+    bot: p.bot,
     landing: arrivals.has(p.id),
   }));
   const next = catalogEntry(snapshot.selectedGameId);

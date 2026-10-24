@@ -15,12 +15,15 @@ export function TurnStrip({
   players,
   now,
   myPoints,
+  diceWaiting = false,
 }: {
   t: CatanTableView;
   me: string | null;
   players: ScreenPlayer[];
   now: () => number;
   myPoints: number | null;
+  /** The big roll is still on its way to the strip. */
+  diceWaiting?: boolean;
 }) {
   const name = namer(players);
   const who = t.phase === 'setup' || t.phase === 'robber' || t.phase === 'discard' ? null : t.actor;
@@ -62,7 +65,7 @@ export function TurnStrip({
         </small>
       </p>
       <Clock at={t.actBy} now={now} />
-      <Dice dice={t.dice} seq={t.rollSeq} />
+      <Dice dice={t.dice} seq={t.rollSeq} waiting={diceWaiting} />
       {myPoints !== null && (
         <span className="ctn-mypts" title="Your points, with any hidden victory point cards">
           <b>{myPoints}</b>

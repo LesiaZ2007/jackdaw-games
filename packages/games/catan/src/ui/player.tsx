@@ -28,6 +28,7 @@ import {
   buildOptions,
 } from './sheets';
 import { waitingForYou } from '../trade';
+import { RollMoment } from './roll';
 import { Opponents, TurnStrip } from './strip';
 import './catan.css';
 import './phone.css';
@@ -170,6 +171,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     if (m) moment = { m, done: dropAward };
   }
   const meP = players.find((x) => x.id === me);
+  // Each roll takes the screen for a moment, then the dice glide into the strip.
+  const [rolling, rolled] = useMoment(t.rollSeq);
 
   // The dock: what you can do now.
   let dock;
@@ -389,7 +392,23 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 
   return (
     <div className="ctn ctn--phone">
-      <TurnStrip t={t} me={me} players={players} now={now} myPoints={seated ? v!.points : null} />
+      <TurnStrip
+        t={t}
+        me={me}
+        players={players}
+        now={now}
+        myPoints={seated ? v!.points : null}
+        diceWaiting={rolling !== null}
+      />
+      {rolling !== null && t.dice && (
+        <RollMoment
+          key={rolling}
+          dice={t.dice}
+          seq={t.rollSeq}
+          target=".ctn-strip .ctn-dice"
+          onDone={rolled}
+        />
+      )}
       <Opponents t={t} me={me} players={players} reactions={reactions} />
       <div className="ctn-stage">
         <CatanBoard

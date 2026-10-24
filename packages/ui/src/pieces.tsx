@@ -323,7 +323,8 @@ export function SeatTrack({
               className="jd-who"
               style={transitions ? { viewTransitionName: seatTransition(seat.id).name } : undefined}
             >
-              {seat.name}
+              {/* the "Bot" tag already says it, so "Bot Wren" fits as "Wren" */}
+              {seat.bot ? seat.name.replace(/^Bot /, '') : seat.name}
             </span>
             <PlayerReaction reactions={reactions} playerId={seat.id} name={seat.name} />
             {onSeat && seat.action && (

@@ -187,6 +187,22 @@ Additions approved by Lesia:
   Later (Lesia, 2026-10-18, Risk feedback): `GameUi.optionHelp` (one line under each option in
   Jackdaw's lobby, per option or per choice), and the lobby's seat track draws only the chosen
   game's seats.
+- **Round four (Lesia, 2026-10-24: "play against bots", "End Game still saves progress")**:
+  - **Bots**: the host's `addBot` (the kit's `AddSeat` "+" on each open seat, in the seat track,
+    `LobbySeats` and a game's own `Lobby` via `onAddBot`) seats a computer player
+    (`Player.bot`, named "Bot Wren", "Bot Rook"…; always online, never host, removed like anyone,
+    gone when the last person leaves).
+  - A game plays bots through `GameModule.bot?(ctx)`, which gets only that seat's own view and
+    the table view (so a bot never knows more than a person there), and returns a legal move or
+    null. The runtime runs bot moves on the timer path, `botDelayMs` (default 1100) after the last
+    move (`Session.movedAt`); `timerAt` includes it, so screens poll right then. A move the game
+    refuses benches that bot until the game moves on (`Session.botFailed`). Games without `bot`
+    can't start with bots seated (Avalon, being linked). Every game with a bot has an all-bot
+    simulation test.
+  - **Ending early**: `GameModule.partialResult?(state)` is the result on the rounds played so far
+    (the leader wins; null while nothing is decided). Snapshots carry `canSave`; the host chooses
+    "Save the rounds so far" (`endGame { save: true }`, recorded with "Ended early." before the
+    summary) or "End without saving".
 - **Secret Hitler is secret-hitler.online, ported** (Lesia, 2026-10-17: "copy EXACTLY"). Its
   screens live in `packages/games/secret-hitler/src/ui/sho/` with the site's markup, text,
   timings and stylesheet (scoped under `.sho`); change them only to match the site, or to fit

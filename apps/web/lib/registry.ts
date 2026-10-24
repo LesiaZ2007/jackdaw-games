@@ -1,5 +1,6 @@
 import type { GameMeta, GameRegistry } from '@jackdaw/engine';
 import { avalon } from '@jackdaw/game-avalon';
+import { catan } from '@jackdaw/game-catan';
 import { codenames } from '@jackdaw/game-codenames';
 import { uno } from '@jackdaw/game-uno';
 import { poker } from '@jackdaw/game-poker';
@@ -16,6 +17,7 @@ import { wordhoard } from '@jackdaw/game-wordhoard';
  */
 export const games: GameRegistry = {
   [avalon.meta.id]: avalon,
+  [catan.meta.id]: catan,
   [codenames.meta.id]: codenames,
   [uno.meta.id]: uno,
   [poker.meta.id]: poker,

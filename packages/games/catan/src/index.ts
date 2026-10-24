@@ -6,3 +6,5 @@ export * from './build';
 export * from './roads';
 export * from './rules';
 export * from './trade';
+export * from './moments';
+export { legalMoves } from './bot';

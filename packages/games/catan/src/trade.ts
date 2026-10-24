@@ -1,4 +1,16 @@
+import type { Offer } from './rules';
 import { RESOURCES, type Cards } from './types';
+
+/**
+ * What needs the player on their turn: counter-offers and proposals made to them, and their own
+ * offers that someone has said yes to.
+ */
+export const waitingForYou = (offers: readonly Offer[], me: string): Offer[] =>
+  offers.filter(
+    (o) =>
+      (o.to === me && o.from !== me) ||
+      (o.from === me && Object.values(o.replies).includes('accept')),
+  );
 
 /**
  * Why a trade's shape isn't allowed, or null: each side must give at least one card (no gifts),

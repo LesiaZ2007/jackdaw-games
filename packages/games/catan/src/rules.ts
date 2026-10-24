@@ -22,6 +22,7 @@ import {
 } from './build';
 import { awardRoad, longestRoad } from './roads';
 import { trim, validTrade } from './trade';
+import { timeUp } from './bot';
 import { layout, type Layout } from './geometry';
 import { meta } from './meta';
 import {
@@ -213,7 +214,8 @@ export interface CatanTableView {
   /** Points everyone can see (without hidden victory point cards). */
   points: Record<string, number>;
   offers: Offer[];
-  robbery: Omit<Robbery, 'resource'> | null;
+  /** Who robbed whom, and whether a card changed hands (never which). */
+  robbery: (Omit<Robbery, 'resource'> & { took: boolean }) | null;
   award: AwardChange | null;
   monopoly: CatanState['monopoly'];
   log: RecapEvent[];
@@ -946,6 +948,7 @@ function getTableView(s: CatanState): CatanTableView {
       seq: s.robbery.seq,
       thief: s.robbery.thief,
       victim: s.robbery.victim,
+      took: s.robbery.resource !== null,
     },
     award: s.award,
     monopoly: s.monopoly,
@@ -985,7 +988,7 @@ function getPlayerView(s: CatanState, who: string): CatanView {
   };
 }
 
-function waitingOn(s: CatanState): string[] {
+export function waitingOn(s: CatanState): string[] {
   switch (s.phase) {
     case 'over':
       return [];
@@ -998,10 +1001,124 @@ function waitingOn(s: CatanState): string[] {
   }
 }
 
+/** How one player made their points. */
+export interface PointsBreakdown {
+  settlements: number;
+  cities: number;
+  road: number;
+  army: number;
+  vp: number;
+  total: number;
+}
+
+/** Everything safe to show once the game is over. */
+export interface CatanReveal {
+  size: Size;
+  board: Board;
+  seats: string[];
+  buildings: Buildings;
+  roads: Roads;
+  robber: number;
+  points: Record<string, PointsBreakdown>;
+  longest: CatanState['longest'];
+  army: string | null;
+  knights: Record<string, number>;
+  winner: string | null;
+  rounds: number;
+}
+
+export function breakdown(s: CatanState, pid: string): PointsBreakdown {
+  const mine = Object.values(s.buildings).filter((b) => b.owner === pid);
+  const settlements = mine.filter((b) => !b.city).length;
+  const cities = mine.filter((b) => b.city).length;
+  const road = s.longest.holder === pid ? 2 : 0;
+  const army = s.army === pid ? 2 : 0;
+  const vp = s.dev[pid]!.filter((d) => d.card === 'victoryPoint').length;
+  return {
+    settlements,
+    cities,
+    road,
+    army,
+    vp,
+    total: settlements + cities * 2 + road + army + vp,
+  };
+}
+
 function getResult(s: CatanState): GameResult | null {
   if (s.phase !== 'over' || !s.winner) return null;
-  return { winners: [s.winner], summary: '', reveal: null, recap: s.log };
+  const pts = Object.fromEntries(s.seats.map((p) => [p, breakdown(s, p)]));
+  const reveal: CatanReveal = {
+    size: s.size,
+    board: s.board,
+    seats: s.seats,
+    buildings: s.buildings,
+    roads: s.roads,
+    robber: s.robber,
+    points: pts,
+    longest: s.longest,
+    army: s.army,
+    knights: s.knights,
+    winner: s.winner,
+    rounds: s.round,
+  };
+  const highlights: NonNullable<GameResult['highlights']> = [];
+  const holder = s.longest.holder;
+  if (holder) {
+    const n = s.longest.lengths[holder]!;
+    highlights.push({
+      award: 'Longest road',
+      playerIds: [holder],
+      text: `${n} roads in a row`,
+      value: n,
+    });
+  }
+  if (s.best.haul)
+    highlights.push({
+      award: 'Biggest haul',
+      playerIds: [s.best.haul.pid],
+      text: `${s.best.haul.n} cards from one roll`,
+      value: s.best.haul.n,
+    });
+  return {
+    winners: [s.winner],
+    summary: `${pts[s.winner]!.total} points in ${s.round} ${s.round === 1 ? 'round' : 'rounds'}`,
+    reveal,
+    recap: s.log,
+    standings: s.seats.map((p) => ({ playerId: p, outcome: p === s.winner ? 'win' : 'loss' })),
+    highlights,
+  };
 }
+
+/** Chat lines: who goes first, awards changing hands, monopolies, and the win. */
+function announce(prev: CatanState | null, next: CatanState): string[] {
+  if (!prev) return [`{${next.first}} goes first`];
+  const lines: string[] = [];
+  const a = next.award;
+  if (a && a.seq !== prev.award?.seq) {
+    if (a.kind === 'army') lines.push(`{${a.to}} takes Largest Army`);
+    else lines.push(a.to ? `{${a.to}} takes Longest Road` : 'Longest Road is set aside');
+  }
+  const m = next.monopoly;
+  if (m && m.seq !== prev.monopoly?.seq)
+    lines.push(`{${m.pid}} played monopoly and took ${m.took} ${m.resource}`);
+  if (next.winner && !prev.winner)
+    lines.push(`{${next.winner}} wins with ${points(next, next.winner, true)} points`);
+  return lines;
+}
+
+/** Which step the clock is timing: a new one gets a fresh deadline. */
+const clockKey = (s: CatanState) =>
+  `${s.turnSeq}|${s.phase}|${s.setup?.step ?? ''}|${s.setup?.corner ? 1 : 0}`;
+
+function stamp(prev: CatanState | null, s: CatanState, now: number): CatanState {
+  if (!s.turnSecs || s.phase === 'over') return s.actBy === null ? s : { ...s, actBy: null };
+  if (prev && s.actBy !== null && clockKey(prev) === clockKey(s)) return s;
+  return { ...s, actBy: now + s.turnSecs * 1000 };
+}
+
+/** One move with the win check after it, as the platform applies it (the timer uses it too). */
+export const applyMove = (s: CatanState, who: string, a: CatanAction, rng: Rng): CatanState =>
+  settle(applyAction(s, who, a, rng), who);
 
 type CatanModule = GameModule<CatanState, CatanAction, CatanView, CatanTableView, CatanOptions>;
 
@@ -1010,10 +1127,15 @@ export const catan: CatanModule = {
   optionsSchema,
   actionSchema,
   defaultOptions: () => ({ board: 'Balanced', points: '10', robber: 'Standard', turnTimer: 'Off' }),
-  setup,
+  setup: (ctx) => stamp(null, setup(ctx), ctx.now),
   getPlayerView,
   getTableView,
-  applyAction: (s, who, a, rng) => settle(applyAction(s, who, a, rng), who),
+  applyAction: (s, who, a, rng, now) => stamp(s, applyMove(s, who, a, rng), now),
   getResult,
+  announce,
   waitingOn,
+  nextTimer: (s) =>
+    s.turnSecs && s.actBy !== null && s.phase !== 'over' ? { id: 'turn', at: s.actBy } : null,
+  onTimer: (s, timer, rng, now) =>
+    timer !== 'turn' || s.phase === 'over' ? s : stamp(s, timeUp(s, rng), now),
 };

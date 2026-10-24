@@ -7,6 +7,7 @@ import {
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
+import { wavelengthBot } from './bot';
 import { meta } from './meta';
 import { SPECTRUMS, type Spectrum } from './spectrums';
 
@@ -725,6 +726,52 @@ export const wavelength: GameModule<
     }
     return lines;
   },
+
+  /**
+   * Ended early: in Teams, the team ahead after the rounds played wins (level is a draw for
+   * everyone); in Together, the same bar as a full game, two points a round. Nothing to save
+   * before the first round has scored.
+   */
+  partialResult(s): GameResult | null {
+    if (s.phase === 'over' || s.history.length === 0) return null;
+    const reveal: WavelengthReveal = {
+      mode: s.mode,
+      teams: s.teams,
+      scores: s.scores,
+      history: s.history,
+      winner: null,
+      goal: s.goal,
+    };
+    const rounds = s.history.length;
+    if (s.mode === 'together') {
+      const total = s.scores.sun;
+      const pass = total >= rounds * 2;
+      return {
+        winners: pass ? s.players : [],
+        summary: `${total} points in ${rounds} round${rounds === 1 ? '' : 's'}: ${rating(total, rounds)}`,
+        reveal,
+        recap: s.recap,
+        standings: s.players.map((playerId) => ({ playerId, outcome: pass ? 'win' : 'loss' })),
+      };
+    }
+    const { sun, moon } = s.scores;
+    const leader: Team | null = sun > moon ? 'sun' : moon > sun ? 'moon' : null;
+    return {
+      winners: leader ? s.players.filter((id) => s.teams[id] === leader) : [],
+      summary: leader
+        ? `${TEAM_NAME[leader]} led ${s.scores[leader]} to ${s.scores[other(leader)]}`
+        : `Level at ${sun} each`,
+      reveal: { ...reveal, winner: leader },
+      recap: s.recap,
+      standings: s.players.map((playerId) => ({
+        playerId,
+        outcome: leader === null ? 'draw' : s.teams[playerId] === leader ? 'win' : 'loss',
+        team: TEAM_NAME[s.teams[playerId]!],
+      })),
+    };
+  },
+
+  bot: wavelengthBot,
 
   getResult(s): GameResult | null {
     if (s.phase !== 'over') return null;

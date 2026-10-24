@@ -688,6 +688,30 @@ button.wl-card:focus-visible {
   color: var(--ink-2);
   font-size: 15px;
 }
+/* a computer player: a small inked tag after the name */
+.wl-pick__bot {
+  margin-left: 8px;
+  padding: 2px 6px 3px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 11px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+/* the host's "+" at the foot of each team: an open place in the team's list */
+.wl-pick__open .wl-pick__tok {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+.wl-pick__add .jd-addseat__ring {
+  width: 40px;
+}
+.wl-pick__name--open {
+  font-weight: 600;
+  color: var(--ink-2);
+}
 
 /* ── Results: every round ───────────────────────────────────────────────── */
 .wl-reveal__total {

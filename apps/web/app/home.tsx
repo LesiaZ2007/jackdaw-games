@@ -27,6 +27,18 @@ import { ThemeButton } from './theme-toggle';
 
 const FALLBACK_AVATAR: Avatar = { crest: 'raven', tint: 'slate' };
 
+/** Whether the page has been scrolled at all, so the "more below" arrow can bow out. */
+function useScrolled(): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const check = () => setScrolled(window.scrollY > 48);
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    return () => window.removeEventListener('scroll', check);
+  }, []);
+  return scrolled;
+}
+
 export function Home() {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -79,6 +91,7 @@ export function Home() {
   }
 
   const fan = catalog.slice(0, 5);
+  const scrolled = useScrolled();
 
   return (
     <>
@@ -169,6 +182,21 @@ export function Home() {
             </nav>
           </section>
         </div>
+        {/* The games are below the fold: say so until the page moves (2026-10-24). */}
+        <button
+          type="button"
+          className={scrolled ? 'home-more is-gone' : 'home-more'}
+          onClick={browse}
+          aria-label="Scroll down to the games"
+          tabIndex={scrolled ? -1 : 0}
+        >
+          <span className="home-more__label" aria-hidden="true">
+            The games
+          </span>
+          <span className="home-more__ring" aria-hidden="true">
+            <Icon.down />
+          </span>
+        </button>
       </main>
 
       <section id="games" className="home-shelves" aria-labelledby="home-shelves-title">

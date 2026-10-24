@@ -3,39 +3,43 @@
    The board is printed, so it looks the same day and dark; the frame around it follows the
    shell. Every colour Catan adds is a token here. */
 
-.cn,
-.cn-board {
-  --cn-forest: #3d6a39;
-  --cn-forest-ink: #24451f;
-  --cn-pasture: #8fb058;
-  --cn-pasture-ink: #5b7a31;
-  --cn-fields: #d8ab3c;
-  --cn-fields-ink: #a07a22;
-  --cn-hills: #b25732;
-  --cn-hills-ink: #823a1e;
-  --cn-mountains: #7b8086;
-  --cn-mountains-ink: #4b4f55;
-  --cn-desert: #d9c48f;
-  --cn-desert-ink: #ad9862;
-  --cn-sea: #2f6896;
-  --cn-sea-line: #5f8fb8;
-  --cn-shallow: #4f86b0;
+.ctn,
+.ctn-board {
+  --ctn-forest: #3d6a39;
+  --ctn-forest-ink: #24451f;
+  --ctn-pasture: #8fb058;
+  --ctn-pasture-ink: #5b7a31;
+  --ctn-fields: #d8ab3c;
+  --ctn-fields-ink: #a07a22;
+  --ctn-hills: #b25732;
+  --ctn-hills-ink: #823a1e;
+  --ctn-mountains: #7b8086;
+  --ctn-mountains-ink: #4b4f55;
+  --ctn-desert: #d9c48f;
+  --ctn-desert-ink: #ad9862;
+  --ctn-sea: #2f6896;
+  --ctn-sea-line: #5f8fb8;
+  --ctn-shallow: #4f86b0;
   /* number discs, card stock, piers */
-  --cn-stock: #f1ead8;
-  --cn-stock-ink: #2a2620;
-  --cn-wood: #9b7146;
-  --cn-seam: #1d1d1c;
-  --cn-shade: rgba(29, 29, 28, 0.32);
+  --ctn-stock: #f1ead8;
+  --ctn-stock-ink: #2a2620;
+  --ctn-wood: #9b7146;
+  --ctn-seam: #1d1d1c;
+  --ctn-shade: rgba(29, 29, 28, 0.32);
   /* the classic piece colours, printed */
-  --cn-pc-red: var(--gules);
-  --cn-pc-blue: var(--azure);
-  --cn-pc-white: #efe9da;
-  --cn-pc-orange: #c8702a;
-  --cn-pc-green: #3f7a48;
-  --cn-pc-brown: #6a4a30;
+  --ctn-pc-red: var(--gules);
+  --ctn-pc-blue: var(--azure);
+  --ctn-pc-white: #efe9da;
+  --ctn-pc-orange: #c8702a;
+  --ctn-pc-green: #3f7a48;
+  --ctn-pc-brown: #6a4a30;
 }
 
-.cn-sr {
+.ctn {
+  color: var(--ink);
+}
+
+.ctn-sr {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -46,34 +50,34 @@
 
 /* ---------- Terrain fills (tiles, cards, pips, plaques) ---------- */
 
-.cn-fill--forest {
-  fill: var(--cn-forest);
-  background: var(--cn-forest);
+.ctn-fill--forest {
+  fill: var(--ctn-forest);
+  background: var(--ctn-forest);
 }
-.cn-fill--pasture {
-  fill: var(--cn-pasture);
-  background: var(--cn-pasture);
+.ctn-fill--pasture {
+  fill: var(--ctn-pasture);
+  background: var(--ctn-pasture);
 }
-.cn-fill--fields {
-  fill: var(--cn-fields);
-  background: var(--cn-fields);
+.ctn-fill--fields {
+  fill: var(--ctn-fields);
+  background: var(--ctn-fields);
 }
-.cn-fill--hills {
-  fill: var(--cn-hills);
-  background: var(--cn-hills);
+.ctn-fill--hills {
+  fill: var(--ctn-hills);
+  background: var(--ctn-hills);
 }
-.cn-fill--mountains {
-  fill: var(--cn-mountains);
-  background: var(--cn-mountains);
+.ctn-fill--mountains {
+  fill: var(--ctn-mountains);
+  background: var(--ctn-mountains);
 }
-.cn-fill--desert {
-  fill: var(--cn-desert);
-  background: var(--cn-desert);
+.ctn-fill--desert {
+  fill: var(--ctn-desert);
+  background: var(--ctn-desert);
 }
 
 /* ---------- The board ---------- */
 
-.cn-board {
+.ctn-board {
   display: block;
   width: 100%;
   height: 100%;
@@ -81,197 +85,197 @@
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-.cn-board text {
+.ctn-board text {
   text-anchor: middle;
   pointer-events: none;
 }
-.cn-sea {
-  fill: var(--cn-sea);
+.ctn-sea {
+  fill: var(--ctn-sea);
 }
-.cn-wave {
+.ctn-wave {
   fill: none;
-  stroke: var(--cn-sea-line);
+  stroke: var(--ctn-sea-line);
   stroke-width: 0.018;
   opacity: 0.8;
 }
-.cn-shallow {
-  fill: var(--cn-shallow);
+.ctn-shallow {
+  fill: var(--ctn-shallow);
 }
-.cn-seam {
-  fill: var(--cn-seam);
+.ctn-seam {
+  fill: var(--ctn-seam);
 }
-.cn-shadow {
-  fill: var(--cn-shade);
+.ctn-shadow {
+  fill: var(--ctn-shade);
 }
 
-.cn-motif {
+.ctn-motif {
   opacity: 0.9;
 }
-.cn-motif--forest {
-  --ink: var(--cn-forest-ink);
+.ctn-motif--forest {
+  --ink: var(--ctn-forest-ink);
 }
-.cn-motif--pasture {
-  --ink: var(--cn-pasture-ink);
+.ctn-motif--pasture {
+  --ink: var(--ctn-pasture-ink);
 }
-.cn-motif--fields {
-  --ink: var(--cn-fields-ink);
+.ctn-motif--fields {
+  --ink: var(--ctn-fields-ink);
 }
-.cn-motif--hills {
-  --ink: var(--cn-hills-ink);
+.ctn-motif--hills {
+  --ink: var(--ctn-hills-ink);
 }
-.cn-motif--mountains {
-  --ink: var(--cn-mountains-ink);
+.ctn-motif--mountains {
+  --ink: var(--ctn-mountains-ink);
 }
-.cn-motif--desert {
-  --ink: var(--cn-desert-ink);
+.ctn-motif--desert {
+  --ink: var(--ctn-desert-ink);
 }
-.cn-ink-fill {
+.ctn-ink-fill {
   fill: var(--ink);
 }
-.cn-ink-line {
+.ctn-ink-line {
   fill: none;
   stroke: var(--ink);
 }
-.cn-hi {
+.ctn-hi {
   fill: none;
-  stroke: var(--cn-stock);
+  stroke: var(--ctn-stock);
   stroke-opacity: 0.55;
 }
-.cn-sheep {
-  fill: var(--cn-stock);
+.ctn-sheep {
+  fill: var(--ctn-stock);
   fill-opacity: 0.9;
 }
 
-.cn-pier-ink {
-  stroke: var(--cn-stock-ink);
+.ctn-pier-ink {
+  stroke: var(--ctn-stock-ink);
   stroke-width: 0.13;
   stroke-linecap: round;
 }
-.cn-pier {
-  stroke: var(--cn-wood);
+.ctn-pier {
+  stroke: var(--ctn-wood);
   stroke-width: 0.075;
   stroke-linecap: round;
 }
-.cn-plaque {
-  stroke: var(--cn-stock-ink);
+.ctn-plaque {
+  stroke: var(--ctn-stock-ink);
   stroke-width: 0.035;
 }
-.cn-plaque--any {
-  fill: var(--cn-stock);
+.ctn-plaque--any {
+  fill: var(--ctn-stock);
 }
-.cn-plaque__art {
-  color: var(--cn-stock);
+.ctn-plaque__art {
+  color: var(--ctn-stock);
 }
-.cn-plaque__ratio {
+.ctn-plaque__ratio {
   font: 800 0.2px var(--font-plaque);
   letter-spacing: 0.01px;
-  fill: var(--cn-stock-ink);
+  fill: var(--ctn-stock-ink);
 }
-.cn-plaque__ratio--on {
+.ctn-plaque__ratio--on {
   font-size: 0.15px;
-  fill: var(--cn-stock);
+  fill: var(--ctn-stock);
 }
 
-.cn-disc__face {
-  fill: var(--cn-stock);
-  stroke: var(--cn-stock-ink);
+.ctn-disc__face {
+  fill: var(--ctn-stock);
+  stroke: var(--ctn-stock-ink);
   stroke-width: 0.03;
 }
-.cn-disc__rule {
+.ctn-disc__rule {
   fill: none;
-  stroke: var(--cn-stock-ink);
+  stroke: var(--ctn-stock-ink);
   stroke-width: 0.01;
   opacity: 0.6;
 }
-.cn-disc__n {
+.ctn-disc__n {
   font: 800 0.32px var(--font-code);
-  fill: var(--cn-stock-ink);
+  fill: var(--ctn-stock-ink);
 }
-.cn-disc__pip {
-  fill: var(--cn-stock-ink);
+.ctn-disc__pip {
+  fill: var(--ctn-stock-ink);
 }
-.cn-disc--red .cn-disc__n {
+.ctn-disc--red .ctn-disc__n {
   font-size: 0.36px;
   fill: var(--gules);
 }
-.cn-disc--red .cn-disc__pip {
+.ctn-disc--red .ctn-disc__pip {
   fill: var(--gules);
 }
 
-.cn-robber path {
+.ctn-robber path {
   fill: var(--sable);
-  stroke: var(--cn-stock);
+  stroke: var(--ctn-stock);
   stroke-width: 0.03;
 }
 
-.cn-road-ink {
-  stroke: var(--cn-stock-ink);
+.ctn-road-ink {
+  stroke: var(--ctn-stock-ink);
   stroke-width: 0.2;
   stroke-linecap: round;
 }
-.cn-road {
+.ctn-road {
   stroke-width: 0.12;
   stroke-linecap: round;
 }
-.cn-build {
-  stroke: var(--cn-stock-ink);
+.ctn-build {
+  stroke: var(--ctn-stock-ink);
   stroke-width: 1.8;
   stroke-linejoin: round;
 }
-.cn-window {
-  fill: var(--cn-stock-ink);
+.ctn-window {
+  fill: var(--ctn-stock-ink);
   opacity: 0.55;
 }
 
 /* What can be picked: dashed rings that breathe; the ghost piece waits for "Build here". */
-.cn-spot {
-  fill: color-mix(in srgb, var(--cn-stock) 72%, transparent);
-  stroke: var(--cn-stock-ink);
+.ctn-spot {
+  fill: color-mix(in srgb, var(--ctn-stock) 72%, transparent);
+  stroke: var(--ctn-stock-ink);
   stroke-width: 0.035;
   stroke-dasharray: 0.07 0.05;
   cursor: pointer;
-  animation: cn-breathe 1.6s var(--ease-out) infinite;
+  animation: ctn-breathe 1.6s var(--ease-out) infinite;
 }
-.cn-spot:focus-visible {
+.ctn-spot:focus-visible {
   outline: none;
   stroke: var(--or);
   stroke-width: 0.07;
 }
-.cn-spot--tile {
-  fill: color-mix(in srgb, var(--cn-stock) 22%, transparent);
+.ctn-spot--tile {
+  fill: color-mix(in srgb, var(--ctn-stock) 22%, transparent);
   stroke-width: 0.05;
   stroke-dasharray: 0.12 0.08;
 }
-.cn-ghost {
+.ctn-ghost {
   opacity: 0.8;
 }
-.cn-ghost__ring {
+.ctn-ghost__ring {
   fill: none;
-  stroke: var(--cn-stock);
+  stroke: var(--ctn-stock);
   stroke-width: 0.05;
-  animation: cn-breathe 1.6s var(--ease-out) infinite;
+  animation: ctn-breathe 1.6s var(--ease-out) infinite;
 }
-.cn-paying {
+.ctn-paying {
   fill: none;
-  stroke: var(--cn-stock);
+  stroke: var(--ctn-stock);
   stroke-width: 0.085;
-  animation: cn-glow 1.2s var(--ease-out) 3;
+  animation: ctn-glow 1.2s var(--ease-out) 3;
   stroke-opacity: 0.55;
 }
 
-.cn-flyer__card {
-  animation: cn-fly 1.5s var(--ease-out) both;
+.ctn-flyer__card {
+  animation: ctn-fly 1.5s var(--ease-out) both;
 }
-.cn-flyer__back {
-  fill: var(--cn-stock);
-  stroke: var(--cn-stock-ink);
+.ctn-flyer__back {
+  fill: var(--ctn-stock);
+  stroke: var(--ctn-stock-ink);
   stroke-width: 0.03;
 }
-.cn-flyer__n {
+.ctn-flyer__n {
   font: 900 0.15px var(--font-plaque);
 }
 
-@keyframes cn-breathe {
+@keyframes ctn-breathe {
   0%,
   100% {
     opacity: 0.45;
@@ -280,7 +284,7 @@
     opacity: 1;
   }
 }
-@keyframes cn-glow {
+@keyframes ctn-glow {
   0%,
   100% {
     stroke-opacity: 0.2;
@@ -289,7 +293,7 @@
     stroke-opacity: 1;
   }
 }
-@keyframes cn-fly {
+@keyframes ctn-fly {
   0% {
     transform: translate(0, 0) scale(0.6);
     opacity: 0;
@@ -308,51 +312,51 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cn-spot,
-  .cn-ghost__ring,
-  .cn-paying {
+  .ctn-spot,
+  .ctn-ghost__ring,
+  .ctn-paying {
     animation: none;
   }
-  .cn-flyer {
+  .ctn-flyer {
     display: none;
   }
 }
 
 /* Glyph sizes wherever they appear. */
-.cn-piece {
+.ctn-piece {
   width: 1.4em;
   height: 1.4em;
   flex: none;
 }
-.cn-piece__body {
-  stroke: var(--cn-stock-ink);
+.ctn-piece__body {
+  stroke: var(--ctn-stock-ink);
   stroke-width: 1.6;
   stroke-linejoin: round;
 }
-.cn-piece__card {
+.ctn-piece__card {
   fill: var(--sable);
-  stroke: var(--cn-stock-ink);
+  stroke: var(--ctn-stock-ink);
   stroke-width: 1.4;
 }
-.cn-ink {
-  stroke: var(--cn-stock-ink);
+.ctn-ink {
+  stroke: var(--ctn-stock-ink);
 }
 
-.cn-pip {
+.ctn-pip {
   position: relative;
   width: 1.3em;
   height: 1.3em;
   display: inline-grid;
   place-items: center;
   flex: none;
-  color: var(--cn-stock);
-  outline: 1px solid var(--cn-stock-ink);
+  color: var(--ctn-stock);
+  outline: 1px solid var(--ctn-stock-ink);
 }
-.cn-pip svg {
+.ctn-pip svg {
   width: 78%;
   height: 78%;
 }
-.cn-pip__n {
+.ctn-pip__n {
   position: absolute;
   right: -0.45em;
   bottom: -0.4em;

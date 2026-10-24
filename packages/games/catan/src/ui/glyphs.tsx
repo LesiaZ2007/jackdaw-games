@@ -139,10 +139,10 @@ export function DevGlyph({ kind, className }: { kind: keyof typeof DEV; classNam
 /** A small printed square in the resource's colour with its glyph: costs, offers, gains. */
 export function Pip({ res, n }: { res: Resource; n?: number }) {
   return (
-    <span className={`cn-pip cn-fill--${TERRAIN_OF[res]}`} title={RESOURCE_NAME[res]}>
+    <span className={`ctn-pip ctn-fill--${TERRAIN_OF[res]}`} title={RESOURCE_NAME[res]}>
       <ResourceGlyph res={res} />
-      {n !== undefined && n > 1 && <b className="cn-pip__n">{n}</b>}
-      <span className="cn-sr">
+      {n !== undefined && n > 1 && <b className="ctn-pip__n">{n}</b>}
+      <span className="ctn-sr">
         {n ? `${n} ` : ''}
         {RESOURCE_NAME[res]}
       </span>
@@ -163,7 +163,7 @@ export function PieceGlyph({
   colour: string;
 }) {
   return (
-    <svg viewBox="-12 -12 24 24" className="cn-piece" aria-hidden="true">
+    <svg viewBox="-12 -12 24 24" className="ctn-piece" aria-hidden="true">
       {kind === 'road' && (
         <>
           <line
@@ -171,7 +171,7 @@ export function PieceGlyph({
             y1="6"
             x2="10"
             y2="-6"
-            className="cn-ink"
+            className="ctn-ink"
             strokeWidth="6"
             strokeLinecap="round"
           />
@@ -187,10 +187,10 @@ export function PieceGlyph({
         </>
       )}
       {kind === 'settlement' && (
-        <path d={SETTLEMENT} style={{ fill: colour }} className="cn-piece__body" />
+        <path d={SETTLEMENT} style={{ fill: colour }} className="ctn-piece__body" />
       )}
-      {kind === 'city' && <path d={CITY} style={{ fill: colour }} className="cn-piece__body" />}
-      {kind === 'dev' && <rect x="-6" y="-9" width="12" height="18" className="cn-piece__card" />}
+      {kind === 'city' && <path d={CITY} style={{ fill: colour }} className="ctn-piece__body" />}
+      {kind === 'dev' && <rect x="-6" y="-9" width="12" height="18" className="ctn-piece__card" />}
     </svg>
   );
 }

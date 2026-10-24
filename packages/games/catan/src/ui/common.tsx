@@ -56,7 +56,7 @@ const PIPS: Record<number, number[]> = {
 /** A die: cream with ink pips, or gules with cream pips (Catan's two colours of dice). */
 export function Die({ n, red }: { n: number; red?: boolean }) {
   return (
-    <span className={red ? 'cn-die cn-die--red' : 'cn-die'} aria-hidden="true">
+    <span className={red ? 'ctn-die ctn-die--red' : 'ctn-die'} aria-hidden="true">
       {Array.from({ length: 9 }, (_, i) => (
         <i key={i} className={PIPS[n]!.includes(i + 1) ? 'is-on' : undefined} />
       ))}
@@ -67,7 +67,7 @@ export function Die({ n, red }: { n: number; red?: boolean }) {
 export function Dice({ dice, seq }: { dice: [number, number] | null; seq: number }) {
   if (!dice) return null;
   return (
-    <span className="cn-dice" key={seq} aria-label={`Rolled ${dice[0] + dice[1]}`} role="img">
+    <span className="ctn-dice" key={seq} aria-label={`Rolled ${dice[0] + dice[1]}`} role="img">
       <Die n={dice[0]} />
       <Die n={dice[1]} red />
     </span>
@@ -81,7 +81,7 @@ export function Clock({ at, now }: { at: number | null; now: () => number }) {
   const s = `${left % 60}`.padStart(2, '0');
   return (
     <span
-      className={left <= 10 ? 'cn-clock cn-clock--late' : 'cn-clock'}
+      className={left <= 10 ? 'ctn-clock ctn-clock--late' : 'ctn-clock'}
       aria-label={`${left} seconds left`}
     >
       {m}:{s}
@@ -101,7 +101,7 @@ export function SeatToken({
 }) {
   if (!p) return null;
   return (
-    <span className="cn-seattok" style={{ '--cn-own': seatColour(p.id, seats) } as CSSProperties}>
+    <span className="ctn-seattok" style={{ '--ctn-own': seatColour(p.id, seats) } as CSSProperties}>
       <Token avatar={p.avatar} size={size} away={!p.online} />
     </span>
   );
@@ -112,15 +112,15 @@ export function Awards({ t, id }: { t: CatanTableView; id: string }) {
   return (
     <>
       {t.longest.holder === id && (
-        <span className="cn-award-mark" title="Longest Road">
+        <span className="ctn-award-mark" title="Longest Road">
           <DevGlyph kind="longroad" />
-          <span className="cn-sr">Longest Road</span>
+          <span className="ctn-sr">Longest Road</span>
         </span>
       )}
       {t.army === id && (
-        <span className="cn-award-mark" title="Largest Army">
+        <span className="ctn-award-mark" title="Largest Army">
           <DevGlyph kind="army" />
-          <span className="cn-sr">Largest Army</span>
+          <span className="ctn-sr">Largest Army</span>
         </span>
       )}
     </>

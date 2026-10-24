@@ -43,8 +43,8 @@ export const TvScreen: GameUi['TvScreen'] = ({
   const offers = t.phase === 'main' ? t.offers : [];
 
   return (
-    <div className="cn cn--tv">
-      <div className="cn-tv__board">
+    <div className="ctn ctn--tv">
+      <div className="ctn-tv__board">
         <CatanBoard
           board={t.board}
           buildings={t.buildings}
@@ -57,14 +57,14 @@ export const TvScreen: GameUi['TvScreen'] = ({
           pad={0.8}
         />
       </div>
-      <aside className="cn-tv__side">
-        <header className="cn-tv__head">
+      <aside className="ctn-tv__side">
+        <header className="ctn-tv__head">
           <h2>Catan</h2>
           <span>
             {t.phase === 'setup' ? 'Opening placements' : `Round ${t.round}`} · first to {t.target}
           </span>
         </header>
-        <section className="cn-tv__turn">
+        <section className="ctn-tv__turn">
           <SeatToken p={players.find((p) => p.id === (who ?? t.turn))} seats={t.seats} size={84} />
           <p>
             <b>
@@ -83,29 +83,29 @@ export const TvScreen: GameUi['TvScreen'] = ({
           <Clock at={t.actBy} now={now} />
           <Dice dice={t.dice} seq={t.rollSeq} />
         </section>
-        <ol className="cn-tv__players">
+        <ol className="ctn-tv__players" data-count={t.seats.length}>
           {t.seats.map((id) => {
             const p = players.find((x) => x.id === id);
             const active = id === who;
             return (
               <li
                 key={id}
-                className={active ? 'cn-tvp is-turn' : 'cn-tvp'}
-                style={{ '--cn-own': seatColour(id, t.seats) } as CSSProperties}
+                className={active ? 'ctn-tvp is-turn' : 'ctn-tvp'}
+                style={{ '--ctn-own': seatColour(id, t.seats) } as CSSProperties}
               >
-                <span className="cn-tvp__tok">
+                <span className="ctn-tvp__tok">
                   <SeatToken p={p} seats={t.seats} size={64} />
                   <PlayerReaction reactions={reactions} playerId={id} name={name(id)} size={64} />
                 </span>
-                <span className="cn-tvp__body">
-                  <span className="cn-tvp__name">{name(id)}</span>
-                  <span className="cn-tvp__meta">
+                <span className="ctn-tvp__body">
+                  <span className="ctn-tvp__name">{name(id)}</span>
+                  <span className="ctn-tvp__meta">
                     <span title="Resource cards">
                       <DevGlyph kind="cards" />
                       {t.handCounts[id]}
                     </span>
                     <span title="Development cards">
-                      <span className="cn-devchit" aria-hidden="true" />
+                      <span className="ctn-devchit" aria-hidden="true" />
                       {t.devCounts[id]}
                     </span>
                     <span title="Knights played">
@@ -117,12 +117,12 @@ export const TvScreen: GameUi['TvScreen'] = ({
                       {t.longest.lengths[id] ?? 0}
                     </span>
                   </span>
-                  <span className="cn-tvp__awards">
-                    {t.longest.holder === id && <span className="cn-badge">Longest road</span>}
-                    {t.army === id && <span className="cn-badge">Largest army</span>}
+                  <span className="ctn-tvp__awards">
+                    {t.longest.holder === id && <span className="ctn-badge">Longest road</span>}
+                    {t.army === id && <span className="ctn-badge">Largest army</span>}
                   </span>
                 </span>
-                <span className="cn-tvp__pts">
+                <span className="ctn-tvp__pts">
                   <b>{t.points[id]}</b>
                   <small>points</small>
                 </span>
@@ -130,15 +130,15 @@ export const TvScreen: GameUi['TvScreen'] = ({
             );
           })}
         </ol>
-        <section className="cn-tv__news" aria-live="polite">
+        <section className="ctn-tv__news" aria-live="polite">
           {total !== null && (
-            <p className="cn-tv__roll">
+            <p className="ctn-tv__roll">
               <b>Rolled {total}</b>
               {total === 7 ? (
                 <span>The robber moves</span>
               ) : paid.length ? (
                 paid.map(([id, c]) => (
-                  <span key={id} className="cn-tv__gain">
+                  <span key={id} className="ctn-tv__gain">
                     {name(id)}
                     {RESOURCES.filter((r) => c[r]).map((r) => (
                       <Pip key={r} res={r} n={c[r]} />
@@ -151,14 +151,14 @@ export const TvScreen: GameUi['TvScreen'] = ({
             </p>
           )}
           {offers.map((o) => (
-            <p key={o.id} className="cn-tv__offer">
+            <p key={o.id} className="ctn-tv__offer">
               <b>{name(o.from)}</b> offers <CardRow cards={o.give} /> for <CardRow cards={o.want} />
               {o.to && <span> to {name(o.to)}</span>}
             </p>
           ))}
-          <ul className="cn-tv__log">
+          <ul className="ctn-tv__log">
             {t.log
-              .slice(-3)
+              .slice(t.seats.length >= 5 ? -1 : -2)
               .reverse()
               .map((e, i) => (
                 <li key={`${t.log.length}-${i}`}>{logLine(e, name)}</li>

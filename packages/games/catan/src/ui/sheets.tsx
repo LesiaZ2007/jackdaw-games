@@ -27,7 +27,7 @@ const covers = (hand: Cards, c: Partial<Cards>) => RESOURCES.every((r) => hand[r
 /** Cards as a row of pips: "[wool]2 [ore]". */
 export function CardRow({ cards }: { cards: Partial<Cards> }) {
   return (
-    <span className="cn-cardrow">
+    <span className="ctn-cardrow">
       {RESOURCES.filter((r) => cards[r]).map((r) => (
         <Pip key={r} res={r} n={cards[r]} />
       ))}
@@ -48,28 +48,28 @@ function Picker({
   max?: Partial<Cards>;
 }) {
   return (
-    <fieldset className="cn-picker">
-      <legend className="cn-label">{label}</legend>
+    <fieldset className="ctn-picker">
+      <legend className="ctn-label">{label}</legend>
       {RESOURCES.map((r) => {
         const n = value[r] ?? 0;
         const cap = max ? (max[r] ?? 0) : 19;
         return (
-          <span key={r} className={n ? 'cn-picker__cell is-set' : 'cn-picker__cell'}>
+          <span key={r} className={n ? 'ctn-picker__cell is-set' : 'ctn-picker__cell'}>
             <button
               type="button"
-              className="cn-picker__add"
+              className="ctn-picker__add"
               disabled={n >= cap}
               onClick={() => onChange({ ...value, [r]: n + 1 })}
               aria-label={`Add ${RESOURCE_NAME[r]} (${n})`}
             >
-              <span className={`cn-picker__art cn-fill--${TERRAIN_OF[r]}`}>
+              <span className={`ctn-picker__art ctn-fill--${TERRAIN_OF[r]}`}>
                 <ResourceGlyph res={r} />
               </span>
               <b>{n || '·'}</b>
             </button>
             <button
               type="button"
-              className="cn-picker__less"
+              className="ctn-picker__less"
               disabled={!n}
               onClick={() => onChange({ ...value, [r]: n - 1 })}
               aria-label={`One less ${RESOURCE_NAME[r]}`}
@@ -98,13 +98,13 @@ function OnePick({
   note?: (r: Resource) => string;
 }) {
   return (
-    <fieldset className="cn-onepick">
-      <legend className="cn-label">{label}</legend>
+    <fieldset className="ctn-onepick">
+      <legend className="ctn-label">{label}</legend>
       {RESOURCES.map((r) => (
         <button
           key={r}
           type="button"
-          className={value === r ? 'cn-onepick__opt is-on' : 'cn-onepick__opt'}
+          className={value === r ? 'ctn-onepick__opt is-on' : 'ctn-onepick__opt'}
           aria-pressed={value === r}
           disabled={disabled?.(r)}
           onClick={() => onChange(r)}
@@ -151,18 +151,18 @@ export function BuildSheet({
     dev: 'A knight, a progress card or a hidden point.',
   };
   return (
-    <Sheet open={open} onClose={onClose} title="Build" className="cn cn-sheet">
-      <ul className="cn-buildlist">
+    <Sheet open={open} onClose={onClose} title="Build" className="ctn ctn-sheet">
+      <ul className="ctn-buildlist">
         {options.map((o) => (
           <li key={o.kind}>
             <button
               type="button"
-              className="cn-buildrow"
+              className="ctn-buildrow"
               disabled={!!o.why}
               onClick={() => onPick(o.kind)}
             >
               <PieceGlyph kind={o.kind} colour={seatColourOfMe} />
-              <span className="cn-buildrow__text">
+              <span className="ctn-buildrow__text">
                 <b>{label[o.kind]}</b>
                 <small>{o.why ?? worth[o.kind]}</small>
               </span>
@@ -211,14 +211,14 @@ function Replies({
   const name = namer(players);
   const asked = offer.to ? [offer.to] : t.seats.filter((p) => p !== offer.from);
   return (
-    <ul className="cn-replies">
+    <ul className="ctn-replies">
       {asked.map((p) => {
         const r = offer.replies[p];
         return (
           <li key={p}>
             <SeatToken p={players.find((x) => x.id === p)} seats={t.seats} size={24} />
             <span>{name(p)}</span>
-            <span className={`cn-ans cn-ans--${r ?? 'wait'}`}>
+            <span className={`ctn-ans ctn-ans--${r ?? 'wait'}`}>
               {r === 'accept' ? 'Yes' : r === 'decline' ? 'No' : 'Thinking'}
             </span>
           </li>
@@ -289,15 +289,15 @@ export function TradeSheet({
       open={open}
       onClose={onClose}
       title={start ? 'Counter-offer' : mine || paired ? 'Trade' : `Trade with ${name(t.turn)}`}
-      className="cn cn-sheet cn-trade"
+      className="ctn ctn-sheet ctn-trade"
     >
       {canPlayers && (mine || t.turn !== me) && (
-        <section className="cn-trade__make">
+        <section className="ctn-trade__make">
           <Picker label="You give" value={give} onChange={setGive} max={v.hand} />
           <Picker label="You want" value={want} onChange={setWant} />
           {mine && !start && (
-            <fieldset className="cn-to">
-              <legend className="cn-label">Offer to</legend>
+            <fieldset className="ctn-to">
+              <legend className="ctn-label">Offer to</legend>
               <button
                 type="button"
                 aria-pressed={to === null}
@@ -321,7 +321,7 @@ export function TradeSheet({
                 ))}
             </fieldset>
           )}
-          <p className="cn-trade__why" aria-live="polite">
+          <p className="ctn-trade__why" aria-live="polite">
             {sum(give) + sum(want) === 0
               ? 'Tap the cards you’d give and the ones you want.'
               : short
@@ -330,7 +330,7 @@ export function TradeSheet({
           </p>
           <button
             type="button"
-            className="jd-plaque jd-plaque--go cn-wide"
+            className="jd-plaque jd-plaque--go ctn-wide"
             disabled={busy || !!bad || short}
             onClick={offer}
           >
@@ -344,15 +344,15 @@ export function TradeSheet({
       )}
 
       {myOffers.length > 0 && (
-        <section className="cn-trade__list">
-          <h3 className="cn-label">{mine ? 'Your offers' : 'Your proposals'}</h3>
+        <section className="ctn-trade__list">
+          <h3 className="ctn-label">{mine ? 'Your offers' : 'Your proposals'}</h3>
           {myOffers.map((o) => (
-            <article key={o.id} className="cn-offer">
-              <p className="cn-offer__line">
+            <article key={o.id} className="ctn-offer">
+              <p className="ctn-offer__line">
                 You give <CardRow cards={o.give} /> for <CardRow cards={o.want} />
               </p>
               {mine && <Replies offer={o} t={t} players={players} />}
-              <div className="cn-offer__btns">
+              <div className="ctn-offer__btns">
                 {mine &&
                   Object.entries(o.replies)
                     .filter(([, r]) => r === 'accept')
@@ -382,16 +382,16 @@ export function TradeSheet({
       )}
 
       {toMe.length > 0 && (
-        <section className="cn-trade__list">
-          <h3 className="cn-label">Offers to you</h3>
+        <section className="ctn-trade__list">
+          <h3 className="ctn-label">Offers to you</h3>
           {toMe.map((o) => (
-            <article key={o.id} className="cn-offer">
-              <p className="cn-offer__line">
+            <article key={o.id} className="ctn-offer">
+              <p className="ctn-offer__line">
                 <b>{name(o.from)}</b> gives <CardRow cards={o.give} /> for{' '}
                 <CardRow cards={o.want} />
                 {o.counter !== null && <small> (a counter-offer)</small>}
               </p>
-              <div className="cn-offer__btns">
+              <div className="ctn-offer__btns">
                 <button
                   type="button"
                   className="jd-plaque jd-plaque--go jd-plaque--small"
@@ -407,8 +407,8 @@ export function TradeSheet({
       )}
 
       {canBank && (
-        <section className="cn-trade__bank">
-          <h3 className="cn-label">Trade with the bank</h3>
+        <section className="ctn-trade__bank">
+          <h3 className="ctn-label">Trade with the bank</h3>
           <OnePick
             label="Give"
             value={bankGive}
@@ -424,7 +424,7 @@ export function TradeSheet({
           />
           <button
             type="button"
-            className="jd-plaque cn-wide"
+            className="jd-plaque ctn-wide"
             disabled={
               busy ||
               !bankGive ||
@@ -447,7 +447,7 @@ export function TradeSheet({
           </button>
         </section>
       )}
-      {!canPlayers && !canBank && <p className="cn-trade__why">There’s no trading right now.</p>}
+      {!canPlayers && !canBank && <p className="ctn-trade__why">There’s no trading right now.</p>}
     </Sheet>
   );
 }
@@ -478,15 +478,15 @@ export function OfferCard({
   const said = o.replies[me];
   const can = covers(v.hand, o.want);
   return (
-    <aside className="cn-offercard" aria-label={`Offer from ${name(o.from)}`}>
-      <p className="cn-offer__line">
+    <aside className="ctn-offercard" aria-label={`Offer from ${name(o.from)}`}>
+      <p className="ctn-offer__line">
         <SeatToken p={players.find((p) => p.id === o.from)} seats={t.seats} size={26} />
         <b>{name(o.from)}</b> offers <CardRow cards={o.give} /> for your <CardRow cards={o.want} />
       </p>
       {said === 'accept' ? (
-        <p className="cn-offercard__wait">You said yes. Waiting for {name(o.from)} to choose.</p>
+        <p className="ctn-offercard__wait">You said yes. Waiting for {name(o.from)} to choose.</p>
       ) : (
-        <div className="cn-offercard__btns">
+        <div className="ctn-offercard__btns">
           <button
             type="button"
             className="jd-plaque"
@@ -509,7 +509,7 @@ export function OfferCard({
         </div>
       )}
       {open.length > 1 && (
-        <small className="cn-offercard__more">{open.length - 1} more in Trade</small>
+        <small className="ctn-offercard__more">{open.length - 1} more in Trade</small>
       )}
     </aside>
   );
@@ -553,14 +553,14 @@ export function CardsSheet({
   let picker: ReactNode = null;
   if (choosing === 'yearOfPlenty')
     picker = (
-      <div className="cn-cardpick">
+      <div className="ctn-cardpick">
         <p>Pick two cards to take from the bank (the same one twice is fine).</p>
-        <div className="cn-cardpick__row">
+        <div className="ctn-cardpick__row">
           {RESOURCES.map((r) => (
             <button
               key={r}
               type="button"
-              className="cn-cardpick__opt"
+              className="ctn-cardpick__opt"
               disabled={take.length >= 2}
               onClick={() => setTake([...take, r])}
             >
@@ -569,17 +569,17 @@ export function CardsSheet({
             </button>
           ))}
         </div>
-        <p className="cn-cardpick__chosen">
+        <p className="ctn-cardpick__chosen">
           {take.length ? take.map((r, i) => <Pip key={i} res={r} />) : 'Nothing yet'}
           {take.length > 0 && (
-            <button type="button" className="cn-link" onClick={() => setTake([])}>
+            <button type="button" className="ctn-link" onClick={() => setTake([])}>
               Clear
             </button>
           )}
         </p>
         <button
           type="button"
-          className="jd-plaque jd-plaque--go cn-wide"
+          className="jd-plaque jd-plaque--go ctn-wide"
           disabled={busy || take.length !== 2}
           onClick={() => play({ type: 'play', card: 'yearOfPlenty', take: [take[0]!, take[1]!] })}
         >
@@ -589,11 +589,11 @@ export function CardsSheet({
     );
   if (choosing === 'monopoly')
     picker = (
-      <div className="cn-cardpick">
+      <div className="ctn-cardpick">
         <OnePick label="Everyone gives you all their" value={res} onChange={setRes} />
         <button
           type="button"
-          className="jd-plaque jd-plaque--go cn-wide"
+          className="jd-plaque jd-plaque--go ctn-wide"
           disabled={busy || !res}
           onClick={() => res && play({ type: 'play', card: 'monopoly', resource: res })}
         >
@@ -602,15 +602,15 @@ export function CardsSheet({
       </div>
     );
   return (
-    <Sheet open={open} onClose={onClose} title="Development cards" className="cn cn-sheet">
-      {!groups.length && <p className="cn-trade__why">You have none yet. Buy them from Build.</p>}
-      <ul className="cn-devlist">
+    <Sheet open={open} onClose={onClose} title="Development cards" className="ctn ctn-sheet">
+      {!groups.length && <p className="ctn-trade__why">You have none yet. Buy them from Build.</p>}
+      <ul className="ctn-devlist">
         {groups.map((g) => (
-          <li key={g.card} className="cn-dev">
-            <span className={`cn-dev__art cn-dev__art--${g.card}`}>
+          <li key={g.card} className="ctn-dev">
+            <span className={`ctn-dev__art ctn-dev__art--${g.card}`}>
               <DevGlyph kind={g.card} />
             </span>
-            <span className="cn-dev__text">
+            <span className="ctn-dev__text">
               <b>
                 {DEV_NAME[g.card]}
                 {g.n > 1 && ` ×${g.n}`}
@@ -638,7 +638,7 @@ export function CardsSheet({
         ))}
       </ul>
       {picker}
-      <p className="cn-trade__note">
+      <p className="ctn-trade__note">
         One card a turn, never on the turn you buy it. A knight can go before you roll.
       </p>
     </Sheet>
@@ -665,14 +665,14 @@ export function DiscardSheet({
   const [cards, setCards] = useState<Partial<Cards>>(none());
   const n = sum(cards);
   return (
-    <Sheet open={open} onClose={onClose} title={`Discard ${owe}`} className="cn cn-sheet">
-      <p className="cn-trade__why">
+    <Sheet open={open} onClose={onClose} title={`Discard ${owe}`} className="ctn ctn-sheet">
+      <p className="ctn-trade__why">
         A 7 was rolled and you hold {countCards(hand)} cards: give back half to the bank.
       </p>
       <Picker label={`Chosen ${n} of ${owe}`} value={cards} onChange={setCards} max={hand} />
       <button
         type="button"
-        className="jd-plaque jd-plaque--go cn-wide"
+        className="jd-plaque jd-plaque--go ctn-wide"
         disabled={busy || n !== owe}
         onClick={async () => {
           if (await send({ type: 'discard', cards })) onClose();

@@ -1,0 +1,769 @@
+/* Catan on a phone: fits under the bar without scrolling. Whose turn, everyone else, the island
+   as big as the space allows, your hand, the dock; sheets for building, trading and cards. On a
+   laptop the hand and dock sit beside the island. Colours are Jackdaw's and catan.css's tokens. */
+
+.cn--phone {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.cn-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  background: var(--cn-sea);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--cn-stock);
+  outline-offset: -6px;
+  overflow: hidden;
+}
+.cn-label {
+  font: 700 14px/1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  padding: 0;
+}
+
+.cn-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: var(--space-1) var(--space-3);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.cn-strip__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  display: grid;
+}
+.cn-strip__text b {
+  font: 800 19px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cn-strip__text small {
+  font: 500 15px/1.2 var(--font-body);
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cn-seattok {
+  display: inline-grid;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px var(--paper),
+    0 0 0 5px var(--cn-own);
+  flex: none;
+}
+.cn-mypts {
+  display: grid;
+  justify-items: end;
+  line-height: 1;
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--rule);
+}
+.cn-mypts b {
+  font: 800 26px/1 var(--font-code);
+}
+.cn-mypts small {
+  font: 700 13px/1 var(--font-plaque);
+  color: var(--ink-2);
+}
+.cn-clock {
+  font: 800 18px/1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  padding: 4px 6px;
+  border: 1.5px solid var(--ink);
+}
+.cn-clock--late {
+  background: var(--gules);
+  color: var(--on-fill);
+  border-color: var(--gules);
+}
+
+.cn-dice {
+  display: flex;
+  gap: 4px;
+  animation: cn-tumble 600ms var(--ease-out);
+}
+.cn-die {
+  --d: 32px;
+  width: var(--d);
+  height: var(--d);
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: calc(var(--d) * 0.13);
+  background: var(--cn-stock);
+  border: 1.5px solid var(--cn-stock-ink);
+  border-radius: calc(var(--d) * 0.16);
+}
+.cn-die--red {
+  background: var(--gules);
+}
+.cn-die i {
+  width: calc(var(--d) * 0.19);
+  height: calc(var(--d) * 0.19);
+  place-self: center;
+  border-radius: 50%;
+}
+.cn-die i.is-on {
+  background: var(--cn-stock-ink);
+}
+.cn-die--red i.is-on {
+  background: var(--cn-stock);
+}
+@keyframes cn-tumble {
+  0% {
+    transform: rotate(-30deg) scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: rotate(8deg) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.cn-rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: var(--space-1);
+}
+.cn-opp {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 6px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+}
+.cn-opp.is-acting {
+  box-shadow: inset 0 -4px 0 var(--cn-own);
+}
+.cn-opp__tok {
+  position: relative;
+  display: grid;
+}
+.cn-opp__body {
+  display: grid;
+  min-width: 0;
+}
+.cn-opp__name {
+  font: 800 15px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cn-opp__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 14px/1 var(--font-plaque);
+  color: var(--ink-2);
+}
+.cn-opp__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.cn-opp__meta svg {
+  width: 14px;
+  height: 14px;
+}
+.cn-devchit {
+  width: 9px;
+  height: 12px;
+  background: var(--sable);
+  border: 1px solid var(--cn-stock-ink);
+}
+.cn-opp__pts {
+  font: 800 24px/1 var(--font-code);
+}
+.cn-award-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  background: var(--cn-stock);
+  color: var(--cn-stock-ink);
+  outline: 1px solid var(--cn-stock-ink);
+}
+.cn-award-mark svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cn-hand {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 64px));
+  justify-content: center;
+  gap: var(--space-2);
+  padding-top: 8px;
+}
+.cn-rcard {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  padding: 4px;
+  background: var(--cn-stock);
+  color: var(--cn-stock-ink);
+  border: 1.5px solid var(--cn-stock-ink);
+  outline: 1px solid var(--cn-stock-ink);
+  outline-offset: -4px;
+}
+.cn-rcard.is-none {
+  opacity: 0.4;
+}
+.cn-rcard__art {
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--cn-stock);
+}
+.cn-rcard__art svg {
+  width: 26px;
+  height: 26px;
+}
+.cn-rcard__name {
+  font: 800 11px/1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.cn-rcard__n {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  background: var(--sable);
+  color: var(--on-fill);
+  font: 800 15px/1 var(--font-plaque);
+  border: 1.5px solid var(--cn-stock);
+}
+.cn-got {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  z-index: 2;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--vert);
+  color: var(--on-fill);
+  font: 800 16px/1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  animation: cn-rise 2.8s var(--ease-out) both;
+}
+.cn-got .cn-pip {
+  outline-color: var(--on-fill);
+}
+@keyframes cn-rise {
+  0% {
+    transform: translate(-50%, 16px);
+    opacity: 0;
+  }
+  12%,
+  85% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -8px);
+    opacity: 0;
+  }
+}
+
+.cn-dock {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: var(--space-1);
+}
+.cn-dock .jd-plaque {
+  min-height: 52px;
+  padding: 0 8px;
+  font-size: 19px;
+}
+.cn-dock--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.cn-dock--2 {
+  grid-template-columns: 1fr 1.5fr;
+}
+.cn-dock--2 > .cn-hint,
+.cn-dock--robber > .cn-hint {
+  grid-column: 1 / -1;
+}
+.cn-hint {
+  margin: 0;
+  text-align: center;
+  font: 500 16px/1.3 var(--font-body);
+  color: var(--ink);
+}
+.cn-victims {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--space-2);
+}
+.cn-victims button,
+.cn-to button {
+  min-height: 44px;
+  padding: 4px 10px;
+  font: 800 16px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  cursor: pointer;
+}
+.cn-victims button small {
+  display: block;
+  font: 500 13px/1.2 var(--font-body);
+  text-transform: none;
+  color: var(--ink-2);
+}
+.cn-victims button.is-on,
+.cn-to button.is-on {
+  background: var(--ink);
+  color: var(--paper);
+}
+.cn-victims button.is-on small {
+  color: var(--paper);
+}
+
+/* An offer to you, laid over the bottom of the island. */
+.cn-offercard {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 0 12px 30px -16px var(--shadow);
+  animation: cn-slide 360ms var(--ease-out);
+}
+.cn-offercard__btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;
+  gap: var(--space-2);
+}
+.cn-offercard__btns .jd-plaque {
+  min-height: 48px;
+  font-size: 18px;
+  padding: 0 6px;
+}
+.cn-offercard__wait,
+.cn-offercard__more {
+  margin: 0;
+  font: 500 15px/1.3 var(--font-body);
+  color: var(--ink-2);
+}
+@keyframes cn-slide {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+.cn-offer__line {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font: 500 17px/1.3 var(--font-body);
+}
+.cn-cardrow {
+  display: inline-flex;
+  gap: 8px;
+  font-size: 20px;
+  margin-right: 4px;
+}
+
+/* ---------- Sheets ---------- */
+
+.cn-sheet {
+  display: grid;
+  gap: var(--space-4);
+}
+.cn-sheet section {
+  display: grid;
+  gap: var(--space-3);
+}
+.cn-wide {
+  width: 100%;
+}
+.cn-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0 4px;
+  min-height: 32px;
+  font: 700 15px var(--font-body);
+  color: var(--ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cn-trade__why,
+.cn-trade__note {
+  margin: 0;
+  font: 500 16px/1.35 var(--font-body);
+  color: var(--ink-2);
+}
+
+.cn-picker,
+.cn-onepick,
+.cn-to {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.cn-picker,
+.cn-onepick {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.cn-picker > legend,
+.cn-onepick > legend,
+.cn-to > legend {
+  margin-bottom: 6px;
+}
+.cn-picker__cell {
+  display: grid;
+  border: 1.5px solid var(--rule);
+}
+.cn-picker__cell.is-set {
+  border-color: var(--ink);
+}
+.cn-picker__add,
+.cn-picker__less {
+  appearance: none;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.cn-picker__add {
+  min-height: 64px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+}
+.cn-picker__cell.is-set .cn-picker__add {
+  background: var(--cn-stock);
+  color: var(--cn-stock-ink);
+}
+.cn-picker__art {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: var(--cn-stock);
+}
+.cn-picker__art svg {
+  width: 22px;
+  height: 22px;
+}
+.cn-picker__add b {
+  font: 800 19px/1 var(--font-code);
+}
+.cn-picker__less {
+  min-height: 40px;
+  border-top: 1px solid var(--rule);
+  font: 800 22px/1 var(--font-plaque);
+}
+.cn-picker button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.cn-onepick__opt {
+  min-height: 56px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 6px 2px;
+  font: 700 13px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--rule);
+  cursor: pointer;
+}
+.cn-onepick__opt .cn-pip {
+  font-size: 20px;
+}
+.cn-onepick__opt.is-on {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.cn-onepick__opt:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.cn-to {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cn-offer {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1.5px solid var(--ink);
+}
+.cn-offer__btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.cn-replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.cn-replies li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font: 500 16px/1.2 var(--font-body);
+}
+.cn-ans {
+  font: 800 13px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+}
+.cn-ans--accept {
+  background: var(--vert);
+  color: var(--on-fill);
+}
+.cn-ans--decline {
+  background: var(--sable);
+  color: var(--on-fill);
+}
+.cn-ans--wait {
+  border: 1.5px dashed var(--rule);
+  color: var(--ink-2);
+}
+
+.cn-buildlist,
+.cn-devlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.cn-buildrow {
+  width: 100%;
+  min-height: 60px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  font-size: 20px;
+}
+.cn-buildrow:disabled {
+  border-color: var(--rule);
+  cursor: default;
+}
+.cn-buildrow:disabled .cn-piece,
+.cn-buildrow:disabled .cn-cardrow {
+  opacity: 0.45;
+}
+.cn-buildrow__text {
+  display: grid;
+  gap: 2px;
+}
+.cn-buildrow__text b {
+  font: 800 18px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cn-buildrow__text small {
+  font: 500 15px/1.25 var(--font-body);
+  color: var(--ink-2);
+}
+.cn-buildrow:disabled small {
+  color: var(--danger);
+}
+.cn-buildrow .cn-cardrow {
+  font-size: 18px;
+  gap: 4px;
+}
+
+.cn-dev {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border: 1.5px solid var(--ink);
+}
+.cn-dev__art {
+  width: 44px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  color: var(--on-fill);
+  background: var(--sable);
+  outline: 1px solid var(--cn-stock);
+  outline-offset: -4px;
+}
+.cn-dev__art svg {
+  width: 26px;
+  height: 26px;
+}
+.cn-dev__art--roadBuilding {
+  background: var(--tenne);
+}
+.cn-dev__art--yearOfPlenty {
+  background: var(--vert);
+}
+.cn-dev__art--monopoly {
+  background: var(--purpure);
+}
+.cn-dev__art--victoryPoint {
+  background: var(--or);
+}
+.cn-dev__text {
+  display: grid;
+  gap: 2px;
+}
+.cn-dev__text b {
+  font: 800 17px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cn-dev__text small {
+  font: 500 15px/1.25 var(--font-body);
+  color: var(--ink-2);
+}
+.cn-cardpick {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--table-2);
+}
+.cn-cardpick p {
+  margin: 0;
+  font: 500 16px/1.3 var(--font-body);
+}
+.cn-cardpick__row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.cn-cardpick__opt {
+  min-height: 56px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font: 700 13px/1 var(--font-plaque);
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  cursor: pointer;
+}
+.cn-cardpick__opt .cn-pip {
+  font-size: 20px;
+}
+.cn-cardpick__chosen {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 22px;
+}
+
+@container game (min-width: 760px) and (orientation: landscape) {
+  .cn--phone {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    column-gap: var(--space-4);
+    row-gap: var(--space-2);
+  }
+  .cn--phone > .cn-stage {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  .cn--phone > .cn-strip {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .cn--phone > .cn-rail {
+    grid-column: 2;
+    grid-row: 2;
+    grid-template-columns: 1fr;
+    align-content: start;
+  }
+  .cn--phone > .cn-hand {
+    grid-column: 2;
+    grid-row: 4;
+    padding-top: 44px;
+  }
+  .cn--phone > .cn-dock,
+  .cn--phone > .cn-hint {
+    grid-column: 2;
+    grid-row: 5;
+  }
+  .cn-opp {
+    padding: 6px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cn-dice,
+  .cn-got,
+  .cn-offercard {
+    animation: none;
+  }
+}

@@ -456,20 +456,33 @@ function discard(s: CatanState, who: string, c: Partial<Cards>): CatanState {
 
 /** Tiles the robber may move to (a friendly robber spares players on 2 points or fewer). */
 export function robberTiles(s: CatanState, who: string): number[] {
+  return robberSpots(s, who, (p) => points(s, p, false));
+}
+
+/** The same from public facts only (the screens): `pointsOf` gives visible points. */
+export function robberSpots(
+  s: Pick<CatanState, 'size' | 'board' | 'robber' | 'friendly' | 'buildings'>,
+  who: string,
+  pointsOf: (pid: string) => number,
+): number[] {
   const L = layoutOf(s);
   const all = s.board.tiles.map((_, i) => i).filter((i) => i !== s.robber);
   if (!s.friendly) return all;
   const spared = (i: number) =>
     L.tiles[i]!.corners.some((c) => {
       const b = s.buildings[c];
-      return b && b.owner !== who && points(s, b.owner, false) <= 2;
+      return b && b.owner !== who && pointsOf(b.owner) <= 2;
     });
   const ok = all.filter((i) => !spared(i));
   return ok.length ? ok : s.board.tiles.flatMap((t, i) => (t.terrain === 'desert' ? [i] : []));
 }
 
 /** Players with a building on a tile, other than `who`. */
-export function victimsAt(s: CatanState, tile: number, who: string): string[] {
+export function victimsAt(
+  s: Pick<CatanState, 'size' | 'buildings'>,
+  tile: number,
+  who: string,
+): string[] {
   const L = layoutOf(s);
   const out = new Set<string>();
   for (const c of L.tiles[tile]!.corners) {

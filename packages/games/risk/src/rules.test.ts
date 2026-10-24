@@ -2,6 +2,7 @@ import { createRng, GameError, type Rng } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
 import { NEUTRAL, reinforcementCount, territoriesOf } from './board';
 import type { Card } from './cards';
+import { visibleTo } from './fog';
 import { MAPS } from './maps';
 import type { Mission } from './missions';
 import {
@@ -111,13 +112,14 @@ describe('setup', () => {
 });
 
 describe('options', () => {
-  it('default to the world, secret missions, quick, rising sets and no timer', () => {
+  it('default to the world, secret missions, quick, rising sets, no timer and no fog', () => {
     expect(game.defaultOptions(3)).toEqual({
       map: 'World',
       goal: 'Secret missions',
       setup: 'Quick',
       cardSets: 'Rising',
       turnTimer: 'Off',
+      fog: false,
     });
   });
 });
@@ -790,5 +792,161 @@ describe('random whole games', () => {
   it('mostly finish', () => {
     // Missions games end quickly; random world domination can wander for a long time.
     expect(finished).toBeGreaterThan(configs.length / 2);
+  });
+});
+
+describe('fog of war', () => {
+  const ALL = [...MAPS.world.territories, ...MAPS.realm.territories].map((t) => t.id);
+
+  /** Every territory `pid` can't see gets other armies, and (between others) other owners. */
+  function scrambledFog(s: RiskState, pid: string, rng: Rng): RiskState {
+    const seenBy = visibleTo(MAPS[s.map], s.owner, pid);
+    const others = [...s.seats.filter((p) => p !== pid), ...(s.neutral ? [NEUTRAL] : [])];
+    const owner = { ...s.owner };
+    const armies = { ...s.armies };
+    for (const t of Object.keys(owner)) {
+      if (seenBy.has(t)) continue;
+      armies[t] = 1 + rng.int(30);
+      if (owner[t] !== pid) owner[t] = rng.pick(others);
+    }
+    return { ...s, owner, armies };
+  }
+
+  /** The public view, with the counts that scrambling owners may change set aside. */
+  const publicPart = (s: RiskState) => ({ ...game.getTableView(s), held: null, handCounts: null });
+
+  it('is off by default and on when asked', () => {
+    expect(start().fog).toBe(false);
+    expect(game.getTableView(start()).fog).toBe(false);
+    expect(game.getPlayerView(start(), 'a').sight).toBeNull();
+    expect(start(ids3, { fog: true }).fog).toBe(true);
+  });
+
+  it('shows each player only their own territories and their neighbours', () => {
+    const s = start(ids3, { fog: true });
+    const tv = game.getTableView(s);
+    expect(tv.owner).toEqual({});
+    expect(tv.armies).toEqual({});
+    expect(tv.toPlace).toBe(0);
+    expect(tv.held).toEqual({ a: 14, b: 14, c: 14 });
+    for (const p of ids3) {
+      const sight = game.getPlayerView(s, p).sight!;
+      const mine = territoriesOf(s.owner, p);
+      const next = mine.flatMap((t) => world.territories.find((x) => x.id === t)!.adj);
+      expect(Object.keys(sight.owner).sort()).toEqual([...new Set([...mine, ...next])].sort());
+      for (const t of Object.keys(sight.owner)) {
+        expect(sight.owner[t]).toBe(s.owner[t]);
+        expect(sight.armies[t]).toBe(s.armies[t]);
+      }
+      // Only the player to move learns how many armies they have to place.
+      expect(sight.toPlace).toBe(p === s.turn ? s.toPlace : 0);
+    }
+  });
+
+  it('lifts once the game is over', () => {
+    const s = { ...start(ids3, { fog: true }), phase: 'over' as const, winner: 'a' };
+    expect(game.getTableView(s).owner).toEqual(s.owner);
+    expect(game.getPlayerView(s, 'a').sight).toBeNull();
+  });
+
+  it('keeps continents out of chat', () => {
+    // a takes the last of Australia.
+    const aus = ['indonesia', 'new-guinea', 'western-australia', 'eastern-australia'];
+    const s = { ...staged({ a: [...aus.slice(1), 'siam'], armies: { siam: 10 } }), fog: true };
+    const next = act(s, 'a', { type: 'attack', from: 'siam', to: 'indonesia', mode: 'blitz' });
+    expect(next.owner.indonesia).toBe('a');
+    expect(game.announce!(s, next).join(' ')).not.toContain('Australia');
+    const clear = game.announce!({ ...s, fog: false }, { ...next, fog: false });
+    expect(clear.join(' ')).toContain('Australia');
+  });
+
+  it('shows a battle only to the two sides', () => {
+    const s = {
+      ...staged({ a: ['siam'], c: ['china'], armies: { siam: 10 } }, 'attack', ['a', 'b', 'c']),
+      fog: true,
+    };
+    const next = act(s, 'a', { type: 'attack', from: 'siam', to: 'indonesia', mode: 'roll' });
+    expect(game.getTableView(next).battle).toBeNull();
+    expect(game.getPlayerView(next, 'a').sight!.battle).toEqual(next.battle);
+    expect(game.getPlayerView(next, 'b').sight!.battle).toEqual(next.battle);
+    // c (in China) sees Siam but not Indonesia.
+    expect(game.getPlayerView(next, 'c').sight!.battle).toBeNull();
+  });
+
+  it.each([
+    [['a', 'b'], 'World', 'Quick', 11],
+    [['a', 'b', 'c'], 'Realm', 'Draft', 12],
+    [['a', 'b', 'c', 'd', 'e', 'f'], 'World', 'Draft', 13],
+    [['a', 'b', 'c', 'd'], 'Realm', 'Quick', 14],
+  ] as const)(
+    '%j on %s (%s) never leaks through the fog',
+    (players, map, setup, seed) => {
+      const rng = createRng(seed);
+      const peek = createRng(seed + 1);
+      let s = start([...players], { map, setup, fog: true }, seed);
+      for (let step = 0; step < 1500 && !game.getResult(s); step++) {
+        const movers = game.waitingOn!(s);
+        const pid = movers[rng.int(movers.length)]!;
+        const moves = legalMoves(s, pid);
+        const attacks = moves.filter((m) => m.type === 'attack');
+        const move = attacks.length && rng.next() < 0.8 ? rng.pick(attacks) : rng.pick(moves);
+        s = game.applyAction(s, pid, move, rng, step * 1000);
+        if (s.phase === 'over') break;
+        const tv = game.getTableView(s);
+        // No owners, armies, battles, move-ins or territory names in public at all.
+        expect(tv.owner).toEqual({});
+        expect(tv.armies).toEqual({});
+        expect(tv.battle).toBeNull();
+        expect(tv.occupy).toBeNull();
+        const json = JSON.stringify(tv);
+        for (const t of ALL) expect(json).not.toContain(`"${t}"`);
+        for (const t of MAPS[s.map].territories) expect(json).not.toContain(t.name);
+        if (step % 5) continue;
+        for (const p of s.seats) {
+          const sight = game.getPlayerView(s, p).sight;
+          expect(sight).not.toBeNull();
+          const seenBy = visibleTo(MAPS[s.map], s.owner, p);
+          expect(Object.keys(sight!.owner).every((t) => seenBy.has(t))).toBe(true);
+          // Changing anything out of sight changes nothing this player (or the table) gets.
+          const fogged = scrambledFog(s, p, peek);
+          expect(game.getPlayerView(fogged, p)).toEqual(game.getPlayerView(s, p));
+          expect(publicPart(fogged)).toEqual(publicPart(s));
+        }
+      }
+    },
+    30_000,
+  );
+});
+
+describe('ending early', () => {
+  it('saves nothing before the first battle', () => {
+    expect(game.partialResult!(start())).toBeNull();
+    expect(game.partialResult!(start(ids3, { setup: 'Draft' }))).toBeNull();
+  });
+
+  it('gives the win to whoever holds the most territories', () => {
+    const s = {
+      ...staged({ a: tids.slice(0, 20), c: tids.slice(20, 30) }, 'attack', ids3),
+      battleSeq: 4,
+      round: 3,
+    };
+    const r = game.partialResult!(s)!;
+    expect(r.winners).toEqual(['a']);
+    expect(r.summary).toBe('Held the most territories (20) after 3 rounds');
+    expect(r.standings!.map((x) => [x.playerId, x.outcome])).toEqual([
+      ['a', 'win'],
+      ['b', 'loss'],
+      ['c', 'loss'],
+    ]);
+    expect((r.reveal as { owner: unknown }).owner).toEqual(s.owner);
+  });
+
+  it('breaks a tie on armies, and shares a dead heat', () => {
+    const a = tids.slice(0, 14);
+    const c = tids.slice(14, 28);
+    const base = { ...staged({ a, c }, 'attack', ids3), battleSeq: 1 };
+    const more = { ...base, armies: { ...base.armies, [c[0]!]: 5 } };
+    expect(game.partialResult!(more)!.winners).toEqual(['c']);
+    expect(game.partialResult!(base)!.winners.sort()).toEqual(['a', 'b', 'c']);
   });
 });

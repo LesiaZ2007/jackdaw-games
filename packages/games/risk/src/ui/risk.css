@@ -96,6 +96,30 @@
 .rk-terr.is-flash .rk-terr__land {
   animation: rk-flash 900ms var(--ease-out) 2;
 }
+/* Fog of war: out of sight, the land goes to a pale mist with the engraver's hatching over it,
+   no army colour and no roundel, like the unsurveyed corners of an old chart. */
+.rk-terr.is-fog .rk-terr__land {
+  fill: color-mix(in srgb, var(--table) 55%, var(--paper));
+}
+.rk-terr.is-fog .rk-terr__edge {
+  stroke: var(--paper);
+  stroke-opacity: 0.7;
+}
+.rk-terr.is-fog .rk-terr__line {
+  stroke-dasharray: 1.6 1.2;
+  stroke-opacity: 0.4;
+}
+.rk-terr__fog {
+  pointer-events: none;
+}
+.rk-fog-line {
+  stroke: var(--ink-2);
+  stroke-opacity: 0.32;
+  stroke-width: 0.55;
+}
+.rk-roundel.is-fog .rk-name {
+  fill: var(--ink-2);
+}
 @keyframes rk-flash {
   50% {
     fill: color-mix(in srgb, var(--rk-own) 78%, var(--paper));
@@ -629,6 +653,15 @@
   align-content: start;
   gap: calc(2 * var(--vh, 1vh));
 }
+.rk-tv__fog {
+  margin: 0;
+  padding: 0.3em 0.6em;
+  border: 1.5px dashed var(--rule);
+  color: var(--ink-2);
+  font: 600 0.8em / 1.2 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
 .rk-turn--tv .rk-turn__who {
   font-size: 1.5em;
 }
@@ -907,6 +940,38 @@
   border-style: dashed;
   border-color: var(--rule);
   background: transparent;
+}
+/* A computer general: a small inked tab at the head of its name ribbon. */
+.rk-banner__bot {
+  display: inline-block;
+  margin-right: 5px;
+  padding: 1px 4px;
+  vertical-align: 1px;
+  font: 700 10px / 1.1 var(--font-plaque);
+  letter-spacing: 0.14em;
+  color: var(--paper);
+  background: var(--ink-2);
+}
+.rk-banner--me .rk-banner__bot {
+  color: var(--ink);
+  background: var(--paper);
+}
+/* The host's "+" on a furled banner: a dashed ring round the furl, as if to raise it. */
+.rk-banner__add.jd-addseat {
+  min-height: var(--tap);
+  align-items: start;
+  padding-top: calc(var(--tok) * 0.38);
+  color: var(--ink-2);
+}
+.rk-banner__add .jd-addseat__ring {
+  width: calc(var(--tok) * 0.9);
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+}
+.rk-banner--furled:has(.rk-banner__add) .rk-banner__name {
+  border-color: var(--ink-2);
+}
+.rk-muster__banners--tv .rk-banner__bot {
+  font-size: 24px;
 }
 .rk-banner__tap {
   position: absolute;

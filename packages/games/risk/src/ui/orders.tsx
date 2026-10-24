@@ -10,7 +10,7 @@ import { ARMY_NAME, armyColour, armyOf } from './armies';
 
 /** This deal, for remembering that its orders were read (it doesn't change before a battle). */
 function dealKey(t: RiskTableView, me: string) {
-  const owners = t.seats.map((p) => territoriesOf(t.owner, p).length).join('.');
+  const owners = t.seats.map((p) => t.held[p] ?? 0).join('.');
   const first = Object.keys(t.owner)
     .filter((x) => t.owner[x] === me)
     .slice(0, 4)

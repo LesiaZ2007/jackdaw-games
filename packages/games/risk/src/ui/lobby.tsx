@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  AddSeat,
   PlayerReaction,
   Token,
   seatTransition,
@@ -40,13 +41,14 @@ function Engraving({ map }: { map: MapDef }) {
 /**
  * One seat as a banner hung from a pole: the cloth in the army colour this seat will march under
  * (seat order sets it), the player's crest on it, their name on a ribbon. An empty seat is a
- * banner still furled.
+ * banner still furled; the host can tap its "+" to raise it for a computer general.
  */
 function Banner({
   seat,
   index,
   seats,
   onSeat,
+  onAddBot,
   reactions,
   tv,
 }: {
@@ -54,15 +56,17 @@ function Banner({
   index: number;
   seats: string[];
   onSeat?: (id: string) => void;
+  onAddBot?: () => void;
   reactions?: Reaction[];
   tv?: boolean;
 }) {
   if (!seat) {
     return (
-      <li className="rk-banner rk-banner--furled" aria-hidden="true">
+      <li className="rk-banner rk-banner--furled" aria-hidden={onAddBot ? undefined : true}>
         <span className="rk-banner__pole" />
         <span className="rk-banner__furl" />
         <span className="rk-banner__name">Open</span>
+        {onAddBot && <AddSeat onAdd={onAddBot} className="rk-banner__add" />}
       </li>
     );
   }
@@ -75,11 +79,12 @@ function Banner({
         seat.me && 'rk-banner--me',
         seat.landing && 'rk-banner--landing',
         seat.away && 'rk-banner--away',
+        seat.bot && 'rk-banner--bot',
       ]
         .filter(Boolean)
         .join(' ')}
       style={{ '--rk-own': army ? `var(--${army})` : 'var(--rule)', '--i': index } as CSSProperties}
-      aria-label={`${seat.name}${seat.me ? ' (you)' : ''}${seat.host ? ', host' : ''}${
+      aria-label={`${seat.name}${seat.me ? ' (you)' : ''}${seat.bot ? ', computer' : ''}${seat.host ? ', host' : ''}${
         seat.away ? ', away' : ''
       }${army ? `, ${ARMY_NAME[army]} armies` : ''}`}
     >
@@ -104,6 +109,7 @@ function Banner({
         className="rk-banner__name"
         style={tv ? undefined : { viewTransitionName: seatTransition(seat.id).name }}
       >
+        {seat.bot && <span className="rk-banner__bot">Bot</span>}
         {seat.me ? 'You' : seat.name}
       </span>
       {onSeat && seat.action && (
@@ -122,12 +128,14 @@ function Muster({
   seats,
   max,
   onSeat,
+  onAddBot,
   reactions,
   tv,
 }: {
   seats: Seat[];
   max: number;
   onSeat?: (id: string) => void;
+  onAddBot?: () => void;
   reactions?: Reaction[];
   tv?: boolean;
 }) {
@@ -142,6 +150,7 @@ function Muster({
           index={i}
           seats={ids}
           onSeat={onSeat}
+          onAddBot={onAddBot}
           reactions={reactions}
           tv={tv}
         />
@@ -159,6 +168,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
   max,
   options,
   onSeat,
+  onAddBot,
   reactions,
 }) => {
   const map = mapFor(options);
@@ -169,7 +179,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
         <span>The war council</span>
         <small>{map.name}</small>
       </p>
-      <Muster seats={seats} max={max} onSeat={onSeat} reactions={reactions} />
+      <Muster seats={seats} max={max} onSeat={onSeat} onAddBot={onAddBot} reactions={reactions} />
     </div>
   );
 };
@@ -177,9 +187,11 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
 /** The goal and setup in a line, for the TV. */
 function orders(options: Record<string, unknown>) {
   const goal = String(options.goal ?? 'Secret missions');
-  return goal === 'World domination'
-    ? 'World domination: the last army standing wins.'
-    : 'Secret missions: each general gets a hidden goal. First to finish wins.';
+  const line =
+    goal === 'World domination'
+      ? 'World domination: the last army standing wins.'
+      : 'Secret missions: each general gets a hidden goal. First to finish wins.';
+  return options.fog === true ? `${line} In the fog of war.` : line;
 }
 
 /**
@@ -201,6 +213,7 @@ export function RiskTvLobby({
     avatar: p.avatar,
     host: p.id === hostId,
     away: !p.online,
+    bot: p.bot,
   }));
   return (
     <div className="rk rk-tvmuster">

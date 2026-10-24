@@ -14,6 +14,7 @@ import { RESOURCES } from '../types';
 import { CatanBoard } from './board';
 import { Clock, Dice, PHASE_LABEL, SeatToken, logLine, namer } from './common';
 import { DevGlyph, Pip } from './glyphs';
+import { RollMoment } from './roll';
 import { CardRow } from './sheets';
 import { seatColour } from './palette';
 import './catan.css';
@@ -33,6 +34,7 @@ export const TvScreen: GameUi['TvScreen'] = ({
   const t = tableView as CatanTableView;
   const players = shellPlayers as ScreenPlayer[];
   const name = namer(players);
+  const [rolling, rolled] = useMoment(t.rollSeq);
   const [freshRob, dropRob] = useMoment(t.robbery?.seq ?? 0);
   const [freshAward, dropAward] = useMoment(t.award?.seq ?? 0);
   const rob = freshRob ? robberyMoment(t, null) : null;
@@ -81,7 +83,7 @@ export const TvScreen: GameUi['TvScreen'] = ({
             </small>
           </p>
           <Clock at={t.actBy} now={now} />
-          <Dice dice={t.dice} seq={t.rollSeq} />
+          <Dice dice={t.dice} seq={t.rollSeq} waiting={rolling !== null} />
         </section>
         <ol className="ctn-tv__players" data-count={t.seats.length}>
           {t.seats.map((id) => {
@@ -166,6 +168,16 @@ export const TvScreen: GameUi['TvScreen'] = ({
           </ul>
         </section>
       </aside>
+      {rolling !== null && t.dice && (
+        <RollMoment
+          key={rolling}
+          dice={t.dice}
+          seq={t.rollSeq}
+          target=".ctn-tv__turn .ctn-dice"
+          tv
+          onDone={rolled}
+        />
+      )}
       {(rob || award) && (
         <VerdictMoment
           key={rob ? `r${rob.key}` : `a${award!.key}`}

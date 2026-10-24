@@ -18,6 +18,7 @@ import {
   type Colour,
 } from './cards';
 import { meta } from './meta';
+import { unoBot } from './bot';
 
 /**
  * UNO for 2–10 players, by the official rules. Everyone gets seven cards and one is turned
@@ -620,6 +621,86 @@ export function lastRoundPlayed(t: Pick<UnoTableView, 'target' | 'scores'>): boo
   return t.target === 0 || Math.max(0, ...Object.values(t.scores)) >= t.target;
 }
 
+/**
+ * The result if the host ended the game now (Lesia, 2026-10-24: "End Game still saves progress
+ * of any rounds"). Playing to a target, the points leader after the rounds finished so far wins
+ * (null before the first round ends). A single round in progress goes to whoever holds the fewest
+ * cards (null before anyone has moved). Ties share the win.
+ */
+export function partialResult(s: UnoState): GameResult | null {
+  if (s.phase === 'over') return uno.getResult(s);
+  if (s.phase === 'done' && lastRoundPlayed(s)) return uno.getResult({ ...s, phase: 'over' });
+  const ranked = (score: (id: string) => number) =>
+    [...s.players].sort((a, b) => score(b) - score(a));
+  const reveal = (rounds: number): UnoReveal => ({
+    players: ranked((id) => s.scores[id] ?? 0),
+    scores: s.scores,
+    rounds,
+    target: s.target,
+    last: s.last,
+  });
+  const result = (
+    winners: string[],
+    summary: string,
+    role: (id: string) => string,
+    rounds: number,
+  ) => ({
+    winners,
+    summary,
+    reveal: reveal(rounds),
+    recap: s.recap,
+    highlights: s.biggest
+      ? [
+          {
+            award: 'Biggest round',
+            playerIds: [s.biggest.player],
+            text: `${s.biggest.points} points in round ${s.biggest.round}`,
+            value: s.biggest.points,
+          },
+        ]
+      : [],
+    standings: s.players.map((id) => ({
+      playerId: id,
+      outcome: winners.includes(id)
+        ? winners.length > 1
+          ? ('draw' as const)
+          : ('win' as const)
+        : ('loss' as const),
+      role: role(id),
+    })),
+  });
+
+  if (s.target === 0) {
+    if (s.seq === 0) return null;
+    const left = (id: string) => s.hands[id]?.length ?? 0;
+    const fewest = Math.min(...s.players.map(left));
+    const winners = s.players.filter((id) => left(id) === fewest);
+    const cards = `${fewest} ${fewest === 1 ? 'card' : 'cards'}`;
+    return result(
+      winners,
+      winners.length > 1
+        ? `${winners.length} players tied on ${cards} left`
+        : `Fewest cards left: ${cards}`,
+      (id) => `${left(id)} ${left(id) === 1 ? 'card' : 'cards'} left`,
+      0,
+    );
+  }
+
+  if (!s.last) return null;
+  const rounds = s.phase === 'done' ? s.round : s.round - 1;
+  const top = Math.max(...s.players.map((id) => s.scores[id] ?? 0));
+  const winners = s.players.filter((id) => (s.scores[id] ?? 0) === top);
+  const after = `after ${rounds} ${rounds === 1 ? 'round' : 'rounds'}`;
+  return result(
+    winners,
+    winners.length > 1
+      ? `${winners.length} players tied on ${top} points ${after}`
+      : `Led with ${top} points ${after}`,
+    (id) => `${s.scores[id] ?? 0} points`,
+    rounds,
+  );
+}
+
 export const uno: GameModule<UnoState, UnoAction, UnoPlayerView, UnoTableView, UnoOptions> = {
   meta,
   optionsSchema,
@@ -699,6 +780,9 @@ export const uno: GameModule<UnoState, UnoAction, UnoPlayerView, UnoTableView, U
     }
     return s;
   },
+
+  partialResult,
+  bot: unoBot,
 
   getResult(s): GameResult | null {
     if (s.phase !== 'over') return null;

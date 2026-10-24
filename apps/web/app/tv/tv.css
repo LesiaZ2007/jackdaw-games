@@ -234,7 +234,7 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   --b: min(44cqi, 84px);
 }
 .tv-track .jd-n {
-  font-size: 20px;
+  font-size: 24px;
   top: 6px;
   left: 9px;
 }
@@ -429,7 +429,7 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
 .tv-board__record {
   grid-column: 4;
   grid-row: 2;
-  font-size: 22px;
+  font-size: 24px;
   color: var(--ink-2);
   text-align: right;
 }
@@ -479,7 +479,7 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   margin-left: -12px;
 }
 .tv-played__winners .jd-chip {
-  font-size: 22px;
+  font-size: 24px;
 }
 .tv-played__time {
   font: 700 24px var(--font-plaque);

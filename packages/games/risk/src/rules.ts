@@ -98,6 +98,11 @@ export interface Battle {
   throws: number;
   attackerLost: number;
   defenderLost: number;
+  /**
+   * Both sides' losses over the whole run of attacks on this border this turn (a few Rolls, say),
+   * for the verdict when it's settled. Older games don't have it.
+   */
+  runLost?: { attacker: number; defender: number };
   conquered: boolean;
   /** Settled: taken, or the attacker can't go on from there. */
   ended: boolean;
@@ -136,8 +141,19 @@ export interface RiskState {
   eliminatedBy: Record<string, string>;
   battle: Battle | null;
   battleSeq: number;
-  /** The attack run under way (same from → to), for the bloodiest battle. */
-  run: { from: string; to: string; lost: number } | null;
+  /**
+   * The attack run under way (same from → to): both sides' losses together, for the bloodiest
+   * battle, and each side's (older games don't have them), for the verdict.
+   */
+  run: {
+    from: string;
+    to: string;
+    lost: number;
+    attackerLost?: number;
+    defenderLost?: number;
+  } | null;
+  /** The 2 armies for a traded territory you hold come once a turn: given already this turn. */
+  tradeBonus?: boolean;
   best: {
     battle: { pid: string; value: number; text: string } | null;
     conquest: { pid: string; value: number } | null;
@@ -261,6 +277,7 @@ function setup(ctx: {
     battle: null,
     battleSeq: 0,
     run: null,
+    tradeBonus: false,
     best: { battle: null, conquest: null },
     log: [{ round: 1, actor: first, text: '{actor} goes first' }],
     actBy: null,
@@ -370,13 +387,16 @@ function trade(s: RiskState, pid: string, ids: string[]): RiskState {
   const set = cards as Card[];
   if (!isSet(set)) return refuse('bad-set', 'Those three don’t make a set.');
   const value = setValue(s.cardSets, s.setsTraded, set);
-  // Two extra armies go straight onto one traded territory you hold.
-  const bonusOn = set.find((c) => c.territory && s.owner[c.territory] === pid)?.territory;
+  // Two extra armies go straight onto one traded territory you hold, once a turn.
+  const bonusOn = s.tradeBonus
+    ? undefined
+    : set.find((c) => c.territory && s.owner[c.territory] === pid)?.territory;
   const armies = bonusOn ? { ...s.armies, [bonusOn]: s.armies[bonusOn]! + 2 } : s.armies;
   return logged(
     {
       ...s,
       armies,
+      tradeBonus: s.tradeBonus || !!bonusOn,
       hands: { ...s.hands, [pid]: hand.filter((c) => !ids.includes(c.id)) },
       discard: [...s.discard, ...set],
       setsTraded: s.setsTraded + 1,
@@ -452,6 +472,16 @@ function attack(
     last = exchange(rng, atk, def);
     throws++;
   }
+  // A run of attacks on the same border: both sides' losses together (the bloodiest battle)
+  // and each side's (the verdict).
+  const same = s.run && s.run.from === a.from && s.run.to === a.to;
+  const run = {
+    from: a.from,
+    to: a.to,
+    lost: (same ? s.run!.lost : 0) + attackerLost + defenderLost,
+    attackerLost: (same ? (s.run!.attackerLost ?? 0) : 0) + attackerLost,
+    defenderLost: (same ? (s.run!.defenderLost ?? 0) : 0) + defenderLost,
+  };
   const conquered = def === 0;
   const seq = s.battleSeq + 1;
   const battle: Battle = {
@@ -466,15 +496,9 @@ function attack(
     throws,
     attackerLost,
     defenderLost,
+    runLost: { attacker: run.attackerLost, defender: run.defenderLost },
     conquered,
     ended: conquered || atk < 2,
-  };
-  // The bloodiest battle: a run of attacks on the same border, both sides' losses together.
-  const same = s.run && s.run.from === a.from && s.run.to === a.to;
-  const run = {
-    from: a.from,
-    to: a.to,
-    lost: (same ? s.run!.lost : 0) + attackerLost + defenderLost,
   };
   const best =
     run.lost > (s.best.battle?.value ?? 0)
@@ -600,6 +624,7 @@ function endTurn(s: RiskState, rng: Rng): RiskState {
     toPlace: reinforcementCount(mapOf(s), s.owner, next),
     takenThisTurn: 0,
     run: null,
+    tradeBonus: false,
     occupy: null,
     returnTo: null,
   };
@@ -607,18 +632,22 @@ function endTurn(s: RiskState, rng: Rng): RiskState {
 
 /**
  * After every move: one player left, or the mover's mission complete, ends the game. The mover is
- * passed in, since a fortify or the end of a turn has already handed the turn on.
+ * passed in, since a fortify or the end of a turn has already handed the turn on. After a
+ * knock-out (since `before`), a destroy mission may have fallen back to one someone already meets,
+ * so then everyone still in is checked, the mover first.
  */
-function settle(s: RiskState, mover: string): RiskState {
+function settle(s: RiskState, mover: string, before: RiskState): RiskState {
   if (s.phase === 'over' || s.phase === 'draft') return s;
   const alive = s.seats.filter((p) => !s.eliminated.includes(p));
-  const mission = s.missions?.[mover];
+  const knocked = s.eliminated.length > before.eliminated.length;
+  const done = (p: string) => {
+    const mission = s.missions?.[p];
+    return !!mission && missionDone(mission, mapOf(s), s.owner, s.armies, p, s.eliminatedBy);
+  };
   const won =
     alive.length === 1
       ? alive[0]!
-      : mission && missionDone(mission, mapOf(s), s.owner, s.armies, mover, s.eliminatedBy)
-        ? mover
-        : null;
+      : (knocked ? [mover, ...alive.filter((p) => p !== mover)] : [mover]).find(done);
   if (!won) return s;
   return logged(
     { ...s, phase: 'over', winner: won, occupy: null, actBy: null },
@@ -682,7 +711,7 @@ function timeUp(s: RiskState, rng: Rng): RiskState {
   const who = s.turn;
   let next = s;
   for (let guard = 0; guard < 20 && next.turn === who && next.phase !== 'over'; guard++) {
-    if (next.phase === 'occupy') next = settle(occupy(next, next.occupy!.min), who);
+    if (next.phase === 'occupy') next = settle(occupy(next, next.occupy!.min), who, next);
     else if (next.phase === 'reinforce') {
       while ((next.hands[who]?.length ?? 0) >= 5) {
         const set = bestSet(next.hands[who]!, next.cardSets, next.setsTraded)!;
@@ -692,7 +721,7 @@ function timeUp(s: RiskState, rng: Rng): RiskState {
           set.map((c) => c.id),
         );
       }
-      next = settle(reinforce(next, who, spread(next, who, next.toPlace, rng)), who);
+      next = settle(reinforce(next, who, spread(next, who, next.toPlace, rng)), who, next);
     } else next = endTurn(next, rng);
   }
   return next;
@@ -869,12 +898,12 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
   setup,
   getPlayerView,
   getTableView,
-  applyAction: (s, pid, a, rng, now) => stamp(s, settle(applyAction(s, pid, a, rng), pid), now),
+  applyAction: (s, pid, a, rng, now) => stamp(s, settle(applyAction(s, pid, a, rng), pid, s), now),
   getResult,
   announce,
   waitingOn,
   nextTimer: (s) =>
     s.turnSecs && s.actBy !== null && s.phase !== 'over' ? { id: 'turn', at: s.actBy } : null,
   onTimer: (s, id, rng, now) =>
-    id !== 'turn' || s.phase === 'over' ? s : stamp(s, settle(timeUp(s, rng), s.turn), now),
+    id !== 'turn' || s.phase === 'over' ? s : stamp(s, settle(timeUp(s, rng), s.turn, s), now),
 };

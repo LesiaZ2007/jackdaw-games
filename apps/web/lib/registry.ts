@@ -1,4 +1,4 @@
-import type { GameMeta, GameRegistry } from '@jackdaw/engine';
+import type { GameRegistry } from '@jackdaw/engine';
 import { avalon } from '@jackdaw/game-avalon';
 import { catan } from '@jackdaw/game-catan';
 import { codenames } from '@jackdaw/game-codenames';
@@ -27,10 +27,3 @@ export const games: GameRegistry = {
   [wavelength.meta.id]: wavelength,
   [wordhoard.meta.id]: wordhoard,
 };
-
-/** Catalog metadata for every registered game, in display order. */
-export const catalog: GameMeta[] = Object.values(games).map((g) => g.meta);
-
-export function gameMeta(id: string | null | undefined): GameMeta | null {
-  return (id && games[id]?.meta) || null;
-}

@@ -2,6 +2,7 @@
    nothing under 24px, names about 34px. The island fills the left, the table's news the right. */
 
 .ctn--tv {
+  position: relative;
   height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 620px;

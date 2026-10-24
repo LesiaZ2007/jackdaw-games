@@ -282,7 +282,8 @@
   text-transform: uppercase;
   white-space: nowrap;
   transform: translateX(-50%);
-  animation: ctn-rise 2.8s var(--ease-out) both;
+  /* after the big roll has landed in the strip */
+  animation: ctn-rise 2.8s var(--ease-out) 1.8s both;
 }
 .ctn-got .ctn-pip {
   outline-color: var(--on-fill);

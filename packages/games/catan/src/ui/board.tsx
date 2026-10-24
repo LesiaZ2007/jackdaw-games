@@ -64,24 +64,24 @@ function Motif({ t }: { t: Terrain }) {
     case 'forest':
       return (
         <>
-          <g className="cn-ink-fill">
+          <g className="ctn-ink-fill">
             <path d="M5 2l3.6 7H6.6l3 5H.4l3-5H1.4z" />
             <path d="M15 11l3.2 6h-1.8l2.6 4H10l2.6-4h-1.8z" />
           </g>
-          <path d="M5 2l1.6 3.2" className="cn-hi" strokeWidth=".7" />
+          <path d="M5 2l1.6 3.2" className="ctn-hi" strokeWidth=".7" />
         </>
       );
     case 'pasture':
       return (
         <>
-          <g className="cn-ink-line" strokeWidth=".9" strokeLinecap="round">
+          <g className="ctn-ink-line" strokeWidth=".9" strokeLinecap="round">
             <path d="M2 8q1-3 2 0M3.2 8q.6-3.4 1.6-.4M12 17q1-3 2 0M13.2 17q.6-3.4 1.6-.4" />
           </g>
-          <g className="cn-sheep">
+          <g className="ctn-sheep">
             <ellipse cx="14" cy="6" rx="2.3" ry="1.5" />
             <ellipse cx="4.5" cy="15.5" rx="2" ry="1.3" />
           </g>
-          <g className="cn-ink-fill">
+          <g className="ctn-ink-fill">
             <circle cx="16.4" cy="5.6" r=".7" />
             <circle cx="6.6" cy="15.2" r=".6" />
           </g>
@@ -89,7 +89,7 @@ function Motif({ t }: { t: Terrain }) {
       );
     case 'fields':
       return (
-        <g className="cn-ink-line" strokeWidth=".9" strokeLinecap="round">
+        <g className="ctn-ink-line" strokeWidth=".9" strokeLinecap="round">
           <path d="M1 6l3-4M4 6l3-4M7 6l3-4M11 16l3-4M14 16l3-4M17 16l3-4" />
           <path d="M0 7h11M10 17h10" strokeWidth=".6" />
         </g>
@@ -97,7 +97,7 @@ function Motif({ t }: { t: Terrain }) {
     case 'hills':
       return (
         <path
-          className="cn-ink-line"
+          className="ctn-ink-line"
           strokeWidth=".8"
           d="M0 4h20M0 10h20M0 16h20M5 4v6M15 4v6M10 10v6M0 10v6M20 10v6M5 16v4M15 16v4M10 0v4"
         />
@@ -106,23 +106,23 @@ function Motif({ t }: { t: Terrain }) {
       return (
         <>
           <path
-            className="cn-ink-line"
+            className="ctn-ink-line"
             strokeWidth="1"
             strokeLinejoin="round"
             d="M1 9l4-6 3 4 2-2 3 4M10 19l4-6 3 4 3-3"
           />
-          <path d="M5 3l1.4 4" className="cn-hi" strokeWidth=".8" />
+          <path d="M5 3l1.4 4" className="ctn-hi" strokeWidth=".8" />
         </>
       );
     case 'desert':
       return (
         <>
           <path
-            className="cn-ink-line"
+            className="ctn-ink-line"
             strokeWidth=".8"
             d="M0 8q5-4 10 0t10 0M-2 17q5-4 10 0t10 0"
           />
-          <g className="cn-ink-fill">
+          <g className="ctn-ink-fill">
             <circle cx="4" cy="12" r=".5" />
             <circle cx="14" cy="3" r=".5" />
             <circle cx="16" cy="12" r=".4" />
@@ -214,12 +214,12 @@ export function CatanBoard({
 
   const building = (x: number, y: number, colour: string, city: boolean, extra?: ReactNode) => (
     <g transform={`translate(${x} ${y}) scale(${1 / 36})`}>
-      <path d={city ? CITY : SETTLEMENT} transform="translate(1.6 1.6)" className="cn-shadow" />
-      <path d={city ? CITY : SETTLEMENT} style={{ fill: colour }} className="cn-build" />
+      <path d={city ? CITY : SETTLEMENT} transform="translate(1.6 1.6)" className="ctn-shadow" />
+      <path d={city ? CITY : SETTLEMENT} style={{ fill: colour }} className="ctn-build" />
       {city ? (
-        <path d="M-7,1 h3 v3 h-3z M4,2 h3 v3 h-3z" className="cn-window" />
+        <path d="M-7,1 h3 v3 h-3z M4,2 h3 v3 h-3z" className="ctn-window" />
       ) : (
-        <path d="M-1.6,1.4 h3.2 v4.6 h-3.2z" className="cn-window" />
+        <path d="M-1.6,1.4 h3.2 v4.6 h-3.2z" className="ctn-window" />
       )}
       {extra}
     </g>
@@ -238,13 +238,13 @@ export function CatanBoard({
     ];
     return (
       <g key={id} className={cls}>
-        <line x1={p[0]} y1={p[1]} x2={p[2]} y2={p[3]} className="cn-road-ink" />
+        <line x1={p[0]} y1={p[1]} x2={p[2]} y2={p[3]} className="ctn-road-ink" />
         <line
           x1={p[0]}
           y1={p[1]}
           x2={p[2]}
           y2={p[3]}
-          className="cn-road"
+          className="ctn-road"
           style={{ stroke: colour }}
         />
       </g>
@@ -259,7 +259,7 @@ export function CatanBoard({
   return (
     <svg
       ref={svg}
-      className={['cn-board', className].filter(Boolean).join(' ')}
+      className={['ctn-board', className].filter(Boolean).join(' ')}
       viewBox={vb.join(' ')}
       preserveAspectRatio="xMidYMid meet"
       role="img"
@@ -275,22 +275,22 @@ export function CatanBoard({
             width={MOTIF}
             height={MOTIF}
           >
-            <g transform={`scale(${MOTIF / 20})`} className={`cn-motif cn-motif--${t}`}>
+            <g transform={`scale(${MOTIF / 20})`} className={`ctn-motif ctn-motif--${t}`}>
               <Motif t={t} />
             </g>
           </pattern>
         ))}
         <pattern id={`${uid}-sea`} patternUnits="userSpaceOnUse" width=".5" height=".28">
-          <path d="M0 .14q.125-.09.25 0t.25 0" className="cn-wave" />
+          <path d="M0 .14q.125-.09.25 0t.25 0" className="ctn-wave" />
         </pattern>
       </defs>
-      <rect x={vb[0]} y={vb[1]} width={vb[2]} height={vb[3]} className="cn-sea" />
+      <rect x={vb[0]} y={vb[1]} width={vb[2]} height={vb[3]} className="ctn-sea" />
       <rect x={vb[0]} y={vb[1]} width={vb[2]} height={vb[3]} fill={`url(#${uid}-sea)`} />
       {L.tiles.map((_, i) => (
-        <polygon key={`sh${i}`} points={poly(i, 1.28)} className="cn-shallow" />
+        <polygon key={`sh${i}`} points={poly(i, 1.28)} className="ctn-shallow" />
       ))}
       {L.tiles.map((_, i) => (
-        <polygon key={`se${i}`} points={poly(i, 1.03)} className="cn-seam" />
+        <polygon key={`se${i}`} points={poly(i, 1.03)} className="ctn-seam" />
       ))}
 
       {/* Harbours: two piers to the corners they serve, and the plaque out at sea. */}
@@ -302,40 +302,40 @@ export function CatanBoard({
         const at = { x: m.x + ((m.x - t.x) / len) * 0.62, y: m.y + ((m.y - t.y) / len) * 0.62 };
         const res = h.kind === 'any' ? null : h.kind;
         return (
-          <g key={h.edge} className="cn-harbour">
+          <g key={h.edge} className="ctn-harbour">
             {[e.a, e.b].map((c) => {
               const p = corner(c);
               const q = { x: p.x + (at.x - p.x) * 0.12, y: p.y + (at.y - p.y) * 0.12 };
               return (
                 <g key={c}>
-                  <line x1={at.x} y1={at.y} x2={q.x} y2={q.y} className="cn-pier-ink" />
-                  <line x1={at.x} y1={at.y} x2={q.x} y2={q.y} className="cn-pier" />
+                  <line x1={at.x} y1={at.y} x2={q.x} y2={q.y} className="ctn-pier-ink" />
+                  <line x1={at.x} y1={at.y} x2={q.x} y2={q.y} className="ctn-pier" />
                 </g>
               );
             })}
-            <circle cx={at.x} cy={at.y + 0.025} r=".27" className="cn-shadow" />
+            <circle cx={at.x} cy={at.y + 0.025} r=".27" className="ctn-shadow" />
             <circle
               cx={at.x}
               cy={at.y}
               r=".27"
               className={
-                res ? `cn-plaque cn-fill--${YIELD_TERRAIN[res]}` : 'cn-plaque cn-plaque--any'
+                res ? `ctn-plaque ctn-fill--${YIELD_TERRAIN[res]}` : 'ctn-plaque ctn-plaque--any'
               }
             />
             {res ? (
               <>
                 <g
                   transform={`translate(${at.x - 0.13} ${at.y - 0.2}) scale(${0.26 / 24})`}
-                  className="cn-plaque__art"
+                  className="ctn-plaque__art"
                 >
                   {resourceArt(res)}
                 </g>
-                <text x={at.x} y={at.y + 0.19} className="cn-plaque__ratio cn-plaque__ratio--on">
+                <text x={at.x} y={at.y + 0.19} className="ctn-plaque__ratio ctn-plaque__ratio--on">
                   2:1
                 </text>
               </>
             ) : (
-              <text x={at.x} y={at.y + 0.07} className="cn-plaque__ratio">
+              <text x={at.x} y={at.y + 0.07} className="ctn-plaque__ratio">
                 3:1
               </text>
             )}
@@ -346,13 +346,13 @@ export function CatanBoard({
 
       {board.tiles.map((t, i) => (
         <g key={`t${i}`}>
-          <polygon points={poly(i, 0.965)} className={`cn-tile cn-fill--${t.terrain}`} />
+          <polygon points={poly(i, 0.965)} className={`ctn-tile ctn-fill--${t.terrain}`} />
           <polygon points={poly(i, 0.965)} fill={`url(#${uid}-${t.terrain})`} />
           <title>{tileName(i)}</title>
         </g>
       ))}
       {paying.map((i) => (
-        <polygon key={`p${roll!.seq}-${i}`} points={poly(i, 0.86)} className="cn-paying" />
+        <polygon key={`p${roll!.seq}-${i}`} points={poly(i, 0.86)} className="ctn-paying" />
       ))}
 
       {board.tiles.map((t, i) => {
@@ -361,11 +361,11 @@ export function CatanBoard({
         const red = t.number === 6 || t.number === 8;
         const n = pips(t.number);
         return (
-          <g key={`n${i}`} className={red ? 'cn-disc cn-disc--red' : 'cn-disc'}>
-            <circle cx={x} cy={y + 0.03} r=".36" className="cn-shadow" />
-            <circle cx={x} cy={y} r=".35" className="cn-disc__face" />
-            <circle cx={x} cy={y} r=".3" className="cn-disc__rule" />
-            <text x={x} y={y + 0.1} className="cn-disc__n">
+          <g key={`n${i}`} className={red ? 'ctn-disc ctn-disc--red' : 'ctn-disc'}>
+            <circle cx={x} cy={y + 0.03} r=".36" className="ctn-shadow" />
+            <circle cx={x} cy={y} r=".35" className="ctn-disc__face" />
+            <circle cx={x} cy={y} r=".3" className="ctn-disc__rule" />
+            <text x={x} y={y + 0.1} className="ctn-disc__n">
               {t.number}
             </text>
             {Array.from({ length: n }, (_, k) => (
@@ -374,7 +374,7 @@ export function CatanBoard({
                 cx={x + (k - (n - 1) / 2) * 0.075}
                 cy={y + 0.2}
                 r=".026"
-                className="cn-disc__pip"
+                className="ctn-disc__pip"
               />
             ))}
           </g>
@@ -384,9 +384,9 @@ export function CatanBoard({
       {robber >= 0 && (
         <g
           transform={`translate(${L.tiles[robber]!.x + (board.tiles[robber]!.number ? 0.38 : 0)} ${L.tiles[robber]!.y - 0.02})`}
-          className="cn-robber"
+          className="ctn-robber"
         >
-          <ellipse cx="0" cy=".3" rx=".2" ry=".06" className="cn-shadow" />
+          <ellipse cx="0" cy=".3" rx=".2" ry=".06" className="ctn-shadow" />
           <path d="M-.17 .3 L-.1 -.02 Q-.18 -.12 -.08 -.18 A.12 .12 0 1 1 .08 -.18 Q.18 -.12 .1 -.02 L.17 .3 Z" />
           <title>The robber</title>
         </g>
@@ -402,7 +402,7 @@ export function CatanBoard({
         <polygon
           key={`r${i}`}
           points={poly(i, 0.8)}
-          className="cn-spot cn-spot--tile"
+          className="ctn-spot ctn-spot--tile"
           role="button"
           tabIndex={0}
           aria-label={`Move the robber to ${tileName(i)}`}
@@ -417,7 +417,7 @@ export function CatanBoard({
             cx={m.x}
             cy={m.y}
             r=".15"
-            className="cn-spot"
+            className="ctn-spot"
             role="button"
             tabIndex={0}
             aria-label={`Road between ${cornerName(L.edges[e]!.a)} and ${cornerName(L.edges[e]!.b)}`}
@@ -433,7 +433,7 @@ export function CatanBoard({
             cx={corner(c).x}
             cy={corner(c).y}
             r=".2"
-            className="cn-spot"
+            className="ctn-spot"
             role="button"
             tabIndex={0}
             aria-label={`Build at ${cornerName(c)}`}
@@ -442,14 +442,14 @@ export function CatanBoard({
           />
         ),
       )}
-      {ghost && ghost.kind === 'road' && road(ghost.at, ghostColour ?? 'var(--rule)', 'cn-ghost')}
+      {ghost && ghost.kind === 'road' && road(ghost.at, ghostColour ?? 'var(--rule)', 'ctn-ghost')}
       {ghost && ghost.kind !== 'road' && (
-        <g className="cn-ghost">
+        <g className="ctn-ghost">
           <circle
             cx={corner(ghost.at).x}
             cy={corner(ghost.at).y}
             r=".36"
-            className="cn-ghost__ring"
+            className="ctn-ghost__ring"
           />
           {building(
             corner(ghost.at).x,
@@ -472,23 +472,27 @@ export function CatanBoard({
             return [
               <g
                 key={`f${roll.seq}-${i}-${c}`}
-                className="cn-flyer"
+                className="ctn-flyer"
                 style={{
                   ['--fx' as string]: `${(p.x - t.x).toFixed(3)}px`,
                   ['--fy' as string]: `${(p.y - t.y).toFixed(3)}px`,
                 }}
                 transform={`translate(${t.x} ${t.y})`}
               >
-                <g className="cn-flyer__card">
-                  <rect x="-.17" y="-.23" width=".34" height=".46" className="cn-flyer__back" />
+                <g className="ctn-flyer__card">
+                  <rect x="-.17" y="-.23" width=".34" height=".46" className="ctn-flyer__back" />
                   <rect
                     x="-.12"
                     y="-.17"
                     width=".24"
                     height=".24"
-                    className={`cn-fill--${board.tiles[i]!.terrain}`}
+                    className={`ctn-fill--${board.tiles[i]!.terrain}`}
                   />
-                  <text y=".2" className="cn-flyer__n" style={{ fill: seatColour(b.owner, seats) }}>
+                  <text
+                    y=".2"
+                    className="ctn-flyer__n"
+                    style={{ fill: seatColour(b.owner, seats) }}
+                  >
                     +{b.city ? 2 : 1}
                   </text>
                 </g>

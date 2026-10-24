@@ -11,7 +11,7 @@ import './tv.css';
 function Scores({ r, players }: { r: CatanReveal; players: ScreenPlayer[] }) {
   const order = [...r.seats].sort((a, b) => r.points[b]!.total - r.points[a]!.total);
   return (
-    <table className="cn-scores">
+    <table className="ctn-scores">
       <thead>
         <tr>
           <th scope="col">Player</th>
@@ -38,7 +38,7 @@ function Scores({ r, players }: { r: CatanReveal; players: ScreenPlayer[] }) {
           return (
             <tr key={id}>
               <td>
-                <span className="cn-scores__who">
+                <span className="ctn-scores__who">
                   <SeatToken p={p} seats={r.seats} size={26} />
                   {p?.name ?? 'Someone'}
                   {id === r.winner && <OutcomeChip outcome="win">Won</OutcomeChip>}
@@ -49,7 +49,7 @@ function Scores({ r, players }: { r: CatanReveal; players: ScreenPlayer[] }) {
               <td>{pt.road ? '2' : '–'}</td>
               <td>{pt.army ? '2' : '–'}</td>
               <td>{pt.vp || '–'}</td>
-              <td className="cn-scores__total">{pt.total}</td>
+              <td className="ctn-scores__total">{pt.total}</td>
             </tr>
           );
         })}
@@ -62,9 +62,9 @@ function Scores({ r, players }: { r: CatanReveal; players: ScreenPlayer[] }) {
 export const Reveal: NonNullable<GameUi['Reveal']> = ({ result, players }) => {
   const r = result.reveal as CatanReveal;
   return (
-    <div className="cn cn-reveal">
+    <div className="ctn ctn-reveal">
       <Scores r={r} players={players} />
-      <div className="cn-reveal__board">
+      <div className="ctn-reveal__board">
         <CatanBoard
           board={r.board}
           buildings={r.buildings}
@@ -83,8 +83,8 @@ export const Reveal: NonNullable<GameUi['Reveal']> = ({ result, players }) => {
 export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result, players }) => {
   const r = result.reveal as CatanReveal;
   return (
-    <div className="cn cn-reveal cn-reveal--tv">
-      <div className="cn-reveal__board">
+    <div className="ctn ctn-reveal ctn-reveal--tv">
+      <div className="ctn-reveal__board">
         <CatanBoard
           board={r.board}
           buildings={r.buildings}

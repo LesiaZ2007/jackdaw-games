@@ -1,10 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { HistoryEntry, LobbySnapshot, LobbyStats, PlayerStats } from '@jackdaw/engine';
+import type {
+  ClientMessage,
+  HistoryEntry,
+  LobbySnapshot,
+  LobbyStats,
+  PlayerStats,
+} from '@jackdaw/engine';
 import { Sheet, Token } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 import { nightSummary } from '@/lib/night';
+import { ConfirmButton } from './menu-sheet';
 
 type Tab = 'players' | 'games' | 'tonight';
 const gameName = (id: string) => catalogEntry(id)?.meta.name ?? id;
@@ -38,11 +45,13 @@ export function StatsSheet({
   onClose,
   code,
   snapshot,
+  send,
 }: {
   open: boolean;
   onClose: () => void;
   code: string;
   snapshot: LobbySnapshot;
+  send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
 }) {
   const [tab, setTab] = useState<Tab>('players');
   const [data, setData] = useState<{ stats: LobbyStats; history: HistoryEntry[] } | null>(null);
@@ -63,6 +72,7 @@ export function StatsSheet({
   }, [open, code, count]);
 
   const avatars = new Map(snapshot.players.map((p) => [p.id, p.avatar]));
+  const scored = Object.values(snapshot.scores).some((l) => l.played > 0);
 
   return (
     <Sheet open={open} onClose={onClose} title="Game stats" className="pad">
@@ -175,6 +185,20 @@ export function StatsSheet({
             </li>
           ))}
         </ol>
+      )}
+
+      {snapshot.hostId === snapshot.me && scored && (
+        <section className="menu__block pad__reset">
+          <h3 className="jd-label">Tonight&rsquo;s tally</h3>
+          <p>Start the running wins and losses again from nothing. The log of games stays.</p>
+          <ConfirmButton
+            label="Reset scores"
+            armedLabel="Tap again to reset everyone’s scores"
+            onConfirm={async () => {
+              await send({ type: 'resetScores' });
+            }}
+          />
+        </section>
       )}
     </Sheet>
   );

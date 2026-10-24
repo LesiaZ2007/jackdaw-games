@@ -50,7 +50,7 @@ a {
   content: '';
   position: absolute;
   inset: 4px;
-  border: 1px solid rgba(246, 240, 225, 0.55);
+  border: 1px solid color-mix(in srgb, var(--on-fill) 55%, transparent);
 }
 .home-link {
   appearance: none;

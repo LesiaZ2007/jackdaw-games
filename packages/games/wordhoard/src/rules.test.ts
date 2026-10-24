@@ -151,6 +151,29 @@ describe('playing', () => {
     expect(JSON.stringify(game.getTableView(s))).not.toContain('"Q"');
   });
 
+  it('shakes the bag after a swap, so the swapped tiles aren’t known to be last', () => {
+    let s = rigged('QZAAAAA');
+    s = { ...s, bag: Array<string>(20).fill('E') };
+    s = act(s, 'a', { type: 'swap', tiles: ['Q', 'Z'] });
+    expect(s.bag).toHaveLength(20);
+    expect([...s.bag].sort().join('')).toBe('E'.repeat(18) + 'QZ');
+    expect(s.bag.slice(-2)).not.toEqual(['Q', 'Z']);
+  });
+
+  it('counts a play worth nothing as a scoreless turn', () => {
+    let s = rigged('??AAAAA');
+    s = { ...s, scoreless: 5 };
+    s = act(s, 'a', {
+      type: 'play',
+      tiles: [
+        { row: 7, col: 7, letter: 'A', blank: true },
+        { row: 7, col: 8, letter: 'T', blank: true },
+      ],
+    });
+    expect(s.moves.at(-1)).toMatchObject({ kind: 'play', score: 0 });
+    expect(s.over).toBe(true);
+  });
+
   it('ends after six scoreless turns, everyone losing what’s on their rack', () => {
     let s = rigged('AAAAAAA', 'BBBBBBB');
     for (let i = 0; i < 6; i++) s = act(s, s.turn, { type: 'pass' });
@@ -227,6 +250,10 @@ describe('pairs', () => {
     const r = game.getResult(s)!;
     expect(r.winners.sort()).toEqual([x, y].sort());
     expect(r.standings!.filter((st) => st.outcome === 'win')).toHaveLength(2);
+    const lone = s.sides.find((p) => p.length === 1)![0];
+    for (const st of r.standings!)
+      expect(st.team).toBe(st.playerId === lone ? 'On their own' : 'In a pair');
+    expect(game.getResult({ ...rigged('A'), over: true })!.standings![0]!.team).toBeUndefined();
   });
 });
 

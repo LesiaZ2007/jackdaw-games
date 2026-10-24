@@ -9,10 +9,18 @@ import { ThemeChoice } from '../../theme-toggle';
 import { AlertSettings } from './alert-settings';
 
 /**
- * Ending a game takes two taps, as in Avalon: the first arms it for four seconds, the second
- * ends it for everyone.
+ * A step that can't be undone takes two taps, as in Avalon: the first arms it for four seconds,
+ * the second does it.
  */
-function EndGameButton({ onEnd }: { onEnd: () => Promise<void> }) {
+export function ConfirmButton({
+  label,
+  armedLabel,
+  onConfirm,
+}: {
+  label: string;
+  armedLabel: string;
+  onConfirm: () => Promise<void>;
+}) {
   const [armed, setArmed] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -28,12 +36,12 @@ function EndGameButton({ onEnd }: { onEnd: () => Promise<void> }) {
       onClick={async () => {
         if (!armed) return setArmed(true);
         setBusy(true);
-        await onEnd();
+        await onConfirm();
         setBusy(false);
         setArmed(false);
       }}
     >
-      {armed ? 'Tap again to end the game for everyone' : 'End this game'}
+      {armed ? armedLabel : label}
     </Plaque>
   );
 }
@@ -89,6 +97,7 @@ export function MenuSheet({
   snapshot: s,
   send,
   onEdit,
+  onLeaving,
 }: {
   open: boolean;
   onClose: () => void;
@@ -96,6 +105,8 @@ export function MenuSheet({
   snapshot: LobbySnapshot;
   send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
   onEdit: () => void;
+  /** Leaving has started (true) or was refused (false). */
+  onLeaving: (leaving: boolean) => void;
 }) {
   const router = useRouter();
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -107,11 +118,13 @@ export function MenuSheet({
     : '';
 
   async function leave() {
+    // Tell the page first, so the moment the seat is gone it doesn't read as a removal.
+    onLeaving(true);
     const out = await send({ type: 'leave' });
     if (out) {
       forgetSeat(code);
       router.push('/');
-    }
+    } else onLeaving(false);
   }
 
   return (
@@ -153,8 +166,10 @@ export function MenuSheet({
         <section className="menu__block">
           <h3 className="jd-label">This game</h3>
           <p>Stop the game for everyone and go back to the lobby. It won&rsquo;t be scored.</p>
-          <EndGameButton
-            onEnd={async () => {
+          <ConfirmButton
+            label="End this game"
+            armedLabel="Tap again to end the game for everyone"
+            onConfirm={async () => {
               if (await send({ type: 'endGame' })) onClose();
             }}
           />

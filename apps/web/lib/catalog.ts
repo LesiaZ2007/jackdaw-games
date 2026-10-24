@@ -11,6 +11,7 @@ import { wavelengthUi } from '@jackdaw/game-wavelength/ui';
 import { wordhoardUi } from '@jackdaw/game-wordhoard/ui';
 import type { GameAbout, GameUi } from '@jackdaw/ui';
 import { games } from './registry';
+import { upcoming } from './upcoming';
 import type { GameArt } from '@jackdaw/ui';
 
 /**
@@ -40,57 +41,6 @@ export const gameUis: Record<string, GameUi> = {
   wavelength: wavelengthUi,
   wordhoard: wordhoardUi,
 };
-
-const upcoming: Omit<CatalogEntry, 'playable'>[] = [
-  {
-    meta: {
-      id: 'werewolf',
-      name: 'Werewolf',
-      tagline: 'Nobody has to sit out and narrate.',
-      minPlayers: 6,
-      maxPlayers: 15,
-      category: 'social-deduction',
-      minutes: [20, 40],
-      complexity: 2,
-    },
-    art: { band: 'sable', field: 'semee', glyph: 'wolf' },
-    about: {
-      description:
-        'At night the wolves pick someone to eat while the seer and the doctor do their thing. In the morning the village finds out who’s gone, argues about it and votes someone out. The app runs the night, so everyone gets to play.',
-      steps: [
-        'Night: the wolves pick a target and the special roles act.',
-        'Morning: everyone finds out who died.',
-        'Day: talk it over, then vote someone out.',
-        'The village wins when the wolves are gone. The wolves win once there are as many of them as villagers.',
-      ],
-      credit: 'A classic party game in the public domain.',
-    },
-  },
-  {
-    meta: {
-      id: 'spyfall',
-      name: 'Spyfall',
-      tagline: 'Everyone knows where you are, except the spy.',
-      minPlayers: 3,
-      maxPlayers: 15,
-      category: 'social-deduction',
-      minutes: [8, 15],
-      complexity: 1,
-    },
-    art: { band: 'tenne', field: 'fretty', glyph: 'spy' },
-    about: {
-      description:
-        'Everyone except the spy knows where you all are. Ask each other questions that show you know the place without giving it away, while the spy bluffs along and tries to work it out.',
-      steps: [
-        'Everyone gets the location and a role, except the spy.',
-        'Take turns asking each other questions.',
-        'Once a round, anyone can call a vote on who they think the spy is.',
-        'The spy can stop the round at any time and guess where you are.',
-      ],
-      credit: 'Based on Spyfall by Alexandr Ushan. Original locations.',
-    },
-  },
-];
 
 /** The order games are listed in: grouped loosely by kind. */
 const KIND_ORDER: GameCategory[] = ['social-deduction', 'word', 'card', 'board'];

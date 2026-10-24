@@ -31,6 +31,28 @@ export const pokerUi: GameUi = {
       },
     ],
   },
+  optionHelp: {
+    stack: 'Everyone starts with the same stack.',
+    blinds: 'The small and big blind at the start.',
+    blindsDouble: {
+      Never: 'The blinds stay as they start.',
+      'Every 5 hands': 'The blinds double every 5 hands, so the stacks get short fast.',
+      'Every 10 hands': 'The blinds double every 10 hands, so the game keeps moving.',
+    },
+    length: {
+      '15 hands': 'Most chips after 15 hands wins, or the last player with chips.',
+      '30 hands': 'Most chips after 30 hands wins, or the last player with chips.',
+      'Last one standing': 'Play until one player has every chip.',
+    },
+    turnTimer: 'Out of time, you check if that’s free, otherwise you fold.',
+    buyBack: {
+      No: 'Out of chips means out of the game.',
+      'Once each':
+        'Out of chips? Buy back in once for a fresh stack, in the first half of the game (the first 10 hands for Last one standing).',
+      'Any time':
+        'Out of chips? Buy back in for a fresh stack as often as you like, in the first half of the game (the first 10 hands for Last one standing).',
+    },
+  },
   fit: true,
   LobbySeats,
   PlayerScreen,

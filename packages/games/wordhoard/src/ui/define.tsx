@@ -19,7 +19,9 @@ export function useDefinitions(words: string[]): Definition[] | null {
   useEffect(() => {
     if (!key || cached) return;
     const ctl = new AbortController();
-    fetch(`/api/words/define?w=${encodeURIComponent(key)}`, { signal: ctl.signal })
+    // Asked the way the server keeps it (sorted, in capitals), so it doesn't redirect.
+    const asked = [...new Set(key.split(','))].sort().join(',');
+    fetch(`/api/words/define?w=${asked}`, { signal: ctl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((body: { words: Definition[] }) => {
         for (const d of body.words) meanings.set(d.word, d);

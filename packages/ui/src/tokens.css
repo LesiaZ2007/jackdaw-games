@@ -19,6 +19,17 @@
   --shadow: rgba(29, 29, 28, 0.28);
   --footprint: rgba(90, 88, 84, 0.15);
   --grain-opacity: 0.45;
+  /* Green text for a win that stays readable on dark paper */
+  --win-ink: var(--vert);
+
+  /* Printed pieces: the same in both themes */
+  --print-ink: #24211e; /* dark ink on brass (host badge, the win seal's mark) */
+  --crest-brass: #ecd29b; /* crest accents, unless a game sets --crest-accent */
+  --shade-base: #000; /* mixed into a fill for its shaded side (box sides, ribbon tails) */
+  --backdrop: rgba(20, 20, 19, 0.45); /* behind an open sheet */
+  /* QR codes stay dark on light in both themes, so every camera reads them */
+  --qr-bg: #f7f7f5;
+  --qr-ink: #1d1d1c;
 
   /* Heraldic fills: printed, so the same in both themes */
   --gules: #a63a30;
@@ -89,6 +100,7 @@
     --shadow: rgba(0, 0, 0, 0.55);
     --footprint: rgba(170, 176, 179, 0.16);
     --grain-opacity: 0.25;
+    --win-ink: #7fbf9a;
     color-scheme: dark;
   }
 }
@@ -105,5 +117,6 @@
   --shadow: rgba(0, 0, 0, 0.55);
   --footprint: rgba(170, 176, 179, 0.16);
   --grain-opacity: 0.25;
+  --win-ink: #7fbf9a;
   color-scheme: dark;
 }

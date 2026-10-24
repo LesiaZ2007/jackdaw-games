@@ -895,7 +895,7 @@
 .share__qr {
   padding: 8px;
   border: 2px solid var(--ink);
-  background: #f7f7f5;
+  background: var(--qr-bg);
 }
 .share__row {
   display: flex;
@@ -919,6 +919,12 @@
 .menu__block p {
   margin: 0;
   color: var(--ink-2);
+}
+/* The host's Reset scores, below the score pad. */
+.pad__reset {
+  padding: var(--space-4) 0 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 0;
 }
 /* A setting with its On/Off plaque at the end of the row. */
 .menu__toggle {

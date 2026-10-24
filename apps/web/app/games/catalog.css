@@ -134,6 +134,8 @@
   color: var(--ink-2);
 }
 .cat-count .cat-linkbtn {
+  /* the row is already a tap tall, so the full height costs nothing */
+  min-height: var(--tap);
   font: 700 15px var(--font-body);
   text-transform: none;
   letter-spacing: 0;
@@ -215,7 +217,7 @@
   content: '';
   position: absolute;
   inset: 6px;
-  border: 1px solid rgba(246, 240, 225, 0.55);
+  border: 1px solid color-mix(in srgb, var(--on-fill) 55%, transparent);
 }
 .cat-detail__dev {
   width: 96px;
@@ -224,7 +226,7 @@
   place-items: center;
   border-radius: 50%;
   background: var(--band);
-  box-shadow: 0 0 0 3px rgba(246, 240, 225, 0.8);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--on-fill) 80%, transparent);
 }
 .cat-detail__dev svg {
   width: 64px;
@@ -372,8 +374,19 @@
   text-align: center;
 }
 .cat-dock__note .cat-linkbtn {
+  position: relative;
   font-size: 15px;
   padding: 0;
+}
+/* A tap-sized hit area round the inline link, without changing the line. */
+.cat-dock__note .cat-linkbtn::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  top: 50%;
+  height: var(--tap);
+  translate: 0 -50%;
 }
 .cat-error {
   margin: 0;

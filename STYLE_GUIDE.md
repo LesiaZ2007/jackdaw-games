@@ -174,6 +174,15 @@ game uses Jackdaw's lobby (seat track, Next up, Start), which Lesia prefers for 
   either end, the target zone printed in bands (vert 4, tenné 3, gold 2) under a sable shutter
   that swings away round the pivot on the reveal, and a cream needle. Sun team gules, Moon team
   azure. It looks the same day and dark. `wavelength.css`.
+- **Catan** uses Jackdaw's lobby with its own seats: "Bound for Catan", the island faint on a chart
+  and each player a ship moored round it, the sail in the colour they'll build in (red, blue,
+  white, orange, green, brown by seat) with their crest on it; open moorings for empty seats. In
+  play the island is printed in Catan's own colours as inks (forest, pasture, fields, hills,
+  mountains, desert) with an engraved motif on each tile, shallows and an inked seam round the
+  coast, wooden piers to ratio plaques, cream number discs with the odds as dots (6 and 8 in
+  gules), a sable robber, and dice in cream and gules. Resource cards are card stock with the
+  terrain's colour behind a cream glyph and a sable count chit. The board looks the same day and
+  dark; the frame follows the shell. Tokens at the top of `catan.css`.
 - **Rock Paper Scissors** uses Jackdaw's lobby. Its own chalk-ring lobby was tried and dropped
   (Lesia, 2026-10-13: "the old rock paper scissors lobby was miles better").
 - A game that gets its own lobby scopes its look under the game's class, keeps the bar's pieces

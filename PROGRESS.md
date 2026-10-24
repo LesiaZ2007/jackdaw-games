@@ -458,6 +458,40 @@ selected teams", and allowed merging to main once done and tested. Design in
   from 768px), opening a confirm sheet ("End it for everyone"). The two-tap one in the menu stays.
   e2e covers both, and that nobody else gets the button.
 
+### Catan (2026-10-23, branch `feat/catan`)
+
+Lesia: "make Catan… design matters a LOT… [it] should maintain some of its own identity in its
+design, lobby, TV display", then chose 3–6 players with paired turns, the name Catan, offers with
+counters and a Balanced board by default; approved look A ("Colour print"), ships for the seats
+and the phone as mocked up (`mockups/catan.html`, https://claude.ai/artifact/Y7tNj2rKQJthLVVch2Emdy);
+then "just build it all" and allowed merging once done. Spec
+`docs/superpowers/specs/2026-10-23-catan-design.md`, plan `docs/superpowers/plans/2026-10-23-catan.md`.
+
+- **Rules** (`packages/games/catan`): the official 5th edition (snake setup, the second settlement
+  pays, production with the short-bank rule, the 7 with discards and the robber, harbours 4/3/2,
+  development cards one a turn and never the turn bought, knights before the roll, Longest Road
+  with the full tie and set-aside rules, Largest Army, a win only on your own turn) and the 5–6
+  extension with catan.com's **paired turns** (the player three seats along builds, buys, trades
+  with the bank and plays a card after each turn). Trading: offers to everyone or one player,
+  answers, counters and proposals to the player on their turn, hands re-checked when a trade
+  completes. Options: Board (Balanced / Random / Beginner), Points (10 / 8 / 12), Robber
+  (Standard / Friendly), Turn timer (off, 1, 2, 3 minutes; out of time the server finishes the
+  step). Awards: Longest road, Biggest haul. 120 unit tests, including a fuzz of 12 whole games
+  with a leak check at every step.
+- **Board** (`geometry.ts`, `board.ts`): pointy-top hexes built in code with stable corner and edge
+  ids (classic 19/54/72, big 30/80/109), harbour slots spread round the coast, the rulebook's
+  number spiral. The Beginner map follows the rulebook as recalled (rows: mountains 10, pasture 2,
+  forest 9 / fields 12, hills 6, pasture 4, hills 10 / …); worth checking against a printed copy.
+- **Screens**: the phone (`fit`): whose turn and the dice, everyone's cards, development cards,
+  awards and points, the island (only legal spots are drawn; a tap snaps to the nearest within
+  28px and a ghost piece waits for "Build here"), your hand with a "You got" ribbon after each
+  roll, and Build / Trade / Cards / End with sheets for each; an offer to you lies over the board
+  (No / Counter / Yes). Moments for robbing and being robbed and for awards changing hands. The TV:
+  the island large with cards flying from each paying tile to its buildings, whose turn with the
+  dice, every player's standing, what the roll paid, open offers, a short log. The lobby: ships
+  bound for the island (`LobbySeats`, `TvLobby`). Results: each player's points broken down and the
+  final island. Kit: a `hexes` glyph. e2e: `apps/web/e2e/catan.spec.ts`.
+
 ## Next
 
 1. Lesia reviews and playtests Phase 1 on the Vercel preview, then merges `feat/phase-1` to `main`. Production then serves it.

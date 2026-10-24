@@ -46,21 +46,25 @@ export function TurnStrip({
               : `${name(who)}’s turn`;
   const turnP = players.find((p) => p.id === (who ?? t.actor));
   return (
-    <header className="cn-strip">
+    <header className="ctn-strip">
       <SeatToken p={turnP} seats={t.seats} size={32} />
-      <p className="cn-strip__text">
+      <p className="ctn-strip__text">
         <b>{lead}</b>
         <small>
           {t.phase === 'setup'
             ? `Round ${t.setup!.step < t.setup!.order.length / 2 ? 1 : 2} of 2`
-            : PHASE_LABEL[t.phase]}
+            : t.phase === 'robber'
+              ? 'Pick a tile, then who to rob'
+              : t.phase === 'discard'
+                ? 'Anyone over 7 cards gives back half'
+                : PHASE_LABEL[t.phase]}
           {t.paired && t.phase === 'main' ? ` · ${name(t.turn)}’s turn` : ''}
         </small>
       </p>
       <Clock at={t.actBy} now={now} />
       <Dice dice={t.dice} seq={t.rollSeq} />
       {myPoints !== null && (
-        <span className="cn-mypts" title="Your points, with any hidden victory point cards">
+        <span className="ctn-mypts" title="Your points, with any hidden victory point cards">
           <b>{myPoints}</b>
           <small>/{t.target}</small>
         </span>
@@ -84,7 +88,7 @@ export function Opponents({
   const name = namer(players);
   const others = t.seats.filter((id) => id !== me);
   return (
-    <ol className="cn-rail" data-count={others.length}>
+    <ol className="ctn-rail" data-count={others.length}>
       {others.map((id) => {
         const p = players.find((x) => x.id === id);
         const acting =
@@ -92,28 +96,28 @@ export function Opponents({
         return (
           <li
             key={id}
-            className={acting ? 'cn-opp is-acting' : 'cn-opp'}
-            style={{ '--cn-own': seatColour(id, t.seats) } as CSSProperties}
+            className={acting ? 'ctn-opp is-acting' : 'ctn-opp'}
+            style={{ '--ctn-own': seatColour(id, t.seats) } as CSSProperties}
           >
-            <span className="cn-opp__tok">
+            <span className="ctn-opp__tok">
               <SeatToken p={p} seats={t.seats} size={28} />
               <PlayerReaction reactions={reactions} playerId={id} name={name(id)} size={28} />
             </span>
-            <span className="cn-opp__body">
-              <span className="cn-opp__name">{name(id)}</span>
-              <span className="cn-opp__meta">
+            <span className="ctn-opp__body">
+              <span className="ctn-opp__name">{name(id)}</span>
+              <span className="ctn-opp__meta">
                 <span title="Resource cards">
                   <DevGlyph kind="cards" />
                   {t.handCounts[id]}
                 </span>
                 <span title="Development cards">
-                  <span className="cn-devchit" aria-hidden="true" />
+                  <span className="ctn-devchit" aria-hidden="true" />
                   {t.devCounts[id]}
                 </span>
                 <Awards t={t} id={id} />
               </span>
             </span>
-            <span className="cn-opp__pts" aria-label={`${t.points[id]} points`}>
+            <span className="ctn-opp__pts" aria-label={`${t.points[id]} points`}>
               {t.points[id]}
             </span>
           </li>

@@ -24,7 +24,7 @@ export function seatColourOf(pid: string, seats: readonly string[]): SeatColour 
 /** The CSS colour of a seat's pieces. */
 export const seatColour = (pid: string, seats: readonly string[]): string => {
   const c = seatColourOf(pid, seats);
-  return c ? `var(--cn-pc-${c})` : 'var(--rule)';
+  return c ? `var(--ctn-pc-${c})` : 'var(--rule)';
 };
 
 export const TERRAIN_OF: Record<Resource, Terrain> = {

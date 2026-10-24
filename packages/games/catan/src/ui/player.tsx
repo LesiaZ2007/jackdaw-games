@@ -173,11 +173,11 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   let dock;
   const firstHalf = t.setup ? t.setup.step < t.setup.order.length / 2 : false;
   if (!seated) {
-    dock = <p className="cn-hint">You’re watching. The game is played on the players’ phones.</p>;
+    dock = <p className="ctn-hint">You’re watching. The game is played on the players’ phones.</p>;
   } else if (owe > 0) {
     dock = (
-      <div className="cn-dock cn-dock--1">
-        <p className="cn-hint">A 7! You hold more than 7 cards.</p>
+      <div className="ctn-dock ctn-dock--1">
+        <p className="ctn-hint">A 7! You hold more than 7 cards.</p>
         <button
           type="button"
           className="jd-plaque jd-plaque--go"
@@ -189,14 +189,14 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     );
   } else if (t.phase === 'discard') {
     dock = (
-      <p className="cn-hint">
+      <p className="ctn-hint">
         Waiting for {Object.keys(t.discards).map(name).join(' and ')} to discard.
       </p>
     );
   } else if (robbing) {
     dock = (
-      <div className="cn-dock cn-dock--robber">
-        <p className="cn-hint">
+      <div className="ctn-dock ctn-dock--robber">
+        <p className="ctn-hint">
           {tile === null
             ? 'Tap a tile to move the robber there.'
             : victims.length > 1
@@ -206,7 +206,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
                 : 'Nobody here has a card to take.'}
         </p>
         {victims.length > 1 && (
-          <div className="cn-victims">
+          <div className="ctn-victims">
             {victims.map((id) => (
               <button
                 key={id}
@@ -234,8 +234,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     );
   } else if (acting && t.phase === 'setup') {
     dock = (
-      <div className="cn-dock cn-dock--1">
-        <p className="cn-hint">
+      <div className="ctn-dock ctn-dock--1">
+        <p className="ctn-hint">
           {kind === 'road'
             ? 'Now a road beside it.'
             : firstHalf
@@ -255,14 +255,20 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   } else if (acting && t.phase === 'roll') {
     const knight = v!.dev.some((d) => d.card === 'knight' && d.playable);
     dock = (
-      <div className="cn-dock cn-dock--2">
+      <div className="ctn-dock ctn-dock--2">
         <button
           type="button"
           className="jd-plaque"
           disabled={!knight}
           onClick={() => setSheet('cards')}
         >
-          {knight ? 'Play a knight' : `Cards ${v!.dev.length}`}
+          {knight ? (
+            'Play a knight'
+          ) : (
+            <>
+              Cards <b className="ctn-count">{v!.dev.length}</b>
+            </>
+          )}
         </button>
         <button
           type="button"
@@ -276,8 +282,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     );
   } else if (acting && t.phase === 'roadBuilding') {
     dock = (
-      <div className="cn-dock cn-dock--2">
-        <p className="cn-hint">Free road: {t.roadsToBuild} to place. Tap a ringed edge.</p>
+      <div className="ctn-dock ctn-dock--2">
+        <p className="ctn-hint">Free road: {t.roadsToBuild} to place. Tap a ringed edge.</p>
         <button
           type="button"
           className="jd-plaque"
@@ -298,8 +304,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     );
   } else if (acting && t.phase === 'main' && p.mode) {
     dock = (
-      <div className="cn-dock cn-dock--2">
-        <p className="cn-hint">
+      <div className="ctn-dock ctn-dock--2">
+        <p className="ctn-hint">
           {corners.length + edges.length
             ? `${corners.length + edges.length} places you can build. The ghost shows where it goes.`
             : 'There’s nowhere to build that right now.'}
@@ -323,7 +329,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     );
   } else if (acting && t.phase === 'main') {
     dock = (
-      <div className="cn-dock cn-dock--4">
+      <div className="ctn-dock ctn-dock--4">
         <button type="button" className="jd-plaque" onClick={() => setSheet('build')}>
           Build
         </button>
@@ -331,7 +337,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           Trade
         </button>
         <button type="button" className="jd-plaque" onClick={() => setSheet('cards')}>
-          Cards {v!.dev.length}
+          Cards <b className="ctn-count">{v!.dev.length}</b>
         </button>
         <button
           type="button"
@@ -346,9 +352,9 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   } else {
     const canPropose = t.phase === 'main' && !t.paired && t.turn !== me;
     dock = (
-      <div className="cn-dock cn-dock--2">
+      <div className="ctn-dock ctn-dock--2">
         <button type="button" className="jd-plaque" onClick={() => setSheet('cards')}>
-          Cards {v!.dev.length}
+          Cards <b className="ctn-count">{v!.dev.length}</b>
         </button>
         <button
           type="button"
@@ -377,10 +383,10 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     : [];
 
   return (
-    <div className="cn cn--phone">
+    <div className="ctn ctn--phone">
       <TurnStrip t={t} me={me} players={players} now={now} myPoints={seated ? v!.points : null} />
       <Opponents t={t} me={me} players={players} reactions={reactions} />
-      <div className="cn-stage">
+      <div className="ctn-stage">
         <CatanBoard
           board={t.board}
           buildings={t.buildings}

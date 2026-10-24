@@ -297,7 +297,18 @@ export function useDialSync(server: number, send: (v: number) => Promise<unknown
     [pump],
   );
 
-  return { value: local ?? server, live: local !== null, turn };
+  /** Send any move still waiting at once, and resolve when none is left out (for Lock in). */
+  const flush = useCallback(async () => {
+    const s = st.current;
+    s.lastAt = Math.min(s.lastAt, Date.now() - GAP_MS);
+    clearTimeout(s.timer);
+    pump();
+    for (let i = 0; i < 60 && (s.busy || (s.want !== null && s.want !== s.sent)); i++) {
+      await new Promise((done) => setTimeout(done, 50));
+    }
+  }, [pump]);
+
+  return { value: local ?? server, live: local !== null, turn, flush };
 }
 
 /** The dial moves waiting to go: the newest wanted, the last sent, and whether one is out. */

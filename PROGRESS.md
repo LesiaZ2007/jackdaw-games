@@ -458,17 +458,39 @@ selected teams", and allowed merging to main once done and tested. Design in
   from 768px), opening a confirm sheet ("End it for everyone"). The two-tap one in the menu stays.
   e2e covers both, and that nobody else gets the button.
 
+### Deep clean (2026-10-23, branch `chore/deep-clean`)
+
+Lesia asked for a deep run through every game so everything goes smoothly. Five audits (platform,
+web and kit, and the games in groups) and fixes with tests; unit tests 414 → 443, e2e green.
+
+- **Security**: Next 16.4.0 → 16.4.2 (two critical advisories, one an unauthenticated RCE; `next
+build` refused to run on 16.4.0). The Phase 0 echo endpoint is gone. Push endpoints must be a
+  browser push service. An address that keeps guessing lobby codes is turned away for a while,
+  and lobby creation is limited per address as well as per token.
+- **Platform**: a game timer that throws can't wedge a lobby (End game always works); saves only
+  land while the lock is held (lock 10s); a refused Start closes the Avalon room it opened; a
+  rejoin code can't strand a ghost seat; an emptied lobby's next joiner is host; avatars never
+  repeat; a moved seat stops getting the old device's pushes.
+- **Every game**: the win/loss moment clears itself again in busy games; recaps never show
+  `{Name}` braces or "Rook: Rook…"; Start / Play again / Back to lobby ignore a second tap;
+  sheets keep focus; rejoin and chat recover from a dropped connection.
+- **Rules**: UNO's turn clock restarts when a turn comes straight back; poker doesn't ask the
+  last bettor to act against a short all-in; Codenames needs a guess before ending a turn; Risk's
+  +2 card bonus is once a turn and fallback missions win at once; Letterhoard shuffles swapped
+  tiles back and counts 0-point plays as scoreless.
+- **Wavelength** (merged into this branch mid-round, then audited): the psychic can only end the
+  wait once a guesser has locked in or a caller has voted (they know the target, so an early
+  hurry was a free bullseye); Lock in sends the last dial move first, so a quick tap can't lock
+  the old spot; in Teams the team going second starts on 1 point, as in the box; TV tags 24px.
+- **Avalon link**: 8s timeouts; only Avalon's own "room gone" 404 drops a game unscored.
+- **Consistency**: option help in every Jackdaw-lobby game, Codenames TV moments, TV type ≥24px,
+  44px catalog targets, literal colours in tokens, the host can reset scores from Stats.
+
 ## Next
 
-1. Lesia reviews and playtests Phase 1 on the Vercel preview, then merges `feat/phase-1` to `main`. Production then serves it.
-2. Phase 1 still to check on real devices:
-   - joining with QR codes on actual phones;
-   - a laptop driving a TV.
-3. Phase 2, porting Avalon:
-   - Write the parity checklist from the current app.
-   - Rules in TypeScript, with the knowledge and leak tests.
-   - Port the UI unchanged, using the `GameUi.Lobby` hook for Avalon's round-table waiting room.
-   - Extract the kit pieces, then write GAME_KIT.md.
+1. Lesia playtests `chore/deep-clean` on its preview, then merges.
+2. Still to check on real devices: notifications on real phones (iPhone needs Home Screen
+   install), QR joining, a laptop driving a TV.
 
 ## Ideas for later
 
@@ -497,6 +519,23 @@ selected teams", and allowed merging to main once done and tested. Design in
   "Every game" (Lesia, 2026-10-12).
 
 ## Open questions
+
+- **A player who walks away mid-game** (deep clean, 2026-10-23): players can't leave a running
+  game, so in a game without a turn timer (RPS, Codenames, Secret Hitler, and poker/UNO/Letterhoard
+  with the timer off) one closed phone stalls the table until the host ends it unscored. Options:
+  turn timers on by default, a timer for RPS/Codenames/Secret Hitler, or a host "skip them" once a
+  waited-on player has been away a few minutes. Needs Lesia's call (it touches the contract).
+- Wavelength (deep clean): a psychic who is away during the clue stalls the round (no clue timer,
+  and teammates can't skip them); with the timer off, a whole away team stalls the call; the
+  psychic, who knows the target, decides when the call ends ("Go with that"), which perhaps
+  belongs to the callers; Together on the TV lists one player per row, so past 9 players the
+  list is cut off.
+- Codenames and RPS phones still scroll (no `GameUi.fit`): fitting them needs a layout redesign.
+- UNO: after "Draw one", opponents can tell whether the drawn card was playable (the turn passes
+  at once if not). Fine to keep, or always offer "Keep it"?
+- UNO's pictures: the phone shot is 1x (390×844) and the laptop shot is the TV (1920×1080).
+- Vercel WAF: a rate-limit rule on `/api/lobby*` would make the per-address limits global
+  (they're per instance today). Dashboard step.
 
 - Should `actionSchema` stay on the game contract? It was added so every incoming action is checked with Zod.
 - The plan's strict "reject stale seq" would reject simultaneous votes. Actions are currently rejected only when they come from an earlier game or claim a future seq. Ordering within a game is left to the rules.

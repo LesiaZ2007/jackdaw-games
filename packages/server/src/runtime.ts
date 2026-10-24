@@ -3,6 +3,7 @@ import {
   ClientMessage,
   GameError,
   ONLINE_WINDOW_MS,
+  addBot,
   applyGameAction,
   backToLobby,
   chat,
@@ -561,9 +562,11 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       case 'resetScores':
         return resetScores(lobby, me, c);
       case 'endGame':
-        return endGameEarly(lobby, me, c);
+        return endGameEarly(lobby, me, c, msg.save);
       case 'react':
         return react(lobby, me, msg.kind, randomString(10, ID_ALPHABET), c);
+      case 'addBot':
+        return addBot(lobby, me, { newPlayerId: randomString(10, ID_ALPHABET), palette }, c);
     }
   }
 

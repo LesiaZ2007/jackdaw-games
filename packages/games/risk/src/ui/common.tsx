@@ -205,7 +205,10 @@ export function DiceStrip({
   );
 }
 
-/** Each continent, what it's worth and who holds all of it (their army colour in the swatch). */
+/**
+ * Each continent, what it's worth and who holds all of it (their army colour in the swatch). In
+ * fog of war a continent you can't see all of is "In the fog".
+ */
 export function Continents({
   map,
   t,
@@ -222,6 +225,8 @@ export function Continents({
       {map.continents.map((c) => {
         const holder = holders.find((p) => continentsHeld(map, t.owner, p).includes(c.id));
         const p = players.find((x) => x.id === holder);
+        const unseen =
+          t.fog && map.territories.some((x) => x.continent === c.id && !(x.id in t.owner));
         return (
           <li key={c.id} className="rk-continents__row">
             <span
@@ -233,7 +238,7 @@ export function Continents({
             <span className="rk-continents__bonus">+{c.bonus}</span>
             <span className="rk-continents__holder">
               {p && <Token avatar={p.avatar} size={22} />}
-              {holder ? name(holder) : 'Nobody'}
+              {holder ? name(holder) : unseen ? 'In the fog' : 'Nobody'}
             </span>
           </li>
         );

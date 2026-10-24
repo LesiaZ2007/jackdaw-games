@@ -33,7 +33,7 @@ export function ShTvLobby({ code, players, hostId, join, status }: GameTvLobbyPr
               {players.map((p) => (
                 <Player
                   key={p.id}
-                  name={p.id === hostId ? p.name + ' [Host]' : p.name}
+                  name={p.name + (p.id === hostId ? ' [Host]' : p.bot ? ' [Bot]' : '')}
                   showRole={false}
                   icon={lookOf(p.id, p)}
                 />

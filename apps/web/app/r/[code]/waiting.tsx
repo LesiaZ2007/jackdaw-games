@@ -3,7 +3,13 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import { startBlocker, type ClientMessage, type Lobby, type LobbySnapshot } from '@jackdaw/engine';
+import {
+  MAX_PLAYERS,
+  startBlocker,
+  type ClientMessage,
+  type Lobby,
+  type LobbySnapshot,
+} from '@jackdaw/engine';
 import {
   AvatarButton,
   Icon,
@@ -132,15 +138,25 @@ export function Waiting({
     host: p.id === s.hostId,
     away: !p.online,
     me: p.id === s.me,
+    bot: p.bot,
     landing: arrivals.has(p.id),
     // Your own seat opens your look; the host can tap anyone else's to remove them.
     action:
       p.id === s.me
         ? `${p.name} (you): change your name, crest or colour`
         : isHost
-          ? `${p.name}: remove or make host`
+          ? p.bot
+            ? `${p.name}: remove`
+            : `${p.name}: remove or make host`
           : undefined,
   }));
+  // The host can seat computer players in open seats, once the chosen game can play them (or
+  // while no game is chosen yet).
+  const selected = s.selectedGameId ? games[s.selectedGameId] : undefined;
+  const addBot =
+    isHost && (!selected || selected.bot) && count < Math.min(spaces, MAX_PLAYERS)
+      ? () => void send({ type: 'addBot' })
+      : undefined;
   const other = s.players.find((p) => p.id === tapped && p.id !== s.me);
   const mine = s.players.find((p) => p.id === s.me);
   const ThemedLobby = entry?.ui?.Lobby;
@@ -189,6 +205,7 @@ export function Waiting({
             reactions={s.reactions}
             react={(kind) => void send({ type: 'react', kind })}
             chat={chat}
+            onAddBot={addBot}
           />
         </section>
       )}
@@ -212,6 +229,7 @@ export function Waiting({
               onSeat={onSeat}
               reactions={s.reactions}
               setOptions={isHost ? setLobbyOptions : undefined}
+              onAddBot={addBot}
             />
           ) : (
             <SeatTrack
@@ -221,6 +239,7 @@ export function Waiting({
               onSeat={onSeat}
               reactions={s.reactions}
               transitions
+              onAddBot={addBot}
             />
           )}
           {mine && (
@@ -352,9 +371,11 @@ export function Waiting({
             <div className="seat-sheet__who">
               <Token avatar={other.avatar} size={64} away={!other.online} />
               <span className="seat-sheet__note">
-                {other.online
-                  ? `${other.name} is at the table.`
-                  : `${other.name} is away from their phone.`}
+                {other.bot
+                  ? `${other.name} is a computer player.`
+                  : other.online
+                    ? `${other.name} is at the table.`
+                    : `${other.name} is away from their phone.`}
               </span>
             </div>
             <Plaque
@@ -365,14 +386,18 @@ export function Waiting({
             >
               Remove {other.name} from the lobby
             </Plaque>
-            <Plaque
-              small
-              onClick={() =>
-                send({ type: 'transferHost', playerId: other.id }).then((r) => r && setTapped(null))
-              }
-            >
-              Make {other.name} host
-            </Plaque>
+            {!other.bot && (
+              <Plaque
+                small
+                onClick={() =>
+                  send({ type: 'transferHost', playerId: other.id }).then(
+                    (r) => r && setTapped(null),
+                  )
+                }
+              >
+                Make {other.name} host
+              </Plaque>
+            )}
           </div>
         )}
       </Sheet>
@@ -386,16 +411,18 @@ export function Waiting({
                 <Token avatar={p.avatar} size={36} away={!p.online} />
                 <span className="manage__name">
                   {p.name}
-                  {!p.online && <small> away</small>}
+                  {p.bot ? <small> bot</small> : !p.online && <small> away</small>}
                 </span>
-                <Plaque
-                  small
-                  onClick={() =>
-                    send({ type: 'transferHost', playerId: p.id }).then(() => setManaging(false))
-                  }
-                >
-                  Make host
-                </Plaque>
+                {!p.bot && (
+                  <Plaque
+                    small
+                    onClick={() =>
+                      send({ type: 'transferHost', playerId: p.id }).then(() => setManaging(false))
+                    }
+                  >
+                    Make host
+                  </Plaque>
+                )}
                 <Plaque small onClick={() => send({ type: 'kick', playerId: p.id })}>
                   Remove
                 </Plaque>

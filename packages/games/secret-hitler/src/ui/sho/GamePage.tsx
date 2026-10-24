@@ -81,6 +81,11 @@ type GamePageProps = {
   startFrom?: GameState;
   /** The buttons under the victory screen. */
   renderVictoryButtons?: () => ReactNode;
+  /**
+   * Jackdaw: the victory line for a game the host ended early (the site's lines say how a game
+   * was won, which isn't what happened then).
+   */
+  victoryMessage?: string;
   /** Shown in the orange band at the top. */
   header?: string;
 };
@@ -584,6 +589,7 @@ export default class GamePage extends Component<GamePageProps, GamePageState> {
           : 'Liberals successfully executed Hitler!';
     }
 
+    victoryMessage = this.props.victoryMessage ?? victoryMessage;
     this.addAnimationToQueue(() => {
       this.setState({
         alertContent: (

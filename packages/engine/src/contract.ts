@@ -151,8 +151,39 @@ export interface GameModule<State, Action, View, TableView, Options> {
    */
   announce?(prev: State | null, next: State): Announcement[];
 
+  /**
+   * Optional (2026-10-24: "End Game still saves progress of any rounds"): the result if
+   * the host ended the game right now, decided by the rounds played so far (the leader wins).
+   * Null while nothing has been decided yet. The host is offered to save it when ending early.
+   */
+  partialResult?(state: State): GameResult | null;
+
+  /**
+   * Optional: a computer player's next move (2026-10-24: "play against bots"). The
+   * platform asks each bot seat the game is waiting on, a moment after the last move, and plays
+   * what this returns through `applyAction`. It sees only that bot's own view and the table view,
+   * so a bot never knows more than a person in its seat would. Null means nothing to do now.
+   * Randomness comes from `ctx.rng`. Games without it can't be started with bots seated.
+   */
+  bot?(ctx: BotContext<View, TableView>): Action | null;
+  /** How long a bot waits after the last move before making its own, in ms (default 1100). */
+  botDelayMs?: number;
+
   /** Played in another app through a `GameLink` registered with the runtime (see GameLink). */
   linked?: boolean;
+}
+
+/** What a bot decides from: exactly what a person in its seat would see. */
+export interface BotContext<View, TableView> {
+  /** The bot's own player id. */
+  playerId: string;
+  /** Seated players, in seat order. */
+  playerIds: string[];
+  view: View;
+  tableView: TableView;
+  rng: Rng;
+  /** Server time in ms. */
+  now: number;
 }
 
 /**

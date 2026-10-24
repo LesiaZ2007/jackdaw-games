@@ -62,6 +62,10 @@ export const riskUi: GameUi = {
       '2 minutes': LATE,
       '3 minutes': LATE,
     },
+    fog: {
+      false: 'Everyone sees the whole map.',
+      true: 'You see only your own territories and the ones next door. The rest stays hidden until the end.',
+    },
   },
   fit: true,
   LobbySeats,

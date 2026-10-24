@@ -14,6 +14,7 @@ import { attackTargets, reachable } from '../board';
 import { allSets } from '../cards';
 import { getMap } from '../maps';
 import { battleMoment, type Moment } from '../moments';
+import { seen } from '../fog';
 import type { RiskAction, RiskTableView, RiskView } from '../rules';
 import { CardsSheet, MissionSheet } from './cards';
 import { Continents, DiceStrip, PHASE_LABEL, TurnClock, namer } from './common';
@@ -42,7 +43,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   now,
 }) => {
   const v = view as RiskView | null;
-  const t = tableView as RiskTableView;
+  // In fog of war, your own sight laid over the fogged table.
+  const t = seen(tableView as RiskTableView, v);
   const players = shellPlayers as ScreenPlayer[];
   const map = getMap(t.map);
   const name = namer(players);
@@ -262,6 +264,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           staged={placing ? staged : (v?.draft ?? undefined)}
           flash={t.battle?.ended ? t.battle.to : null}
           onPick={onPick}
+          fog={t.fog}
           zoomable
         />
       </div>

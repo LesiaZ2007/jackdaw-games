@@ -544,6 +544,46 @@ button.uno-card:focus-visible {
   border: 2px dashed var(--rule);
   background: var(--table-2);
 }
+/* The host's "+" on an open place: the same dashed ring, centred on it, at least 44px to tap. */
+.uno-addseat {
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  color: var(--ink-2);
+}
+.uno-addseat .jd-addseat__ring {
+  width: var(--uno-tok);
+  min-width: 0;
+  border-color: var(--rule);
+  background: var(--table-2);
+}
+.uno-addseat:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .uno-addseat:hover .jd-addseat__ring {
+    border-color: var(--ink);
+  }
+}
+.uno-seat--open:has(.uno-addseat) .uno-open {
+  visibility: hidden;
+}
+/* A computer player: a small inked tag on its crest. */
+.uno-seat__bot {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  translate: -50% 0;
+  padding: 1px 4px 2px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 10px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
 .uno-seat__tap {
   position: absolute;
   inset: 0;

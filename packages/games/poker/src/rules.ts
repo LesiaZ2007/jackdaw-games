@@ -8,6 +8,7 @@ import {
 import { z } from 'zod';
 import { FULL_DECK, bestHand, cardText, compareScore, type Card } from './cards';
 import { meta } from './meta';
+import { equity } from './strength';
 
 /**
  * No-limit Texas Hold'em for 2–10 players. Everyone starts with the same stack; the button moves
@@ -569,6 +570,93 @@ export function choices(t: PokerTableView, id: string) {
   return { bet, stack, owe, max, minTo, canRaise, canCheck: owe === 0 };
 }
 
+/**
+ * A computer player's move (2026-10-24: "play against bots"), from its own view only: its
+ * two cards, the board, the pot and the bets. It estimates its share of the pot against the
+ * players still in (`equity`), then:
+ *
+ * - between hands it buys back in when it's out and the table allows it, and otherwise waits
+ *   (the next hand deals itself, so people get to see the cards);
+ * - with nothing to call it bets strong hands (now and then it checks one to trap), bluffs
+ *   once in a while, more from late position and against few players, and otherwise checks;
+ * - facing a bet it raises strong hands, calls when its share beats the pot odds, and folds
+ *   the rest, with the odd bluff raise;
+ * - short of chips (under 10 big blinds) it moves all in with a good hand or folds;
+ * - in a long last-one-standing game with blinds that never rise, it plays looser hand by hand,
+ *   so the game still ends.
+ *
+ * Every move it makes is legal from its view: raises are clamped to the smallest and largest
+ * allowed, and a raise it can't make becomes a call or a check. Randomness only from `rng`.
+ */
+export function botMove(v: PokerPlayerView, rng: Rng): PokerAction | null {
+  const me = v.me;
+  if (v.phase === 'done') return v.canBuyBack.includes(me) ? { type: 'buyBack' } : null;
+  if (v.phase === 'over' || v.toAct !== me || v.hole.length < 2) return null;
+  const c = choices(v, me);
+  const others = v.inHand.filter((id) => id !== me && !v.folded.includes(id));
+  const n = others.length;
+  const samples = Math.max(48, Math.min(160, Math.round(800 / (n + 1))));
+  const fair = 1 / (n + 1);
+  // Looser in a long game that only ends when one player has everything and the blinds stay put.
+  const loose = v.handLimit === 0 && v.doubleEvery === 0 ? Math.min(0.3, v.hand / 200) : 0;
+  // Position: 0 first to act after the button, 1 on the button.
+  const order = around(v, v.dealer, (id) => id === me || others.includes(id));
+  const pos = order.length > 1 ? order.indexOf(me) / (order.length - 1) : 1;
+  const e = equity(v.hole, v.board, n, rng, samples);
+  // A little noise so it isn't predictable, plus position and looseness.
+  const score = e + (rng.next() - 0.5) * 0.08 + pos * 0.03 + loose * fair * 2;
+  // Strong against this many players, or simply a favourite; a monster wins most of the time.
+  const strong = score > 0.62 || (n > 1 && score > fair * 1.8);
+  const monster = score > 0.78 || (n > 1 && score > fair * 2.6);
+  const pot = v.pot;
+  const preflop = v.phase === 'preflop';
+  const short = c.stack + c.bet < v.bb * 10;
+
+  const fold: PokerAction = { type: 'fold' };
+  const pass: PokerAction = c.canCheck ? { type: 'check' } : { type: 'call' };
+  /** Raise to about `to`, kept within what's allowed; all in when it's most of the stack. */
+  const raise = (to: number): PokerAction => {
+    if (!c.canRaise) return pass;
+    const step = Math.max(1, v.sb);
+    const want = Math.max(c.minTo, Math.round(to / step) * step);
+    if (want >= c.max * 0.7 || c.minTo >= c.max) return { type: 'allIn' };
+    return { type: 'raise', to: want };
+  };
+
+  if (short) {
+    if (score > Math.max(fair * 1.3, 0.38) || (c.canCheck && score > fair)) {
+      return c.canRaise ? { type: 'allIn' } : pass;
+    }
+    if (c.canCheck) return pass;
+    return score > c.owe / (pot + c.owe) + 0.05 ? { type: 'call' } : fold;
+  }
+
+  if (c.canCheck) {
+    if (strong && rng.next() > (monster ? 0.2 : 0.1)) {
+      return raise(
+        preflop ? v.currentBet + v.bb * (2 + rng.int(2)) : c.bet + pot * (0.5 + rng.next() * 0.3),
+      );
+    }
+    // A bluff now and then, more often late and against fewer players.
+    const bluff = (0.04 + pos * 0.06 + loose * 0.2) / Math.max(1, n - 1);
+    if (!preflop && rng.next() < bluff) return raise(c.bet + pot * 0.5);
+    return pass;
+  }
+
+  const odds = c.owe / (pot + c.owe);
+  if (monster || (strong && rng.next() < 0.5)) {
+    const to = preflop
+      ? Math.max(v.currentBet * 3, v.currentBet + v.bb * 3)
+      : v.currentBet + Math.max(v.minRaise, (pot + c.owe) * 0.75);
+    return raise(to);
+  }
+  if (score >= odds + (preflop ? 0.02 : 0.05) - loose * 0.1) return pass;
+  if (!preflop && c.owe <= pot * 0.5 && rng.next() < 0.03 + pos * 0.03) {
+    return raise(v.currentBet + Math.max(v.minRaise, pot));
+  }
+  return fold;
+}
+
 /** One player's move, before the clocks are set (see `stamp`). */
 function move(s: PokerState, playerId: string, action: PokerAction, rng: Rng): PokerState {
   if (!s.players.includes(playerId))
@@ -662,6 +750,37 @@ function move(s: PokerState, playerId: string, action: PokerAction, rng: Rng): P
   return afterAction(next, playerId);
 }
 
+const chipText = (n: number) => n.toLocaleString('en-GB');
+
+/** The game's result from these stacks: the most chips wins, a tie shares it. */
+function resultFrom(s: PokerState, stacks: Record<string, number>, summary: string): GameResult {
+  const top = Math.max(...s.players.map((id) => stacks[id] ?? 0));
+  const winners = s.players.filter((id) => (stacks[id] ?? 0) === top);
+  const ranked = [...s.players].sort((a, b) => (stacks[b] ?? 0) - (stacks[a] ?? 0));
+  const reveal: PokerReveal = { players: ranked, stacks, hands: s.hand, last: s.last };
+  return {
+    winners,
+    summary,
+    reveal,
+    recap: s.recap,
+    highlights: s.biggest
+      ? [
+          {
+            award: 'Biggest pot',
+            playerIds: [s.biggest.player],
+            text: `${chipText(s.biggest.amount)} chips${s.biggest.with ? ` with ${s.biggest.with}` : ''}`,
+            value: s.biggest.amount,
+          },
+        ]
+      : [],
+    standings: s.players.map((id) => ({
+      playerId: id,
+      outcome: winners.includes(id) ? (winners.length > 1 ? 'draw' : 'win') : 'loss',
+      role: `${stacks[id] ?? 0} chips${(s.buyIns?.[id] ?? 0) > 0 ? `, bought back in${s.buyIns![id]! > 1 ? ` ${s.buyIns![id]} times` : ''}` : ''}`,
+    })),
+  };
+}
+
 export const poker: GameModule<
   PokerState,
   PokerAction,
@@ -750,34 +869,42 @@ export const poker: GameModule<
   getResult(s): GameResult | null {
     if (s.phase !== 'over') return null;
     const top = Math.max(...s.players.map((id) => s.stacks[id] ?? 0));
-    const winners = s.players.filter((id) => (s.stacks[id] ?? 0) === top);
-    const ranked = [...s.players].sort((a, b) => (s.stacks[b] ?? 0) - (s.stacks[a] ?? 0));
-    const reveal: PokerReveal = { players: ranked, stacks: s.stacks, hands: s.hand, last: s.last };
-    return {
-      winners,
-      summary:
-        s.players.filter((id) => (s.stacks[id] ?? 0) > 0).length === 1
-          ? `Last one standing after ${s.hand} hands`
-          : winners.length > 1
-            ? `A tie at ${top} chips after ${s.hand} hands`
-            : `Most chips after ${s.hand} hands: ${top}`,
-      reveal,
-      recap: s.recap,
-      highlights: s.biggest
-        ? [
-            {
-              award: 'Biggest pot',
-              playerIds: [s.biggest.player],
-              text: `${s.biggest.amount.toLocaleString('en-GB')} chips${s.biggest.with ? ` with ${s.biggest.with}` : ''}`,
-              value: s.biggest.amount,
-            },
-          ]
-        : [],
-      standings: s.players.map((id) => ({
-        playerId: id,
-        outcome: winners.includes(id) ? (winners.length > 1 ? 'draw' : 'win') : 'loss',
-        role: `${s.stacks[id] ?? 0} chips${(s.buyIns?.[id] ?? 0) > 0 ? `, bought back in${s.buyIns![id]! > 1 ? ` ${s.buyIns![id]} times` : ''}` : ''}`,
-      })),
-    };
+    const tied = s.players.filter((id) => (s.stacks[id] ?? 0) === top).length > 1;
+    return resultFrom(
+      s,
+      s.stacks,
+      s.players.filter((id) => (s.stacks[id] ?? 0) > 0).length === 1
+        ? `Last one standing after ${s.hand} hands`
+        : tied
+          ? `A tie at ${top} chips after ${s.hand} hands`
+          : `Most chips after ${s.hand} hands: ${top}`,
+    );
   },
+
+  /**
+   * Ended early: the chip leader wins, ties share it. A hand in progress counts each player's
+   * stack plus what they've put in the pot this hand, which is exactly their stack when the hand
+   * began: a pot nobody has won yet shouldn't decide the game, and nobody's chips vanish into it.
+   * Nothing is decided before the first hand is over.
+   */
+  partialResult(s): GameResult | null {
+    if (s.phase === 'over') return poker.getResult(s);
+    const inPlay = s.phase !== 'done';
+    const played = inPlay ? s.hand - 1 : s.hand;
+    if (played < 1) return null;
+    const stacks = Object.fromEntries(
+      s.players.map((id) => [id, (s.stacks[id] ?? 0) + (inPlay ? (s.committed[id] ?? 0) : 0)]),
+    );
+    const [top = 0, next = 0] = s.players.map((id) => stacks[id] ?? 0).sort((a, b) => b - a);
+    const after = `after ${played} hand${played === 1 ? '' : 's'}`;
+    return resultFrom(
+      s,
+      stacks,
+      top === next
+        ? `Level at ${chipText(top)} chips ${after}`
+        : `Led ${chipText(top)} to ${chipText(next)} chips ${after}`,
+    );
+  },
+
+  bot: ({ view, rng }) => botMove(view, rng),
 };

@@ -214,6 +214,29 @@ export interface Seat {
   landing?: boolean;
   /** What tapping this seat does, e.g. "Remove Rook". With `onSeat`, the seat becomes a button. */
   action?: string;
+  /** A computer player: marked "Bot" where "You" would go. */
+  bot?: boolean;
+}
+
+/**
+ * The host's "+" on an open seat (2026-10-24): seats a computer player there. Every
+ * game's own seats use it too, so it reads the same everywhere. Lay it over the open seat; it
+ * fills its positioned parent.
+ */
+export function AddSeat({ onAdd, className }: { onAdd: () => void; className?: string }) {
+  return (
+    <button
+      type="button"
+      className={cx('jd-addseat', className)}
+      aria-label="Add a computer player"
+      title="Add a computer player"
+      onClick={onAdd}
+    >
+      <span className="jd-addseat__ring" aria-hidden="true">
+        <Icon.plus />
+      </span>
+    </button>
+  );
 }
 
 /**
@@ -229,6 +252,7 @@ export function SeatTrack({
   onSeat,
   reactions,
   transitions,
+  onAddBot,
 }: {
   seats: Seat[];
   spaces?: number;
@@ -237,6 +261,8 @@ export function SeatTrack({
   className?: string;
   /** Called with a seat's player id when a seat that has an `action` is tapped. */
   onSeat?: (id: string) => void;
+  /** Host only: each open seat gets a "+" that seats a computer player. */
+  onAddBot?: () => void;
   /** Recent reactions; each pops up over its player's seat. */
   reactions?: Reaction[];
   /** Name each token and name for view transitions (one track per page). */
@@ -264,6 +290,7 @@ export function SeatTrack({
               aria-label={`Seat ${i + 1}, open`}
             >
               <span className="jd-n">{i + 1}</span>
+              {onAddBot && <AddSeat onAdd={onAddBot} />}
             </li>
           );
         }
@@ -276,14 +303,14 @@ export function SeatTrack({
               seat.me && 'jd-space--me',
               onSeat && seat.action && 'jd-space--tap',
             )}
-            aria-label={`Seat ${i + 1}, ${seat.name}${seat.me ? ' (you)' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}`}
+            aria-label={`Seat ${i + 1}, ${seat.name}${seat.me ? ' (you)' : ''}${seat.bot ? ', computer player' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}`}
           >
             <span className="jd-n" aria-hidden="true">
               {i + 1}
             </span>
-            {seat.me && (
-              <span className="jd-you" aria-hidden="true">
-                You
+            {(seat.me || seat.bot) && (
+              <span className={seat.me ? 'jd-you' : 'jd-you jd-you--bot'} aria-hidden="true">
+                {seat.me ? 'You' : 'Bot'}
               </span>
             )}
             <Token
@@ -296,7 +323,8 @@ export function SeatTrack({
               className="jd-who"
               style={transitions ? { viewTransitionName: seatTransition(seat.id).name } : undefined}
             >
-              {seat.name}
+              {/* the "Bot" tag already says it, so "Bot Wren" fits as "Wren" */}
+              {seat.bot ? seat.name.replace(/^Bot /, '') : seat.name}
             </span>
             <PlayerReaction reactions={reactions} playerId={seat.id} name={seat.name} />
             {onSeat && seat.action && (

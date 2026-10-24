@@ -31,7 +31,12 @@ function unpack(packed: string): Set<string> {
   return out;
 }
 
-export function isWord(word: string): boolean {
+/** Every word in the list, lower case (the computer player builds its search tree from it). */
+export function wordSet(): ReadonlySet<string> {
   words ??= new Set([...unpack(PACKED_WORDS), ...EXTRA]);
-  return words.has(word.toLowerCase());
+  return words;
+}
+
+export function isWord(word: string): boolean {
+  return wordSet().has(word.toLowerCase());
 }

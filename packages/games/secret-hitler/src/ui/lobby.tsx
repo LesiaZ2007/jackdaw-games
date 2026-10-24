@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { GameLobbyProps } from '@jackdaw/ui';
+import { AddSeat, type GameLobbyProps } from '@jackdaw/ui';
 import { HOUSE_TEAM, OFFICIAL_MAX, defaultOptions, optionsSchema, type ShOptions } from '../lineup';
 import { meta } from '../meta';
 import { ShFrame } from './frame';
@@ -61,7 +61,8 @@ function useTileFit(count: number) {
  * the screen: the lobby code and invite link, everyone's tile, Change icon, and Start game for
  * the host. Jackdaw adds the house rules past 10 players, the host's way back to the list of
  * games, and table talk. Tiles carry each player's Jackdaw crest, and Change icon opens Jackdaw's
- * own look picker, so a look is the same in every game.
+ * own look picker, so a look is the same in every game. The host gets one more tile, a "+"
+ * that seats a computer player; computer players are marked [Bot], as the site marks [Host].
  */
 export function ShLobby({
   code,
@@ -76,6 +77,7 @@ export function ShLobby({
   onSeat,
   changeGame,
   chat,
+  onAddBot,
 }: GameLobbyProps) {
   const parsed = optionsSchema.safeParse(options);
   const o: ShOptions = parsed.success ? parsed.data : defaultOptions();
@@ -96,7 +98,7 @@ export function ShLobby({
   const site = useSiteUrl();
   const host = site.replace(/^https?:\/\//, '');
   const link = `${site}/${code}`;
-  const tiles = useTileFit(n);
+  const tiles = useTileFit(n + (onAddBot ? 1 : 0));
 
   async function onClickStartGame() {
     setBusy(true);
@@ -154,7 +156,7 @@ export function ShLobby({
                 return (
                   <Player
                     key={p.id}
-                    name={p.id === hostId ? p.name + ' [Host]' : p.name}
+                    name={p.name + (p.id === hostId ? ' [Host]' : p.bot ? ' [Bot]' : '')}
                     showRole={false}
                     icon={lookOf(p.id, p)}
                     seatTransition
@@ -163,6 +165,11 @@ export function ShLobby({
                   />
                 );
               })}
+              {onAddBot && (
+                <div className="sho-jackdaw sho-addseat">
+                  <AddSeat onAdd={onAddBot} />
+                </div>
+              )}
             </div>
           </div>
 

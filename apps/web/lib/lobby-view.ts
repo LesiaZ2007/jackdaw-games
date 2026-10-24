@@ -4,7 +4,13 @@ import type { ScreenPlayer } from '@jackdaw/ui';
 
 /** The players as every game screen takes them. */
 export function screenPlayers(s: LobbySnapshot): ScreenPlayer[] {
-  return s.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, online: p.online }));
+  return s.players.map((p) => ({
+    id: p.id,
+    name: p.name,
+    avatar: p.avatar,
+    online: p.online,
+    ...(p.bot ? { bot: true } : {}),
+  }));
 }
 
 /** "roundsToWin" → "Rounds to win". */

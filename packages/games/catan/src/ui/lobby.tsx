@@ -2,6 +2,7 @@
 
 import { createRng, type Reaction } from '@jackdaw/engine';
 import {
+  AddSeat,
   PlayerReaction,
   Token,
   seatTransition,
@@ -64,6 +65,7 @@ function Ship({
   of,
   onSeat,
   reactions,
+  onAddBot,
   tv,
 }: {
   seat: Seat | null;
@@ -71,6 +73,7 @@ function Ship({
   of: number;
   onSeat?: (id: string) => void;
   reactions?: Reaction[];
+  onAddBot?: () => void;
   tv?: boolean;
 }) {
   // Round the island, starting top left, clockwise.
@@ -80,6 +83,14 @@ function Ship({
     '--y': `${52 + Math.sin(a) * 38}%`,
     '--i': index,
   } as CSSProperties;
+  if (!seat && onAddBot)
+    return (
+      <li className="ctn-ship ctn-ship--open ctn-ship--add" style={place}>
+        <span className="ctn-ship__mooring" />
+        <span className="ctn-ship__name">Add bot</span>
+        <AddSeat onAdd={onAddBot} className="ctn-addseat" />
+      </li>
+    );
   if (!seat)
     return (
       <li className="ctn-ship ctn-ship--open" style={place} aria-hidden="true">
@@ -100,7 +111,7 @@ function Ship({
         .filter(Boolean)
         .join(' ')}
       style={{ ...place, '--ctn-own': `var(--ctn-pc-${colour})` } as CSSProperties}
-      aria-label={`${seat.name}${seat.me ? ' (you)' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}, builds in ${SEAT_NAMES[colour].toLowerCase()}`}
+      aria-label={`${seat.name}${seat.me ? ' (you)' : ''}${seat.bot ? ', computer player' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}, builds in ${SEAT_NAMES[colour].toLowerCase()}`}
     >
       <svg className="ctn-ship__hull" viewBox="-60 -90 120 130" aria-hidden="true">
         <line x1="0" y1="10" x2="0" y2="-84" className="ctn-ship__mast" />
@@ -118,6 +129,11 @@ function Ship({
           transitionName={tv ? undefined : seatTransition(seat.id).token}
         />
         <PlayerReaction reactions={reactions} playerId={seat.id} name={seat.name} size={size} />
+        {seat.bot && (
+          <span className="ctn-ship__bot" aria-hidden="true">
+            Bot
+          </span>
+        )}
       </span>
       <span
         className="ctn-ship__name"
@@ -141,11 +157,13 @@ function Harbour({
   seats,
   onSeat,
   reactions,
+  onAddBot,
   tv,
 }: {
   seats: Seat[];
   onSeat?: (id: string) => void;
   reactions?: Reaction[];
+  onAddBot?: () => void;
   tv?: boolean;
 }) {
   const size: Size = seats.length >= 5 ? 'big' : 'classic';
@@ -162,6 +180,7 @@ function Harbour({
             of={of}
             onSeat={onSeat}
             reactions={reactions}
+            onAddBot={onAddBot}
             tv={tv}
           />
         ))}
@@ -171,13 +190,18 @@ function Harbour({
 }
 
 /** Catan's seats in Jackdaw's lobby: ships bound for the island, one per player. */
-export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({ seats, onSeat, reactions }) => (
+export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
+  seats,
+  onSeat,
+  reactions,
+  onAddBot,
+}) => (
   <div className="ctn ctn-muster" aria-label={`${seats.length} of 6 seats taken`}>
     <p className="ctn-muster__title">
       <span>Bound for Catan</span>
       <small>{seats.length >= 5 ? 'The big island · 5 to 6' : 'The classic island · 3 to 4'}</small>
     </p>
-    <Harbour seats={seats} onSeat={onSeat} reactions={reactions} />
+    <Harbour seats={seats} onSeat={onSeat} reactions={reactions} onAddBot={onAddBot} />
   </div>
 );
 
@@ -196,6 +220,7 @@ export function CatanTvLobby({
     avatar: p.avatar,
     host: p.id === hostId,
     away: !p.online,
+    bot: p.bot,
   }));
   const points = String(options.points ?? '10');
   return (

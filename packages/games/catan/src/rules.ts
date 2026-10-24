@@ -9,7 +9,9 @@ import { z } from 'zod';
 import { DEV_DECK, RESOURCE_COUNT, makeBoard, type BoardStyle } from './board';
 import {
   COSTS,
+  bankRatio,
   citySpots,
+  harboursOf,
   missing,
   piecesLeft,
   roadSpots,
@@ -19,6 +21,7 @@ import {
   type Roads,
 } from './build';
 import { awardRoad, longestRoad } from './roads';
+import { trim, validTrade } from './trade';
 import { layout, type Layout } from './geometry';
 import { meta } from './meta';
 import {
@@ -103,6 +106,8 @@ export interface Offer {
   give: Partial<Cards>;
   want: Partial<Cards>;
   replies: Record<string, 'accept' | 'decline'>;
+  /** The offer this one answers, for a counter-offer. */
+  counter: number | null;
 }
 
 /** The last robbery. `resource` is secret: only the thief and the victim see it. */
@@ -536,6 +541,8 @@ function applyAction(s: CatanState, who: string, a: CatanAction, rng: Rng): Cata
     return moveRobber(s, who, a.tile, a.victim, rng);
   }
   if (a.type === 'robber') return refuse('wrong-phase', 'The robber isn’t moving now.');
+  if (a.type === 'answer' || a.type === 'counter' || a.type === 'propose' || a.type === 'withdraw')
+    return respond(s, who, a);
   if (who !== actor(s)) return refuse('not-your-turn', 'It’s not your turn.');
   if (s.phase === 'roll') {
     if (a.type === 'roll') return roll(s, who, rng);
@@ -560,11 +567,145 @@ function applyAction(s: CatanState, who: string, a: CatanAction, rng: Rng): Cata
       return play(s, who, a);
     case 'endTurn':
       return endTurn(s);
+    case 'offer':
+      return makeOffer(s, who, a.give, a.want, a.to, null);
+    case 'accept':
+      return accept(s, who, a.offer, a.with);
+    case 'bank':
+      return bank(s, who, a.give, a.get, a.n);
     case 'endRoads':
       return refuse('wrong-phase', 'You’re not building free roads.');
     default:
       return refuse('wrong-phase', 'You can’t do that now.');
   }
+}
+
+const MAX_OFFERS = 6;
+
+/** Player trades happen in the main phase of a normal turn, never in a paired phase. */
+function tradingOpen(s: CatanState) {
+  if (s.phase !== 'main') return refuse('wrong-phase', 'You can’t trade right now.');
+  if (s.paired) return refuse('paired', 'There’s no trading with players in a paired turn.');
+}
+
+function makeOffer(
+  s: CatanState,
+  who: string,
+  give: Partial<Cards>,
+  want: Partial<Cards>,
+  to: string | null,
+  counter: number | null,
+): CatanState {
+  tradingOpen(s);
+  const bad = validTrade(give, want);
+  if (bad) return refuse('bad-trade', bad);
+  if (who === s.turn) {
+    if (to !== null && (to === who || !s.seats.includes(to)))
+      return refuse('bad-partner', 'Offer to everyone or to another player.');
+  } else if (to !== s.turn) {
+    return refuse('not-your-turn', 'You can only trade with the player whose turn it is.');
+  }
+  if (!covers(s.hands[who]!, give)) return refuse('not-yours', 'You don’t have those cards.');
+  if (s.offers.filter((o) => o.from === who).length >= MAX_OFFERS)
+    return refuse('too-many', 'Take back an offer before making another.');
+  const id = s.offerSeq + 1;
+  const offer: Offer = {
+    id,
+    from: who,
+    to,
+    give: trim(give),
+    want: trim(want),
+    replies: {},
+    counter,
+  };
+  return { ...s, offerSeq: id, offers: [...s.offers, offer] };
+}
+
+type Response = Extract<CatanAction, { type: 'answer' | 'counter' | 'propose' | 'withdraw' }>;
+
+/** What the other players do with trades: answer, counter, propose, or take an offer back. */
+function respond(s: CatanState, who: string, a: Response): CatanState {
+  if (a.type === 'propose') {
+    if (who === s.turn) return refuse('own-turn', 'Make an offer instead.');
+    return makeOffer(s, who, a.give, a.want, s.turn, null);
+  }
+  const offer = s.offers.find((o) => o.id === a.offer);
+  if (!offer) return refuse('no-offer', 'That offer isn’t open any more.');
+  if (a.type === 'withdraw') {
+    if (offer.from !== who) return refuse('not-yours', 'Only its maker can take an offer back.');
+    return { ...s, offers: s.offers.filter((o) => o.id !== offer.id) };
+  }
+  if (offer.from !== s.turn || who === offer.from || (offer.to !== null && offer.to !== who))
+    return refuse('not-for-you', 'That offer isn’t to you.');
+  if (a.type === 'counter') return makeOffer(s, who, a.give, a.want, s.turn, offer.id);
+  tradingOpen(s);
+  if (a.reply === 'accept' && !covers(s.hands[who]!, offer.want))
+    return refuse('not-yours', 'You don’t have the cards they want.');
+  return {
+    ...s,
+    offers: s.offers.map((o) =>
+      o.id === offer.id ? { ...o, replies: { ...o.replies, [who]: a.reply } } : o,
+    ),
+  };
+}
+
+/** The player on their turn completes a trade: their own offer with someone who said yes, or a
+ * counter or proposal made to them. Both hands are checked again now. */
+function accept(s: CatanState, who: string, id: number, partner: string): CatanState {
+  tradingOpen(s);
+  const offer = s.offers.find((o) => o.id === id);
+  if (!offer) return refuse('no-offer', 'That offer isn’t open any more.');
+  if (offer.from === who) {
+    if (offer.replies[partner] !== 'accept') return refuse('no-yes', 'Pick someone who said yes.');
+  } else if (offer.to !== who || partner !== offer.from) {
+    return refuse('not-for-you', 'That offer isn’t to you.');
+  }
+  const maker = offer.from;
+  const taker = maker === who ? partner : who;
+  if (!covers(s.hands[maker]!, offer.give))
+    return refuse(
+      'short',
+      maker === who
+        ? 'You don’t have those cards any more.'
+        : 'They don’t have those cards any more.',
+    );
+  if (!covers(s.hands[taker]!, offer.want))
+    return refuse(
+      'short',
+      taker === who
+        ? 'You don’t have those cards any more.'
+        : 'They don’t have those cards any more.',
+    );
+  const hands = {
+    ...s.hands,
+    [maker]: add(add(s.hands[maker]!, offer.give, -1), offer.want),
+    [taker]: add(add(s.hands[taker]!, offer.want, -1), offer.give),
+  };
+  return logged(
+    { ...s, hands, offers: s.offers.filter((o) => o.id !== offer.id) },
+    `{actor} traded ${cardsText(offer.give)} for ${cardsText(offer.want)} with {${taker}}`,
+    maker,
+  );
+}
+
+function bank(s: CatanState, who: string, give: Resource, get: Resource, n: number): CatanState {
+  if (s.phase !== 'main') return refuse('wrong-phase', 'You can’t trade right now.');
+  if (give === get) return refuse('bad-trade', 'Pick a different resource to get.');
+  const ratio = bankRatio(harboursOf(layoutOf(s), s.board, s.buildings, who), give);
+  if (s.hands[who]![give] < ratio * n)
+    return refuse('cant-afford', `That takes ${ratio * n} ${give}.`);
+  if (s.bank[get] < n) return refuse('bank-short', `The bank has only ${s.bank[get]} ${get}.`);
+  const out = { [give]: ratio * n } as Partial<Cards>;
+  const back = { [get]: n } as Partial<Cards>;
+  return logged(
+    {
+      ...s,
+      hands: { ...s.hands, [who]: add(add(s.hands[who]!, out, -1), back) },
+      bank: add(add(s.bank, out), back, -1),
+    },
+    `{actor} traded ${ratio * n} ${give} to the bank for ${n} ${get}`,
+    who,
+  );
 }
 
 /** Recounts every road and moves Longest Road if it should change hands. */

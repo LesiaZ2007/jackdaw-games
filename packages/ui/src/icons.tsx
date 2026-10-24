@@ -216,6 +216,14 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 58h48" />
     </g>
   ),
+  /** Three island tiles with a settlement where they meet (Catan). */
+  hexes: (
+    <g {...stroke(3.4)}>
+      <path d="M23.3 14L32 19v10l-8.7 5-8.7-5V19zM40.7 14l8.7 5v10l-8.7 5L32 29V19zM32 29l8.7 5v10L32 49l-8.7-5V34z" />
+      <path d="M26 23v-6l6-6 6 6v6z" fill="currentColor" />
+      <path d="M8 58h48" />
+    </g>
+  ),
 };
 
 export function Glyph({ id, size }: { id: string; size?: number | string }) {

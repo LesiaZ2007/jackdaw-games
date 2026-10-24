@@ -1,0 +1,216 @@
+/* Catan's seats: the island faint on a chart, each player a ship moored round it with their
+   crest on a sail in the colour they'll build in; empty moorings wait for the rest. */
+
+.cn-muster {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: -7px;
+}
+.cn-muster__title {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+.cn-muster__title span {
+  font: 700 var(--step-2) / 1 var(--font-display);
+}
+.cn-muster__title small {
+  font: 700 14px/1.4 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.cn-harbourmap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 62vh;
+  margin: 0 auto;
+  container-type: inline-size;
+}
+.cn-chart {
+  position: absolute;
+  inset: 12% 18%;
+  width: 64%;
+  height: 76%;
+}
+.cn-chart__sea {
+  fill: color-mix(in srgb, var(--azure) 14%, var(--paper));
+}
+.cn-chart__tile {
+  opacity: 0.3;
+  stroke: var(--ink);
+  stroke-opacity: 0.35;
+  stroke-width: 0.03;
+}
+
+.cn-ships {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  inset: 0;
+}
+.cn-ship {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: clamp(76px, 22cqi, 140px);
+  display: grid;
+  justify-items: center;
+  transform: translate(-50%, -50%);
+}
+.cn-ship__hull {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.cn-ship__mast {
+  stroke: var(--ink);
+  stroke-width: 4;
+}
+.cn-ship__pennant {
+  fill: var(--gules);
+}
+.cn-ship__sail {
+  fill: var(--cn-own);
+  stroke: var(--ink);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+}
+.cn-ship__body {
+  fill: var(--cn-wood);
+  stroke: var(--ink);
+  stroke-width: 3.5;
+  stroke-linejoin: round;
+}
+.cn-ship__plank {
+  stroke: var(--ink);
+  stroke-opacity: 0.45;
+  stroke-width: 2;
+}
+.cn-ship__tok {
+  position: absolute;
+  top: 18%;
+  display: grid;
+}
+.cn-ship__name {
+  max-width: 100%;
+  margin-top: 2px;
+  font: 800 clamp(13px, 3.4cqi, 18px) / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.cn-ship--me .cn-ship__name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.cn-ship--away {
+  opacity: 0.6;
+}
+.cn-ship--landing {
+  animation: cn-sail-in 900ms var(--ease-out) both;
+}
+.cn-ship--open {
+  width: clamp(60px, 16cqi, 100px);
+  gap: 4px;
+  color: var(--ink-2);
+}
+.cn-ship__mooring {
+  width: 28%;
+  aspect-ratio: 1;
+  border: 2px dashed var(--rule);
+  border-radius: 50%;
+}
+.cn-ship--open .cn-ship__name {
+  color: var(--ink-2);
+}
+.cn-ship__tap {
+  position: absolute;
+  inset: 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.cn-ship__tap:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+@keyframes cn-sail-in {
+  from {
+    transform: translate(-50%, -10%) rotate(-6deg);
+    opacity: 0;
+  }
+}
+
+/* ---------- The TV lobby ---------- */
+
+.cn-tvmuster {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 640px;
+  gap: 56px;
+  align-items: center;
+  padding: 48px 72px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--azure) 8%, var(--paper));
+}
+.cn-tvmuster__sea {
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  align-items: center;
+}
+.cn-harbourmap--tv {
+  max-height: none;
+  height: 100%;
+  aspect-ratio: auto;
+}
+.cn-harbourmap--tv .cn-ship {
+  width: 220px;
+}
+.cn-harbourmap--tv .cn-ship--open {
+  width: 150px;
+}
+.cn-harbourmap--tv .cn-ship__name {
+  font-size: 34px;
+}
+.cn-harbourmap--tv .cn-chart__tile {
+  opacity: 0.42;
+}
+.cn-tvmuster__side {
+  display: grid;
+  gap: 32px;
+  align-content: center;
+}
+.cn-tvmuster__title {
+  margin: 0;
+  font: 800 150px / 0.9 var(--font-display);
+}
+.cn-tvmuster__sub {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.cn-tvmuster__status {
+  margin: 0;
+  font: 800 38px / 1.1 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cn-ship--landing {
+    animation: none;
+  }
+}

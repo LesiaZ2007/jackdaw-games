@@ -12,6 +12,12 @@ export const namer =
   (id: string | null | undefined): string =>
     players.find((p) => p.id === id)?.name ?? 'Someone';
 
+/** A log line with `{actor}` and `{playerId}` written out as names. */
+export const logLine = (
+  e: { text: string; actor?: string },
+  name: (id: string | null | undefined) => string,
+): string => e.text.replace(/\{([^}]+)\}/g, (_, id: string) => name(id === 'actor' ? e.actor : id));
+
 export const PHASE_LABEL: Record<Phase, string> = {
   setup: 'Opening placements',
   roll: 'Rolling',

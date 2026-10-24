@@ -520,9 +520,34 @@ then "just build it all" and allowed merging once done. Spec
   bound for the island (`LobbySeats`, `TvLobby`). Results: each player's points broken down and the
   final island. Kit: a `hexes` glyph. e2e: `apps/web/e2e/catan.spec.ts`.
 
+### Round four (2026-10-24, `feat/round-four`, merged as PR #11; `feat/round-four-words`)
+
+Lesia: "End Game still saves progress of any rounds", "fog of war to risk", "play against bots
+(a plus sign on each seat…)", "arrow to main screen…", "remove spyfall and werewolf".
+
+- **Bots** (CLAUDE.md, "Round four"): the + on open seats everywhere (seat track, every game's
+  `LobbySeats`, Codenames' and Secret Hitler's own lobbies, which place the bot on the team whose
+  - was tapped). Every game but Avalon has a bot playing from its own view, each with an all-bot
+    simulation test: Risk (borders, odds-based attacks, fortifies to the front), Catan (opening by
+    pips, builds city > settlement > road, answers offers but never makes one), UNO (catches missed
+    UNO calls about 1s after the play, which may be harsh), poker (Monte Carlo equity, pot odds,
+    occasional bluffs), RPS, Secret Hitler (role-aware trust scores), Letterhoard (letter-tree move
+    generator over ENABLE, median 2–3ms), Codenames (about 200 hand-written themes plus a hint per
+    word: e.g. FARM 3, QUIVER 1 for ARROW), Wavelength (5–9 placed clues for each of the 197 cards).
+- **Ending early can save**: every game but Avalon has `partialResult` (most territories, VP,
+  chips, points, words found, rounds won; Secret Hitler: the side further along its own track,
+  and the popup says it was ended early).
+- **Risk fog of war** (option, off by default): owners and armies only on your territories and
+  their neighbours; the public view has territories held per seat and nothing per territory; log
+  lines don't name places; leak tests scramble out-of-sight armies and check views don't change.
+- **Home**: a "The games" ring with a chevron at the foot of the hero, gone once you scroll.
+- **Catalog**: Werewolf and Spyfall dropped (BUILD_PLAN phases marked dropped).
+- Not yet seen in a browser at every width: the + in the games' own seats and Risk's fog. The
+  Codenames word table (~25–30 KB) reaches the client bundle through its lobby's imports.
+
 ## Next
 
-1. Lesia playtests `chore/deep-clean` on its preview, then merges.
+1. Lesia playtests round four (bots in each game, Risk's fog) on the preview.
 2. Still to check on real devices: notifications on real phones (iPhone needs Home Screen
    install), QR joining, a laptop driving a TV.
 

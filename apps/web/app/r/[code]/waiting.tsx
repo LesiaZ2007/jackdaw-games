@@ -205,6 +205,7 @@ export function Waiting({
             reactions={s.reactions}
             react={(kind) => void send({ type: 'react', kind })}
             chat={chat}
+            onAddBot={addBot}
           />
         </section>
       )}

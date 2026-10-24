@@ -180,6 +180,11 @@ export interface GameLobbyProps {
   react: (kind: ReactionKind) => void;
   /** The lobby's chat, drawn in the game's own style. */
   chat: LobbyChat;
+  /**
+   * Host only, when the game has a bot (2026-10-24): draw the kit's `AddSeat` "+" on each
+   * open seat; tapping it seats a computer player. Bot players come with `bot: true`.
+   */
+  onAddBot?: () => void;
 }
 
 /** What a game's own end-of-game screen receives. */

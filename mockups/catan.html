@@ -1,0 +1,725 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catan Design Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700;800&family=Big+Shoulders+Display:wght@600;700;800;900&family=Grenze:wght@700;800&family=Grenze+Gotisch:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: Jackdaw's grey table with the review laid out as printed lids, one per question;
+   every Catan piece is drawn from the same board generator so the three looks compare fairly. */
+:root {
+  /* Jackdaw shell tokens (packages/ui/src/tokens.css) */
+  --table: #cfcecb; --table-2: #bfbebb; --paper: #f7f7f5; --ink: #1d1d1c; --ink-2: #4a4947;
+  --rule: #9a9995; --on-fill: #f6f0e1; --or: #a77d2c; --shadow: rgba(29,29,28,.28);
+  --gules: #a63a30; --azure: #2b5683; --vert: #30634a; --sable: #3a3d42; --purpure: #6a3f74; --tenne: #9a5a22;
+  --tint-rust: #6f5147; --tint-slate: #3e5b6b; --tint-plum: #5b4b6f; --tint-olive: #5e6440; --tint-teal: #3e5f5a; --tint-indigo: #4a5678;
+  --font-display: 'Grenze Gotisch', Georgia, serif;
+  --font-code: 'Grenze', Georgia, serif;
+  --font-plaque: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+  --font-body: 'Alegreya Sans', 'Segoe UI', system-ui, sans-serif;
+  --ease-out: cubic-bezier(.22,1,.36,1);
+
+  /* Catan's printed board: the same in day and dark, like Jackdaw's heraldic fills */
+  --cn-forest: #3d6a39; --cn-forest-ink: #24451f;
+  --cn-pasture: #8fb058; --cn-pasture-ink: #5b7a31;
+  --cn-fields: #d8ab3c; --cn-fields-ink: #a07a22;
+  --cn-hills: #b25732; --cn-hills-ink: #823a1e;
+  --cn-mountains: #7b8086; --cn-mountains-ink: #4b4f55;
+  --cn-desert: #d9c48f; --cn-desert-ink: #ad9862;
+  --cn-sea: #2f6896; --cn-sea-line: #5f8fb8; --cn-shallow: #4f86b0;
+  --cn-stock: #f1ead8;      /* number discs, card stock, piers */
+  --cn-stock-ink: #2a2620;
+  --cn-wood: #9b7146;
+  --cn-seam: #1d1d1c;
+  /* the classic piece colours, printed */
+  --pc-red: #a63a30; --pc-blue: #2b5683; --pc-white: #efe9da; --pc-orange: #c8702a; --pc-green: #3f7a48; --pc-brown: #6a4a30;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --table: #1c1e20; --table-2: #25282b; --paper: #2b2f32; --ink: #ede5d3; --ink-2: #aeb5b8; --rule: #4f5559;
+    --or: #d2aa5c; --shadow: rgba(0,0,0,.55); --cn-seam: #101213; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --table: #1c1e20; --table-2: #25282b; --paper: #2b2f32; --ink: #ede5d3; --ink-2: #aeb5b8; --rule: #4f5559;
+  --or: #d2aa5c; --shadow: rgba(0,0,0,.55); --cn-seam: #101213; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--table); color: var(--ink); font: 400 18px/1.5 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; }
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 32px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h1 { font: 800 clamp(48px, 7vw, 88px)/1 var(--font-display); }
+h2 { font: 700 clamp(30px, 3.6vw, 40px)/1.1 var(--font-display); }
+h3 { font: 800 15px/1 var(--font-plaque); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+p { margin: 0; max-width: 68ch; }
+.lede { font-size: 21px; }
+.small { font-size: 16px; color: var(--ink-2); }
+
+.lid { position: relative; background: var(--paper); border: 2px solid var(--ink); outline: 1px solid var(--ink); outline-offset: -7px;
+  padding: clamp(20px, 3vw, 36px); display: grid; gap: 20px; min-width: 0; }
+.head { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: end; justify-content: space-between; }
+.label { font: 700 14px/1 var(--font-plaque); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+
+.plaque { appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 16px;
+  font: 800 18px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .03em; color: var(--ink); background: var(--paper);
+  border: 2px solid var(--ink); outline: 1px solid var(--ink); outline-offset: -5px; cursor: pointer; }
+.plaque--go { background: var(--vert); color: var(--on-fill); border-color: var(--vert); outline-color: var(--on-fill); }
+.plaque[aria-pressed="true"] { background: var(--ink); color: var(--paper); outline-color: var(--paper); }
+.plaque:focus-visible { outline: 3px solid var(--or); outline-offset: 2px; }
+.plaque[disabled] { opacity: .45; cursor: default; }
+.switch { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.chit { --t: 36px; width: var(--t); height: calc(var(--t)*1.12); display: grid; place-items: center; background: var(--f, var(--azure)); color: var(--on-fill);
+  clip-path: polygon(16% 0,84% 0,100% 14%,100% 86%,84% 100%,16% 100%,0 86%,0 14%); font: 800 calc(var(--t)*.7)/1 var(--font-code); }
+
+/* ----- the three looks ----- */
+.looks { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.look { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.look__board { border: 2px solid var(--ink); background: var(--cn-sea); }
+.look__board svg { display: block; width: 100%; height: auto; }
+.look h3 { color: var(--ink); font-size: 18px; letter-spacing: .08em; }
+.rec { font: 800 13px/1 var(--font-plaque); letter-spacing: .1em; text-transform: uppercase; background: var(--vert); color: var(--on-fill); padding: 5px 8px; justify-self: start; }
+
+/* ----- pieces and cards ----- */
+.parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px 32px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.rcard { width: 64px; display: grid; background: var(--cn-stock); border: 1.5px solid var(--cn-stock-ink); outline: 1px solid var(--cn-stock-ink); outline-offset: -4px; padding: 5px; gap: 4px; position: relative; color: var(--cn-stock-ink); }
+.rcard__art { height: 50px; display: grid; place-items: center; background: var(--fill); }
+.rcard__art svg { width: 34px; height: 34px; }
+.rcard__name { font: 800 11px/1 var(--font-plaque); letter-spacing: .06em; text-transform: uppercase; text-align: center; }
+.rcard__n { position: absolute; top: -9px; right: -9px; min-width: 24px; height: 24px; padding: 0 5px; display: grid; place-items: center; background: var(--sable); color: var(--on-fill);
+  font: 800 15px/1 var(--font-plaque); border: 1.5px solid var(--cn-stock); }
+.rcard.is-none { opacity: .38; }
+.dcard { width: 92px; min-height: 128px; background: var(--cn-stock); color: var(--cn-stock-ink); border: 1.5px solid var(--cn-stock-ink); outline: 1px solid var(--cn-stock-ink); outline-offset: -4px; padding: 8px; display: grid; gap: 6px; align-content: start; text-align: center; }
+.dcard__art { height: 52px; display: grid; place-items: center; background: var(--fill, var(--sable)); color: var(--on-fill); }
+.dcard__art svg { width: 36px; height: 36px; }
+.dcard b { font: 800 14px/1 var(--font-plaque); letter-spacing: .05em; text-transform: uppercase; }
+.dcard span { font-size: 12.5px; line-height: 1.2; }
+.award { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; background: var(--cn-stock); color: var(--cn-stock-ink); border: 1.5px solid var(--cn-stock-ink); outline: 1px solid var(--cn-stock-ink); outline-offset: -4px; padding: 10px 12px; min-width: 200px; }
+.award svg { grid-row: span 2; width: 40px; height: 40px; }
+.award b { font: 800 16px/1 var(--font-plaque); letter-spacing: .06em; text-transform: uppercase; }
+.award span { font-size: 14px; }
+.costs { display: grid; gap: 6px; background: var(--cn-stock); color: var(--cn-stock-ink); border: 1.5px solid var(--cn-stock-ink); outline: 1px solid var(--cn-stock-ink); outline-offset: -4px; padding: 12px 14px; }
+.costs__row { display: grid; grid-template-columns: 36px 92px 1fr; gap: 8px; align-items: center; font: 800 14px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; }
+.pips { display: flex; gap: 3px; }
+.pip { width: 18px; height: 18px; display: grid; place-items: center; background: var(--fill); }
+.pip svg { width: 13px; height: 13px; }
+
+/* ----- phones ----- */
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 375px)); gap: 28px; justify-content: center; }
+.phonecap { display: grid; gap: 10px; align-content: start; }
+.phone { width: 100%; max-width: 375px; aspect-ratio: 375 / 740; container-type: inline-size; background: var(--table); border: 2px solid var(--ink); display: flex; flex-direction: column; overflow: hidden; position: relative; }
+.ph-bar { height: 13.5cqw; flex: none; display: flex; align-items: center; gap: 2.2cqw; padding: 0 3.5cqw; border-bottom: 2px solid var(--ink); background: var(--paper); }
+.ph-bar .chit { --t: 7.4cqw; }
+.ph-bar .mark { font: 800 6cqw/1 var(--font-display); margin-right: auto; }
+.ph-ico { width: 9cqw; height: 9cqw; border: 2px solid var(--ink); display: grid; place-items: center; font: 800 3.6cqw/1 var(--font-plaque); }
+.ph-strip { flex: none; display: flex; align-items: center; gap: 2.4cqw; padding: 2cqw 3.5cqw; background: var(--paper); border-bottom: 1px solid var(--rule); }
+.ph-strip b { font: 800 4.6cqw/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .04em; }
+.ph-strip small { display: block; font: 500 3.6cqw/1.2 var(--font-body); color: var(--ink-2); }
+.ph-strip .grow { flex: 1; min-width: 0; }
+.die { width: 8.6cqw; height: 8.6cqw; display: grid; grid-template: repeat(3,1fr) / repeat(3,1fr); padding: 1.1cqw; background: var(--cn-stock); border: 1.5px solid var(--cn-stock-ink); border-radius: 1.4cqw; }
+.die--red { background: var(--gules); }
+.die i { width: 1.7cqw; height: 1.7cqw; border-radius: 50%; background: var(--cn-stock-ink); place-self: center; }
+.die--red i { background: var(--cn-stock); }
+.dice { display: flex; gap: 1.4cqw; }
+.ph-rail { flex: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.6cqw; padding: 1.8cqw 2.4cqw; }
+.opp { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1.4cqw; background: var(--paper); border: 1.5px solid var(--ink); padding: 1.2cqw 1.6cqw; position: relative; }
+.opp.is-turn { box-shadow: inset 0 -1.2cqw 0 var(--pc); }
+.tok { width: var(--ts, 8cqw); height: var(--ts, 8cqw); border-radius: 50%; background: var(--tint); color: var(--on-fill); display: grid; place-items: center; font: 800 calc(var(--ts, 8cqw)*.48)/1 var(--font-code); box-shadow: 0 0 0 calc(var(--ts,8cqw)*.07) var(--paper), 0 0 0 calc(var(--ts,8cqw)*.12) var(--pc); flex: none; }
+.opp__name { font: 800 3.5cqw/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .03em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opp__meta { font: 700 3.1cqw/1.1 var(--font-plaque); color: var(--ink-2); display: flex; gap: 1.4cqw; margin-top: .6cqw; }
+.vp { font: 800 6cqw/1 var(--font-code); color: var(--ink); min-width: 5cqw; text-align: right; }
+.ph-board { flex: 1; min-height: 0; display: grid; place-items: center; background: var(--cn-sea); position: relative; border-block: 2px solid var(--ink); }
+.ph-board svg { width: 100%; height: 100%; display: block; }
+.ph-hand { flex: none; display: flex; justify-content: center; gap: 2.2cqw; padding: 3.4cqw 2.4cqw 2cqw; position: relative; }
+.ph-hand .rcard { width: 14.6cqw; padding: 1.1cqw; }
+.ph-hand .rcard__art { height: 9.6cqw; }
+.ph-hand .rcard__art svg { width: 7cqw; height: 7cqw; }
+.ph-hand .rcard__name { font-size: 2.7cqw; }
+.ph-hand .rcard__n { width: 6cqw; height: 6cqw; min-width: 0; font-size: 3.8cqw; top: -2.4cqw; right: -2.4cqw; }
+.ph-dock { flex: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.8cqw; padding: 1.4cqw 2.4cqw 3cqw; }
+.ph-dock .plaque { min-height: 12.4cqw; font-size: 4.2cqw; padding: 0 1cqw; outline-offset: -1.3cqw; }
+.ph-dock--2 { grid-template-columns: 1fr 1.6fr; }
+.ph-hint { flex: none; text-align: center; font: 600 3.8cqw/1.3 var(--font-body); padding: 2cqw 4cqw 0; }
+.got { position: absolute; left: 50%; top: -1cqw; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 1.4cqw; background: var(--vert); color: var(--on-fill); padding: 1.4cqw 2.6cqw; font: 800 3.8cqw/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+.got .pip { width: 5cqw; height: 5cqw; outline: 1px solid var(--on-fill); }
+.got .pip svg { width: 3.6cqw; height: 3.6cqw; }
+
+/* sheets over the phone board */
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--paper); border-top: 2px solid var(--ink); box-shadow: 0 -20px 50px -24px var(--shadow); padding: 4cqw 4cqw 4cqw; display: grid; gap: 3cqw; }
+.sheet__grab { width: 12cqw; height: 1.2cqw; background: var(--rule); justify-self: center; margin-top: -1.6cqw; }
+.sheet h4 { margin: 0; font: 700 6.4cqw/1 var(--font-display); }
+.tr-side { display: grid; gap: 1.6cqw; }
+.tr-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.6cqw; }
+.tr-cell { display: grid; justify-items: center; gap: .8cqw; border: 1.5px solid var(--rule); padding: 1.2cqw .6cqw; }
+.tr-cell.is-set { border-color: var(--ink); background: var(--cn-stock); color: var(--cn-stock-ink); }
+.tr-cell .pip { width: 7cqw; height: 7cqw; }
+.tr-cell .pip svg { width: 5cqw; height: 5cqw; }
+.tr-cell b { font: 800 5cqw/1 var(--font-code); }
+.tr-who { display: grid; gap: 1.4cqw; }
+.tr-ans { display: grid; grid-template-columns: auto 1fr auto; gap: 2cqw; align-items: center; font: 600 3.8cqw/1.2 var(--font-body); padding: 1.4cqw 0; border-top: 1px solid var(--rule); }
+.tr-ans .tok { --ts: 7cqw; }
+.ans { font: 800 3.4cqw/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .06em; padding: 1.2cqw 1.8cqw; }
+.ans--yes { background: var(--vert); color: var(--on-fill); }
+.ans--no { background: var(--sable); color: var(--on-fill); }
+.ans--counter { background: var(--azure); color: var(--on-fill); }
+.ans--wait { border: 1.5px dashed var(--rule); color: var(--ink-2); }
+.sheet .plaque { min-height: 12cqw; font-size: 4.2cqw; outline-offset: -1.3cqw; }
+.sheet .btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2cqw; }
+.offer-line { display: flex; align-items: center; gap: 1.6cqw; flex-wrap: wrap; font: 600 4.2cqw/1.2 var(--font-body); }
+.offer-line .pip { width: 6.4cqw; height: 6.4cqw; }
+.offer-line .pip svg { width: 4.6cqw; height: 4.6cqw; }
+.arrow { font: 800 5cqw/1 var(--font-plaque); color: var(--ink-2); }
+.bank { display: flex; gap: 2cqw; align-items: center; font: 700 3.6cqw/1.2 var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); }
+
+/* ----- lobby seats ----- */
+.lobbies { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; align-items: start; }
+.muster { background: var(--paper); border: 2px solid var(--ink); outline: 1px solid var(--ink); outline-offset: -6px; display: grid; }
+.muster svg { width: 100%; height: auto; display: block; }
+
+/* ----- TV stage ----- */
+.stagebox { width: 100%; aspect-ratio: 16 / 9; position: relative; overflow: hidden; border: 2px solid var(--ink); background: var(--table); }
+.stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; transform: scale(var(--k, .5)); }
+.tv { width: 100%; height: 100%; display: grid; grid-template-columns: 1180px 1fr; gap: 40px; padding: 40px 56px; background: var(--table); color: var(--ink); }
+.tv__board { background: var(--cn-sea); border: 3px solid var(--ink); outline: 1.5px solid var(--ink); outline-offset: -10px; display: grid; place-items: center; position: relative; overflow: hidden; }
+.tv__board svg { width: 100%; height: 100%; }
+.tv__side { display: grid; grid-template-rows: auto auto 1fr auto; gap: 28px; min-height: 0; }
+.tv__turn { display: flex; align-items: center; gap: 24px; background: var(--paper); border: 3px solid var(--ink); outline: 1.5px solid var(--ink); outline-offset: -9px; padding: 22px 28px; }
+.tv__turn .tok { --ts: 88px; }
+.tv__turn b { display: block; font: 800 52px/1 var(--font-display); }
+.tv__turn small { display: block; font: 700 28px/1.2 var(--font-plaque); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); margin-top: 6px; }
+.tv__turn .dice { margin-left: auto; gap: 14px; }
+.tv__turn .die { width: 96px; height: 96px; padding: 12px; border-radius: 14px; border-width: 3px; }
+.tv__turn .die i { width: 18px; height: 18px; }
+.tv__roll { font: 800 34px/1.2 var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; }
+.tv__roll .gain { display: inline-flex; gap: 8px; align-items: center; }
+.tv__roll .pip { width: 40px; height: 40px; outline: 2px solid var(--cn-stock-ink); }
+.tv__roll .pip svg { width: 28px; height: 28px; }
+.tv__players { display: grid; gap: 14px; align-content: start; }
+.tvp { display: grid; grid-template-columns: 80px 1fr auto; gap: 20px; align-items: center; background: var(--paper); border: 2.5px solid var(--ink); padding: 14px 20px; position: relative; }
+.tvp.is-turn { box-shadow: inset 12px 0 0 var(--pc); padding-left: 32px; }
+.tvp .tok { --ts: 72px; }
+.tvp__name { font: 800 36px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .03em; }
+.tvp__meta { display: flex; gap: 22px; margin-top: 8px; font: 800 28px/1 var(--font-plaque); color: var(--ink-2); align-items: center; }
+.tvp__meta span { display: inline-flex; gap: 8px; align-items: center; }
+.tvp__meta svg { width: 30px; height: 30px; }
+.tvp__vp { display: grid; justify-items: center; }
+.tvp__vp b { font: 800 72px/.9 var(--font-code); }
+.tvp__vp small { font: 800 22px/1 var(--font-plaque); letter-spacing: .1em; color: var(--ink-2); }
+.badge { font: 800 24px/1 var(--font-plaque); text-transform: uppercase; letter-spacing: .05em; padding: 8px 10px; background: var(--cn-stock); color: var(--cn-stock-ink); border: 2px solid var(--cn-stock-ink); }
+.tv__log { background: var(--paper); border: 2.5px solid var(--ink); padding: 18px 24px; display: grid; gap: 8px; font: 500 28px/1.3 var(--font-body); }
+.tv__log b { font-weight: 800; }
+.tv__head { display: flex; align-items: baseline; gap: 20px; }
+.tv__head h5 { margin: 0; font: 800 76px/1 var(--font-display); }
+.tv__head span { font: 800 28px/1 var(--font-plaque); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+
+/* TV lobby */
+.tvl { width: 100%; height: 100%; display: grid; grid-template-columns: 1fr 560px; background: var(--table); color: var(--ink); }
+.tvl__sea { background: var(--cn-sea); border-right: 3px solid var(--ink); position: relative; overflow: hidden; display: grid; }
+.tvl__sea svg { width: 100%; height: 100%; }
+.tvl__join { padding: 64px 56px; display: grid; gap: 36px; align-content: center; }
+.tvl__join h5 { margin: 0; font: 800 120px/1 var(--font-display); }
+.tvl__join p { font: 500 32px/1.3 var(--font-body); max-width: none; }
+.tvl__chits { display: flex; gap: 18px; }
+.tvl__chits .chit { --t: 104px; }
+.tvl__addr { font: 800 30px/1 var(--font-plaque); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.tvl__qr { width: 220px; height: 220px; border: 3px solid var(--ink); display: grid; place-items: center; font: 800 28px/1 var(--font-plaque); color: var(--ink-2); background: var(--paper);
+  background-image: repeating-linear-gradient(0deg, transparent 0 20px, var(--table-2) 20px 22px), repeating-linear-gradient(90deg, transparent 0 20px, var(--table-2) 20px 22px); }
+.tvl__status { font: 800 30px/1.2 var(--font-plaque); text-transform: uppercase; letter-spacing: .06em; }
+
+/* ----- notes ----- */
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px 32px; }
+.notes div { display: grid; gap: 6px; align-content: start; }
+.notes p, .notes li { font-size: 17px; }
+.notes ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.qs { counter-reset: q; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.qs li { counter-increment: q; display: grid; grid-template-columns: 40px 1fr; gap: 12px; align-items: start; }
+.qs li::before { content: counter(q); font: 800 26px/1 var(--font-code); width: 36px; height: 40px; display: grid; place-items: center; background: var(--gules); color: var(--on-fill);
+  clip-path: polygon(16% 0,84% 0,100% 14%,100% 86%,84% 100%,16% 100%,0 86%,0 14%); }
+.top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: end; }
+
+/* motion: the one orchestrated moment on each board */
+@keyframes cn-pulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+@keyframes cn-glow { 0%,100% { stroke-opacity: .2; } 50% { stroke-opacity: 1; } }
+.cn-legal { animation: cn-pulse 1.6s var(--ease-out) infinite; }
+.cn-roll { animation: cn-glow 1.8s var(--ease-out) infinite; }
+@media (prefers-reduced-motion: reduce) { .cn-legal, .cn-roll { animation: none; } }
+
+svg text { user-select: none; }
+.t-num { font-family: var(--font-code); font-weight: 800; }
+.t-plq { font-family: var(--font-plaque); font-weight: 800; letter-spacing: .04em; }
+.t-disp { font-family: var(--font-display); font-weight: 800; }
+@media (max-width: 520px) { .phones { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div style="display:grid;gap:10px">
+      <span class="label">Jackdaw Games Â· design review Â· 23 October 2026</span>
+      <h1>Catan</h1>
+      <p class="lede">Catan keeps its own board inside Jackdaw's frame: the classic island of hexes, cream number discs with red sixes and eights, ships at the harbours and the four classic piece colours, printed in Jackdaw's card-stock style. Pick a board look first. Everything below it redraws in the look you choose.</p>
+    </div>
+    <div class="switch" role="group" aria-label="Day or dark">
+      <button class="plaque" id="th-day" type="button">Day</button>
+      <button class="plaque" id="th-dark" type="button">Dark</button>
+    </div>
+  </header>
+
+  <section class="lid" aria-labelledby="s1">
+    <div class="head">
+      <div style="display:grid;gap:8px"><span class="label">1 Â· The board</span><h2 id="s1">Three ways to print the island</h2></div>
+      <div class="switch" role="group" aria-label="Board look used below">
+        <button class="plaque" data-look="A" type="button">Use A</button>
+        <button class="plaque" data-look="B" type="button">Use B</button>
+        <button class="plaque" data-look="C" type="button">Use C</button>
+      </div>
+    </div>
+    <p class="small">The same random, balanced board in each: tiles and harbours shuffled, numbers laid in the rulebook's spiral, no two red numbers touching. Four players have placed their opening settlements and roads.</p>
+    <div class="looks">
+      <figure class="look" style="margin:0"><span class="rec">Recommended</span><div class="look__board" id="look-A"></div>
+        <h3>A Â· Colour print</h3><p class="small">Catan's own terrain colours as printing inks, each tile engraved with its motif: pines, grass and sheep, wheat rows, brick courses, crags, dunes. Reads as Catan from across the room and still looks printed.</p></figure>
+      <figure class="look" style="margin:0"><span class="rec" style="visibility:hidden">Â·</span><div class="look__board" id="look-B"></div>
+        <h3>B Â· Heraldic</h3><p class="small">Jackdaw's tinctures: forest vert, fields or, hills gules, mountains sable, cream charges scattered on each. Closest to the compendium, but further from Catan; pasture and desert lose their colour.</p></figure>
+      <figure class="look" style="margin:0"><span class="rec" style="visibility:hidden">Â·</span><div class="look__board" id="look-C"></div>
+        <h3>C Â· Ink engraving</h3><p class="small">Cream card printed in ink only, with a light wash of each terrain colour. The most elegant and the quietest, but the resources are harder to tell apart at a glance on a phone.</p></figure>
+    </div>
+  </section>
+
+  <section class="lid" aria-labelledby="s2">
+    <div style="display:grid;gap:8px"><span class="label">2 Â· Pieces and cards</span><h2 id="s2">What goes in the box</h2></div>
+    <div class="parts">
+      <div style="display:grid;gap:12px;align-content:start"><h3>Pieces, in the classic colours</h3><div id="pieces"></div>
+        <p class="small">Seats take Catan's colours in order: red, blue, white, orange, then green and brown at five and six. Your crest token stays your own, as in Risk.</p></div>
+      <div style="display:grid;gap:12px;align-content:start"><h3>Resource cards</h3><div class="row" id="rcards"></div>
+        <p class="small">Card stock with a double rule, the terrain's colour and its engraving behind a cream glyph. Counts sit on a sable chit, like UNO's.</p></div>
+      <div style="display:grid;gap:12px;align-content:start"><h3>Building costs</h3><div class="costs" id="costs"></div></div>
+      <div style="display:grid;gap:12px;align-content:start"><h3>Development cards</h3><div class="row" id="dcards"></div></div>
+      <div style="display:grid;gap:12px;align-content:start"><h3>The two awards</h3><div style="display:grid;gap:10px" id="awards"></div>
+        <p class="small">They move between players with a small plaque on the TV and in each player's chip.</p></div>
+    </div>
+  </section>
+
+  <section class="lid" aria-labelledby="s3">
+    <div style="display:grid;gap:8px"><span class="label">3 Â· Phones</span><h2 id="s3">Playing on a phone</h2></div>
+    <p class="small">The board always fits the width, with no zooming needed on the classic board. You can only tap the spots where a move is legal, and a tap places a ghost piece first, so a fat thumb never builds in the wrong place. Trading and discarding open as sheets over the board.</p>
+    <div class="phones">
+      <div class="phonecap"><div class="phone" id="ph1"></div><h3>Your turn, after the roll</h3><p class="small">The roll lands, the producing tiles light up and what you got rises over your hand. Others show their cards, development cards, points and awards.</p></div>
+      <div class="phonecap"><div class="phone" id="ph2"></div><h3>Building a settlement</h3><p class="small">Only corners you can build on are ringed. Tap one to see the ghost; Build here pays and places it.</p></div>
+      <div class="phonecap"><div class="phone" id="ph3"></div><h3>Making an offer</h3><p class="small">You give, you want, to everyone or one player. Answers come in live; you pick who to trade with. Bank and harbour trades are a row below.</p></div>
+      <div class="phonecap"><div class="phone" id="ph4"></div><h3>An offer to you</h3><p class="small">On someone else's turn you can accept, counter or decline, and propose your own trade to them.</p></div>
+    </div>
+  </section>
+
+  <section class="lid" aria-labelledby="s4">
+    <div style="display:grid;gap:8px"><span class="label">4 Â· The lobby</span><h2 id="s4">Ships bound for the island</h2></div>
+    <p class="small">Catan uses Jackdaw's lobby (code, options, chat and Start stay where everyone knows them) with its own seats, as Risk has its war council. The island lies faint in the middle and each player is a ship riding at a harbour, its sail in the colour they will build in, their crest on the sail. Empty moorings wait for the rest. Five or six players redraw it as the big island.</p>
+    <div class="lobbies">
+      <div style="display:grid;gap:10px"><div class="muster" id="lobby4"></div><h3>Four seats taken, on the classic board</h3></div>
+      <div style="display:grid;gap:10px"><div class="muster" id="lobby6"></div><h3>Five of six, on the big island</h3></div>
+    </div>
+  </section>
+
+  <section class="lid" aria-labelledby="s5">
+    <div style="display:grid;gap:8px"><span class="label">5 Â· The TV</span><h2 id="s5">The table, from the sofa</h2></div>
+    <p class="small">The board fills the left of the stage. On the right: whose turn it is, the dice, what the roll paid and to whom, then everyone's points, cards, knights and road. When the dice land, the paying tiles light up and card backs fly from each tile to the players. Hands and hidden victory points never reach the TV.</p>
+    <div class="stagebox"><div class="stage" id="tv"></div></div>
+    <h3>The TV lobby</h3>
+    <div class="stagebox"><div class="stage" id="tvl"></div></div>
+  </section>
+
+  <section class="lid" aria-labelledby="s6">
+    <div style="display:grid;gap:8px"><span class="label">6 Â· How it plays</span><h2 id="s6">Rules and moments, in short</h2></div>
+    <div class="notes">
+      <div><h3>Rules</h3><ul>
+        <li>Official 5th-edition rules: snake setup, the robber and discarding on a 7, harbours, development cards, Longest Road and Largest Army, first to 10 on your own turn.</li>
+        <li>Five and six players get the big island and catan.com's paired turns: a second player builds alongside each turn.</li>
+        <li>Trade and build in any order (the rulebook's combined phase).</li>
+      </ul></div>
+      <div><h3>Results you can feel</h3><ul>
+        <li>Each roll: what you got rises over your hand. Nothing on a roll gives a quiet line.</li>
+        <li>Robbed: a gules moment ("Rook took a card"). The thief gets a vert one.</li>
+        <li>Longest Road or Largest Army won or lost: a moment for both players.</li>
+        <li>The end: everyone's Verdict, the final board and how each player made their points.</li>
+      </ul></div>
+      <div><h3>Options (proposed)</h3><ul>
+        <li>Board: Balanced (default), Beginner, Random.</li>
+        <li>Points to win: 10 (default), 8 for a short night, 12.</li>
+        <li>Friendly robber: off by default.</li>
+        <li>Turn timer: off, 1, 2 or 3 minutes.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="lid" aria-labelledby="s7">
+    <div style="display:grid;gap:8px"><span class="label">What I need from you</span><h2 id="s7">Three choices</h2></div>
+    <ol class="qs">
+      <li><p><b>Board look:</b> A (my pick), B or C, or a mix (for example A's colours with C's quieter tiles in dark mode).</p></li>
+      <li><p><b>Lobby and TV:</b> do the ships at the harbours feel right for Catan's seats, or would you rather have something else, such as a settlement per seat?</p></li>
+      <li><p><b>Anything on the phone</b> that feels crowded or missing: the hand, the four buttons, the other players' chips.</p></li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const SQ3 = Math.sqrt(3);
+  const RES = ['lumber', 'brick', 'wool', 'grain', 'ore'];
+  const TERR_OF = { lumber: 'forest', brick: 'hills', wool: 'pasture', grain: 'fields', ore: 'mountains' };
+  const RES_NAME = { lumber: 'Lumber', brick: 'Brick', wool: 'Wool', grain: 'Grain', ore: 'Ore' };
+
+  function rng(seed) {
+    return function () {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function shuffle(a, r) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  const DIRS = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]];
+  function ring(rad) {
+    if (!rad) return [[0, 0]];
+    let q = DIRS[4][0] * rad, r = DIRS[4][1] * rad; const out = [];
+    for (let i = 0; i < 6; i++) for (let j = 0; j < rad; j++) { out.push([q, r]); q += DIRS[i][0]; r += DIRS[i][1]; }
+    return out;
+  }
+  const center = (q, r) => [SQ3 * (q + r / 2), 1.5 * r];
+  const corner = (c, i, k = 1) => { const a = Math.PI / 180 * (60 * i - 30); return [c[0] + k * Math.cos(a), c[1] + k * Math.sin(a)]; };
+  const pips = (n) => 6 - Math.abs(7 - n);
+  const key = (p) => Math.round(p[0] * 100) + ',' + Math.round(p[1] * 100);
+
+  /* ---------- the board: base (19) or big (30) ---------- */
+  function coordsFor(big) {
+    if (!big) return [...ring(2), ...ring(1), [0, 0]];
+    // 3-4-5-6-5-4-3 rows, each centred: x = SQ3 * (q + r/2) = SQ3 * (j - (w-1)/2)
+    const rows = [3, 4, 5, 6, 5, 4, 3], out = [];
+    rows.forEach((w, i) => { const r = i - 3; for (let j = 0; j < w; j++) out.push([j - (w - 1) / 2 - r / 2, r]); });
+    return out;
+  }
+  function buildBoard(seed, big) {
+    const r = rng(seed);
+    const coords = coordsFor(big);
+    const terr = big
+      ? [...Array(6).fill('forest'), ...Array(6).fill('pasture'), ...Array(6).fill('fields'), ...Array(5).fill('hills'), ...Array(5).fill('mountains'), 'desert', 'desert']
+      : [...Array(4).fill('forest'), ...Array(4).fill('pasture'), ...Array(4).fill('fields'), ...Array(3).fill('hills'), ...Array(3).fill('mountains'), 'desert'];
+    const TOK = big ? [2,5,4,6,3,9,8,11,11,10,6,3,8,4,8,10,11,12,10,5,4,9,5,9,12,3,2,6] : [5,2,6,3,8,10,9,12,11,4,8,10,9,4,5,6,3,11];
+    let hexes;
+    for (let tries = 0; tries < 400; tries++) {
+      const ts = shuffle(terr, r); let k = 0;
+      hexes = coords.map(([q, rr], i) => ({ q, r: rr, c: center(q, rr), t: ts[i], n: ts[i] === 'desert' ? null : TOK[k++] }));
+      const reds = hexes.filter(h => h.n === 6 || h.n === 8);
+      const touch = reds.some(a => reds.some(b => a !== b && Math.hypot(a.c[0] - b.c[0], a.c[1] - b.c[1]) < 1.9));
+      if (!touch) break;
+    }
+    const V = new Map(), E = new Map();
+    hexes.forEach((h, hi) => {
+      const ks = [];
+      for (let i = 0; i < 6; i++) { const p = corner(h.c, i); const k = key(p); if (!V.has(k)) V.set(k, { k, p, hexes: [], nb: new Set() }); V.get(k).hexes.push(hi); ks.push(k); }
+      h.v = ks;
+      for (let i = 0; i < 6; i++) { const a = ks[i], b = ks[(i + 1) % 6]; const ek = a < b ? a + '|' + b : b + '|' + a;
+        if (!E.has(ek)) E.set(ek, { k: ek, a, b, hexes: [] }); E.get(ek).hexes.push(hi); V.get(a).nb.add(b); V.get(b).nb.add(a); }
+    });
+    // harbours on the coast, evenly round it
+    const coast = [...E.values()].filter(e => e.hexes.length === 1).map(e => {
+      const pa = V.get(e.a).p, pb = V.get(e.b).p; const m = [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2];
+      return { e, m, ang: Math.atan2(m[1], m[0]) };
+    }).sort((x, y) => x.ang - y.ang);
+    const nH = big ? 11 : 9;
+    const kinds = shuffle(big ? ['3:1','3:1','3:1','3:1','3:1','wool','wool','lumber','brick','grain','ore'] : ['3:1','3:1','3:1','3:1','lumber','brick','wool','grain','ore'], r);
+    const harbours = [];
+    for (let i = 0; i < nH; i++) {
+      const c = coast[Math.floor(i * coast.length / nH + 1) % coast.length];
+      const h = hexes[c.e.hexes[0]]; const nx = c.m[0] - h.c[0], ny = c.m[1] - h.c[1]; const l = Math.hypot(nx, ny);
+      harbours.push({ e: c.e, m: c.m, at: [c.m[0] + nx / l * 0.62, c.m[1] + ny / l * 0.62], kind: kinds[i] });
+    }
+    const desert = hexes.findIndex(h => h.t === 'desert');
+    return { hexes, V, E, harbours, robber: desert, big, r };
+  }
+
+  /* opening placements: snake order, best free corner by pips, a road to a free neighbour */
+  function seatPieces(b, colours, extra) {
+    const occ = new Map(), roads = [];
+    const score = (v) => v.hexes.reduce((s, hi) => s + (b.hexes[hi].n ? pips(b.hexes[hi].n) : 0), 0) + v.hexes.length * 0.3;
+    const free = (k) => !occ.has(k) && [...b.V.get(k).nb].every(n => !occ.has(n));
+    const order = [...colours.keys(), ...[...colours.keys()].reverse()];
+    const verts = [...b.V.values()].sort((x, y) => score(y) - score(x));
+    order.forEach((pi, step) => {
+      const v = verts.find(v => free(v.k) && v.hexes.length > 1 && (step % 3 !== 2 || v.hexes.length === 3)) || verts.find(v => free(v.k));
+      if (!v) return;
+      occ.set(v.k, { p: pi, city: false });
+      const to = [...v.nb].find(n => !occ.has(n));
+      roads.push({ a: v.k, b: to, p: pi });
+    });
+    if (extra) {
+      // a few more roads and a city or two, so the board looks mid-game
+      colours.forEach((_, pi) => {
+        const mine = roads.filter(r => r.p === pi);
+        for (let s = 0; s < 2 + (pi % 2); s++) {
+          const last = mine[mine.length - 1]; if (!last) break;
+          const nxt = [...b.V.get(last.b).nb].find(n => n !== last.a && !roads.some(r => (r.a === last.b && r.b === n) || (r.b === last.b && r.a === n)) && !occ.has(n));
+          if (!nxt) break; const nr = { a: last.b, b: nxt, p: pi }; roads.push(nr); mine.push(nr);
+        }
+      });
+      [0, 2].forEach(pi => { const s = [...occ.values()].find(o => o.p === pi); if (s) s.city = true; });
+    }
+    return { occ, roads };
+  }
+  function legalSettle(b, pieces, pi) {
+    const { occ, roads } = pieces; const touch = new Set();
+    roads.filter(r => r.p === pi).forEach(r => { touch.add(r.a); touch.add(r.b); });
+    return [...touch].filter(k => !occ.has(k) && [...b.V.get(k).nb].every(n => !occ.has(n)));
+  }
+
+  /* ---------- glyphs ---------- */
+  const GLYPH = {
+    lumber: '<g stroke="currentColor" stroke-width="1.6" fill="currentColor" fill-opacity=".25"><circle cx="7" cy="16.5" r="4"/><circle cx="17" cy="16.5" r="4"/><circle cx="12" cy="8.5" r="4"/></g><g fill="none" stroke="currentColor" stroke-width="1"><circle cx="7" cy="16.5" r="1.6"/><circle cx="17" cy="16.5" r="1.6"/><circle cx="12" cy="8.5" r="1.6"/></g>',
+    brick: '<g fill="currentColor" fill-opacity=".25" stroke="currentColor" stroke-width="1.6"><rect x="2" y="14" width="9.5" height="5.5"/><rect x="12.5" y="14" width="9.5" height="5.5"/><rect x="7" y="7.5" width="10" height="5.5"/></g>',
+    wool: '<g stroke="currentColor" stroke-width="1.6" fill="currentColor" fill-opacity=".25"><path d="M5 15c-2.5 0-3-3.5-.6-4.2C4.6 8 8 7.4 9.3 9c1-2 4.6-2 5.4 0 2-.8 4 .8 3.4 3 1.6 1.5.4 4-1.7 3.4-.8 1.4-3.4 1.6-4.4.2-1.1 1.2-3.6 1.2-4.4-.3C7 16 5.6 16 5 15z"/><ellipse cx="19.6" cy="9.6" rx="2.2" ry="1.8" fill-opacity="1"/><path d="M7 16v3.5M10.5 16.5v3M14 16.5v3M16.5 16v3.5" fill="none"/></g>',
+    grain: '<g fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21V6M12 21L7 7M12 21l5-14"/><path d="M12 6l-1.6-2.4M12 6l1.6-2.4M7 7l-2-2M17 7l2-2" stroke-width="1.3"/><path d="M8.3 16h7.4" stroke-width="2.4"/><g fill="currentColor"><ellipse cx="12" cy="9" rx="1.3" ry="2"/><ellipse cx="8.3" cy="10.5" rx="1.2" ry="1.9" transform="rotate(-20 8.3 10.5)"/><ellipse cx="15.7" cy="10.5" rx="1.2" ry="1.9" transform="rotate(20 15.7 10.5)"/></g></g>',
+    ore: '<g stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="currentColor" fill-opacity=".25"><path d="M3 19l3-8 5-4 6 2 4 10z"/><path d="M6 11l5 3 6-5M11 14l-1 5M11 14l6 1 4 4" fill="none" stroke-width="1.1"/></g>',
+    knight: '<g fill="currentColor"><path d="M7 21h11v-2.2c0-1-.6-1.6-1.6-2 .8-2.4.4-5.2-1.4-7.4l1.6-3.6-3.6 1.6C10 5.6 7.8 6.6 6.6 9l-2 3.6 1.6 1.4 2.6-1.4 1.2 1.2c-1.6 1.2-2.6 2.4-2.6 4.4z"/></g>',
+    road: '<g fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l5-16M20 20l-5-16"/><path d="M12 5v2M12 10v3M12 16v4" stroke-width="2.4"/></g>',
+    plenty: '<g fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8c4 0 6 2 8 6s4 6 8 6"/><path d="M4 8c0 5 2 8 6 9"/><circle cx="17" cy="7" r="2.2" fill="currentColor"/><circle cx="20" cy="11" r="1.6" fill="currentColor"/><circle cx="14" cy="4.6" r="1.5" fill="currentColor"/></g>',
+    monopoly: '<g fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v18M7 7h10M5 7l-3 7a3.4 3.4 0 0 0 6 0zM19 7l-3 7a3.4 3.4 0 0 0 6 0zM8 21h8"/></g>',
+    vp: '<g fill="currentColor"><path d="M3 20h18v-2H3zM5 17h14l-1-6-3 2-3-6-3 6-3-2z"/></g>',
+    army: '<g fill="currentColor"><path d="M12 2l7 3v6c0 5-3 8.6-7 11-4-2.4-7-6-7-11V5z" fill-opacity=".3" stroke="currentColor" stroke-width="1.6"/><path d="M8 14l8-8M16 14L8 6" stroke="currentColor" stroke-width="2"/></g>',
+    longroad: '<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 18l4-4 4 3 5-6 5 1"/><circle cx="3" cy="18" r="1.8" fill="currentColor"/><circle cx="21" cy="12" r="1.8" fill="currentColor"/></g>',
+    cards: '<g fill="currentColor" fill-opacity=".25" stroke="currentColor" stroke-width="1.6"><rect x="4" y="6" width="10" height="14" transform="rotate(-10 9 13)"/><rect x="10" y="4" width="10" height="14"/></g>',
+  };
+  const glyph = (g, cls = '') => `<svg viewBox="0 0 24 24" class="${cls}" aria-hidden="true">${GLYPH[g]}</svg>`;
+  const pip = (res) => `<span class="pip" style="--fill:var(--cn-${TERR_OF[res]});color:var(--cn-stock)">${glyph(res)}</span>`;
+
+  /* ---------- engraved motifs, per look ---------- */
+  const LOOKS = {
+    A: { // colour print: Catan's colours, ink-dark engraving
+      fill: t => `var(--cn-${t})`, ink: t => `var(--cn-${t}-ink)`, hi: 'var(--cn-stock)', hiOp: .55, sea: 'var(--cn-sea)', seaLine: 'var(--cn-sea-line)', shallow: 'var(--cn-shallow)', motifOp: .9,
+    },
+    B: { // heraldic tinctures, cream charges
+      fill: t => ({ forest: 'var(--vert)', pasture: 'color-mix(in srgb, var(--vert) 55%, var(--cn-stock))', fields: 'var(--or)', hills: 'var(--gules)', mountains: 'var(--sable)', desert: 'color-mix(in srgb, var(--tenne) 45%, var(--cn-stock))' }[t]),
+      ink: () => 'var(--cn-stock)', hi: 'var(--cn-stock)', hiOp: 0, sea: 'var(--azure)', seaLine: 'color-mix(in srgb, var(--cn-stock) 40%, var(--azure))', shallow: 'color-mix(in srgb, var(--cn-stock) 18%, var(--azure))', motifOp: .78,
+    },
+    C: { // ink engraving on card, light wash
+      fill: t => `color-mix(in srgb, var(--cn-${t}) 24%, var(--cn-stock))`, ink: () => 'var(--cn-stock-ink)', hi: 'var(--cn-stock)', hiOp: 0, sea: 'color-mix(in srgb, var(--cn-sea) 22%, var(--cn-stock))', seaLine: 'color-mix(in srgb, var(--cn-sea) 55%, var(--cn-stock))', shallow: 'color-mix(in srgb, var(--cn-sea) 12%, var(--cn-stock))', motifOp: .8,
+    },
+  };
+  function motif(t, ink, hi, hiOp) {
+    // drawn on a 20x20 tile, in board units scaled per pattern
+    switch (t) {
+      case 'forest': return `<g fill="${ink}"><path d="M5 2l3.6 7H6.6l3 5H.4l3-5H1.4z"/><path d="M15 11l3.6 7h-2l3 .1h0H10.4h0 3l-2-.1z" opacity="0"/><path d="M15 11l3.2 6h-1.8l2.6 4H10l2.6-4h-1.8z"/></g><path d="M5 2l1.6 3.2" stroke="${hi}" stroke-opacity="${hiOp}" stroke-width=".7"/>`;
+      case 'pasture': return `<g fill="none" stroke="${ink}" stroke-width=".9" stroke-linecap="round"><path d="M2 8q1-3 2 0M3.2 8q.6-3.4 1.6-.4M12 17q1-3 2 0M13.2 17q.6-3.4 1.6-.4"/></g><g fill="${hi}" fill-opacity="${hiOp ? .9 : 0}"><ellipse cx="14" cy="6" rx="2.3" ry="1.5"/><ellipse cx="4.5" cy="15.5" rx="2" ry="1.3"/></g><g fill="${ink}"><circle cx="16.4" cy="5.6" r=".7"/><circle cx="6.6" cy="15.2" r=".6"/></g>`;
+      case 'fields': return `<g fill="none" stroke="${ink}" stroke-width=".9" stroke-linecap="round"><path d="M1 6l3-4M4 6l3-4M7 6l3-4M11 16l3-4M14 16l3-4M17 16l3-4"/><path d="M0 7h11M10 17h10" stroke-width=".6"/></g>`;
+      case 'hills': return `<g fill="none" stroke="${ink}" stroke-width=".8"><path d="M0 4h20M0 10h20M0 16h20M5 4v6M15 4v6M10 10v6M0 10v6M20 10v6M5 16v4M15 16v4M10 0v4"/></g>`;
+      case 'mountains': return `<g fill="none" stroke="${ink}" stroke-width="1" stroke-linejoin="round"><path d="M1 9l4-6 3 4 2-2 3 4M10 19l4-6 3 4 3-3"/></g><path d="M5 3l1.4 4" stroke="${hi}" stroke-opacity="${hiOp}" stroke-width=".8"/>`;
+      default: return `<g fill="none" stroke="${ink}" stroke-width=".8"><path d="M0 8q5-4 10 0t10 0M-2 17q5-4 10 0t10 0"/></g><g fill="${ink}"><circle cx="4" cy="12" r=".5"/><circle cx="14" cy="3" r=".5"/><circle cx="16" cy="12" r=".4"/></g>`;
+    }
+  }
+
+  /* ---------- drawing a board ---------- */
+  const PIECE_COL = ['var(--pc-red)', 'var(--pc-blue)', 'var(--pc-white)', 'var(--pc-orange)', 'var(--pc-green)', 'var(--pc-brown)'];
+  let uidN = 0;
+  function drawBoard(b, pieces, o = {}) {
+    const L = LOOKS[o.look || 'A']; const id = 'b' + (uidN++); const pad = o.pad ?? 1.05;
+    const xs = [...b.V.values()].map(v => v.p[0]), ys = [...b.V.values()].map(v => v.p[1]);
+    let x0 = Math.min(...xs) - pad, x1 = Math.max(...xs) + pad, y0 = Math.min(...ys) - pad, y1 = Math.max(...ys) + pad;
+    if (o.aspect) { // grow to fill a frame's shape
+      const w = x1 - x0, h = y1 - y0, want = o.aspect;
+      if (w / h < want) { const nw = h * want; x0 -= (nw - w) / 2; x1 += (nw - w) / 2; } else { const nh = w / want; y0 -= (nh - h) / 2; y1 += (nh - h) / 2; }
+    }
+    const S = 20; // board unit â†’ pattern unit
+    const ms = o.motifScale || 0.32;
+    let s = `<svg viewBox="${x0} ${y0} ${x1 - x0} ${y1 - y0}" preserveAspectRatio="${o.par || 'xMidYMid meet'}" role="img" aria-label="${o.label || 'Catan board'}"><defs>`;
+    ['forest', 'pasture', 'fields', 'hills', 'mountains', 'desert'].forEach(t => {
+      s += `<pattern id="${id}-${t}" patternUnits="userSpaceOnUse" width="${ms}" height="${ms}" patternTransform="rotate(${t === 'fields' ? 0 : 0})"><g transform="scale(${ms / S})" opacity="${L.motifOp}">${motif(t, L.ink(t), L.hi, L.hiOp)}</g></pattern>`;
+    });
+    s += `<pattern id="${id}-sea" patternUnits="userSpaceOnUse" width="0.5" height="0.28"><path d="M0 .14q.125-.09.25 0t.25 0" fill="none" stroke="${L.seaLine}" stroke-width=".018"/></pattern></defs>`;
+    s += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="${L.sea}"/><rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="url(#${id}-sea)" opacity=".8"/>`;
+    const poly = (c, k) => Array.from({ length: 6 }, (_, i) => corner(c, i, k).map(n => n.toFixed(3)).join(',')).join(' ');
+    // shallows round the island, then the inked seam, then the tiles
+    b.hexes.forEach(h => { s += `<polygon points="${poly(h.c, 1.28)}" fill="${L.shallow}"/>`; });
+    b.hexes.forEach(h => { s += `<polygon points="${poly(h.c, 1.03)}" fill="var(--cn-seam)"/>`; });
+    // harbours: jetties to their two corners, then the pier plaque
+    b.harbours.forEach(hb => {
+      [hb.e.a, hb.e.b].forEach(k => { const p = b.V.get(k).p; const q = [p[0] + (hb.at[0] - p[0]) * 0.12, p[1] + (hb.at[1] - p[1]) * 0.12];
+        s += `<line x1="${hb.at[0]}" y1="${hb.at[1]}" x2="${q[0]}" y2="${q[1]}" stroke="var(--cn-stock-ink)" stroke-width=".13" stroke-linecap="round"/><line x1="${hb.at[0]}" y1="${hb.at[1]}" x2="${q[0]}" y2="${q[1]}" stroke="var(--cn-wood)" stroke-width=".075" stroke-linecap="round"/>`; });
+    });
+    b.hexes.forEach((h, hi) => {
+      s += `<polygon points="${poly(h.c, .965)}" fill="${L.fill(h.t)}"/><polygon points="${poly(h.c, .965)}" fill="url(#${id}-${h.t})"/>`;
+      if (o.roll && h.n === o.roll && b.robber !== hi) s += `<polygon class="cn-roll" points="${poly(h.c, .86)}" fill="none" stroke="var(--cn-stock)" stroke-width=".085"/>`;
+    });
+    b.harbours.forEach(hb => {
+      const res = hb.kind !== '3:1' ? hb.kind : null; const r = .27;
+      s += `<circle cx="${hb.at[0]}" cy="${hb.at[1] + .025}" r="${r}" fill="var(--shadow)"/><circle cx="${hb.at[0]}" cy="${hb.at[1]}" r="${r}" fill="${res ? `var(--cn-${TERR_OF[res]})` : 'var(--cn-stock)'}" stroke="var(--cn-stock-ink)" stroke-width=".035"/>`;
+      if (res) s += `<g transform="translate(${hb.at[0] - .13} ${hb.at[1] - .2}) scale(${.26 / 24})" color="var(--cn-stock)">${GLYPH[res]}</g><text x="${hb.at[0]}" y="${hb.at[1] + .19}" text-anchor="middle" font-size=".15" class="t-plq" fill="var(--cn-stock)">2:1</text>`;
+      else s += `<text x="${hb.at[0]}" y="${hb.at[1] + .07}" text-anchor="middle" font-size=".2" class="t-plq" fill="var(--cn-stock-ink)">3:1</text>`;
+    });
+    // number discs
+    b.hexes.forEach((h, hi) => {
+      if (!h.n) return; const [cx, cy] = h.c; const red = h.n === 6 || h.n === 8; const col = red ? 'var(--gules)' : 'var(--cn-stock-ink)';
+      s += `<circle cx="${cx}" cy="${cy + .03}" r=".34" fill="var(--shadow)"/><circle cx="${cx}" cy="${cy}" r=".33" fill="var(--cn-stock)" stroke="var(--cn-stock-ink)" stroke-width=".03"/><circle cx="${cx}" cy="${cy}" r=".285" fill="none" stroke="var(--cn-stock-ink)" stroke-width=".01" opacity=".6"/>`;
+      s += `<text x="${cx}" y="${cy + .09}" text-anchor="middle" font-size="${red ? .34 : .3}" class="t-num" fill="${col}">${h.n}</text>`;
+      const np = pips(h.n); for (let i = 0; i < np; i++) s += `<circle cx="${cx + (i - (np - 1) / 2) * .075}" cy="${cy + .19}" r=".026" fill="${col}"/>`;
+    });
+    // robber: a sable pawn
+    if (b.robber != null && b.robber >= 0) { const [cx, cy] = b.hexes[b.robber].c; const ox = b.hexes[b.robber].n ? .36 : 0;
+      s += `<g transform="translate(${cx + ox} ${cy - .02})"><ellipse cx="0" cy=".3" rx=".2" ry=".06" fill="var(--shadow)"/><path d="M-.17 .3 L-.1 -.02 Q-.18 -.12 -.08 -.18 A.12 .12 0 1 1 .08 -.18 Q.18 -.12 .1 -.02 L.17 .3 Z" fill="var(--sable)" stroke="var(--cn-stock)" stroke-width=".03"/></g>`; }
+    // roads, then buildings
+    pieces.roads.forEach(rd => { const a = b.V.get(rd.a).p, c = b.V.get(rd.b).p; const t = .2; const p1 = [a[0] + (c[0] - a[0]) * t, a[1] + (c[1] - a[1]) * t], p2 = [c[0] + (a[0] - c[0]) * t, c[1] + (a[1] - c[1]) * t];
+      s += `<line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="var(--cn-stock-ink)" stroke-width=".2" stroke-linecap="round"/><line x1="${p1[0]}" y1="${p1[1]}" x2="${p2[0]}" y2="${p2[1]}" stroke="${PIECE_COL[rd.p]}" stroke-width=".12" stroke-linecap="round"/>`; });
+    const building = (p, col, city, extra = '') => {
+      const d = city ? 'M-11,7 V-3 L-5.5,-10 L0,-3 V-1 H11 V7 Z' : 'M-7,6 V-2 L0,-9 L7,-2 V6 Z';
+      return `<g transform="translate(${p[0]} ${p[1]}) scale(${1 / 36})" ${extra}><path d="${d}" transform="translate(1.6 1.6)" fill="var(--shadow)"/><path d="${d}" fill="${col}" stroke="var(--cn-stock-ink)" stroke-width="1.8" stroke-linejoin="round"/>${city ? '<path d="M-7,1 h3 v3 h-3z M4,2 h3 v3 h-3z" fill="var(--cn-stock-ink)" opacity=".55"/>' : '<path d="M-1.6,1.4 h3.2 v4.6 h-3.2z" fill="var(--cn-stock-ink)" opacity=".55"/>'}</g>`;
+    };
+    pieces.occ.forEach((o2, k) => { s += building(b.V.get(k).p, PIECE_COL[o2.p], o2.city); });
+    (o.legal || []).forEach(k => { const p = b.V.get(k).p; if (k === o.ghost) return;
+      s += `<circle class="cn-legal" cx="${p[0]}" cy="${p[1]}" r=".2" fill="color-mix(in srgb, var(--cn-stock) 70%, transparent)" stroke="var(--cn-stock-ink)" stroke-width=".035" stroke-dasharray=".07 .05"/>`; });
+    if (o.ghost) { const p = b.V.get(o.ghost).p;
+      s += `<circle class="cn-legal" cx="${p[0]}" cy="${p[1]}" r=".36" fill="none" stroke="var(--cn-stock)" stroke-width=".05"/>` + building(p, PIECE_COL[o.ghostP ?? 1], false, 'opacity=".75"'); }
+    (o.flyers || []).forEach(f => { s += `<g transform="translate(${f.at[0]} ${f.at[1]})"><rect x="-.2" y="-.27" width=".4" height=".54" fill="var(--cn-stock)" stroke="var(--cn-stock-ink)" stroke-width=".03" transform="rotate(${f.rot || 0})"/><rect x="-.15" y="-.21" width=".3" height=".3" fill="var(--cn-${TERR_OF[f.res]})" transform="rotate(${f.rot || 0})"/><text y=".2" text-anchor="middle" font-size=".13" class="t-plq" fill="var(--cn-stock-ink)" transform="rotate(${f.rot || 0})">+1</text></g>`; });
+    return s + '</svg>';
+  }
+
+  /* ---------- page state ---------- */
+  const BOARD = buildBoard(20261023, false);
+  const PIECES = seatPieces(BOARD, [0, 1, 2, 3], true);
+  const BIG = buildBoard(77, true);
+  const BIGP = seatPieces(BIG, [0, 1, 2, 3, 4], false);
+  const PLAYERS = [
+    { name: 'Rook', ini: 'R', tint: 'var(--tint-rust)', pc: 'var(--pc-red)', vp: 5, cards: 6, dev: 1, kn: 3, road: 6 },
+    { name: 'Wren', ini: 'W', tint: 'var(--tint-slate)', pc: 'var(--pc-blue)', vp: 4, cards: 8, dev: 2, kn: 1, road: 4, me: true },
+    { name: 'Magpie', ini: 'M', tint: 'var(--tint-plum)', pc: 'var(--pc-white)', vp: 3, cards: 3, dev: 0, kn: 0, road: 3 },
+    { name: 'Finch', ini: 'F', tint: 'var(--tint-olive)', pc: 'var(--pc-orange)', vp: 4, cards: 5, dev: 1, kn: 1, road: 5 },
+  ];
+  const ROLL = (() => { const counts = {}; BOARD.hexes.forEach(h => { if (h.n) counts[h.n] = (counts[h.n] || 0) + 1; }); return 8; })();
+  const tok = (p, extra = '') => `<span class="tok" style="--tint:${p.tint};--pc:${p.pc};${extra}">${p.ini}</span>`;
+  const die = (n, red) => { const pos = { 1: [5], 2: [3, 7], 3: [3, 5, 7], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9] }[n];
+    return `<span class="die${red ? ' die--red' : ''}">${Array.from({ length: 9 }, (_, i) => pos.includes(i + 1) ? '<i></i>' : '<span></span>').join('')}</span>`; };
+
+  function renderLooks() { ['A', 'B', 'C'].forEach(L => { document.getElementById('look-' + L).innerHTML = drawBoard(BOARD, PIECES, { look: L, label: 'Board look ' + L }); }); }
+
+  function renderParts() {
+    const pc = PIECE_COL; let svg = '<svg viewBox="0 0 300 120" style="width:100%;max-width:340px" role="img" aria-label="Roads, settlements and cities in six colours">';
+    pc.forEach((c, i) => { const x = 25 + i * 50;
+      svg += `<line x1="${x - 14}" y1="100" x2="${x + 14}" y2="88" stroke="var(--cn-stock-ink)" stroke-width="8" stroke-linecap="round"/><line x1="${x - 14}" y1="100" x2="${x + 14}" y2="88" stroke="${c}" stroke-width="5" stroke-linecap="round"/>`;
+      svg += `<g transform="translate(${x} 58) scale(1.3)"><path d="M-7,6 V-2 L0,-9 L7,-2 V6 Z" fill="${c}" stroke="var(--cn-stock-ink)" stroke-width="1.6" stroke-linejoin="round"/></g>`;
+      svg += `<g transform="translate(${x} 22) scale(1.2)"><path d="M-11,7 V-3 L-5.5,-10 L0,-3 V-1 H11 V7 Z" fill="${c}" stroke="var(--cn-stock-ink)" stroke-width="1.6" stroke-linejoin="round"/></g>`; });
+    document.getElementById('pieces').innerHTML = svg + '</svg>';
+    document.getElementById('rcards').innerHTML = RES.map((r, i) => `<div class="rcard"><div class="rcard__art" style="--fill:var(--cn-${TERR_OF[r]});color:var(--cn-stock)">${glyph(r)}</div><div class="rcard__name">${RES_NAME[r]}</div><span class="rcard__n">${[2, 1, 3, 2, 0][i]}</span></div>`).join('');
+    const cost = (list) => `<span class="pips">${list.map(pip).join('')}</span>`;
+    document.getElementById('costs').innerHTML = [
+      ['road', 'Road', ['brick', 'lumber']], ['settle', 'Settlement', ['brick', 'lumber', 'wool', 'grain']], ['city', 'City', ['grain', 'grain', 'ore', 'ore', 'ore']], ['dev', 'Card', ['wool', 'grain', 'ore']],
+    ].map(([k, n, l]) => `<div class="costs__row"><svg viewBox="-12 -12 24 24" width="30" height="30" aria-hidden="true">${k === 'road' ? '<line x1="-10" y1="6" x2="10" y2="-6" stroke="var(--cn-stock-ink)" stroke-width="6" stroke-linecap="round"/><line x1="-10" y1="6" x2="10" y2="-6" stroke="var(--pc-red)" stroke-width="3.6" stroke-linecap="round"/>' : k === 'settle' ? '<path d="M-7,6 V-2 L0,-9 L7,-2 V6 Z" fill="var(--pc-red)" stroke="var(--cn-stock-ink)" stroke-width="1.6"/>' : k === 'city' ? '<path d="M-11,7 V-3 L-5.5,-10 L0,-3 V-1 H11 V7 Z" fill="var(--pc-red)" stroke="var(--cn-stock-ink)" stroke-width="1.6"/>' : '<rect x="-6" y="-9" width="12" height="18" fill="var(--sable)" stroke="var(--cn-stock-ink)" stroke-width="1.4"/>'}</svg><span>${n}</span>${cost(l)}</div>`).join('');
+    document.getElementById('dcards').innerHTML = [
+      ['knight', 'Knight', 'Move the robber and take a card.', 'var(--sable)'], ['road', 'Road building', 'Build two roads free.', 'var(--tenne)'], ['plenty', 'Year of plenty', 'Take any two from the bank.', 'var(--vert)'], ['monopoly', 'Monopoly', 'Name a resource. Everyone gives you theirs.', 'var(--purpure)'], ['vp', 'Victory point', 'Kept hidden. Worth one point.', 'var(--or)'],
+    ].map(([g, n, t, f]) => `<div class="dcard"><div class="dcard__art" style="--fill:${f}">${glyph(g)}</div><b>${n}</b><span>${t}</span></div>`).join('');
+    document.getElementById('awards').innerHTML = `<div class="award">${glyph('longroad')}<b>Longest road</b><span>Five or more in a row. 2 points.</span></div><div class="award">${glyph('army')}<b>Largest army</b><span>Three or more knights played. 2 points.</span></div>`;
+  }
+
+  const handHTML = (counts, got) => `<div class="ph-hand">${got ? `<div class="got">You got ${got.map(pip).join('')}</div>` : ''}${RES.map((r, i) => `<div class="rcard${counts[i] ? '' : ' is-none'}"><div class="rcard__art" style="--fill:var(--cn-${TERR_OF[r]});color:var(--cn-stock)">${glyph(r)}</div><div class="rcard__name">${RES_NAME[r]}</div>${counts[i] ? `<span class="rcard__n">${counts[i]}</span>` : ''}</div>`).join('')}</div>`;
+  const barHTML = () => `<div class="ph-bar"><span class="mark">Jackdaw</span><span class="chit" style="--f:var(--gules)">Q</span><span class="chit" style="--f:var(--azure)">G</span><span class="chit" style="--f:var(--vert)">Y</span><span class="chit" style="--f:var(--sable)">R</span><span class="ph-ico">â‰¡</span></div>`;
+  const railHTML = (turn) => `<div class="ph-rail">${PLAYERS.filter(p => !p.me).map(p => `<div class="opp${p.name === turn ? ' is-turn' : ''}" style="--pc:${p.pc}">${tok(p, '--ts:7.4cqw')}<div style="min-width:0"><div class="opp__name">${p.name}</div><div class="opp__meta"><span>â–®${p.cards}</span><span>âœ¦${p.dev}</span>${p.name === 'Rook' ? '<span>âš”</span>' : ''}</div></div><span class="vp">${p.vp}</span></div>`).join('')}</div>`;
+
+  function renderPhones(look) {
+    const aspect = 375 / 380;
+    const ph1 = document.getElementById('ph1');
+    ph1.innerHTML = barHTML() + `<div class="ph-strip">${tok(PLAYERS[1], '--ts:8.6cqw')}<div class="grow"><b>Your turn</b><small>Trade and build, then end your turn</small></div><span class="dice">${die(5)}${die(3, true)}</span></div>` + railHTML('') +
+      `<div class="ph-board">${drawBoard(BOARD, PIECES, { look, roll: ROLL, aspect, pad: .9, label: 'The board after rolling 8' })}</div>` + handHTML([2, 1, 3, 3, 1], ['grain', 'ore']) +
+      `<div class="ph-dock"><button class="plaque" type="button">Build</button><button class="plaque" type="button">Trade</button><button class="plaque" type="button">Cards 2</button><button class="plaque plaque--go" type="button">End</button></div>`;
+    const legal = legalSettle(BOARD, PIECES, 1);
+    const ph2 = document.getElementById('ph2');
+    ph2.innerHTML = barHTML() + `<div class="ph-strip">${tok(PLAYERS[1], '--ts:8.6cqw')}<div class="grow"><b>Settlement</b><small>Tap a ringed corner</small></div><span class="pips">${['brick', 'lumber', 'wool', 'grain'].map(pip).join('')}</span></div>` + railHTML('') +
+      `<div class="ph-board">${drawBoard(BOARD, PIECES, { look, legal, ghost: legal[0], ghostP: 1, aspect, pad: .9, label: 'Choosing where to build' })}</div>` + handHTML([2, 1, 3, 3, 1]) +
+      `<p class="ph-hint">${legal.length} places you can build. The ghost shows where it goes.</p><div class="ph-dock ph-dock--2"><button class="plaque" type="button">Cancel</button><button class="plaque plaque--go" type="button">Build here</button></div>`;
+    const ph3 = document.getElementById('ph3');
+    const cell = (r, n) => `<div class="tr-cell${n ? ' is-set' : ''}">${pip(r)}<b>${n || 'Â·'}</b></div>`;
+    ph3.innerHTML = barHTML() + `<div class="ph-strip">${tok(PLAYERS[1], '--ts:8.6cqw')}<div class="grow"><b>Your turn</b><small>Trading</small></div><span class="dice">${die(5)}${die(3, true)}</span></div>` +
+      `<div class="ph-board">${drawBoard(BOARD, PIECES, { look, aspect: 375 / 380, pad: .5, par: 'xMidYMin slice' })}</div>` +
+      `<div class="sheet"><span class="sheet__grab"></span><h4>Make an offer</h4><div class="tr-side"><span class="label">You give</span><div class="tr-row">${RES.map((r, i) => cell(r, [0, 0, 2, 0, 0][i])).join('')}</div></div><div class="tr-side"><span class="label">You want</span><div class="tr-row">${RES.map((r, i) => cell(r, [0, 0, 0, 0, 1][i])).join('')}</div></div>
+      <div class="tr-who"><span class="label">Offered to everyone</span>
+        <div class="tr-ans">${tok(PLAYERS[0], '--ts:7cqw')}<span>Rook</span><span class="ans ans--yes">Accepts</span></div>
+        <div class="tr-ans">${tok(PLAYERS[2], '--ts:7cqw')}<span>Magpie</span><span class="ans ans--no">No</span></div>
+        <div class="tr-ans">${tok(PLAYERS[3], '--ts:7cqw')}<span>Finch wants 3 wool</span><span class="ans ans--counter">Counter</span></div></div>
+      <div class="btns"><button class="plaque" type="button">Cancel</button><button class="plaque" type="button">Finch</button><button class="plaque plaque--go" type="button">Rook</button></div>
+      <div class="bank">Bank 4:1 Â· your harbour: wool 2:1 <button class="plaque" type="button" style="margin-left:auto;min-height:10cqw;font-size:3.6cqw">Bank trade</button></div></div>`;
+    const ph4 = document.getElementById('ph4');
+    ph4.innerHTML = barHTML() + `<div class="ph-strip">${tok(PLAYERS[0], '--ts:8.6cqw')}<div class="grow"><b>Rook's turn</b><small>Trading and building</small></div><span class="dice">${die(4)}${die(2, true)}</span></div>` + railHTML('Rook') +
+      `<div class="ph-board">${drawBoard(BOARD, PIECES, { look, aspect: 375 / 300, pad: .9 })}</div>` + handHTML([2, 1, 3, 3, 1]) +
+      `<div class="sheet" style="position:relative;border-bottom:0"><div class="offer-line">${tok(PLAYERS[0], '--ts:7.4cqw')}<b>Rook offers</b> ${pip('ore')} <span class="arrow">for</span> ${pip('wool')}${pip('wool')}</div>
+      <div class="btns"><button class="plaque" type="button">Decline</button><button class="plaque" type="button">Counter</button><button class="plaque plaque--go" type="button">Accept</button></div></div>`;
+  }
+
+  /* lobby: the island faint, ships at the harbours */
+  function ship(x, y, s, p, open, me) {
+    if (open) return `<g transform="translate(${x} ${y}) scale(${s})" opacity=".7"><path d="M-.5 .22 h1" stroke="var(--rule)" stroke-width=".04" stroke-dasharray=".08 .06"/><rect x="-.08" y="-.02" width=".16" height=".22" fill="none" stroke="var(--rule)" stroke-width=".04"/><text y=".55" text-anchor="middle" font-size=".2" class="t-plq" fill="var(--ink-2)">OPEN</text></g>`;
+    return `<g transform="translate(${x} ${y}) scale(${s})">
+      <path d="M-.55 .1 L.55 .1 L.4 .34 L-.42 .34 Z" fill="var(--cn-wood)" stroke="var(--ink)" stroke-width=".035" stroke-linejoin="round"/>
+      <line x1="0" y1=".1" x2="0" y2="-.78" stroke="var(--ink)" stroke-width=".04"/>
+      <path d="M-.36 -.68 Q0 -.74 .36 -.68 L.4 -.04 Q0 .04 -.4 -.04 Z" fill="${p.pc}" stroke="var(--ink)" stroke-width=".035"/>
+      <path d="M0 -.78 l.22 .06 l-.22 .06" fill="var(--gules)"/>
+      <circle cx="0" cy="-.36" r=".19" fill="${p.tint}" stroke="var(--cn-stock)" stroke-width=".035"/><text x="0" y="-.29" text-anchor="middle" font-size=".2" class="t-num" fill="var(--on-fill)">${p.ini}</text>
+      <text y=".66" text-anchor="middle" font-size=".22" class="t-plq" fill="var(--ink)">${me ? 'YOU' : p.name.toUpperCase()}</text></g>`;
+  }
+  function lobbySVG(b, seats, max, look, w = 12, h = 9) {
+    const L = LOOKS[look];
+    const xs = [...b.V.values()].map(v => v.p[0]), ys = [...b.V.values()].map(v => v.p[1]);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    const top = cy - h / 2 - 1.2;
+    let s = `<svg viewBox="${cx - w / 2} ${top} ${w} ${h + 1.2}" role="img" aria-label="Lobby seats as ships round the island"><rect x="${cx - w / 2}" y="${top}" width="${w}" height="${h + 1.2}" fill="var(--paper)"/>`;
+    const poly = (c, k) => Array.from({ length: 6 }, (_, i) => corner(c, i, k).join(',')).join(' ');
+    b.hexes.forEach(hx => { s += `<polygon points="${poly(hx.c, 1.25)}" fill="color-mix(in srgb, ${L.sea} 14%, var(--paper))"/>`; });
+    b.hexes.forEach(hx => { s += `<polygon points="${poly(hx.c, .93)}" fill="color-mix(in srgb, ${L.fill(hx.t)} 26%, var(--paper))" stroke="color-mix(in srgb, var(--ink) 30%, transparent)" stroke-width=".03"/>`; });
+    s += `<text x="${cx}" y="${top + .72}" text-anchor="middle" font-size=".56" class="t-disp" fill="var(--ink)">Bound for Catan</text><text x="${cx}" y="${top + 1.12}" text-anchor="middle" font-size=".24" class="t-plq" fill="var(--ink-2)">${b.big ? 'THE BIG ISLAND Â· 5 TO 6' : 'THE CLASSIC ISLAND Â· 3 TO 4'}</text>`;
+    const R = Math.min(w, h) / 2 - .9;
+    for (let i = 0; i < max; i++) {
+      const a = -Math.PI / 2 + Math.PI * 2 * (i + .5) / max + .0;
+      const x = cx + Math.cos(a) * (w / 2 - 1.1), y = cy + .25 + Math.sin(a) * (h / 2 - 1.35);
+      s += ship(x, y, b.big ? 1.2 : 1.35, seats[i] || {}, !seats[i], seats[i] && seats[i].me);
+    }
+    return s + '</svg>';
+  }
+  function renderLobby(look) {
+    document.getElementById('lobby4').innerHTML = lobbySVG(BOARD, PLAYERS, 4, look);
+    const five = [...PLAYERS, { name: 'Heron', ini: 'H', tint: 'var(--tint-teal)', pc: 'var(--pc-green)' }];
+    document.getElementById('lobby6').innerHTML = lobbySVG(BIG, five, 6, look, 13, 10);
+  }
+
+  /* TV */
+  function renderTV(look) {
+    const flyers = []; BOARD.hexes.forEach((h, hi) => { if (h.n === ROLL && hi !== BOARD.robber) { const res = Object.keys(TERR_OF).find(k => TERR_OF[k] === h.t); flyers.push({ at: [h.c[0] + .55, h.c[1] - .5], res, rot: 8 }); } });
+    document.getElementById('tv').innerHTML = `<div class="tv"><div class="tv__board">${drawBoard(BOARD, PIECES, { look, roll: ROLL, flyers, aspect: 1180 / 1000, pad: .8 })}</div>
+      <div class="tv__side"><div class="tv__head"><h5>Catan</h5><span>Round 6 Â· first to 10</span></div>
+      <div class="tv__turn">${tok(PLAYERS[1])}<div><b>Wren</b><small>Trading and building</small></div><span class="dice">${die(5)}${die(3, true)}</span></div>
+      <div class="tv__players">${PLAYERS.map(p => `<div class="tvp${p.me ? ' is-turn' : ''}" style="--pc:${p.pc}">${tok(p)}<div><div class="tvp__name">${p.name}</div><div class="tvp__meta"><span>${glyph('cards')}${p.cards}</span><span>${glyph('knight')}${p.kn}</span><span>${glyph('longroad')}${p.road}</span>${p.name === 'Rook' ? '<span class="badge">Longest road</span>' : ''}${p.name === 'Rook' ? '' : ''}</div></div><div class="tvp__vp"><b>${p.vp}</b><small>POINTS</small></div></div>`).join('')}</div>
+      <div class="tv__log"><div class="tv__roll">Rolled 8 <span class="gain">Wren ${pip('grain')}${pip('ore')}</span><span class="gain">Finch ${pip('grain')}</span></div><div><b>Rook</b> built a road. <b>Magpie</b> traded 2 wool to the bank for brick.</div></div></div></div>`;
+    const seats = PLAYERS.map(p => ({ ...p, me: false }));
+    document.getElementById('tvl').innerHTML = `<div class="tvl"><div class="tvl__sea">${lobbySVG(BOARD, seats, 4, look, 13.6, 9.6)}</div>
+      <div class="tvl__join"><h5>Catan</h5><p>Build on the island, trade for what you lack, first to ten points wins.</p><span class="tvl__addr">jackdaw-games.vercel.app</span>
+      <div class="tvl__chits"><span class="chit" style="--f:var(--gules)">Q</span><span class="chit" style="--f:var(--azure)">G</span><span class="chit" style="--f:var(--vert)">Y</span><span class="chit" style="--f:var(--sable)">R</span></div>
+      <div class="tvl__qr">QR code</div><div class="tvl__status">4 of 4 seats Â· Waiting for Rook to start</div></div></div>`;
+  }
+
+  function fitStages() { document.querySelectorAll('.stagebox').forEach(box => { box.firstElementChild.style.setProperty('--k', box.clientWidth / 1920); }); }
+
+  let current = 'A';
+  try { const s = localStorage.getItem('catan-look'); if (s && LOOKS[s]) current = s; } catch (e) {}
+  function render() {
+    document.querySelectorAll('[data-look]').forEach(bt => bt.setAttribute('aria-pressed', String(bt.dataset.look === current)));
+    renderPhones(current); renderLobby(current); renderTV(current); fitStages();
+  }
+  document.querySelectorAll('[data-look]').forEach(bt => bt.addEventListener('click', () => { current = bt.dataset.look; try { localStorage.setItem('catan-look', current); } catch (e) {} render(); }));
+  const setTheme = (t) => { document.documentElement.setAttribute('data-theme', t); document.getElementById('th-day').setAttribute('aria-pressed', String(t === 'light')); document.getElementById('th-dark').setAttribute('aria-pressed', String(t === 'dark')); };
+  document.getElementById('th-day').addEventListener('click', () => setTheme('light'));
+  document.getElementById('th-dark').addEventListener('click', () => setTheme('dark'));
+  new ResizeObserver(fitStages).observe(document.body);
+  renderLooks(); renderParts(); render();
+})();
+</script>
+</body>
+</html>
+

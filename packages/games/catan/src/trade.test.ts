@@ -4,7 +4,7 @@ import { roadSpots, type Buildings } from './build';
 import { layout } from './geometry';
 import type { CatanState } from './rules';
 import { act, hand, main, playSetup, seedFor, start } from './testkit';
-import { validTrade } from './trade';
+import { validTrade, waitingForYou } from './trade';
 
 const refused = (f: () => unknown) => expect(f).toThrow(GameError);
 
@@ -19,6 +19,21 @@ function table(hands: { me?: object; x?: object; y?: object } = {}) {
   };
   return { s, me, x, y };
 }
+
+describe('waitingForYou', () => {
+  it('lists counters and proposals to you, and your offers someone said yes to', () => {
+    const { s, me, x, y } = table({ me: { wool: 2 }, x: { ore: 1 }, y: { brick: 1 } });
+    let o = act(s, me, { type: 'offer', give: { wool: 1 }, want: { ore: 1 }, to: null });
+    expect(waitingForYou(o.offers, me)).toEqual([]);
+    o = act(o, y, { type: 'answer', offer: o.offers[0]!.id, reply: 'decline' });
+    expect(waitingForYou(o.offers, me)).toEqual([]);
+    o = act(o, x, { type: 'answer', offer: o.offers[0]!.id, reply: 'accept' });
+    expect(waitingForYou(o.offers, me).map((w) => w.id)).toEqual([o.offers[0]!.id]);
+    o = act(o, y, { type: 'propose', give: { brick: 1 }, want: { wool: 1 } });
+    expect(waitingForYou(o.offers, me)).toHaveLength(2);
+    expect(waitingForYou(o.offers, x)).toEqual([]);
+  });
+});
 
 describe('validTrade', () => {
   it('needs something on both sides and no resource on both', () => {

@@ -11,7 +11,7 @@ import {
   type CatanView,
   type Offer,
 } from '../rules';
-import { validTrade } from '../trade';
+import { validTrade, waitingForYou } from '../trade';
 import { RESOURCES, countCards, type Cards, type DevCard, type Resource } from '../types';
 import { DEV_NAME, DEV_TEXT, SeatToken, namer } from './common';
 import { DevGlyph, PieceGlyph, Pip, ResourceGlyph } from './glyphs';
@@ -510,6 +510,71 @@ export function OfferCard({
       )}
       {open.length > 1 && (
         <small className="ctn-offercard__more">{open.length - 1} more in Trade</small>
+      )}
+    </aside>
+  );
+}
+
+/**
+ * For the player on their turn: the newest trade waiting on them (a counter, a proposal, or
+ * someone saying yes to their offer), laid over the board so it can't be missed.
+ */
+export function TurnOfferCard({
+  t,
+  v,
+  me,
+  players,
+  send,
+  busy,
+  onOpen,
+}: {
+  t: CatanTableView;
+  v: CatanView;
+  me: string;
+  players: ScreenPlayer[];
+  send: Send;
+  busy: boolean;
+  onOpen: () => void;
+}) {
+  const name = namer(players);
+  if (t.phase !== 'main' || t.paired || t.turn !== me) return null;
+  const pending = waitingForYou(t.offers, me);
+  const o = pending[pending.length - 1];
+  if (!o) return null;
+  const mine = o.from === me;
+  const yes = mine ? Object.keys(o.replies).filter((p) => o.replies[p] === 'accept') : [];
+  const can = covers(v.hand, mine ? o.give : o.want);
+  return (
+    <aside className="ctn-offercard" aria-label="A trade waiting for you">
+      <p className="ctn-offer__line">
+        {mine ? (
+          <>
+            <b>{yes.map(name).join(' and ')}</b> said yes: you give <CardRow cards={o.give} /> for{' '}
+            <CardRow cards={o.want} />
+          </>
+        ) : (
+          <>
+            <SeatToken p={players.find((p) => p.id === o.from)} seats={t.seats} size={26} />
+            <b>{name(o.from)}</b> offers <CardRow cards={o.give} /> for your{' '}
+            <CardRow cards={o.want} />
+          </>
+        )}
+      </p>
+      <div className="ctn-offercard__btns ctn-offercard__btns--2">
+        <button type="button" className="jd-plaque" onClick={onOpen}>
+          Open Trade
+        </button>
+        <button
+          type="button"
+          className="jd-plaque jd-plaque--go"
+          disabled={busy || !can}
+          onClick={() => send({ type: 'accept', offer: o.id, with: mine ? yes[0]! : o.from })}
+        >
+          {!can ? 'You don’t have those' : mine ? `Trade with ${name(yes[0])}` : 'Accept'}
+        </button>
+      </div>
+      {pending.length > 1 && (
+        <small className="ctn-offercard__more">{pending.length - 1} more in Trade</small>
       )}
     </aside>
   );

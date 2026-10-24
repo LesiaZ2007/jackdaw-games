@@ -44,6 +44,11 @@ export interface RiskMapProps {
    * phone you pan sideways); "Whole map" shows all of it. Without it, the whole map always fits.
    */
   zoomable?: boolean;
+  /**
+   * Fog of war: territories missing from `owner` are out of sight, drawn as a hatched mist with no
+   * army roundel (their names still show).
+   */
+  fog?: boolean;
   /** Always show names (the TV, the results). */
   names?: boolean;
   /** Roundels this many times their phone size (the TV, seen from the sofa); names grow less. */
@@ -82,6 +87,7 @@ export function RiskMap({
   flash,
   onPick,
   zoomable = false,
+  fog = false,
   names = false,
   scale = 1,
   className,
@@ -238,6 +244,17 @@ export function RiskMap({
           <pattern id={`${uid}-sea`} width="9" height="9" patternUnits="userSpaceOnUse">
             <path d="M0 4.5h9" className="rk-sea-line" />
           </pattern>
+          {fog && (
+            <pattern
+              id={`${uid}-fog`}
+              width="5"
+              height="5"
+              patternUnits="userSpaceOnUse"
+              patternTransform="rotate(-38)"
+            >
+              <path d="M0 1.2h5" className="rk-fog-line" />
+            </pattern>
+          )}
           {map.territories.map((t) => (
             <clipPath id={`${uid}-${t.id}`} key={t.id}>
               <path d={t.path} />
@@ -265,10 +282,12 @@ export function RiskMap({
           );
         })}
         {map.territories.map((t) => {
+          const hidden = fog && !(t.id in owner);
           const who = owner[t.id] ?? NEUTRAL;
           const isTarget = targets.includes(t.id);
           const cls = [
             'rk-terr',
+            hidden && 'is-fog',
             t.id === selected && 'is-selected',
             isTarget && 'is-target',
             aiming && !isTarget && t.id !== selected && 'is-dim',
@@ -282,12 +301,13 @@ export function RiskMap({
               key={t.id}
               className={cls}
               data-t={t.id}
-              data-owner={who}
+              data-owner={hidden ? 'fog' : who}
               style={{ '--rk-own': colour(who) } as CSSProperties}
               onClick={() => pick(t.id)}
             >
               <title>{t.name}</title>
               <path d={t.path} className="rk-terr__land" />
+              {hidden && <path d={t.path} className="rk-terr__fog" fill={`url(#${uid}-fog)`} />}
               <path
                 d={t.path}
                 className="rk-terr__edge"
@@ -314,6 +334,19 @@ export function RiskMap({
           const who = owner[t.id] ?? NEUTRAL;
           const [x, y] = t.label;
           const extra = staged[t.id] ?? 0;
+          // Out of sight: no roundel, only the name lettered faintly over the mist.
+          if (fog && !(t.id in owner))
+            return showNames ? (
+              <g key={t.id} className="rk-roundel is-fog" onClick={() => pick(t.id)}>
+                <text x={x} y={y} className="rk-name" fontSize={font}>
+                  {nameLines(t.name).map((line, i) => (
+                    <tspan key={i} x={x} dy={i ? '1.05em' : '0.36em'}>
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              </g>
+            ) : null;
           return (
             <g key={t.id} className="rk-roundel" data-roundel={t.id} onClick={() => pick(t.id)}>
               <circle cx={x} cy={y} r={r} style={{ fill: colour(who) }} />

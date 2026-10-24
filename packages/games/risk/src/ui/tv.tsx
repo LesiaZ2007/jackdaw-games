@@ -40,6 +40,7 @@ export const TvScreen: GameUi['TvScreen'] = ({
           armies={t.armies}
           seats={t.seats}
           flash={t.battle?.ended ? t.battle.to : null}
+          fog={t.fog}
           names
           scale={1.6}
         />
@@ -59,7 +60,9 @@ export const TvScreen: GameUi['TvScreen'] = ({
         <ol className="rk-seats">
           {t.seats.map((id) => {
             const p = players.find((x) => x.id === id);
+            // In the fog only how many territories each holds is public.
             const lands = territoriesOf(t.owner, id);
+            const count = t.held[id] ?? lands.length;
             const armies = lands.reduce((sum, l) => sum + (t.armies[l] ?? 0), 0);
             const out = t.eliminated.includes(id);
             return (
@@ -78,7 +81,8 @@ export const TvScreen: GameUi['TvScreen'] = ({
                     'Out'
                   ) : (
                     <>
-                      {lands.length} lands · {armies} armies · {t.handCounts[id] ?? 0} cards
+                      {count} lands · {t.fog ? '' : `${armies} armies · `}
+                      {t.handCounts[id] ?? 0} cards
                     </>
                   )}
                 </span>
@@ -86,6 +90,9 @@ export const TvScreen: GameUi['TvScreen'] = ({
             );
           })}
         </ol>
+        {t.fog && (
+          <p className="rk-tv__fog">Fog of war: each general sees only their own borders</p>
+        )}
         <DiceStrip battle={t.battle} map={map} players={players} seats={t.seats} />
         <Continents map={map} t={t} players={players} />
       </aside>

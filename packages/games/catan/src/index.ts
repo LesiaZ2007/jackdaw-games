@@ -5,3 +5,4 @@ export * from './board';
 export * from './build';
 export * from './roads';
 export * from './rules';
+export * from './trade';

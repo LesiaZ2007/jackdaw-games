@@ -46,36 +46,51 @@ export function ConfirmButton({
   );
 }
 
+/** What ending early does to the scores, in words. */
+const endNote = (canSave: boolean) =>
+  canSave
+    ? 'Stop the game for everyone. Save the rounds played so far (the leader wins), or end it without scoring.'
+    : 'Stop the game for everyone and go back to the lobby. It won’t be scored.';
+
 /**
  * The host's End game button in the bar opens this: the sheet is the confirm, so one tap ends it.
+ * When the game has rounds worth keeping (Lesia, 2026-10-24), saving them is the first choice.
  */
 export function EndGameSheet({
   open,
   onClose,
   send,
+  canSave,
 }: {
   open: boolean;
   onClose: () => void;
   send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
+  canSave: boolean;
 }) {
   const [busy, setBusy] = useState(false);
+  const end = async (save: boolean) => {
+    setBusy(true);
+    const out = await send({ type: 'endGame', save });
+    setBusy(false);
+    if (out) onClose();
+  };
   return (
     <Sheet open={open} onClose={onClose} title="End this game?">
       <section className="menu__block">
-        <p>Stop the game for everyone and go back to the lobby. It won&rsquo;t be scored.</p>
+        <p>{endNote(canSave)}</p>
         <div className="flex flex-wrap gap-2">
+          {canSave && (
+            <Plaque small go disabled={busy} onClick={() => void end(true)}>
+              Save the rounds so far
+            </Plaque>
+          )}
           <Plaque
             small
             className="menu__end is-armed"
             disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              const out = await send({ type: 'endGame' });
-              setBusy(false);
-              if (out) onClose();
-            }}
+            onClick={() => void end(false)}
           >
-            End it for everyone
+            {canSave ? 'End without saving' : 'End it for everyone'}
           </Plaque>
           <Plaque small onClick={onClose}>
             Keep playing
@@ -165,14 +180,25 @@ export function MenuSheet({
       {s.status === 'in_game' && s.hostId === s.me && (
         <section className="menu__block">
           <h3 className="jd-label">This game</h3>
-          <p>Stop the game for everyone and go back to the lobby. It won&rsquo;t be scored.</p>
-          <ConfirmButton
-            label="End this game"
-            armedLabel="Tap again to end the game for everyone"
-            onConfirm={async () => {
-              if (await send({ type: 'endGame' })) onClose();
-            }}
-          />
+          <p>{endNote(Boolean(s.canSave))}</p>
+          <div className="flex flex-wrap gap-2">
+            {s.canSave && (
+              <ConfirmButton
+                label="End and save the rounds"
+                armedLabel="Tap again to save and end"
+                onConfirm={async () => {
+                  if (await send({ type: 'endGame', save: true })) onClose();
+                }}
+              />
+            )}
+            <ConfirmButton
+              label={s.canSave ? 'End without saving' : 'End this game'}
+              armedLabel="Tap again to end the game for everyone"
+              onConfirm={async () => {
+                if (await send({ type: 'endGame' })) onClose();
+              }}
+            />
+          </div>
         </section>
       )}
 

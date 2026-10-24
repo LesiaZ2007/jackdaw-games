@@ -431,6 +431,8 @@ Acceptance: a 10-player game with two teams plays to a win on the TV, spymasters
 
 ## Phase 5: Werewolf
 
+> Dropped by Lesia, 2026-10-24. Kept for reference.
+
 Goal: classic Werewolf for 6 to 15 players where the app is the moderator, so nobody has to sit out to run the game. This is the first game with player elimination and timed night and day phases.
 
 How it plays: at night, the werewolves secretly pick someone to kill while special roles use their powers. By day, everyone learns who died, discusses, and votes to eliminate a suspect. Villagers win by eliminating every werewolf; werewolves win when they equal or outnumber everyone else.
@@ -485,6 +487,8 @@ Recap: every round's spectrum, clue, psychic, target position, final dial positi
 Acceptance: a 10-player game played on the TV feels smooth while several people drag the dial at once, and only the psychic's phone ever has the target before the reveal.
 
 ## Phase 7: Spyfall
+
+> Dropped by Lesia, 2026-10-24. Kept for reference.
 
 Goal: a fast social deduction game for 3 to 15 players with short rounds, a good warm-up or filler between longer games.
 

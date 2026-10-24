@@ -48,6 +48,8 @@ export interface ScreenPlayer {
   name: string;
   avatar: Avatar;
   online: boolean;
+  /** A computer player. */
+  bot?: boolean;
 }
 
 export interface GameUi {
@@ -133,6 +135,11 @@ export interface LobbySeatsProps {
    * an option the options panel doesn't draw).
    */
   setOptions?: (options: Record<string, unknown>) => void;
+  /**
+   * Host only, when the game has a bot (Lesia, 2026-10-24): draw the kit's `AddSeat` "+" on each
+   * open seat; tapping it seats a computer player. Bot seats come with `bot: true`.
+   */
+  onAddBot?: () => void;
 }
 
 /** What the platform adds to the engine's screen props. */
@@ -173,6 +180,11 @@ export interface GameLobbyProps {
   react: (kind: ReactionKind) => void;
   /** The lobby's chat, drawn in the game's own style. */
   chat: LobbyChat;
+  /**
+   * Host only, when the game has a bot (Lesia, 2026-10-24): draw the kit's `AddSeat` "+" on each
+   * open seat; tapping it seats a computer player. Bot players come with `bot: true`.
+   */
+  onAddBot?: () => void;
 }
 
 /** What a game's own end-of-game screen receives. */

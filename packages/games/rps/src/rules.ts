@@ -1,4 +1,10 @@
-import { GameError, type GameModule, type GameResult, type RecapEvent } from '@jackdaw/engine';
+import {
+  GameError,
+  type GameModule,
+  type GameResult,
+  type RecapEvent,
+  type Rng,
+} from '@jackdaw/engine';
 import { z } from 'zod';
 import { meta } from './meta';
 
@@ -79,6 +85,46 @@ function tableView(state: RpsState): RpsTableView {
   };
 }
 
+/**
+ * A computer player's throw (Lesia, 2026-10-24: "play against bots"), from its own view only. It
+ * throws once a round and then waits. Usually it picks at random; now and then it leans against
+ * what the others threw last round (people often throw the same again), so it plays the throw
+ * that would have beaten the most of them. Randomness only from `rng`.
+ */
+export function botPick(v: RpsPlayerView, me: string, rng: Rng): RpsAction | null {
+  if (v.round > v.rounds || v.myPick || !v.players.includes(me)) return null;
+  const last = v.history[v.history.length - 1];
+  if (last && rng.next() < 0.35) {
+    const theirs = Object.entries(last.picks)
+      .filter(([id]) => id !== me)
+      .map(([, p]) => p);
+    const beaten = (p: Pick) => theirs.filter((t) => beats(p, t)).length;
+    const most = Math.max(...PICKS.map(beaten));
+    if (most > 0) return { type: 'pick', pick: rng.pick(PICKS.filter((p) => beaten(p) === most)) };
+  }
+  return { type: 'pick', pick: rng.pick(PICKS) };
+}
+
+/** The game's result from the points so far: the most wins, a tie shares it, all level is a draw. */
+function resultFrom(
+  state: RpsState,
+  summary: (best: number, winners: string[]) => string,
+): GameResult {
+  const best = Math.max(...state.players.map((id) => state.scores[id]!));
+  const winners = state.players.filter((id) => state.scores[id] === best);
+  const allTied = winners.length === state.players.length;
+  return {
+    winners,
+    summary: summary(best, winners),
+    reveal: { history: state.history, scores: state.scores },
+    recap: state.recap,
+    standings: state.players.map((playerId) => ({
+      playerId,
+      outcome: allTied ? 'draw' : winners.includes(playerId) ? 'win' : 'loss',
+    })),
+  };
+}
+
 export const rps: GameModule<RpsState, RpsAction, RpsPlayerView, RpsTableView, RpsOptions> = {
   meta,
   optionsSchema,
@@ -136,20 +182,27 @@ export const rps: GameModule<RpsState, RpsAction, RpsPlayerView, RpsTableView, R
 
   getResult(state): GameResult | null {
     if (state.round <= state.rounds) return null;
-    const best = Math.max(...state.players.map((id) => state.scores[id]!));
-    const winners = state.players.filter((id) => state.scores[id] === best);
-    const pts = `${best} point${best === 1 ? '' : 's'}`;
     // A tie for first between some players is a shared win; a tie between everyone is a draw.
-    const allTied = winners.length === state.players.length;
-    return {
-      winners,
-      summary: winners.length === 1 ? `Won with ${pts}` : `${winners.length}-way tie at ${pts}`,
-      reveal: { history: state.history, scores: state.scores },
-      recap: state.recap,
-      standings: state.players.map((playerId) => ({
-        playerId,
-        outcome: allTied ? 'draw' : winners.includes(playerId) ? 'win' : 'loss',
-      })),
-    };
+    return resultFrom(state, (best, winners) => {
+      const pts = `${best} point${best === 1 ? '' : 's'}`;
+      return winners.length === 1 ? `Won with ${pts}` : `${winners.length}-way tie at ${pts}`;
+    });
   },
+
+  /**
+   * Ended early: whoever has the most points from the rounds played so far wins (the same scoring
+   * as a full game), ties share it. Nothing is decided before the first round resolves.
+   */
+  partialResult(state): GameResult | null {
+    if (state.history.length === 0) return null;
+    if (state.round > state.rounds) return rps.getResult(state);
+    const [top = 0, next = 0] = state.players.map((id) => state.scores[id]!).sort((a, b) => b - a);
+    const played = state.history.length;
+    const after = `after ${played} of ${state.rounds} round${state.rounds === 1 ? '' : 's'}`;
+    return resultFrom(state, () =>
+      top === next ? `Level at ${top} ${after}` : `Led ${top}–${next} ${after}`,
+    );
+  },
+
+  bot: ({ view, playerId, rng }) => botPick(view, playerId, rng),
 };

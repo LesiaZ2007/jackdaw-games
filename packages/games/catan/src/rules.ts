@@ -23,6 +23,7 @@ import {
 import { awardRoad, longestRoad } from './roads';
 import { trim, validTrade } from './trade';
 import { timeUp } from './bot';
+import { catanBot } from './robot';
 import { layout, type Layout } from './geometry';
 import { meta } from './meta';
 import {
@@ -1037,6 +1038,8 @@ export interface CatanReveal {
   army: string | null;
   knights: Record<string, number>;
   winner: string | null;
+  /** Everyone who shares the win, when the host ended the game on a tie. */
+  winners?: string[];
   rounds: number;
 }
 
@@ -1059,6 +1062,28 @@ export function breakdown(s: CatanState, pid: string): PointsBreakdown {
 
 function getResult(s: CatanState): GameResult | null {
   if (s.phase !== 'over' || !s.winner) return null;
+  return resultFor(s, [s.winner]);
+}
+
+/**
+ * The result if the host ended the game now (Lesia, 2026-10-24): whoever has the most victory
+ * points wins (hidden cards included, as the reveal shows everyone's), and a tie shares it. Null
+ * in the opening, or while nobody has built past their opening pieces.
+ */
+export function partialResult(s: CatanState): GameResult | null {
+  if (s.phase === 'over') return getResult(s);
+  if (s.phase === 'setup') return null;
+  const pts = Object.fromEntries(s.seats.map((p) => [p, points(s, p, true)]));
+  if (s.seats.every((p) => pts[p] === 2)) return null;
+  const top = Math.max(...Object.values(pts));
+  return resultFor(
+    s,
+    s.seats.filter((p) => pts[p] === top),
+    true,
+  );
+}
+
+function resultFor(s: CatanState, winners: string[], early = false): GameResult {
   const pts = Object.fromEntries(s.seats.map((p) => [p, breakdown(s, p)]));
   const reveal: CatanReveal = {
     size: s.size,
@@ -1071,7 +1096,8 @@ function getResult(s: CatanState): GameResult | null {
     longest: s.longest,
     army: s.army,
     knights: s.knights,
-    winner: s.winner,
+    winner: winners[0]!,
+    ...(winners.length > 1 ? { winners } : {}),
     rounds: s.round,
   };
   const highlights: NonNullable<GameResult['highlights']> = [];
@@ -1092,12 +1118,21 @@ function getResult(s: CatanState): GameResult | null {
       text: `${s.best.haul.n} cards from one roll`,
       value: s.best.haul.n,
     });
+  const top = pts[winners[0]!]!.total;
+  const rounds = `${s.round} ${s.round === 1 ? 'round' : 'rounds'}`;
   return {
-    winners: [s.winner],
-    summary: `${pts[s.winner]!.total} points in ${s.round} ${s.round === 1 ? 'round' : 'rounds'}`,
+    winners,
+    summary: !early
+      ? `${top} points in ${rounds}`
+      : winners.length > 1
+        ? `${winners.length} players tied on ${top} points after ${rounds}`
+        : `Led with ${top} points after ${rounds}`,
     reveal,
     recap: s.log,
-    standings: s.seats.map((p) => ({ playerId: p, outcome: p === s.winner ? 'win' : 'loss' })),
+    standings: s.seats.map((p) => ({
+      playerId: p,
+      outcome: winners.includes(p) ? (winners.length > 1 ? 'draw' : 'win') : 'loss',
+    })),
     highlights,
   };
 }
@@ -1145,6 +1180,8 @@ export const catan: CatanModule = {
   getTableView,
   applyAction: (s, who, a, rng, now) => stamp(s, applyMove(s, who, a, rng), now),
   getResult,
+  partialResult,
+  bot: catanBot,
   announce,
   waitingOn,
   nextTimer: (s) =>

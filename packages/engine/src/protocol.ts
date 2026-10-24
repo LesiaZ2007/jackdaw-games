@@ -74,8 +74,11 @@ export const ClientMessage = z.discriminatedUnion('type', [
   z.object({ type: z.literal('createRejoinCode') }),
   z.object({ type: z.literal('resetScores') }),
   // Added 2026-10-13 with Lesia's approval: platform features for every game.
-  z.object({ type: z.literal('endGame') }),
+  /** `save` (2026-10-24): record the rounds played so far, when the game can (`canSave`). */
+  z.object({ type: z.literal('endGame'), save: z.boolean().optional() }),
   z.object({ type: z.literal('react'), kind: z.enum(REACTIONS) }),
+  // Added 2026-10-24 (Lesia: "play against bots"): the host seats a computer player.
+  z.object({ type: z.literal('addBot') }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
@@ -106,6 +109,8 @@ export interface PublicPlayer {
   joinedAt: number;
   /** False while a game they joined too late for is running (they watch the table view). */
   seated: boolean;
+  /** A computer player the host added. Always online; plays through the game's `bot`. */
+  bot?: true;
 }
 
 /**
@@ -182,6 +187,8 @@ export interface LobbySnapshot {
   timerAt?: number;
   /** Who the running game is waiting on, so their phones can alert them. */
   waitingOn?: string[];
+  /** The running game has rounds worth saving if the host ends it now (`endGame { save }`). */
+  canSave?: true;
   /** This player's private view. Only for seated players during a game. */
   view?: unknown;
   /** Public table view. Everyone gets it during a game. */

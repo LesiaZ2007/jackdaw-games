@@ -26,7 +26,7 @@ export function Hand({
   });
   useEffect(() => {
     if (fresh === null) return;
-    const t = setTimeout(() => dropRef.current(), 2800);
+    const t = setTimeout(() => dropRef.current(), 4600);
     return () => clearTimeout(t);
   }, [fresh]);
   return (

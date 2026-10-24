@@ -64,10 +64,24 @@ export function Die({ n, red }: { n: number; red?: boolean }) {
   );
 }
 
-export function Dice({ dice, seq }: { dice: [number, number] | null; seq: number }) {
+export function Dice({
+  dice,
+  seq,
+  waiting = false,
+}: {
+  dice: [number, number] | null;
+  seq: number;
+  /** Hidden while the big roll is gliding up to take their place. */
+  waiting?: boolean;
+}) {
   if (!dice) return null;
   return (
-    <span className="ctn-dice" key={seq} aria-label={`Rolled ${dice[0] + dice[1]}`} role="img">
+    <span
+      className={waiting ? 'ctn-dice ctn-dice--waiting' : 'ctn-dice'}
+      key={seq}
+      aria-label={`Rolled ${dice[0] + dice[1]}`}
+      role="img"
+    >
       <Die n={dice[0]} />
       <Die n={dice[1]} red />
     </span>

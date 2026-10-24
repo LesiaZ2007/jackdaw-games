@@ -152,6 +152,49 @@
   }
 }
 
+/* A computer player's ship: a small inked tag under its crest. */
+.ctn-ship__bot {
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  translate: -50% 0;
+  padding: 1px 5px 2px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 10px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.ctn-harbourmap--tv .ctn-ship__bot {
+  bottom: -12px;
+  padding: 3px 9px 4px;
+  font-size: 24px;
+}
+
+/* The host's "+" on an empty mooring: the dashed ring sits where the mooring is, a little
+   larger, on the chart's sea. */
+.ctn-ship--add {
+  width: clamp(76px, 18cqi, 110px);
+}
+.ctn-ship--add .ctn-ship__mooring {
+  width: 48%;
+  visibility: hidden;
+}
+.ctn-addseat {
+  place-items: start center;
+  color: var(--ink-2);
+}
+.ctn-addseat .jd-addseat__ring {
+  width: 48%;
+  min-width: 36px;
+  background: color-mix(in srgb, var(--azure) 14%, var(--paper));
+}
+.ctn-addseat:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+
 /* ---------- The TV lobby ---------- */
 
 .ctn-tvmuster {

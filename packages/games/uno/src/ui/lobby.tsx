@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { PlayerReaction, Token, seatTransition, type GameUi } from '@jackdaw/ui';
+import { AddSeat, PlayerReaction, Token, seatTransition, type GameUi } from '@jackdaw/ui';
 import { GameCard } from './pieces';
 import './uno.css';
 
@@ -15,6 +15,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
   options,
   onSeat,
   reactions,
+  onAddBot,
 }) => {
   const n = Math.max(max, seats.length);
   const mine = seats.findIndex((s) => s.me);
@@ -47,9 +48,15 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
         } as CSSProperties;
         if (!seat) {
           return (
-            <div key={`open-${k}`} className="uno-seat uno-seat--open" style={style} aria-hidden>
+            <div
+              key={`open-${k}`}
+              className="uno-seat uno-seat--open"
+              style={style}
+              aria-hidden={onAddBot ? undefined : true}
+            >
               <span className="uno-seat__tok">
                 <span className="uno-open" />
+                {onAddBot && <AddSeat onAdd={onAddBot} className="uno-addseat" />}
               </span>
             </div>
           );
@@ -61,7 +68,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
               .filter(Boolean)
               .join(' ')}
             style={style}
-            aria-label={`${seat.name}${seat.me ? ' (you)' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}`}
+            aria-label={`${seat.name}${seat.me ? ' (you)' : ''}${seat.bot ? ', computer player' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}`}
           >
             <span className="uno-seat__tok">
               <Token
@@ -71,6 +78,11 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
                 transitionName={seatTransition(seat.id).token}
               />
               <PlayerReaction reactions={reactions} playerId={seat.id} name={seat.name} />
+              {seat.bot && (
+                <span className="uno-seat__bot" aria-hidden="true">
+                  Bot
+                </span>
+              )}
             </span>
             <span
               className="uno-seat__name"

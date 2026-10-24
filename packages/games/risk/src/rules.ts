@@ -19,6 +19,8 @@ import {
 } from './board';
 import { allSets, bestSet, isSet, makeDeck, setValue, type Card, type CardSets } from './cards';
 import { getMap, type MapDef, type MapId } from './maps';
+import { riskBot } from './bot';
+import { visibleTo } from './fog';
 import { meta } from './meta';
 import {
   dealMissions,
@@ -50,6 +52,7 @@ export const optionsSchema = z.object({
   setup: z.enum(SETUPS).describe('Setup'),
   cardSets: z.enum(CARD_SETS).describe('Card sets'),
   turnTimer: z.enum(CLOCKS).describe('Turn timer'),
+  fog: z.boolean().describe('Fog of war'),
 });
 export type RiskOptions = z.infer<typeof optionsSchema>;
 
@@ -113,6 +116,11 @@ export interface RiskState {
   goal: 'missions' | 'domination';
   cardSets: CardSets;
   turnSecs: number;
+  /**
+   * Fog of war: each player sees owners and armies only on their own territories and the ones
+   * next door; the table view carries none until the game is over. Older games don't have it.
+   */
+  fog?: boolean;
   /** Players in seat order (the neutral isn't one). */
   seats: string[];
   /** Whose turn opens each round. */
@@ -169,6 +177,10 @@ export interface RiskTableView {
   cardSets: CardSets;
   seats: string[];
   neutral: boolean;
+  /** Fog of war is down (on, and the game not over): `owner` and `armies` are empty here. */
+  fog: boolean;
+  /** Territories each seat (and the neutral) holds: public even in the fog. */
+  held: Record<string, number>;
   owner: Owner;
   armies: Armies;
   phase: Phase;
@@ -197,6 +209,24 @@ export interface RiskView {
   /** Your draft, while it's still hidden from the others. */
   draft: Record<string, number> | null;
   draftLeft: number;
+  /** In fog of war, what you can see through it (null with the fog off, or once it's over). */
+  sight: FogSight | null;
+}
+
+/**
+ * What one player sees through the fog: owners and armies on their own territories and their
+ * neighbours, and the parts of the turn that would give positions away (only to whoever they
+ * concern). `seen` lays it over the table view.
+ */
+export interface FogSight {
+  owner: Owner;
+  armies: Armies;
+  /** Your armies still to place, on your turn. */
+  toPlace: number;
+  /** Your move-in after a conquest. */
+  occupy: RiskState['occupy'];
+  /** The last battle, if you fought in it or can see both ends of it. */
+  battle: Battle | null;
 }
 
 /** The log is the recap, so it keeps a whole game (a long one runs to a few hundred lines). */
@@ -247,6 +277,7 @@ function setup(ctx: {
     goal: o.goal === 'Secret missions' ? 'missions' : 'domination',
     cardSets: o.cardSets === 'Rising' ? 'rising' : 'fixed',
     turnSecs: turnSecsOf(o),
+    fog: !!o.fog,
     seats: [...playerIds],
     first,
     neutral,
@@ -286,30 +317,70 @@ function setup(ctx: {
   return stamp(null, s, now);
 }
 
+/** Fog of war is down on the board: on, and the game still going. */
+const fogged = (s: RiskState) => !!s.fog && s.phase !== 'over';
+
+/** Recap lines that name a territory, told without it while the fog is down. */
+function foggedLog(log: RecapEvent[]): RecapEvent[] {
+  return log.map((e) =>
+    e.data && typeof e.data === 'object' && 'to' in e.data
+      ? { round: e.round, actor: e.actor, text: '{actor} takes a territory' }
+      : e,
+  );
+}
+
 function getTableView(s: RiskState): RiskTableView {
+  const fog = fogged(s);
+  const held: Record<string, number> = {};
+  for (const p of [...s.seats, ...(s.neutral ? [NEUTRAL] : [])])
+    held[p] = territoriesOf(s.owner, p).length;
   return {
     map: s.map,
     goal: s.goal,
     cardSets: s.cardSets,
     seats: s.seats,
     neutral: s.neutral,
-    owner: s.owner,
-    armies: s.armies,
+    fog,
+    held,
+    owner: fog ? {} : s.owner,
+    armies: fog ? {} : s.armies,
     phase: s.phase,
     turn: s.turn,
     round: s.round,
-    toPlace: s.toPlace,
-    occupy: s.occupy,
+    toPlace: fog ? 0 : s.toPlace,
+    occupy: fog ? null : s.occupy,
     handCounts: Object.fromEntries(s.seats.map((p) => [p, s.hands[p]?.length ?? 0])),
     nextSetValue: s.cardSets === 'rising' ? setValue('rising', s.setsTraded, []) : null,
     setsTraded: s.setsTraded,
     draftDone: s.drafts ? s.seats.filter((p) => s.drafts![p]?.placed) : [],
     eliminated: s.eliminated,
-    battle: s.battle,
+    battle: fog ? null : s.battle,
     actBy: s.actBy,
-    log: s.log.slice(-LOG_SHOWN),
+    log: fog ? foggedLog(s.log.slice(-LOG_SHOWN)) : s.log.slice(-LOG_SHOWN),
     missions: s.phase === 'over' ? s.missions : null,
     winner: s.winner,
+  };
+}
+
+function sightOf(s: RiskState, pid: string): FogSight {
+  const seen = visibleTo(mapOf(s), s.owner, pid);
+  const owner: Owner = {};
+  const armies: Armies = {};
+  for (const t of seen) {
+    owner[t] = s.owner[t]!;
+    armies[t] = s.armies[t]!;
+  }
+  const b = s.battle;
+  const mine = s.turn === pid && s.phase !== 'draft';
+  return {
+    owner,
+    armies,
+    toPlace: mine ? s.toPlace : 0,
+    occupy: mine ? s.occupy : null,
+    battle:
+      b && (b.attacker === pid || b.defender === pid || (seen.has(b.from) && seen.has(b.to)))
+        ? b
+        : null,
   };
 }
 
@@ -320,6 +391,7 @@ function getPlayerView(s: RiskState, pid: string): RiskView {
     mission: s.missions?.[pid] ?? null,
     draft: d?.placed ?? null,
     draftLeft: d && !d.placed ? d.left : 0,
+    sight: fogged(s) && s.seats.includes(pid) ? sightOf(s, pid) : null,
   };
 }
 
@@ -817,21 +889,19 @@ export interface RiskReveal {
 
 const lower = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 
-function getResult(s: RiskState): GameResult | null {
-  if (s.phase !== 'over' || !s.winner) return null;
-  const map = mapOf(s);
-  const mission = s.missions?.[s.winner];
-  const reveal: RiskReveal = {
-    map: s.map,
-    seats: s.seats,
-    owner: s.owner,
-    armies: s.armies,
-    missions: s.missions,
-    eliminated: s.eliminated,
-    winner: s.winner,
-    rounds: s.round,
-  };
-  const highlights: GameResult['highlights'] = [];
+const revealOf = (s: RiskState, winner: string | null): RiskReveal => ({
+  map: s.map,
+  seats: s.seats,
+  owner: s.owner,
+  armies: s.armies,
+  missions: s.missions,
+  eliminated: s.eliminated,
+  winner,
+  rounds: s.round,
+});
+
+function highlightsOf(s: RiskState): NonNullable<GameResult['highlights']> {
+  const highlights: NonNullable<GameResult['highlights']> = [];
   if (s.best.battle)
     highlights.push({
       award: 'Bloodiest battle',
@@ -846,19 +916,66 @@ function getResult(s: RiskState): GameResult | null {
       text: `${s.best.conquest.value} territories in one turn`,
       value: s.best.conquest.value,
     });
+  return highlights;
+}
+
+function standingsOf(s: RiskState, winners: string[]): GameResult['standings'] {
+  const map = mapOf(s);
+  return s.seats.map((p) => ({
+    playerId: p,
+    outcome: winners.includes(p) ? 'win' : 'loss',
+    ...(s.missions?.[p] ? { role: missionLabel(s.missions[p], map) } : {}),
+  }));
+}
+
+function getResult(s: RiskState): GameResult | null {
+  if (s.phase !== 'over' || !s.winner) return null;
+  const mission = s.missions?.[s.winner];
   return {
     winners: [s.winner],
     summary: mission
-      ? `Mission complete: ${lower(missionLabel(mission, map))}`
+      ? `Mission complete: ${lower(missionLabel(mission, mapOf(s)))}`
       : `The last army standing after ${s.round} rounds`,
-    reveal,
+    reveal: revealOf(s, s.winner),
     recap: s.log,
-    standings: s.seats.map((p) => ({
-      playerId: p,
-      outcome: p === s.winner ? 'win' : 'loss',
-      ...(s.missions?.[p] ? { role: missionLabel(s.missions[p], map) } : {}),
-    })),
-    highlights,
+    standings: standingsOf(s, [s.winner]),
+    highlights: highlightsOf(s),
+  };
+}
+
+/**
+ * The host ended the game early: whoever holds the most territories leads (then most armies; a
+ * tie after that is shared). Nothing to save before the first battle.
+ */
+function partialResult(s: RiskState): GameResult | null {
+  if (s.phase === 'over') return getResult(s);
+  if (s.phase === 'draft' || s.battleSeq === 0) return null;
+  const alive = s.seats.filter((p) => !s.eliminated.includes(p));
+  const score = (p: string) => {
+    const lands = territoriesOf(s.owner, p);
+    return { lands: lands.length, armies: lands.reduce((n, t) => n + (s.armies[t] ?? 0), 0) };
+  };
+  const top = alive.reduce((best, p) => {
+    const a = score(p);
+    const b = score(best);
+    return a.lands > b.lands || (a.lands === b.lands && a.armies > b.armies) ? p : best;
+  });
+  const lead = score(top);
+  const winners = alive.filter((p) => {
+    const x = score(p);
+    return x.lands === lead.lands && x.armies === lead.armies;
+  });
+  return {
+    winners,
+    // The results screen names the winners before this.
+    summary:
+      winners.length > 1
+        ? `Level on ${lead.lands} territories and ${lead.armies} armies each after ${s.round} rounds`
+        : `Held the most territories (${lead.lands}) after ${s.round} rounds`,
+    reveal: revealOf(s, winners.length === 1 ? winners[0]! : null),
+    recap: s.log,
+    standings: standingsOf(s, winners),
+    highlights: highlightsOf(s),
   };
 }
 
@@ -869,10 +986,12 @@ function announce(prev: RiskState | null, next: RiskState): string[] {
   const lines: string[] = [];
   for (const p of next.eliminated.slice(prev.eliminated.length))
     lines.push(`{${p}} is knocked out by {${next.eliminatedBy[p]}}`);
+  // In the fog, who holds which continent stays hidden.
   const before = continentsHeld(map, prev.owner, prev.turn);
-  for (const c of continentsHeld(map, next.owner, prev.turn))
-    if (!before.includes(c))
-      lines.push(`{${prev.turn}} holds ${map.continents.find((x) => x.id === c)!.name}`);
+  if (!fogged(next))
+    for (const c of continentsHeld(map, next.owner, prev.turn))
+      if (!before.includes(c))
+        lines.push(`{${prev.turn}} holds ${map.continents.find((x) => x.id === c)!.name}`);
   if (next.winner && !prev.winner) {
     const m = next.missions?.[next.winner];
     lines.push(
@@ -894,12 +1013,16 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
     setup: 'Quick',
     cardSets: 'Rising',
     turnTimer: 'Off',
+    fog: false,
   }),
   setup,
   getPlayerView,
   getTableView,
   applyAction: (s, pid, a, rng, now) => stamp(s, settle(applyAction(s, pid, a, rng), pid, s), now),
   getResult,
+  partialResult,
+  bot: riskBot,
+  botDelayMs: 750,
   announce,
   waitingOn,
   nextTimer: (s) =>

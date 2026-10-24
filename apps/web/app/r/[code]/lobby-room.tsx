@@ -366,6 +366,7 @@ export function LobbyRoom({ code }: { code: string }) {
         open={panel === 'end' && snapshot.status === 'in_game' && isHost}
         onClose={close}
         send={send}
+        canSave={Boolean(snapshot.canSave)}
       />
       <MeSheet open={panel === 'me'} onClose={close} snapshot={snapshot} send={send} />
       {panel === 'chat' && !ownChat && (

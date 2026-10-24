@@ -382,6 +382,38 @@
   border: 2px dashed var(--pk-on-felt-open);
   background: color-mix(in srgb, var(--sable) 70%, var(--vert));
 }
+/* The host's "+" on an empty seat, printed on the baize like the empty seat it replaces. */
+.pk-seat .pk-addseat {
+  color: var(--pk-on-felt-faint);
+}
+.pk-seat .pk-addseat .jd-addseat__ring {
+  width: max(36px, var(--pk-tok));
+  background: color-mix(in srgb, var(--sable) 70%, var(--vert));
+}
+/* the ring takes the empty seat's place (which stays, unseen, to keep the seat's size) */
+.pk-addseat + .pk-seat__tok {
+  visibility: hidden;
+}
+@media (hover: hover) {
+  .pk-seat .pk-addseat:hover {
+    color: var(--pk-card-stock);
+  }
+}
+/* A computer player: a small plaque on the token's shoulder. */
+.pk-seat__bot {
+  position: absolute;
+  top: calc(var(--pk-tok) * -0.12);
+  right: calc(var(--pk-tok) * -0.3);
+  z-index: 1;
+  padding: 1px 5px;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1.5px solid var(--paper);
+  font: 800 clamp(10px, 2.4cqw, 14px) / 1.2 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
 .pk-seat__tap {
   position: absolute;
   inset: 0;

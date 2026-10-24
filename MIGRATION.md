@@ -31,7 +31,8 @@ for a single `pnpm dev` process only.
 2. Open the project's **Storage** tab and choose **Create Database → Upstash (Redis)** on the free plan.
    Connect it to the project for all environments. This creates `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
 3. Optional: set `NEXT_PUBLIC_SITE_URL` to the production URL.
-4. Redeploy. Open the home page. The Phase 0 check should say "Room server echoed … (upstash storage)".
+4. Redeploy. Open the home page, start a lobby and join it from a second phone: both should see
+   each other within a couple of seconds.
 
 ## Request budget
 

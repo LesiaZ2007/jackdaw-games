@@ -168,14 +168,29 @@ function gameFor(ctx: Ctx, gameId: string | null): AnyGameModule {
   return ctx.games[gameId] ?? fail('UNKNOWN_GAME', 'That game is not available.');
 }
 
-/** Pick an avatar no one else has, preferring the requested one. */
+/**
+ * Pick an avatar no one else has, preferring the requested one: first one whose crest and tint
+ * are both free, then a free crest with a free tint from the palette (players who chose their own
+ * can use up palette pairs), then any crest and tint pair no one has.
+ */
 function freeAvatar(lobby: Lobby, wanted: Avatar | undefined, palette: Avatar[]): Avatar {
-  const taken = (a: Avatar) =>
-    lobby.players.some((p) => p.avatar.crest === a.crest || p.avatar.tint === a.tint);
+  const crests = new Set(lobby.players.map((p) => p.avatar.crest));
+  const tints = new Set(lobby.players.map((p) => p.avatar.tint));
+  const taken = (a: Avatar) => crests.has(a.crest) || tints.has(a.tint);
   if (wanted && !taken(wanted)) return wanted;
-  return (
-    palette.find((a) => !taken(a)) ?? wanted ?? palette[0] ?? { crest: 'jackdaw', tint: 'ink' }
-  );
+  const fromPalette = palette.find((a) => !taken(a));
+  if (fromPalette) return fromPalette;
+  const freeCrest = palette.find((a) => !crests.has(a.crest))?.crest;
+  const freeTint = palette.find((a) => !tints.has(a.tint))?.tint;
+  if (freeCrest && freeTint) return { crest: freeCrest, tint: freeTint };
+  const same = (a: Avatar, b: Avatar) => a.crest === b.crest && a.tint === b.tint;
+  for (const { crest } of palette) {
+    for (const { tint } of palette) {
+      const pair = { crest, tint };
+      if (!lobby.players.some((p) => same(p.avatar, pair))) return pair;
+    }
+  }
+  return wanted ?? palette[0] ?? { crest: 'jackdaw', tint: 'ink' };
 }
 
 // ── Creating and joining ────────────────────────────────────────────────────────────────────
@@ -239,6 +254,8 @@ export function join(lobby: Lobby, input: JoinInput, ctx: Ctx): { lobby: Lobby; 
   if (lobby.players.length >= MAX_PLAYERS)
     fail('LOBBY_FULL', `This lobby is full (${MAX_PLAYERS} players).`);
   requireFreeName(lobby, input.name);
+  // Everyone left (so the host is gone too): whoever comes in next runs the lobby.
+  const hostless = !lobby.players.some((p) => p.id === lobby.hostId);
   const player: Player = {
     id: input.newPlayerId,
     name: input.name,
@@ -250,6 +267,7 @@ export function join(lobby: Lobby, input: JoinInput, ctx: Ctx): { lobby: Lobby; 
       ...lobby,
       players: [...lobby.players, player],
       seats: { ...lobby.seats, [input.tokenKey]: player.id },
+      hostId: hostless ? player.id : lobby.hostId,
     },
     ctx.now,
   );
@@ -415,6 +433,13 @@ export function redeemRejoinCode(
     fail('REJOIN_INVALID', 'That rejoin code is wrong or has expired.');
   }
   const { playerId } = entry!;
+  // A device holds one seat. Taking another would strand its old one with no device behind it.
+  const current = playerIdForToken(lobby, tokenKey);
+  if (current === playerId) return { lobby, playerId };
+  if (current) {
+    const name = lobby.players.find((p) => p.id === current)?.name ?? 'someone';
+    fail('REJOIN_INVALID', `This device is already ${name} here. Leave first, then use the code.`);
+  }
   const seats = Object.fromEntries(Object.entries(lobby.seats).filter(([, id]) => id !== playerId));
   seats[tokenKey] = playerId;
   const rejoinCodes = { ...lobby.rejoinCodes };

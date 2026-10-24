@@ -110,6 +110,43 @@ describe('creating and joining', () => {
   });
 });
 
+describe('an emptied lobby and avatars', () => {
+  it('makes the next joiner host once everyone has left', () => {
+    const empty = leave(lobbyWith(1), 'p1', ctx());
+    const { lobby } = join(
+      empty,
+      { tokenKey: 't9', newPlayerId: 'p9', name: 'Wren', palette },
+      ctx(),
+    );
+    expect(lobby.hostId).toBe('p9');
+  });
+
+  it('hands out an unused avatar after custom picks use up the palette', () => {
+    let lobby = lobbyWith(1);
+    // Each custom pick blocks two palette entries: one by crest, one by tint.
+    const picks: Avatar[] = [
+      { crest: 'crest-b', tint: 'tint-2' },
+      { crest: 'crest-d', tint: 'tint-4' },
+    ];
+    picks.forEach((avatar, i) => {
+      lobby = join(
+        lobby,
+        { tokenKey: `c${i}`, newPlayerId: `c${i}`, name: `C${i}`, avatar, palette },
+        ctx(),
+      ).lobby;
+    });
+    for (let i = 0; i < 5; i++) {
+      lobby = join(
+        lobby,
+        { tokenKey: `n${i}`, newPlayerId: `n${i}`, name: `N${i}`, palette },
+        ctx(),
+      ).lobby;
+    }
+    const keys = lobby.players.map((p) => `${p.avatar.crest}/${p.avatar.tint}`);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
 describe('host powers', () => {
   it('only the host can pick the game', () => {
     const lobby = lobbyWith(3);
@@ -271,6 +308,13 @@ describe('rejoin codes and chat', () => {
     expect(() => redeemRejoinCode(moved.lobby, 'ZXCVBN', 'again', ctx())).toThrow(/expired/);
     lobby = createRejoinCode(lobbyWith(2), 'p2', 'ZXCVBN', ctx(0));
     expect(() => redeemRejoinCode(lobby, 'ZXCVBN', 'late', ctx(11 * 60_000))).toThrow(/expired/);
+  });
+
+  it("won't move a seat onto a device that already has another one", () => {
+    const lobby = createRejoinCode(lobbyWith(3), 'p2', 'ZXCVBN', ctx());
+    expect(() => redeemRejoinCode(lobby, 'ZXCVBN', 't3', ctx())).toThrow(/already P3/);
+    const own = createRejoinCode(lobbyWith(3), 'p2', 'ZXCVBN', ctx());
+    expect(redeemRejoinCode(own, 'ZXCVBN', 't2', ctx()).lobby).toBe(own);
   });
 
   it('keeps the last 120 chat messages', () => {

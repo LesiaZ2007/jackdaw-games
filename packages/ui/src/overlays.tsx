@@ -1,11 +1,55 @@
 'use client';
 
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import type { RecapEvent } from '@jackdaw/engine';
 import { Icon } from './icons';
+import { recapLine } from './recap';
 import './overlays.css';
 
 const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * What every modal panel needs while `open`: focus moves into `panel` and back to where it was
+ * on close, Escape calls `onClose`, and Tab stays inside the panel (it claims `aria-modal`).
+ * `onClose` may be a fresh arrow each render; only `open` re-runs it.
+ */
+export function useModal(open: boolean, panel: RefObject<HTMLElement | null>, onClose: () => void) {
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+    const before = document.activeElement as HTMLElement | null;
+    panel.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return close.current();
+      const box = panel.current;
+      if (e.key !== 'Tab' || !box) return;
+      const items = [...box.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (!first || !last) return e.preventDefault();
+      const at = document.activeElement;
+      if (e.shiftKey && (at === first || at === box || !box.contains(at))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (at === last || !box.contains(at))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      before?.focus?.();
+    };
+  }, [open, panel]);
+}
 
 /**
  * A sheet: a printed card that slides up from the bottom on phones and sits as a centred card
@@ -27,18 +71,7 @@ export function Sheet({
   className?: string;
 }) {
   const panel = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const before = document.activeElement as HTMLElement | null;
-    panel.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      before?.focus?.();
-    };
-  }, [open, onClose]);
+  useModal(open, panel, onClose);
 
   if (!open) return null;
   return (
@@ -96,13 +129,6 @@ export function Toast({
   );
 }
 
-/** Replace player ids in recap text with names, so "p_ab12 played Fail" reads "Rook played Fail". */
-export function withNames(text: string, names: Record<string, string>): string {
-  let out = text;
-  for (const [id, name] of Object.entries(names)) if (id) out = out.split(id).join(name);
-  return out;
-}
-
 /**
  * The end-of-game timeline: every event in order, grouped by round, with the hidden truth
  * behind each one revealed. Games may also render their own reveal; this is the default.
@@ -132,17 +158,18 @@ export function RecapTimeline({
           <li key={i} className="jd-recap__round">
             {r.round !== null && <span className="jd-recap__n">Round {r.round}</span>}
             <ul>
-              {r.items.map((e, j) => (
-                <li key={j} className="jd-recap__event">
-                  <span>
-                    {e.actor && <b>{names[e.actor] ?? 'Someone'}: </b>}
-                    {withNames(e.text, names)}
-                  </span>
-                  {e.secret && (
-                    <span className="jd-recap__secret">{withNames(e.secret, names)}</span>
-                  )}
-                </li>
-              ))}
+              {r.items.map((e, j) => {
+                const line = recapLine(e, names);
+                return (
+                  <li key={j} className="jd-recap__event">
+                    <span>
+                      {line.actor && <b>{line.actor}: </b>}
+                      {line.text}
+                    </span>
+                    {line.secret && <span className="jd-recap__secret">{line.secret}</span>}
+                  </li>
+                );
+              })}
             </ul>
           </li>
         ))}

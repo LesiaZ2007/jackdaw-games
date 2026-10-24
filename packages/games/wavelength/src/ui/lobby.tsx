@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import {
+  AddSeat,
   PlayerReaction,
   SeatTrack,
   Token,
@@ -24,21 +26,9 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
   onSeat,
   reactions,
   setOptions,
+  onAddBot,
 }) => {
   const chosen = options.mode === 'Teams' && options.teams === 'Chosen';
-  if (!chosen) {
-    return (
-      <SeatTrack
-        seats={seats}
-        spaces={max}
-        cols={5}
-        onSeat={onSeat}
-        reactions={reactions}
-        transitions
-      />
-    );
-  }
-
   const sides = (options.sides ?? {}) as Record<string, Team>;
   const place = (id: string, team: Team | null) => {
     const next = { ...sides };
@@ -46,6 +36,36 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
     else delete next[id];
     setOptions?.({ ...options, sides: next });
   };
+
+  // A bot added from a team's "+" joins that team as soon as its seat arrives.
+  const pending = useRef<{ team: Team; known: Set<string> } | null>(null);
+  useEffect(() => {
+    const p = pending.current;
+    if (!p) return;
+    const fresh = seats.find((s) => s.bot && !p.known.has(s.id));
+    if (!fresh) return;
+    pending.current = null;
+    if (!sides[fresh.id]) place(fresh.id, p.team);
+  });
+  const addTo = (team: Team) => {
+    pending.current = { team, known: new Set(seats.map((s) => s.id)) };
+    onAddBot?.();
+  };
+
+  if (!chosen) {
+    return (
+      <SeatTrack
+        seats={seats}
+        spaces={max}
+        cols={5}
+        onSeat={onSeat}
+        onAddBot={onAddBot}
+        reactions={reactions}
+        transitions
+      />
+    );
+  }
+
   const unplaced = seats.filter((s) => sides[s.id] !== 'sun' && sides[s.id] !== 'moon');
 
   const row = (seat: Seat, team: Team | null) => (
@@ -70,6 +90,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
       </span>
       <span className="wl-pick__name" style={{ viewTransitionName: seatTransition(seat.id).name }}>
         {seat.me ? `${seat.name} (you)` : seat.name}
+        {seat.bot && <span className="wl-pick__bot">Bot</span>}
       </span>
       {setOptions &&
         (team ? (
@@ -122,7 +143,17 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
                 {TEAM_NAME[team]}
                 <span>{members.length}</span>
               </h3>
-              <ul className="wl-pick__list">{members.map((s) => row(s, team))}</ul>
+              <ul className="wl-pick__list">
+                {members.map((s) => row(s, team))}
+                {onAddBot && seats.length < max && (
+                  <li className="wl-pick__p wl-pick__open">
+                    <span className="wl-pick__tok">
+                      <AddSeat onAdd={() => addTo(team)} className="wl-pick__add" />
+                    </span>
+                    <span className="wl-pick__name wl-pick__name--open">Add a computer player</span>
+                  </li>
+                )}
+              </ul>
               {members.length < 2 && (
                 <p className="wl-pick__note">Under 2 players: someone moves over at the start.</p>
               )}

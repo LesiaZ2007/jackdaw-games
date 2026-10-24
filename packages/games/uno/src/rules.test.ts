@@ -349,6 +349,44 @@ describe('turn timer', () => {
     expect(n.moves.at(-1)?.late).toBe(true);
     expect(n.actBy).toBe(60_000);
   });
+
+  it('starts again when a two-player Skip brings the turn straight back', () => {
+    const s = table(
+      { a: [c('r', 'skip'), c('b', 1)], b: [c('g', 2)] },
+      {},
+      { turnTimer: '30 seconds' },
+    );
+    const n = act(s, 'a', { type: 'play', card: c('r', 'skip') }, 20_000);
+    expect(n.toAct).toBe('a');
+    expect(n.actBy).toBe(50_000);
+  });
+
+  it('starts again for the challenger when a bluff is caught', () => {
+    const s = table(
+      { a: [c('w4'), c('r', 1), c('g', 3)], b: [c('g', 2), c('y', 4)], c: [c('b', 6)] },
+      {},
+      { turnTimer: '30 seconds' },
+    );
+    const n = act(s, 'a', { type: 'play', card: s.hands.a![0]!, colour: 'b' }, 10_000);
+    expect(n.actBy).toBe(40_000);
+    const ch = act(n, 'b', { type: 'challenge' }, 25_000);
+    expect(ch.toAct).toBe('b');
+    expect(ch.actBy).toBe(55_000);
+  });
+
+  it('keeps running through a call or a catch', () => {
+    const s = table(
+      { a: [c('r', 1), c('b', 1)], b: [c('g', 2), c('g', 3)], c: [c('y', 4)] },
+      {},
+      {
+        turnTimer: '30 seconds',
+      },
+    );
+    const n = act(s, 'a', { type: 'play', card: c('r', 1) }, 10_000);
+    expect(n.uncalled).toBe('a');
+    expect(act(n, 'a', { type: 'call' }, 20_000).actBy).toBe(40_000);
+    expect(act(n, 'c', { type: 'catch' }, 20_000).actBy).toBe(40_000);
+  });
 });
 
 describe('hidden information', () => {

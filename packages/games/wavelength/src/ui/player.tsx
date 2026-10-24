@@ -56,6 +56,17 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, now, ..
   const sendDial = useCallback((at: number) => sendAction({ type: 'dial', at }), [sendAction]);
   const server = v.guessing === 'shared' ? r.dial : (v.myDial ?? MIDDLE);
   const dial = useDialSync(server, sendDial);
+  // Lock in where this needle shows, once any move still on its way has landed.
+  const lockIn = async (on: boolean) => {
+    const at = dial.value;
+    setBusy(true);
+    try {
+      if (on) await dial.flush();
+      return await sendAction(on ? { type: 'lock', on, at } : { type: 'lock', on });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const spectrum = v.phase === 'clue' && psychic ? r.spectrums[pick] : cardOf(v);
   const last = v.history[v.history.length - 1];
@@ -99,7 +110,16 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, now, ..
         />
       </div>
 
-      <Dock v={v} pick={pick} setPick={setPick} send={send} busy={busy} now={now} name={name} />
+      <Dock
+        v={v}
+        pick={pick}
+        setPick={setPick}
+        send={send}
+        lockIn={lockIn}
+        busy={busy}
+        now={now}
+        name={name}
+      />
 
       {moment && (
         <VerdictMoment
@@ -165,6 +185,7 @@ function Dock({
   pick,
   setPick,
   send,
+  lockIn,
   busy,
   now,
   name,
@@ -173,6 +194,7 @@ function Dock({
   pick: 0 | 1;
   setPick: (p: 0 | 1) => void;
   send: (a: WavelengthAction) => Promise<boolean>;
+  lockIn: (on: boolean) => Promise<boolean>;
   busy: boolean;
   now: () => number;
   name: (id: string) => string;
@@ -208,12 +230,7 @@ function Dock({
             </span>
             <Clock at={v.actBy} now={now} />
           </p>
-          <Plaque
-            go={!mine}
-            disabled={busy}
-            aria-pressed={mine}
-            onClick={() => void send({ type: 'lock', on: !mine })}
-          >
+          <Plaque go={!mine} disabled={busy} aria-pressed={mine} onClick={() => void lockIn(!mine)}>
             {mine ? 'Locked in. Tap to undo' : 'Lock in'}
           </Plaque>
         </section>

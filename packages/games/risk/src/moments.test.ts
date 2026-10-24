@@ -48,6 +48,16 @@ describe('battle moments', () => {
     });
   });
 
+  it('counts the whole run of attacks, not just the last throw', () => {
+    const run = battle({ mode: 'roll', attackerLost: 0, defenderLost: 2 });
+    expect(
+      battleMoment({ ...run, runLost: { attacker: 3, defender: 5 } }, 'a', map, names),
+    ).toMatchObject({ detail: 'You lost 3, Bram lost 5' });
+    expect(battleMoment(run, null, map, names)).toMatchObject({
+      detail: 'Ada lost 0, Bram lost 2',
+    });
+  });
+
   it('others see it on the map; the TV gets a reveal', () => {
     expect(battleMoment(battle({}), 'c', map, names)).toBeNull();
     expect(battleMoment(battle({}), null, map, names)).toEqual({

@@ -215,9 +215,18 @@ describe('guessing', () => {
   });
 
   it('passing ends the turn', () => {
-    const s = act(clue(fixed()), 'cy', { type: 'pass' });
+    const g = act(clue(fixed()), 'ben', { type: 'guess', index: 0 });
+    const s = act(g, 'cy', { type: 'pass' });
     expect(s.turn).toBe('blue');
     expect(s.clues[0]!.ended).toBe('pass');
+  });
+
+  it('refuses to pass before the team has made a guess', () => {
+    throwsCode(() => act(clue(fixed()), 'cy', { type: 'pass' }), 'GUESS_FIRST');
+    // Guesses under an earlier clue don't count towards this one.
+    let s = act(clue(fixed()), 'ben', { type: 'guess', index: 20 });
+    s = act(clue(s), 'eli', { type: 'guess', index: 21 });
+    throwsCode(() => act(clue(s), 'cy', { type: 'pass' }), 'GUESS_FIRST');
   });
 
   it('only operatives of the team in play guess, and only after a clue', () => {

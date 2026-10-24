@@ -237,4 +237,58 @@ describe('the Avalon link', () => {
       }),
     ).toThrow("Avalon didn't seat everyone.");
   });
+
+  describe('talking to Avalon', () => {
+    const state = { avalonCode: 'ABCD', avalonUrl: BASE, seats: {} };
+    const linkWith = (fn: (init?: RequestInit) => Response | Promise<Response>) =>
+      createAvalonLink({
+        baseUrl: BASE,
+        secret: SECRET,
+        fetch: (async (_: unknown, init?: RequestInit) => fn(init)) as typeof fetch,
+      });
+    const startCtx = {
+      lobbyCode: 'WXYZ',
+      hostId: 'a',
+      players: [],
+      options: defaultOptions(),
+      returnUrl: 'https://jackdaw.test/r/WXYZ',
+      look: 'light' as const,
+    };
+
+    it('gives every call a timeout', async () => {
+      const signals: (AbortSignal | null | undefined)[] = [];
+      const link = linkWith((init) => {
+        signals.push(init?.signal);
+        return Response.json({ code: 'ABCD', seats: {}, phase: 'team', over: false });
+      });
+      await link.start(startCtx);
+      await link.check(state);
+      await link.end!(state);
+      expect(signals).toHaveLength(3);
+      for (const s of signals) expect(s).toBeInstanceOf(AbortSignal);
+    });
+
+    it("says it couldn't reach Avalon when Start times out", async () => {
+      const link = linkWith(() => {
+        throw new DOMException('The operation timed out.', 'TimeoutError');
+      });
+      await expect(link.start(startCtx)).rejects.toThrow("Couldn't reach Avalon.");
+      await expect(link.check(state)).rejects.toThrow('timed out');
+    });
+
+    it('only gives up on the game when Avalon itself says the room is gone', async () => {
+      const gone = linkWith(() =>
+        Response.json({ error: 'That room does not exist or has expired.' }, { status: 404 }),
+      );
+      expect(await gone.check(state)).toEqual({ over: true, abandoned: true });
+      const misrouted = linkWith(
+        () =>
+          new Response('<!doctype html><h1>404</h1>', {
+            status: 404,
+            headers: { 'content-type': 'text/html' },
+          }),
+      );
+      await expect(misrouted.check(state)).rejects.toThrow('404');
+    });
+  });
 });

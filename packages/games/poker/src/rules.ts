@@ -84,7 +84,7 @@ export interface PotResult {
 export interface HandResult {
   hand: number;
   pots: PotResult[];
-  /** Chips each player won back this hand (pots, plus any uncalled bet). */
+  /** Chips each player took from the pots this hand (an uncalled bet goes straight back to the stack, not here). */
   won: Record<string, number>;
   /** Each player's stack change over the hand. */
   net: Record<string, number>;
@@ -257,8 +257,16 @@ function around(s: { players: string[] }, after: string, keep: (id: string) => b
 
 const live = (s: PokerState) => s.inHand.filter((id) => !s.folded.includes(id));
 const canAct = (s: PokerState) => live(s).filter((id) => !s.allIn.includes(id));
-const needsToAct = (s: PokerState, id: string) =>
-  canAct(s).includes(id) && (!s.acted.includes(id) || (s.bets[id] ?? 0) < s.currentBet);
+function needsToAct(s: PokerState, id: string): boolean {
+  const able = canAct(s);
+  if (!able.includes(id)) return false;
+  const bet = s.bets[id] ?? 0;
+  // Last one able to bet with everyone else all in for no more: nothing to decide (a big blind
+  // all in for less than a full blind leaves the current bet above anything to call).
+  const most = Math.max(0, ...live(s).map((p) => (p === id ? 0 : (s.bets[p] ?? 0))));
+  if (able.length === 1 && bet >= most) return false;
+  return !s.acted.includes(id) || bet < s.currentBet;
+}
 
 /** Put chips in for a player, capped at their stack. */
 function put(s: PokerState, id: string, amount: number): PokerState {

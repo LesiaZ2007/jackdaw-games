@@ -1,9 +1,10 @@
 'use client';
 
-import { useTheme, type GameUi } from '@jackdaw/ui';
-import { lastGuess } from '../outcome';
+import { useMoment, useTheme, VerdictMoment, type GameUi } from '@jackdaw/ui';
+import { guessDetail, guessOutcome, guessTitle, lastGuess } from '../outcome';
 import type { CodenamesTableView } from '../rules';
 import { TEAM_NAME } from '../teams';
+import { CardMark } from './art';
 import { Board } from './board';
 import { ClueLog, ClueStamp, turnLine } from './player';
 import { TeamFiles } from './teams';
@@ -20,6 +21,8 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players, reactions }) 
   const name = (id: string) => byId.get(id)?.name ?? 'Someone';
   const current = t.phase === 'guess' ? t.clues[t.clues.length - 1] : undefined;
   const last = lastGuess(t);
+  // Each guess gets its moment on the TV too, told from the room's side.
+  const [fresh, dismiss] = useMoment(t.guessCount);
 
   return (
     <div className="cn cn-tv" data-look={look}>
@@ -51,6 +54,18 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players, reactions }) 
         />
         {t.clues.length > 0 && <ClueLog clues={t.clues} words={t.words} name={name} size="tv" />}
       </aside>
+
+      {fresh !== null && last && t.phase !== 'over' && (
+        <VerdictMoment
+          key={t.guessCount}
+          size="tv"
+          outcome={guessOutcome(last.clue, last.guess, null)}
+          title={guessTitle(t.words[last.guess.index]!, last.clue, last.guess, null)}
+          detail={guessDetail(last.clue, last.guess, name)}
+          emblem={<CardMark card={last.guess.card} size={68} />}
+          onDone={dismiss}
+        />
+      )}
     </div>
   );
 };

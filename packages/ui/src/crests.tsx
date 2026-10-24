@@ -13,7 +13,7 @@ const line: SVGProps<SVGPathElement> = {
   strokeLinejoin: 'round',
 };
 const fill = { fill: 'currentColor', opacity: 0.18 };
-const accent = 'var(--crest-accent, #ecd29b)';
+const accent = 'var(--crest-accent, var(--crest-brass))';
 const ring = (deg: number, r: number) => {
   const a = (deg * Math.PI) / 180;
   return { x: 32 + r * Math.sin(a), y: 32 - r * Math.cos(a) };

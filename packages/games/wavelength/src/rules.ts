@@ -76,8 +76,11 @@ export const actionSchema = z.discriminatedUnion('type', [
   }),
   /** Turn the dial (the shared one, or your own), 0 = the left word, 100 = the right. */
   z.object({ type: z.literal('dial'), at: z.number().min(0).max(100) }),
-  /** Lock in (or take your lock back). */
-  z.object({ type: z.literal('lock'), on: z.boolean() }),
+  /**
+   * Lock in (or take your lock back). `at` is where the locker's needle shows: a shared dial that
+   * has moved since refuses the lock, and your own dial is set there first.
+   */
+  z.object({ type: z.literal('lock'), on: z.boolean(), at: z.number().min(0).max(100).optional() }),
   /** The other team's call: is the target left or right of the dial? */
   z.object({ type: z.literal('call'), side: z.enum(['left', 'right']) }),
   /** The psychic: stop waiting and go with what's there (as if the timer ran out). */
@@ -452,6 +455,12 @@ function force(s: WavelengthState, now: number): WavelengthState {
   return s;
 }
 
+/** Whether the psychic may end the wait: someone has locked this dial in, or made a call. */
+function canHurry(s: WavelengthState): boolean {
+  if (s.phase === 'guess') return guessersOf(s).some((id) => s.round.locks.includes(id));
+  return callersOf(s).some((id) => s.round.calls[id]);
+}
+
 function publicRound(s: WavelengthState): PublicRound {
   const { target, dials, ...r } = s.round;
   const shown = s.phase === 'reveal' || s.phase === 'over';
@@ -521,6 +530,7 @@ export const wavelength: GameModule<
       }
     }
     const goal = GOALS[options.length][mode === 'teams' ? 'points' : 'rounds'];
+    const startTeam = mode === 'teams' ? rng.pick(TEAMS) : 'sun';
     const base: WavelengthState = {
       players: playerIds,
       mode,
@@ -530,7 +540,8 @@ export const wavelength: GameModule<
       teams,
       order,
       turns: { sun: 0, moon: 0 },
-      scores: { sun: 0, moon: 0 },
+      // As in the printed game, the team going second starts with a point.
+      scores: mode === 'teams' ? { sun: 0, moon: 0, [other(startTeam)]: 1 } : { sun: 0, moon: 0 },
       bonus: 0,
       phase: 'clue',
       round: null as unknown as Round,
@@ -543,13 +554,12 @@ export const wavelength: GameModule<
         {
           text:
             mode === 'teams'
-              ? `Sun and Moon play to ${goal} points.`
+              ? `Sun and Moon play to ${goal} points. ${TEAM_NAME[other(startTeam)]} goes second and starts with 1.`
               : `Everyone together for ${goal} rounds.`,
           data: { kind: 'start', mode, teams },
         },
       ],
     };
-    const startTeam = mode === 'teams' ? rng.pick(TEAMS) : 'sun';
     return newRound(base, startTeam, false, rng);
   },
 
@@ -600,6 +610,9 @@ export const wavelength: GameModule<
 
       case 'dial':
       case 'lock': {
+        // A move still on its way when the dial locked changes nothing.
+        if (action.type === 'dial' && s.phase !== 'guess' && guessersOf(s).includes(playerId))
+          return s;
         if (s.phase !== 'guess') throw new GameError('WRONG_PHASE', 'It isn’t time to guess.');
         if (!guessersOf(s).includes(playerId))
           throw new GameError(
@@ -625,13 +638,20 @@ export const wavelength: GameModule<
             },
           };
         }
+        const at = action.on && action.at !== undefined ? tidy(action.at) : undefined;
+        // Locking a shared dial you saw somewhere else would lock a spot you didn't choose.
+        if (s.guessing === 'shared' && at !== undefined && at !== r.dial)
+          throw new GameError('DIAL_MOVED', 'The dial moved. Check it and lock in again.');
         const has = r.locks.includes(playerId);
-        if (has === action.on) return s;
-        const locks = action.on ? [...r.locks, playerId] : r.locks.filter((id) => id !== playerId);
-        // Locking an untouched dial of your own means "the middle".
+        const mine = s.guessing === 'average' && at !== undefined ? at : r.dials[playerId];
+        if (has === action.on && mine === r.dials[playerId]) return s;
+        const locks = action.on
+          ? [...r.locks.filter((id) => id !== playerId), playerId]
+          : r.locks.filter((id) => id !== playerId);
+        // Locking your own dial sets it where your needle shows; an untouched one means the middle.
         const dials =
-          s.guessing === 'average' && action.on && r.dials[playerId] === undefined
-            ? { ...r.dials, [playerId]: MIDDLE }
+          s.guessing === 'average' && action.on
+            ? { ...r.dials, [playerId]: mine ?? MIDDLE }
             : r.dials;
         return checkLocks({ ...s, round: { ...r, locks, dials } }, now);
       }
@@ -651,6 +671,14 @@ export const wavelength: GameModule<
         if (!isPsychic) throw new GameError('NOT_PSYCHIC', 'Only the psychic can lock it in.');
         if (s.phase !== 'guess' && s.phase !== 'call')
           throw new GameError('WRONG_PHASE', 'There’s nothing to lock in.');
+        // Not before anyone has chosen: the psychic, who sees the target, mustn't pick the moment alone.
+        if (!canHurry(s))
+          throw new GameError(
+            'TOO_SOON',
+            s.phase === 'guess'
+              ? 'Wait until someone has locked in.'
+              : 'Wait until someone has called.',
+          );
         return force(s, now);
       }
 

@@ -1,7 +1,10 @@
 /* global self, caches */
 // Jackdaw's service worker. It makes the app installable and keeps a page on screen when the
 // connection drops; it never caches lobbies or the API, which must always be live.
-const CACHE = 'jackdaw-v2';
+const CACHE = 'jackdaw-v3';
+// Build assets from every deploy collect here; only the newest MAX_ASSETS are kept.
+const ASSETS = 'jackdaw-assets-v3';
+const MAX_ASSETS = 160;
 const OFFLINE = '/offline.html';
 const PRECACHE = [OFFLINE, '/icon.svg', '/icons/icon-192.png'];
 
@@ -14,10 +17,28 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE && k !== ASSETS).map((k) => caches.delete(k))),
+      )
       .then(() => self.clients.claim()),
   );
 });
+
+/** Store a good response; for build assets, then drop the oldest beyond MAX_ASSETS. */
+function keep(name, request, response) {
+  if (!response.ok) return Promise.resolve();
+  const copy = response.clone();
+  return caches.open(name).then((cache) =>
+    cache.put(request, copy).then(() => {
+      if (name !== ASSETS) return undefined;
+      // keys() lists the oldest first, so earlier deploys' files go first.
+      return cache.keys().then((keys) => {
+        const stale = keys.slice(0, Math.max(0, keys.length - MAX_ASSETS));
+        return Promise.all(stale.map((k) => cache.delete(k)));
+      });
+    }),
+  );
+}
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
@@ -32,20 +53,28 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Build assets are content-hashed, so a cached copy never goes stale.
-  if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/')) {
+  if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(
       caches.match(request).then(
         (hit) =>
           hit ||
           fetch(request).then((response) => {
-            if (response.ok) {
-              const copy = response.clone();
-              void caches.open(CACHE).then((cache) => cache.put(request, copy));
-            }
+            event.waitUntil(keep(ASSETS, request, response));
             return response;
           }),
       ),
     );
+    return;
+  }
+
+  // Icons keep their names when they change: show the cached copy and refresh it behind.
+  if (url.pathname.startsWith('/icons/')) {
+    const fresh = fetch(request).then((response) => {
+      event.waitUntil(keep(CACHE, request, response));
+      return response;
+    });
+    event.waitUntil(fresh.catch(() => undefined));
+    event.respondWith(caches.match(request).then((hit) => hit || fresh));
   }
 });
 

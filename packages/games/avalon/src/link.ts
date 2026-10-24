@@ -104,6 +104,9 @@ export function avalonSettings(o: AvalonOptions, look: 'light' | 'dark') {
   };
 }
 
+/** How long to wait on Avalon before giving up on a call (Start fails, a check retries later). */
+const AVALON_TIMEOUT_MS = 8000;
+
 const roleName = (role: string) => ROLES[role as Role]?.name ?? role;
 
 /** A finished Avalon game as a Jackdaw result: winners, Avalon's reason, teams and roles. */
@@ -128,6 +131,13 @@ export function resultFrom(status: StatusResponse): GameResult {
   };
 }
 
+/** Is this 404 Avalon's own "that room does not exist or has expired" (a JSON error)? */
+async function saysRoomGone(res: Response): Promise<boolean> {
+  if (!res.headers.get('content-type')?.includes('application/json')) return false;
+  const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
+  return typeof body?.error === 'string';
+}
+
 export function createAvalonLink(config: AvalonLinkConfig): GameLink<AvalonState, AvalonOptions> {
   const baseUrl = config.baseUrl.replace(/\/$/, '');
   const doFetch = config.fetch ?? fetch;
@@ -143,6 +153,7 @@ export function createAvalonLink(config: AvalonLinkConfig): GameLink<AvalonState
         res = await doFetch(`${baseUrl}/api/jackdaw/rooms`, {
           method: 'POST',
           headers,
+          signal: AbortSignal.timeout(AVALON_TIMEOUT_MS),
           body: JSON.stringify({
             jackdawCode: ctx.lobbyCode,
             returnUrl: ctx.returnUrl,
@@ -174,12 +185,18 @@ export function createAvalonLink(config: AvalonLinkConfig): GameLink<AvalonState
     },
 
     async check(state): Promise<LinkStatus> {
+      // A timeout throws, and a failed check is logged and tried again on a later poll.
       const res = await doFetch(`${baseUrl}/api/jackdaw/rooms/${state.avalonCode}`, {
         headers,
         cache: 'no-store',
+        signal: AbortSignal.timeout(AVALON_TIMEOUT_MS),
       });
-      // The room expired or was never there: nothing to record.
-      if (res.status === 404) return { over: true, abandoned: true };
+      // The room expired or was never there: nothing to record. Avalon says so in JSON
+      // ({ error }); any other 404 (an HTML page, a wrong URL or deployment) is a failed check.
+      if (res.status === 404) {
+        if (await saysRoomGone(res)) return { over: true, abandoned: true };
+        throw new Error('Avalon status 404 (not from Avalon)');
+      }
       if (!res.ok) throw new Error(`Avalon status ${res.status}`);
       const body = (await res.json()) as StatusResponse;
       if (!body.over) return { over: false };
@@ -191,6 +208,7 @@ export function createAvalonLink(config: AvalonLinkConfig): GameLink<AvalonState
       const res = await doFetch(`${baseUrl}/api/jackdaw/rooms/${state.avalonCode}`, {
         method: 'DELETE',
         headers,
+        signal: AbortSignal.timeout(AVALON_TIMEOUT_MS),
       });
       if (!res.ok && res.status !== 404) throw new Error(`Avalon end ${res.status}`);
     },

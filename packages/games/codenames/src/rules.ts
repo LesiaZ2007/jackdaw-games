@@ -358,7 +358,12 @@ export const codenames: GameModule<
     if (!theirTurn) throw new GameError('NOT_YOUR_TURN', "It isn't your team's turn.");
     if (state.phase !== 'guess') throw new GameError('NO_CLUE', 'Wait for your spymaster’s clue.');
 
-    if (action.type === 'pass') return endTurn(state, 'pass');
+    if (action.type === 'pass') {
+      // The rules ask operatives to make at least one guess before they stop.
+      if (state.clues[state.clues.length - 1]!.guesses.length === 0)
+        throw new GameError('GUESS_FIRST', 'Make at least one guess first.');
+      return endTurn(state, 'pass');
+    }
 
     const index = action.index;
     if (index !== null && state.revealed[index])

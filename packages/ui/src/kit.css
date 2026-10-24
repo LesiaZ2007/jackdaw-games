@@ -216,7 +216,7 @@
   content: '';
   position: absolute;
   inset: calc(var(--t) * 0.07);
-  border: 1px solid rgba(246, 240, 225, 0.55);
+  border: 1px solid color-mix(in srgb, var(--on-fill) 55%, transparent);
   clip-path: polygon(14% 0, 86% 0, 100% 12%, 100% 88%, 86% 100%, 14% 100%, 0 88%, 0 12%);
 }
 .jd-chit--blank {
@@ -340,7 +340,7 @@
   height: calc(var(--z) * 0.46);
   border-radius: 50%;
   background: var(--or);
-  color: #24211e;
+  color: var(--print-ink);
   display: grid;
   place-items: center;
   box-shadow: 0 0 0 2px var(--ring-bg);
@@ -432,7 +432,7 @@
   left: 0;
   padding: 3px 6px 4px;
   background: var(--or);
-  color: #24211e;
+  color: var(--print-ink);
   font: 800 11px/1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -492,7 +492,7 @@
   content: '';
   position: absolute;
   inset: 5px;
-  border: 1px solid rgba(246, 240, 225, 0.6);
+  border: 1px solid color-mix(in srgb, var(--on-fill) 60%, transparent);
 }
 .jd-box__dev {
   width: 58%;
@@ -501,7 +501,7 @@
   display: grid;
   place-items: center;
   background: var(--band);
-  box-shadow: 0 0 0 2px rgba(246, 240, 225, 0.75);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--on-fill) 75%, transparent);
 }
 .jd-box__dev svg {
   width: 68%;
@@ -568,9 +568,9 @@
 }
 .jd-field-checky {
   --field: conic-gradient(
-      rgba(246, 240, 225, 0.18) 25%,
+      color-mix(in srgb, var(--on-fill) 18%, transparent) 25%,
       transparent 0 50%,
-      rgba(246, 240, 225, 0.18) 0 75%,
+      color-mix(in srgb, var(--on-fill) 18%, transparent) 0 75%,
       transparent 0
     )
     0 0 / 22px 22px;
@@ -580,17 +580,29 @@
 }
 .jd-field-fretty {
   --field:
-    repeating-linear-gradient(45deg, transparent 0 9px, rgba(246, 240, 225, 0.25) 9px 11px),
-    repeating-linear-gradient(-45deg, transparent 0 9px, rgba(246, 240, 225, 0.25) 9px 11px);
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 9px,
+      color-mix(in srgb, var(--on-fill) 25%, transparent) 9px 11px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 9px,
+      color-mix(in srgb, var(--on-fill) 25%, transparent) 9px 11px
+    );
 }
 .jd-field-paly {
-  --field: repeating-linear-gradient(90deg, transparent 0 9px, rgba(246, 240, 225, 0.2) 9px 18px);
+  --field: repeating-linear-gradient(
+    90deg,
+    transparent 0 9px,
+    color-mix(in srgb, var(--on-fill) 20%, transparent) 9px 18px
+  );
 }
 .jd-field-bendy {
   --field: repeating-linear-gradient(
     135deg,
     transparent 0 10px,
-    rgba(246, 240, 225, 0.18) 10px 20px
+    color-mix(in srgb, var(--on-fill) 18%, transparent) 10px 20px
   );
 }
 

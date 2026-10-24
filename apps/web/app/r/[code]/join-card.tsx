@@ -95,14 +95,20 @@ export function JoinCard({
     if (rejoin.trim().length !== 6) return setError('Rejoin codes are 6 letters.');
     setBusy(true);
     setError(null);
-    const res = await fetch(`/api/lobby/${code}/rejoin`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-player-token': getDeviceToken() },
-      body: JSON.stringify({ rejoinCode: rejoin.trim().toUpperCase() }),
-    });
-    const body = (await res.json().catch(() => null)) as
-      (LobbySnapshot & { error?: { message: string } }) | null;
-    setBusy(false);
+    let res: Response;
+    let body: (LobbySnapshot & { error?: { message: string } }) | null;
+    try {
+      res = await fetch(`/api/lobby/${code}/rejoin`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-player-token': getDeviceToken() },
+        body: JSON.stringify({ rejoinCode: rejoin.trim().toUpperCase() }),
+      });
+      body = (await res.json().catch(() => null)) as typeof body;
+    } catch {
+      return setError('Could not reach the lobby. Check your connection.');
+    } finally {
+      setBusy(false);
+    }
     if (!res.ok || !body?.me)
       return setError(body?.error?.message ?? 'That rejoin code is wrong or has expired.');
     rememberSeat(code, body.me);

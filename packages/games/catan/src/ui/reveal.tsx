@@ -41,7 +41,9 @@ function Scores({ r, players }: { r: CatanReveal; players: ScreenPlayer[] }) {
                 <span className="ctn-scores__who">
                   <SeatToken p={p} seats={r.seats} size={26} />
                   {p?.name ?? 'Someone'}
-                  {id === r.winner && <OutcomeChip outcome="win">Won</OutcomeChip>}
+                  {r.winners && r.winners.length > 1
+                    ? r.winners.includes(id) && <OutcomeChip outcome="draw">Tied</OutcomeChip>
+                    : id === r.winner && <OutcomeChip outcome="win">Won</OutcomeChip>}
                 </span>
               </td>
               <td>{pt.settlements}</td>

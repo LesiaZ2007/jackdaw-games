@@ -959,6 +959,39 @@ button.cn-card {
   text-transform: uppercase;
   color: var(--cn-team);
 }
+/* a computer player: a small typed tag stamped across the foot of the token */
+.cn-agent__bot {
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  translate: -50% 0;
+  padding: 2px 5px 3px;
+  border-radius: 2px;
+  background: var(--cn-text);
+  color: var(--cn-panel);
+  font: 800 10px/1 var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+/* the host's "+" at the foot of a team's operatives: an open place in the folder */
+.cn-agent--open {
+  cursor: default;
+}
+.cn-agent__tok--open {
+  width: 40px;
+  height: 40px;
+}
+.cn-addseat {
+  color: var(--cn-team);
+}
+.cn-addseat .jd-addseat__ring {
+  width: 38px;
+  background: var(--cn-panel);
+}
+.cn-agent__name--open {
+  color: var(--cn-text-2);
+}
 .cn-react {
   justify-content: center;
 }

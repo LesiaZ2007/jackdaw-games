@@ -15,6 +15,7 @@ import {
   type Board,
   type FormedWord,
 } from './board';
+import { wordhoardBot } from './bot';
 import { meta } from './meta';
 import { isWord } from './words';
 
@@ -333,6 +334,57 @@ function act(
   return next.scoreless >= SCORELESS_END ? finish(next, null) : next;
 }
 
+/**
+ * The result from the scores as they stand: at the end of the game, or (`partialResult`) when the
+ * host ends it early, before the tiles left on the racks are settled.
+ */
+function resultOf(s: WordhoardState): GameResult {
+  const top = Math.max(...keys(s).map((id) => s.scores[id] ?? 0));
+  const won = keys(s).filter((id) => (s.scores[id] ?? 0) === top);
+  const winners = s.players.filter((id) => won.includes(sideOf(s, id)!));
+  const best = s.moves
+    .filter((m) => m.kind === 'play')
+    .reduce<Move | null>((a, m) => (!a || m.score > a.score ? m : a), null);
+  const paired = s.sides.some((side) => side.length > 1);
+  const reveal: WordhoardReveal = {
+    sides: s.sides,
+    board: s.board,
+    scores: s.scores,
+    racks: s.racks,
+    endBonus: s.endBonus,
+    moves: s.moves,
+  };
+  return {
+    winners,
+    summary:
+      won.length > 1
+        ? `A tie on ${top} points`
+        : `${top} points${best ? `; best play ${best.words?.[0]?.word} for ${best.score}` : ''}`,
+    reveal,
+    recap: s.recap,
+    highlights: best
+      ? [
+          {
+            award: 'Best word',
+            playerIds: [best.player],
+            text: `${best.words?.[0]?.word} for ${best.score}`,
+            value: best.score,
+          },
+        ]
+      : [],
+    standings: s.players.map((id) => {
+      const side = s.sides.find((x) => x.includes(id)) ?? [id];
+      return {
+        playerId: id,
+        outcome: winners.includes(id) ? (won.length > 1 ? 'draw' : 'win') : 'loss',
+        // In a game of pairs, stats can tell playing with a partner from playing alone.
+        ...(paired ? { team: side.length > 1 ? 'In a pair' : 'On their own' } : {}),
+        role: `${s.scores[side[0]!] ?? 0} points`,
+      };
+    }),
+  };
+}
+
 export const wordhoard: GameModule<
   WordhoardState,
   WordhoardAction,
@@ -408,51 +460,14 @@ export const wordhoard: GameModule<
 
   waitingOn: (s) => (s.over ? [] : (s.sides.find((side) => side[0] === s.turn) ?? [])),
 
-  getResult(s): GameResult | null {
-    if (!s.over) return null;
-    const top = Math.max(...keys(s).map((id) => s.scores[id] ?? 0));
-    const won = keys(s).filter((id) => (s.scores[id] ?? 0) === top);
-    const winners = s.players.filter((id) => won.includes(sideOf(s, id)!));
-    const best = s.moves
-      .filter((m) => m.kind === 'play')
-      .reduce<Move | null>((a, m) => (!a || m.score > a.score ? m : a), null);
-    const paired = s.sides.some((side) => side.length > 1);
-    const reveal: WordhoardReveal = {
-      sides: s.sides,
-      board: s.board,
-      scores: s.scores,
-      racks: s.racks,
-      endBonus: s.endBonus,
-      moves: s.moves,
-    };
-    return {
-      winners,
-      summary:
-        won.length > 1
-          ? `A tie on ${top} points`
-          : `${top} points${best ? `; best play ${best.words?.[0]?.word} for ${best.score}` : ''}`,
-      reveal,
-      recap: s.recap,
-      highlights: best
-        ? [
-            {
-              award: 'Best word',
-              playerIds: [best.player],
-              text: `${best.words?.[0]?.word} for ${best.score}`,
-              value: best.score,
-            },
-          ]
-        : [],
-      standings: s.players.map((id) => {
-        const side = s.sides.find((x) => x.includes(id)) ?? [id];
-        return {
-          playerId: id,
-          outcome: winners.includes(id) ? (won.length > 1 ? 'draw' : 'win') : 'loss',
-          // In a game of pairs, stats can tell playing with a partner from playing alone.
-          ...(paired ? { team: side.length > 1 ? 'In a pair' : 'On their own' } : {}),
-          role: `${s.scores[side[0]!] ?? 0} points`,
-        };
-      }),
-    };
+  getResult: (s) => (s.over ? resultOf(s) : null),
+
+  /** Ending early: the highest score so far wins (ties share it); null before anyone scores. */
+  partialResult(s) {
+    if (s.over) return null;
+    const scored = keys(s).some((id) => (s.scores[id] ?? 0) > 0);
+    return scored ? resultOf(s) : null;
   },
+
+  bot: wordhoardBot,
 };

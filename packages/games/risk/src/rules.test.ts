@@ -216,6 +216,26 @@ describe('trading cards', () => {
     expect(s1.discard).toHaveLength(3);
   });
 
+  it('gives the 2 armies for a territory you hold once a turn, however many sets you trade', () => {
+    const [m1, m2] = territoriesOf(s.owner, p);
+    const hand = [
+      card(m1!, 'infantry'),
+      card('x1', 'infantry', null),
+      card('w1', 'wild', null),
+      card(m2!, 'cavalry'),
+      card('x2', 'cavalry', null),
+      card('w2', 'wild', null),
+    ];
+    const s1 = act(withHand(hand), p, { type: 'trade', cards: [m1!, 'x1', 'w1'] });
+    const s2 = act(s1, p, { type: 'trade', cards: [m2!, 'x2', 'w2'] });
+    expect(s2.armies[m1!]).toBe(s.armies[m1!]! + 2);
+    expect(s2.armies[m2!]).toBe(s.armies[m2!]);
+    // A new turn earns it again.
+    expect(s2.tradeBonus).toBe(true);
+    const after = { ...s2, toPlace: 0, phase: 'fortify' as const };
+    expect(act(after, p, { type: 'endTurn' }).tradeBonus).toBe(false);
+  });
+
   it('refuses cards you don’t hold, or that aren’t a set', () => {
     const hand = [card('x', 'infantry'), card('y', 'infantry'), card('z', 'cavalry')];
     expectError(() => act(withHand(hand), p, { type: 'trade', cards: ['x', 'y', 'z'] }));
@@ -306,6 +326,19 @@ describe('attacking', () => {
     expect(s2.armies.alaska).toBe(1);
     expect(s2.armies.kamchatka).toBe(5);
     expect(s2.battle).toMatchObject({ attackerLost: 1, defenderLost: 0, ended: true });
+  });
+
+  it('a run of Rolls on one border adds up both sides’ losses for the verdict', () => {
+    const s = staged({ a: ['alaska'], armies: { alaska: 4, kamchatka: 3 } });
+    // 6 5 1 against 6 1: one each. Then 6 6 against 1 1: the defender loses both and it falls.
+    const s1 = act(s, 'a', ak(), dice(6, 5, 1, 6, 1));
+    const s2 = act(s1, 'a', ak(), dice(6, 6, 1, 1));
+    expect(s2.battle).toMatchObject({
+      conquered: true,
+      attackerLost: 0,
+      defenderLost: 2,
+      runLost: { attacker: 1, defender: 3 },
+    });
   });
 
   it('a battle counts its throws, so a blitz can say how long it took', () => {
@@ -533,7 +566,9 @@ describe('winning', () => {
   });
 
   it('a destroy mission falls back to 24 territories when someone else gets there first', () => {
-    const s = staged({ a: ['alaska'], c: ['kamchatka'], armies: { alaska: 4 } }, 'attack', [
+    // Nobody reaches 24: a ends on 22, b holds 20.
+    const a20 = ['alaska', ...allBut('alaska', 'kamchatka').slice(0, 20)];
+    const s = staged({ a: a20, c: ['kamchatka'], armies: { alaska: 4 } }, 'attack', [
       'a',
       'b',
       'c',
@@ -541,6 +576,18 @@ describe('winning', () => {
     const s1 = take(withMissions(s, { a: hold24, b: { kind: 'destroy', target: 'c' }, c: hold24 }));
     expect(s1.winner).toBeNull();
     expect(s1.missions!.b).toEqual(hold24);
+  });
+
+  it('a knock-out that hands someone else a mission they already meet wins it for them', () => {
+    // b's target, c, is taken out by a; b's mission falls back to 24 territories, which b holds.
+    const s = staged({ a: ['alaska'], c: ['kamchatka'], armies: { alaska: 4 } }, 'attack', [
+      'a',
+      'b',
+      'c',
+    ]);
+    const s1 = take(withMissions(s, { a: hold24, b: { kind: 'destroy', target: 'c' }, c: hold24 }));
+    expect(territoriesOf(s1.owner, 'b').length).toBeGreaterThanOrEqual(24);
+    expect([s1.phase, s1.winner]).toEqual(['over', 'b']);
   });
 
   it('world domination ends when one player is left', () => {

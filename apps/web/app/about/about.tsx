@@ -59,8 +59,9 @@ export function About() {
           ))}
         </ul>
         <p className="cat-credit">
-          Game names and rules belong to their creators. Word lists, locations and art in Jackdaw
-          are original.
+          Game names and rules belong to their creators. Where a game&rsquo;s credit above names
+          someone else&rsquo;s word list or art, it&rsquo;s used under the licence given there;
+          everything else was made for Jackdaw.
         </p>
       </section>
 

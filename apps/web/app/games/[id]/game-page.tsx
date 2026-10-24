@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { Icon } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 import { GameDetail, StartLobby } from '../detail';
@@ -10,11 +9,8 @@ import { GameDetail, StartLobby } from '../detail';
 /** One game's details as a full page (phones, and anyone following a shared link). */
 export function GamePage({ id }: { id: string }) {
   const router = useRouter();
+  // The page title comes from the server (generateMetadata in page.tsx).
   const entry = catalogEntry(id);
-
-  useEffect(() => {
-    if (entry) document.title = `${entry.meta.name} · Jackdaw Games`;
-  }, [entry]);
 
   function back() {
     // Return to the filtered shelf the player came from, or the whole catalog from a shared link.

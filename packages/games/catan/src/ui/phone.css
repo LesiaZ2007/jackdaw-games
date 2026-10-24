@@ -324,6 +324,10 @@
   padding: 0 4px;
   font-size: 17px;
 }
+.ctn-count--go {
+  background: var(--vert);
+  color: var(--on-fill);
+}
 .ctn-count {
   min-width: 1.4em;
   padding: 2px 4px;
@@ -395,6 +399,9 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1.3fr;
   gap: var(--space-2);
+}
+.ctn-offercard__btns--2 {
+  grid-template-columns: 1fr 1.4fr;
 }
 .ctn-offercard__btns .jd-plaque {
   min-height: 48px;

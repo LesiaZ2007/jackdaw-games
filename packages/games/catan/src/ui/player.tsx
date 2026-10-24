@@ -24,8 +24,10 @@ import {
   DiscardSheet,
   OfferCard,
   TradeSheet,
+  TurnOfferCard,
   buildOptions,
 } from './sheets';
+import { waitingForYou } from '../trade';
 import { Opponents, TurnStrip } from './strip';
 import './catan.css';
 import './phone.css';
@@ -335,6 +337,9 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         </button>
         <button type="button" className="jd-plaque" onClick={() => setSheet('trade')}>
           Trade
+          {me && waitingForYou(t.offers, me).length > 0 && (
+            <b className="ctn-count ctn-count--go">{waitingForYou(t.offers, me).length}</b>
+          )}
         </button>
         <button type="button" className="jd-plaque" onClick={() => setSheet('cards')}>
           Cards <b className="ctn-count">{v!.dev.length}</b>
@@ -417,6 +422,17 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               setCounter(o);
               setSheet('trade');
             }}
+          />
+        )}
+        {seated && me && !p.mode && (
+          <TurnOfferCard
+            t={t}
+            v={v!}
+            me={me}
+            players={players}
+            send={send}
+            busy={busy}
+            onOpen={() => setSheet('trade')}
           />
         )}
       </div>

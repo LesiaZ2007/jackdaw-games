@@ -136,6 +136,20 @@ test('catan: the opening, a roll, a trade and a turn, on phones and the TV', asy
   await expect(tv.locator('.ctn-tv__offer')).toBeVisible();
   await sheet.getByRole('button', { name: 'Close' }).click();
 
+  // A proposal to the player on their turn shows up on their phone without opening Trade.
+  const os = await call(request, `/api/lobby/${code}`, byId[otherId]!);
+  const give = (Object.keys(os.view.hand) as string[]).find((r) => os.view.hand[r] > 0);
+  if (give) {
+    const want = ['lumber', 'brick', 'wool', 'grain', 'ore'].find((r) => r !== give)!;
+    await call(request, `/api/lobby/${code}`, byId[otherId]!, {
+      type: 'action',
+      sessionId: os.session.id,
+      seq: os.session.seq,
+      action: { type: 'propose', give: { [give]: 1 }, want: { [want]: 1 } },
+    });
+    await expect(mover.getByLabel('A trade waiting for you')).toBeVisible();
+  }
+
   // End the turn: the next seat rolls, the TV says so.
   await mover.getByRole('button', { name: 'End', exact: true }).click();
   const next = (await call(request, `/api/lobby/${code}`, null)).tableView;

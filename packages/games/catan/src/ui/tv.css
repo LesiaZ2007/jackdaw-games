@@ -1,0 +1,308 @@
+/* Catan on the TV: sized in stage pixels on the 1920×1080 stage (STYLE_GUIDE "TV sizes"):
+   nothing under 24px, names about 34px. The island fills the left, the table's news the right. */
+
+.ctn--tv {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 620px;
+  gap: 36px;
+  padding: 24px 40px 28px;
+  font-size: 28px;
+  color: var(--ink);
+}
+.ctn-tv__board {
+  min-height: 0;
+  display: grid;
+  background: var(--ctn-sea);
+  border: 3px solid var(--ink);
+  outline: 1.5px solid var(--ctn-stock);
+  outline-offset: -10px;
+  overflow: hidden;
+}
+.ctn-tv__side {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 20px;
+}
+.ctn-tv__head {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+}
+.ctn-tv__head h2 {
+  margin: 0;
+  font: 800 76px / 1 var(--font-display);
+}
+.ctn-tv__head span {
+  font: 800 26px / 1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.ctn-tv__turn {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 18px 24px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  outline: 1.5px solid var(--ink);
+  outline-offset: -9px;
+}
+.ctn-tv__turn p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  display: grid;
+}
+.ctn-tv__turn b {
+  font: 800 48px / 1 var(--font-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ctn-tv__turn small {
+  margin-top: 6px;
+  font: 800 26px / 1.15 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.ctn-tv__turn .ctn-die {
+  --d: 84px;
+  border-width: 3px;
+}
+.ctn-tv__turn .ctn-clock {
+  font-size: 32px;
+  padding: 6px 10px;
+  border-width: 2.5px;
+}
+.ctn-tv__turn .ctn-seattok {
+  box-shadow:
+    0 0 0 4px var(--paper),
+    0 0 0 10px var(--ctn-own);
+}
+
+.ctn-tv__players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.ctn-tvp {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 18px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+}
+.ctn-tvp.is-turn {
+  box-shadow: inset 12px 0 0 var(--ctn-own);
+  padding-left: 30px;
+}
+.ctn-tvp__tok {
+  position: relative;
+  display: grid;
+}
+.ctn-tvp__tok .ctn-seattok {
+  box-shadow:
+    0 0 0 3px var(--paper),
+    0 0 0 8px var(--ctn-own);
+}
+.ctn-tvp__body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.ctn-tvp__name {
+  font: 800 34px / 1 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.ctn-tvp__meta {
+  display: flex;
+  gap: 20px;
+  font: 800 26px / 1 var(--font-plaque);
+  color: var(--ink-2);
+}
+.ctn-tvp__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ctn-tvp__meta svg {
+  width: 26px;
+  height: 26px;
+}
+.ctn-tvp__meta .ctn-devchit {
+  width: 18px;
+  height: 24px;
+}
+.ctn-tvp__awards {
+  display: flex;
+  gap: 8px;
+}
+.ctn-tvp__awards:empty {
+  display: none;
+}
+.ctn-badge {
+  font: 800 24px / 1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  background: var(--ctn-stock);
+  color: var(--ctn-stock-ink);
+  border: 2px solid var(--ctn-stock-ink);
+}
+.ctn-tvp__pts {
+  display: grid;
+  justify-items: center;
+}
+.ctn-tvp__pts b {
+  font: 800 64px / 0.9 var(--font-code);
+}
+.ctn-tvp__pts small {
+  font: 800 24px / 1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.ctn-tv__news {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px 22px;
+  background: var(--paper);
+  border: 2.5px solid var(--ink);
+}
+.ctn-tv__roll {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  font: 800 32px / 1.15 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ctn-tv__gain {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.ctn-tv__roll .ctn-pip {
+  font-size: 34px;
+}
+.ctn-tv__offer {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font: 500 28px / 1.3 var(--font-body);
+}
+.ctn-tv__offer .ctn-cardrow {
+  font-size: 30px;
+}
+.ctn-tv__log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font: 500 26px / 1.3 var(--font-body);
+  color: var(--ink-2);
+}
+.ctn-tv__log li:first-child {
+  color: var(--ink);
+}
+.ctn-tv__log li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Five or six players: tighter rows so everyone fits beside the island. */
+.ctn-tv__players[data-count='5'] .ctn-tvp,
+.ctn-tv__players[data-count='6'] .ctn-tvp {
+  padding-block: 6px;
+}
+.ctn-tv__players[data-count='5'] .ctn-tvp__pts b,
+.ctn-tv__players[data-count='6'] .ctn-tvp__pts b {
+  font-size: 52px;
+}
+.ctn-tv__players[data-count='6'] .ctn-tvp__name {
+  font-size: 30px;
+}
+
+/* ---------- Results ---------- */
+
+.ctn-reveal {
+  display: grid;
+  gap: var(--space-4);
+}
+.ctn-reveal__board {
+  aspect-ratio: 1;
+  max-height: 70vh;
+  display: grid;
+  background: var(--ctn-sea);
+  border: 2px solid var(--ink);
+}
+.ctn-scores {
+  width: 100%;
+  border-collapse: collapse;
+  font: 500 16px / 1.3 var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.ctn-scores th {
+  font: 700 13px / 1.2 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-align: center;
+  padding: 4px;
+}
+.ctn-scores th:first-child,
+.ctn-scores td:first-child {
+  text-align: left;
+}
+.ctn-scores td {
+  text-align: center;
+  padding: 6px 4px;
+  border-top: 1px solid var(--rule);
+}
+.ctn-scores__who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+.ctn-scores__total {
+  font: 800 22px / 1 var(--font-code);
+}
+.ctn-reveal--tv {
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.ctn-reveal--tv .ctn-reveal__board {
+  max-height: none;
+  height: 100%;
+}
+.ctn-reveal--tv .ctn-scores {
+  font-size: 28px;
+}
+.ctn-reveal--tv .ctn-scores th {
+  font-size: 24px;
+}
+.ctn-reveal--tv .ctn-scores__total {
+  font-size: 40px;
+}

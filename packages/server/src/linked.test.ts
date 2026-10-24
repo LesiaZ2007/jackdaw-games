@@ -228,5 +228,21 @@ describe('linked games', () => {
       'Press Start again',
     );
     expect((await snap(runtime.poll(code, { token: TOKENS.ana }))).status).toBe('waiting');
+    // The room the other app opened for the refused Start is closed again.
+    expect(fake.ended.map((s) => s.room)).toEqual(['ROOM1']);
+  });
+
+  it('closes the extra room when two Starts race and only one can begin', async () => {
+    const { runtime, code, fake } = await lobbyWithLink();
+    const outcomes = await Promise.allSettled([
+      runtime.post(code, TOKENS.ana, { type: 'start' }),
+      runtime.post(code, TOKENS.ana, { type: 'start' }),
+    ]);
+    expect(outcomes.filter((o) => o.status === 'fulfilled')).toHaveLength(1);
+    expect(fake.calls).toHaveLength(2);
+    expect(fake.ended).toHaveLength(1);
+    const s = await snap(runtime.poll(code, { token: TOKENS.ana }));
+    expect(s.status).toBe('in_game');
+    expect(fake.ended[0]!.room).not.toBe((s.tableView as { room: string }).room);
   });
 });

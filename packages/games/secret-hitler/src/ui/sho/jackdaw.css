@@ -186,6 +186,32 @@ body:has(.sho-page),
   width: var(--sho-tile, 100px);
   max-width: none;
 }
+/* The host's "+" (Lesia, 2026-10-24): an empty tile the size of a player's, printed as a dashed
+   outline on the dark band, that seats a computer player. */
+.sho .sho-addseat {
+  position: relative;
+  flex: none;
+  width: var(--sho-tile, 100px);
+  aspect-ratio: 443 / 633;
+  box-sizing: border-box;
+  border: 2px dashed var(--textColorOnDark);
+  border-radius: 16% / 10%;
+  background-color: var(--backgroundDark);
+}
+.sho .sho-addseat .jd-addseat {
+  color: var(--textColorOnDark);
+}
+.sho .sho-addseat .jd-addseat__ring {
+  background: var(--backgroundLight);
+}
+.sho .sho-addseat:hover,
+.sho .sho-addseat:focus-within {
+  border-color: var(--textColorHighlight);
+}
+.sho .sho-addseat:hover .jd-addseat,
+.sho .sho-addseat .jd-addseat:focus-visible {
+  color: var(--textColorHighlight);
+}
 .sho.sho-lobby #lobby-button-container {
   display: block;
   max-width: none;

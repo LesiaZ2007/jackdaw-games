@@ -437,10 +437,70 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+.jd-space .jd-you--bot {
+  background: var(--ink);
+  color: var(--paper);
+}
 .jd-space--free .jd-n {
   position: static;
   font: 600 clamp(20px, calc(100cqi / var(--cols, 5) * 0.3), 44px) var(--font-display);
   color: var(--rule);
+}
+/* the host's "+" on an open seat: a dashed token ring, inked on hover */
+.jd-addseat {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.jd-addseat__ring {
+  display: grid;
+  place-items: center;
+  width: clamp(36px, 46%, 84px);
+  aspect-ratio: 1;
+  border: 2px dashed currentColor;
+  border-radius: 50%;
+  background: var(--paper);
+  transition:
+    color 160ms,
+    border-color 160ms,
+    transform 160ms var(--ease-out);
+}
+.jd-addseat__ring svg {
+  width: 52%;
+  height: 52%;
+}
+/* the seat number stays legible beside the ring */
+.jd-space--free:has(.jd-addseat) .jd-n {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font: 700 12px var(--font-plaque);
+  color: var(--ink-2);
+}
+@media (hover: hover) {
+  .jd-addseat:hover {
+    color: var(--ink);
+  }
+  .jd-addseat:hover .jd-addseat__ring {
+    border-style: solid;
+  }
+}
+.jd-addseat:active .jd-addseat__ring {
+  transform: scale(0.94);
+}
+.jd-addseat:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
 }
 .jd-space--landing .jd-token {
   animation: jd-place 900ms var(--ease-out) both;

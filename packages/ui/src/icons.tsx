@@ -101,6 +101,7 @@ export const Icon = {
   back: (p: IconProps) => svg('0 0 24 24', <path d="M15 5l-7 7 7 7" {...stroke(2.4)} />, p),
   close: (p: IconProps) => svg('0 0 24 24', <path d="M6 6l12 12M18 6L6 18" {...stroke(2.4)} />, p),
   down: (p: IconProps) => svg('0 0 24 24', <path d="M6 9l6 6 6-6" {...stroke(2.4)} />, p),
+  plus: (p: IconProps) => svg('0 0 24 24', <path d="M12 5v14M5 12h14" {...stroke(2.4)} />, p),
   copy: (p: IconProps) =>
     svg(
       '0 0 24 24',
@@ -153,18 +154,6 @@ export const GLYPHS: Record<string, ReactNode> = {
     <g {...stroke(3.4)}>
       <path d="M8 8h14v14H8zM25 8h14v14H25zM42 8h14v14H42zM8 25h14v14H8zM42 25h14v14H42zM8 42h14v14H8zM25 42h14v14H25zM42 42h14v14H42z" />
       <path d="M25 25h14v14H25z" fill="currentColor" />
-    </g>
-  ),
-  wolf: (
-    <g {...stroke(3.4)}>
-      <path d="M40 8a20 20 0 1 0 16 30A16 16 0 0 1 40 8z" />
-      <path d="M14 56l6-14 4 5 4-9 4 9 4-5 6 14" />
-    </g>
-  ),
-  spy: (
-    <g {...stroke(3.4)}>
-      <circle cx="27" cy="27" r="15" />
-      <path d="M38 38l16 16M20 24c2-4 6-6 10-5" />
     </g>
   ),
   rps: (

@@ -55,6 +55,8 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
                   fresh={shotHere}
                   sinking={shotHere ? shotHere.sunk.map((w) => w.id) : []}
                   settling={null}
+                  tally={{ afloat: board?.afloat ?? 0, sunk: board?.wrecks.length ?? 0 }}
+                  smoke="sea"
                   interactive={false}
                 />
                 {t.last?.at === id && <Stamp volley={t.last} fresh={fresh?.seq === t.last.seq} />}
@@ -128,7 +130,7 @@ function Seat({
             ? t.boards[id]?.ready
               ? 'Fleet placed'
               : 'Placing'
-            : `${t.boards[id]?.afloat ?? 0} afloat`}
+            : `${t.boards[id]?.afloat ?? 0} afloat · ${t.boards[id]?.wrecks.length ?? 0} sunk`}
         </span>
       </span>
     </h3>

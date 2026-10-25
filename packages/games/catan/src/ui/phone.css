@@ -320,10 +320,21 @@
 .ctn-dock .jd-plaque {
   white-space: nowrap;
 }
+/* Four to a row on a phone: the label shrinks with the screen and the counts sit on the corner
+   as badges, so "Cards 3" never runs past its button. */
 .ctn-dock--4 .jd-plaque {
+  position: relative;
+  min-width: 0;
   gap: 6px;
   padding: 0 4px;
-  font-size: 17px;
+  font-size: min(17px, 4.3cqi);
+}
+.ctn-dock--4 .ctn-count {
+  position: absolute;
+  top: -9px;
+  right: -5px;
+  font-size: 13px;
+  padding: 3px 5px;
 }
 .ctn-count--go {
   background: var(--vert);
@@ -339,6 +350,13 @@
 }
 .ctn-dock--2 {
   grid-template-columns: 1fr 1.5fr;
+}
+/* A long label ("Trade with Bot Starling") wraps rather than running out of its button. */
+.ctn-dock--2 .jd-plaque {
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.05;
 }
 .ctn-dock--2 > .ctn-hint,
 .ctn-dock--robber > .ctn-hint {

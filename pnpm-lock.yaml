@@ -44,6 +44,9 @@ importers:
       '@jackdaw/game-avalon':
         specifier: workspace:*
         version: link:../../packages/games/avalon
+      '@jackdaw/game-battleship':
+        specifier: workspace:*
+        version: link:../../packages/games/battleship
       '@jackdaw/game-catan':
         specifier: workspace:*
         version: link:../../packages/games/catan
@@ -136,6 +139,25 @@ importers:
       '@jackdaw/server':
         specifier: workspace:*
         version: link:../../server
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+
+  packages/games/battleship:
+    dependencies:
+      '@jackdaw/engine':
+        specifier: workspace:*
+        version: link:../../engine
+      '@jackdaw/ui':
+        specifier: workspace:*
+        version: link:../../ui
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
       '@types/react':
         specifier: 19.3.0
         version: 19.3.0

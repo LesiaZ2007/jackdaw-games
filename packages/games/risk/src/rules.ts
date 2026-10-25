@@ -1028,7 +1028,9 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
   getResult,
   partialResult,
   bot: riskBot,
-  botDelayMs: 1300,
+  // A Risk turn is many small moves (place, attack, move in, fortify), so each waits long enough
+  // to see its dice (2026-10-25: "risk bots are still super fast"): 2.1–4.7 s a move.
+  botDelayMs: 2600,
   announce,
   waitingOn,
   nextTimer: (s) =>

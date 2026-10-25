@@ -367,3 +367,14 @@
   background: var(--sable);
   color: var(--on-fill);
 }
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) {
+  /* A spot you can build on, under the pointer: an inked ring (the breathing keeps going). */
+  .ctn-spot:hover {
+    stroke: var(--ink);
+    stroke-width: 0.06;
+    stroke-dasharray: none;
+  }
+}

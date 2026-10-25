@@ -1,12 +1,20 @@
 /*
- * Battleship: a printed naval chart. Cream card, charcoal ink, a double rule, and heraldic
- * counters for the five ships. The chart is printed, so it stays cream in both looks; the bar
- * and the dock follow the shell through the tokens. No gradients, no glows.
+ * Battleship: a printed chart on pale water. The sea, its ink, and the engraved waves live in
+ * this token block and follow the shell's day and dark through data-look. Heraldic fills stay
+ * the shared tokens. No gradients, no glows. Jackdaw's bar is not restyled here.
  */
 
 .bs {
   --bs-ease: var(--ease-out);
+  --bs-sea: #d7e4e8;
+  --bs-ink: #243b46;
+  --bs-wave: #8aa3ae;
   color: var(--ink);
+}
+.bs[data-look='dark'] {
+  --bs-sea: #163038;
+  --bs-ink: #d5e3e8;
+  --bs-wave: #3e6270;
 }
 
 /* ── Phone: fits under the bar ─────────────────────────────────────────── */
@@ -256,10 +264,10 @@
   gap: 4px;
   padding: 6px 8px 8px;
   box-sizing: border-box;
-  background: var(--on-fill);
-  color: var(--print-ink);
-  border: 2px solid var(--print-ink);
-  outline: 1px solid var(--print-ink);
+  background: var(--bs-sea);
+  color: var(--bs-ink);
+  border: 2px solid var(--bs-ink);
+  outline: 1px solid var(--bs-ink);
   outline-offset: -6px;
 }
 .bs-chart__head {
@@ -295,9 +303,9 @@
 .bs-scale__bar {
   width: 36px;
   height: 6px;
-  border-top: 2px solid var(--print-ink);
-  border-left: 2px solid var(--print-ink);
-  border-right: 2px solid var(--print-ink);
+  border-top: 2px solid var(--bs-ink);
+  border-left: 2px solid var(--bs-ink);
+  border-right: 2px solid var(--bs-ink);
 }
 .bs-chart__map {
   flex: 1;
@@ -337,10 +345,26 @@
   display: grid;
   grid-template-columns: repeat(10, minmax(0, 1fr));
   grid-template-rows: repeat(10, minmax(0, 1fr));
-  border-top: 1px solid var(--print-ink);
-  border-left: 1px solid var(--print-ink);
+  border-top: 1px solid var(--bs-ink);
+  border-left: 1px solid var(--bs-ink);
   position: relative;
   container-type: size;
+  background: var(--bs-sea);
+}
+.bs-sea {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  color: var(--bs-wave);
+  z-index: 0;
+}
+.bs-sea path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.45;
+  vector-effect: non-scaling-stroke;
 }
 .bs-cell {
   position: relative;
@@ -349,8 +373,9 @@
   margin: 0;
   padding: 0;
   border: 0;
-  border-right: 1px solid color-mix(in srgb, var(--print-ink) 45%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--print-ink) 45%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--bs-ink) 42%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--bs-ink) 42%, transparent);
+  z-index: 1;
   background: transparent;
   color: inherit;
   min-width: 0;
@@ -396,7 +421,7 @@ button.bs-cell:focus-visible {
 .bs-peg--hit {
   border-radius: 50%;
   background: var(--gules);
-  border: 1px solid var(--print-ink);
+  border: 1px solid var(--bs-ink);
   box-sizing: border-box;
 }
 .bs-peg--miss {
@@ -410,7 +435,7 @@ button.bs-cell:focus-visible {
   top: 50%;
   width: 100%;
   height: 2px;
-  background: var(--print-ink);
+  background: var(--bs-ink);
 }
 .bs-peg--miss::before {
   transform: translate(-50%, -50%) rotate(45deg);
@@ -432,13 +457,29 @@ button.bs-cell:focus-visible {
   pointer-events: none;
   display: grid;
   place-items: center;
-  background: var(--hull);
+  background: none;
   color: var(--on-fill);
-  border: 2px solid var(--print-ink);
-  outline: 1px solid var(--on-fill);
-  outline-offset: -5px;
+  border: 0;
+}
+.bs-hull__shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.bs-hull__shape path {
+  fill: var(--hull);
+  stroke: var(--bs-ink);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
 }
 .bs-hull__name {
+  position: relative;
+  z-index: 1;
   font: 800 11px var(--font-plaque);
   letter-spacing: 0.06em;
 }
@@ -446,15 +487,28 @@ button.bs-cell:focus-visible {
   animation: bs-settle 640ms var(--bs-ease) both;
 }
 .bs-hull.is-sunk {
-  transform: translateY(28%) rotate(-8deg);
-  opacity: 0.8;
+  transform: translateY(3px) rotate(-4deg);
+  opacity: 0.7;
 }
 .bs-hull.is-sinking {
   animation: bs-sink 900ms var(--bs-ease) both;
 }
+/* A placement preview. Faded, and hidden where there is no mouse hover. */
 .bs-hull--ghost {
-  opacity: 0.45;
-  outline: none;
+  z-index: 3;
+  opacity: 0.4;
+}
+.bs-hull--ghost.is-illegal {
+  opacity: 1;
+}
+.bs-hull--ghost.is-illegal .bs-hull__shape path {
+  fill: color-mix(in srgb, var(--danger) 18%, transparent);
+  stroke: var(--danger);
+}
+@media (hover: none), (pointer: coarse) {
+  .bs-hull--ghost {
+    display: none;
+  }
 }
 
 @keyframes bs-settle {
@@ -500,7 +554,7 @@ button.bs-cell:focus-visible {
     background-color: transparent;
   }
   42% {
-    background-color: color-mix(in srgb, var(--print-ink) 14%, transparent);
+    background-color: color-mix(in srgb, var(--bs-ink) 14%, transparent);
   }
   100% {
     background-color: transparent;
@@ -523,16 +577,16 @@ button.bs-cell:focus-visible {
 }
 @keyframes bs-sink {
   0% {
-    transform: translateY(-70%) rotate(0deg);
+    transform: translateY(-12px) rotate(2deg);
     opacity: 0;
   }
-  36% {
-    transform: translateY(0) rotate(0deg);
+  42% {
+    transform: none;
     opacity: 1;
   }
   100% {
-    transform: translateY(28%) rotate(-8deg);
-    opacity: 0.8;
+    transform: translateY(3px) rotate(-4deg);
+    opacity: 0.7;
   }
 }
 @keyframes bs-stamp {
@@ -667,7 +721,12 @@ button.bs-cell:focus-visible {
 }
 .bs-tv .bs-hull {
   --hull-gap: 6px;
-  border-width: 3px;
+}
+.bs-tv .bs-hull__shape path {
+  stroke-width: 2.5;
+}
+.bs-tv .bs-sea path {
+  stroke-width: 0.7;
 }
 .bs-tv .bs-hull__name {
   font-size: 28px;
@@ -687,11 +746,11 @@ button.bs-cell:focus-visible {
 }
 .bs-stamp__word {
   padding: 4px 28px 8px;
-  border: 4px solid var(--print-ink);
-  outline: 2px solid var(--print-ink);
+  border: 4px solid var(--bs-ink);
+  outline: 2px solid var(--bs-ink);
   outline-offset: -10px;
-  background: var(--on-fill);
-  color: var(--print-ink);
+  background: var(--bs-sea);
+  color: var(--bs-ink);
   font: 900 112px/0.9 var(--font-plaque);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -706,9 +765,9 @@ button.bs-cell:focus-visible {
 }
 .bs-stamp__where {
   padding: 4px 14px;
-  background: var(--on-fill);
-  color: var(--print-ink);
-  border: 3px solid var(--print-ink);
+  background: var(--bs-sea);
+  color: var(--bs-ink);
+  border: 3px solid var(--bs-ink);
   font: 800 28px var(--font-plaque);
   letter-spacing: 0.06em;
   text-transform: uppercase;

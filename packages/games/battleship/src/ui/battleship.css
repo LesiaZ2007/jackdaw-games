@@ -1,0 +1,814 @@
+/*
+ * Battleship: a printed chart on pale water. The sea, its ink, and the engraved waves live in
+ * this token block and follow the shell's day and dark through data-look. Heraldic fills stay
+ * the shared tokens. No gradients, no glows. Jackdaw's bar is not restyled here.
+ */
+
+.bs {
+  --bs-ease: var(--ease-out);
+  --bs-sea: #d7e4e8;
+  --bs-ink: #243b46;
+  --bs-wave: #8aa3ae;
+  color: var(--ink);
+}
+.bs[data-look='dark'] {
+  --bs-sea: #163038;
+  --bs-ink: #d5e3e8;
+  --bs-wave: #3e6270;
+}
+
+/* ── Phone: fits under the bar ─────────────────────────────────────────── */
+.bs--phone {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow: hidden;
+}
+
+.bs-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.bs-bar__status {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-1);
+  line-height: 1.05;
+}
+.bs-clock {
+  flex: none;
+  font: 800 18px var(--font-plaque);
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+.bs-clock.is-low {
+  color: var(--danger);
+}
+
+.bs-names {
+  display: flex;
+  gap: var(--space-2);
+}
+.bs-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 2px solid var(--rule);
+  background: var(--paper);
+  opacity: 0.72;
+}
+.bs-name.is-turn {
+  opacity: 1;
+  border-color: var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: -5px;
+}
+.bs-name__tok {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 36px;
+}
+.bs-name__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font: 700 14px/1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.bs-name__text b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+.bs-name__text span {
+  color: var(--ink-2);
+  font-weight: 700;
+}
+
+.bs-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.bs-switch button {
+  min-height: 44px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.bs-switch button[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.bs-stage {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  container-type: size;
+}
+.bs-boards {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.bs-boards > .is-back {
+  display: none;
+}
+.bs-boards > div {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+}
+
+.bs-note {
+  margin: 0;
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.bs-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.bs-ships {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.bs-shipbtn {
+  min-height: 44px;
+  padding: 4px 2px;
+  border: 2px solid var(--print-ink);
+  background: var(--hull);
+  color: var(--on-fill);
+  font: 800 15px/1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.bs-shipbtn.is-laid {
+  outline: 1px solid var(--on-fill);
+  outline-offset: -5px;
+}
+.bs-shipbtn.is-on {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.bs-shipbtn__len {
+  font-size: 13px;
+  opacity: 0.9;
+}
+.bs-actions {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.bs-actions .jd-plaque {
+  flex: 1;
+}
+.bs-dir {
+  flex: 1;
+  min-height: 44px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.bs-salvo {
+  margin: 0;
+  flex: 1;
+  align-self: center;
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bs-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bs-strip li {
+  min-height: 44px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: var(--hull);
+  color: var(--on-fill);
+  border: 2px solid var(--print-ink);
+  font: 800 12px/1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.bs-strip li.is-sunk {
+  background: var(--sable);
+  text-decoration: line-through;
+}
+
+/* Laptop: both charts, the switch steps aside. */
+@container game (min-width: 740px) {
+  .bs-switch {
+    display: none;
+  }
+  .bs-boards {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+  .bs-boards > .is-back {
+    display: flex;
+  }
+}
+
+/* ── The chart ──────────────────────────────────────────────────────────── */
+.bs-chart {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px 8px;
+  box-sizing: border-box;
+  background: var(--bs-sea);
+  color: var(--bs-ink);
+  border: 2px solid var(--bs-ink);
+  outline: 1px solid var(--bs-ink);
+  outline-offset: -6px;
+}
+.bs-chart__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.bs-chart__title {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font: 800 16px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs-compass {
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+.bs-scale {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 12px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.bs-scale__bar {
+  width: 36px;
+  height: 6px;
+  border-top: 2px solid var(--bs-ink);
+  border-left: 2px solid var(--bs-ink);
+  border-right: 2px solid var(--bs-ink);
+}
+.bs-chart__map {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.bs-chart__cols,
+.bs-chart__rows {
+  display: grid;
+  font: 700 12px/1 var(--font-plaque);
+  letter-spacing: 0.04em;
+}
+.bs-chart__cols {
+  grid-template-columns: repeat(10, 1fr);
+  align-items: end;
+  text-align: center;
+  padding-bottom: 2px;
+}
+.bs-chart__rows {
+  grid-template-rows: repeat(10, 1fr);
+  align-items: center;
+  text-align: right;
+  padding-right: 4px;
+}
+.bs-chart__fit {
+  min-height: 0;
+  min-width: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+.bs-chart__grid {
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+  border-top: 1px solid var(--bs-ink);
+  border-left: 1px solid var(--bs-ink);
+  position: relative;
+  container-type: size;
+  background: var(--bs-sea);
+}
+.bs-sea {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  color: var(--bs-wave);
+  z-index: 0;
+}
+.bs-sea path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 0.45;
+  vector-effect: non-scaling-stroke;
+}
+.bs-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid color-mix(in srgb, var(--bs-ink) 42%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--bs-ink) 42%, transparent);
+  z-index: 1;
+  background: transparent;
+  color: inherit;
+  min-width: 0;
+  min-height: 0;
+  font: inherit;
+}
+button.bs-cell {
+  cursor: pointer;
+}
+button.bs-cell:disabled {
+  cursor: default;
+  opacity: 1;
+}
+button.bs-cell:focus-visible {
+  outline: 2px solid var(--or);
+  outline-offset: -2px;
+  z-index: 1;
+}
+.bs-cell.is-picked {
+  background: color-mix(in srgb, var(--azure) 28%, transparent);
+}
+
+.bs-peg {
+  --cell: max(10cqmin, 18px);
+  --travel-x: calc((4.5 - var(--col, 4.5)) * var(--cell));
+  --travel-y: calc((var(--row, 0) + 2.6) * -1 * var(--cell));
+  width: 46%;
+  height: 46%;
+  pointer-events: none;
+}
+.bs-peg--hit.is-fresh {
+  animation: bs-mark 760ms var(--bs-ease) both;
+  animation-delay: var(--lag, 0ms);
+}
+.bs-peg--miss.is-fresh {
+  animation: bs-ink 760ms var(--bs-ease) both;
+  animation-delay: var(--lag, 0ms);
+}
+.bs-cell.is-fresh {
+  animation: bs-press 760ms var(--bs-ease) both;
+  animation-delay: var(--lag, 0ms);
+}
+.bs-peg--hit {
+  border-radius: 50%;
+  background: var(--gules);
+  border: 1px solid var(--bs-ink);
+  box-sizing: border-box;
+}
+.bs-peg--miss {
+  position: relative;
+}
+.bs-peg--miss::before,
+.bs-peg--miss::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--bs-ink);
+}
+.bs-peg--miss::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.bs-peg--miss::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.bs-hull {
+  --hull-gap: 2px;
+  z-index: 2;
+  position: absolute;
+  box-sizing: border-box;
+  margin: 0;
+  left: calc(var(--col) * 10% + var(--hull-gap));
+  top: calc(var(--row) * 10% + var(--hull-gap));
+  width: calc(var(--w) * 10% - 2 * var(--hull-gap));
+  height: calc(var(--h) * 10% - 2 * var(--hull-gap));
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  background: none;
+  color: var(--on-fill);
+  border: 0;
+}
+.bs-hull__shape {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.bs-hull__shape path {
+  fill: var(--hull);
+  stroke: var(--bs-ink);
+  stroke-width: 1.75;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.bs-hull__name {
+  position: relative;
+  z-index: 1;
+  font: 800 11px var(--font-plaque);
+  letter-spacing: 0.06em;
+}
+.bs-hull.is-settling {
+  animation: bs-settle 640ms var(--bs-ease) both;
+}
+.bs-hull.is-sunk {
+  transform: translateY(3px) rotate(-4deg);
+  opacity: 0.7;
+}
+.bs-hull.is-sinking {
+  animation: bs-sink 900ms var(--bs-ease) both;
+}
+/* A placement preview. Faded, and hidden where there is no mouse hover. */
+.bs-hull--ghost {
+  z-index: 3;
+  opacity: 0.4;
+}
+.bs-hull--ghost.is-illegal {
+  opacity: 1;
+}
+.bs-hull--ghost.is-illegal .bs-hull__shape path {
+  fill: color-mix(in srgb, var(--danger) 18%, transparent);
+  stroke: var(--danger);
+}
+@media (hover: none), (pointer: coarse) {
+  .bs-hull--ghost {
+    display: none;
+  }
+}
+
+@keyframes bs-settle {
+  from {
+    transform: translateY(calc((var(--row, 0) + 1.4) * -1 * max(10cqmin, 18px)));
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes bs-mark {
+  0% {
+    transform: translate(var(--travel-x), var(--travel-y)) scale(0.2);
+    opacity: 0;
+  }
+  68% {
+    transform: translate(0, 0) scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes bs-ink {
+  0% {
+    transform: translate(var(--travel-x), var(--travel-y)) rotate(-16deg) scale(1.85);
+    opacity: 0;
+  }
+  62% {
+    transform: translate(0, 0) rotate(3deg) scale(1.12);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes bs-press {
+  0% {
+    background-color: transparent;
+  }
+  42% {
+    background-color: color-mix(in srgb, var(--bs-ink) 14%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.bs-cell.is-hit.is-fresh,
+.bs-cell.is-sunk.is-fresh {
+  animation-name: bs-press-hit;
+}
+@keyframes bs-press-hit {
+  0% {
+    background-color: transparent;
+  }
+  42% {
+    background-color: color-mix(in srgb, var(--gules) 30%, transparent);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes bs-sink {
+  0% {
+    transform: translateY(-12px) rotate(2deg);
+    opacity: 0;
+  }
+  42% {
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(3px) rotate(-4deg);
+    opacity: 0.7;
+  }
+}
+@keyframes bs-stamp {
+  from {
+    transform: translateY(-28%) scale(1.7);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ── TV: stage pixels, nothing under 24px, no bare viewport units ───────── */
+.bs-tv {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 40px 28px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.bs-tv__head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+.bs-tv__line {
+  margin: 0;
+  font: 800 40px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.bs-tv .bs-clock {
+  font-size: 36px;
+}
+.bs-tv__charts {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+}
+.bs-tv__seat {
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+}
+.bs-tv__who {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.bs-tv__who.is-turn .bs-tv__name {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+.bs-tv__tok {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex: none;
+}
+.bs-tv__id {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.bs-tv__name {
+  font: 800 40px/1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs-tv__afloat {
+  font: 700 28px var(--font-body);
+  color: var(--ink-2);
+}
+.bs-tv__board {
+  position: relative;
+  min-height: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+.bs-tv .bs-chart {
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  padding: 16px 18px 18px;
+  gap: 8px;
+  border-width: 3px;
+  outline-offset: -8px;
+}
+.bs-tv .bs-chart__title {
+  font-size: 28px;
+}
+.bs-tv .bs-compass {
+  width: 48px;
+  height: 48px;
+}
+.bs-tv .bs-scale {
+  font-size: 24px;
+}
+.bs-tv .bs-scale__bar {
+  width: 72px;
+  height: 10px;
+  border-width: 3px;
+}
+.bs-tv .bs-chart__cols,
+.bs-tv .bs-chart__rows {
+  font-size: 24px;
+}
+.bs-tv .bs-chart__rows {
+  padding-right: 10px;
+}
+.bs-tv .bs-peg {
+  width: 28px;
+  height: 28px;
+}
+.bs-tv .bs-peg--miss::before,
+.bs-tv .bs-peg--miss::after {
+  height: 3px;
+}
+.bs-tv .bs-hull {
+  --hull-gap: 6px;
+}
+.bs-tv .bs-hull__shape path {
+  stroke-width: 2.5;
+}
+.bs-tv .bs-sea path {
+  stroke-width: 0.7;
+}
+.bs-tv .bs-hull__name {
+  font-size: 28px;
+}
+.bs-stamp {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  z-index: 4;
+  translate: -50% 0;
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  pointer-events: none;
+  text-align: center;
+}
+.bs-stamp__word {
+  padding: 4px 28px 8px;
+  border: 4px solid var(--bs-ink);
+  outline: 2px solid var(--bs-ink);
+  outline-offset: -10px;
+  background: var(--bs-sea);
+  color: var(--bs-ink);
+  font: 900 112px/0.9 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.bs-stamp--hit .bs-stamp__word {
+  background: var(--gules);
+  color: var(--on-fill);
+}
+.bs-stamp--sunk .bs-stamp__word {
+  background: var(--vert);
+  color: var(--on-fill);
+}
+.bs-stamp__where {
+  padding: 4px 14px;
+  background: var(--bs-sea);
+  color: var(--bs-ink);
+  border: 3px solid var(--bs-ink);
+  font: 800 28px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.bs-stamp.is-fresh {
+  animation: bs-stamp 640ms var(--bs-ease) both;
+}
+.bs-tv__seat.is-target .bs-chart {
+  outline-color: var(--gules);
+}
+
+/* ── Results: both fleets, now public ───────────────────────────────────── */
+.bs-reveal__charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+.bs-reveal .bs-chart {
+  min-height: 280px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bs-peg.is-fresh,
+  .bs-cell.is-fresh,
+  .bs-hull.is-settling,
+  .bs-hull.is-sinking,
+  .bs-stamp.is-fresh {
+    animation: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  button.bs-cell:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--azure) 18%, transparent);
+  }
+  .bs-shipbtn,
+  .bs-dir {
+    transition: transform 120ms var(--bs-ease);
+  }
+  .bs-shipbtn:hover,
+  .bs-dir:hover {
+    transform: translateY(-2px);
+  }
+}

@@ -29,7 +29,7 @@ export interface SetupContext<Options> {
   options: Options;
   /** Seeded and injected so tests are deterministic. */
   rng: Rng;
-  /** Server time in ms. Rules never read the clock themselves (approved2026-10-13). */
+  /** Server time in ms. Rules never read the clock themselves (approved 2026-10-13). */
   now: number;
   /** For a linked game: what its `GameLink.start` returned (e.g. the other app's room). */
   linked?: unknown;

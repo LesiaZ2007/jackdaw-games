@@ -28,7 +28,10 @@ test('the host seats a bot with the +, plays it, and ending early can save the r
     .first()
     .click();
   await host.getByRole('button', { name: 'Add a computer player' }).first().click();
-  await expect(host.getByRole('listitem', { name: /Bot Wren, computer player/ })).toBeVisible();
+  // A random bird's name; the host gets one level for every bot.
+  await expect(host.getByRole('listitem', { name: /Bot \w+, computer player/ })).toBeVisible();
+  await host.getByRole('radio', { name: 'Hard' }).click();
+  await expect(host.getByRole('radio', { name: 'Hard' })).toHaveAttribute('aria-checked', 'true');
   if (SHOTS) await host.screenshot({ path: `${SHOTS}/lobby-bot-375.png`, fullPage: true });
 
   // Nobody else gets the +.

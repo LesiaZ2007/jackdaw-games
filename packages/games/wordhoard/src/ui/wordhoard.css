@@ -918,3 +918,23 @@ button.wh-sq:focus-visible {
     }
   }
 }
+
+/* ── Hover on a computer (Lesia, 2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* A rack tile lifts off the rack; a picked or dragged one keeps its own place. */
+  .wh-rack__slot .wh-tile {
+    transition: transform 140ms var(--ease-out);
+  }
+  .wh-rack__slot:not(:disabled):not(.is-picked):not(.is-dragging):hover .wh-tile {
+    transform: translateY(-6px) rotate(-2deg);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  /* The empty square under the pointer, when a tile could go there. */
+  button.wh-sq:hover {
+    outline: 2px solid var(--or);
+    outline-offset: -2px;
+    z-index: 1;
+  }
+}

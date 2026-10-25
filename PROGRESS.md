@@ -545,6 +545,39 @@ Lesia: "End Game still saves progress of any rounds", "fog of war to risk", "pla
 - Not yet seen in a browser at every width: the + in the games' own seats and Risk's fog. The
   Codenames word table (~25–30 KB) reaches the client bundle through its lobby's imports.
 
+### Bot tuning, Risk maps, hover (2026-10-24, branch `feat/bot-tuning`)
+
+Lesia: "bots go too fast", "too good… a bit more randomized but still can win", "set difficulty
+level with bots" (then "game wide, not bot specific"), "name bots randomly", "make catan bots able
+to trade", "make codenames bots sometimes guess wrong", "weird scrabble glitch where letters appear
+on top of other letters after the two bots play", "cards button in Catan has text going beyond
+it", "more risk maps", "hover actions on PC".
+
+- **Pace**: a bot waits 0.8–1.8× a longer base (2 s; Codenames 2.6 s, Risk 1.3 s), the factor
+  drawn from the session's rng state so every read agrees.
+- **Difficulty** is one lobby setting (`Lobby.botLevel`, `setBotLevel`, snapshot `botLevel`,
+  Easy/Normal/Hard, default Normal), changeable mid-game. The picker shows under "At the table"
+  when bots sit, in any bot's seat sheet (so every themed lobby has it) and in Manage players.
+  `BotContext.level` reaches every game; `botChoose` (rank-weighted pick), `botSlips` (a mistake
+  chance) and `botFate` (randomness fixed by a key, for choices spread over several moves) are in
+  `packages/engine/src/bots.ts`. Codenames operatives guess wrong about 1 in 8 at Normal, 1 in 3
+  at Easy; UNO bots forget UNO and miss catches; Letterhoard aims at 60/85/100% of its best play;
+  poker misreads its hand more; Risk calls off attacks early; Secret Hitler gets more noise.
+- **Names**: drawn at random from the free birds (`addBot` takes `pick` from the runtime).
+- **Catan bots trade**: once a turn, a card or two short of their next build, they offer one spare
+  card for one they need; they take the first yes from someone who can pay and withdraw after
+  everyone answers or `OFFER_WAIT_MS` (20 s). Offers carry `at`; `tradeTries` counts the turn's.
+- **Letterhoard glitch**: the turn panel and the meaning popup were siblings keyed by the same
+  move count, so after a bot's word React kept the old rack under the new one. Distinct keys.
+- **Catan dock**: counts are corner badges on the four-button dock; long two-button labels wrap.
+- **Risk maps**: The Skerries (archipelago, 15 islands) and Twin Crowns (two kingdoms joined by
+  four stepping stones), both 42 territories with the classic region sizes and bonuses. Coasts and
+  seeds in `scripts/coasts/*.json`; `build-map.mjs` takes any map with a coasts file.
+- **Hover** (mouse only, movement off for reduced motion): Plaques lift; UNO hand cards, rack
+  tiles, Codenames words, Risk cards, RPS throws, Wavelength cards, SH policy/vote cards rise;
+  Risk territories brighten (more where pickable); Catan build spots get an inked ring; empty
+  Letterhoard squares are outlined.
+
 ## Next
 
 1. Lesia playtests round four (bots in each game, Risk's fog) on the preview.

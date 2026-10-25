@@ -1249,3 +1249,23 @@ button.uno-card:focus-visible {
     }
   }
 }
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* Your cards rise to meet the pointer, on top of the lift a playable card already has. */
+  button.uno-hand__card {
+    transition:
+      transform 220ms var(--ease-out),
+      translate 140ms var(--ease-out),
+      opacity 220ms,
+      filter 220ms;
+  }
+  button.uno-hand__card:not(:disabled):hover {
+    translate: 0 calc(var(--w) * -0.14);
+    z-index: 2;
+  }
+  .uno-colour:hover {
+    transform: translateY(-3px);
+  }
+}

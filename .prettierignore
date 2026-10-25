@@ -5,3 +5,4 @@ node_modules/
 .*/
 mockups/
 packages/games/wordhoard/src/words.packed.ts
+packages/games/risk/src/maps/*.shapes.ts

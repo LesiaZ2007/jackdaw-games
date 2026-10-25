@@ -1,0 +1,380 @@
+/* Catan: the island printed in Catan's own colours on Jackdaw's card stock. Terrain inks with
+   engraved motifs, cream number discs (red 6 and 8), wooden piers, the classic piece colours.
+   The board is printed, so it looks the same day and dark; the frame around it follows the
+   shell. Every colour Catan adds is a token here. */
+
+.ctn,
+.ctn-board {
+  --ctn-forest: #3d6a39;
+  --ctn-forest-ink: #24451f;
+  --ctn-pasture: #8fb058;
+  --ctn-pasture-ink: #5b7a31;
+  --ctn-fields: #d8ab3c;
+  --ctn-fields-ink: #a07a22;
+  --ctn-hills: #b25732;
+  --ctn-hills-ink: #823a1e;
+  --ctn-mountains: #7b8086;
+  --ctn-mountains-ink: #4b4f55;
+  --ctn-desert: #d9c48f;
+  --ctn-desert-ink: #ad9862;
+  --ctn-sea: #2f6896;
+  --ctn-sea-line: #5f8fb8;
+  --ctn-shallow: #4f86b0;
+  /* number discs, card stock, piers */
+  --ctn-stock: #f1ead8;
+  --ctn-stock-ink: #2a2620;
+  --ctn-wood: #9b7146;
+  --ctn-seam: #1d1d1c;
+  --ctn-shade: rgba(29, 29, 28, 0.32);
+  /* the classic piece colours, printed */
+  --ctn-pc-red: var(--gules);
+  --ctn-pc-blue: var(--azure);
+  --ctn-pc-white: #efe9da;
+  --ctn-pc-orange: #c8702a;
+  --ctn-pc-green: #3f7a48;
+  --ctn-pc-brown: #6a4a30;
+}
+
+.ctn {
+  color: var(--ink);
+}
+
+.ctn-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- Terrain fills (tiles, cards, pips, plaques) ---------- */
+
+.ctn-fill--forest {
+  fill: var(--ctn-forest);
+  background: var(--ctn-forest);
+}
+.ctn-fill--pasture {
+  fill: var(--ctn-pasture);
+  background: var(--ctn-pasture);
+}
+.ctn-fill--fields {
+  fill: var(--ctn-fields);
+  background: var(--ctn-fields);
+}
+.ctn-fill--hills {
+  fill: var(--ctn-hills);
+  background: var(--ctn-hills);
+}
+.ctn-fill--mountains {
+  fill: var(--ctn-mountains);
+  background: var(--ctn-mountains);
+}
+.ctn-fill--desert {
+  fill: var(--ctn-desert);
+  background: var(--ctn-desert);
+}
+
+/* ---------- The board ---------- */
+
+.ctn-board {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.ctn-board text {
+  text-anchor: middle;
+  pointer-events: none;
+}
+.ctn-sea {
+  fill: var(--ctn-sea);
+}
+.ctn-wave {
+  fill: none;
+  stroke: var(--ctn-sea-line);
+  stroke-width: 0.018;
+  opacity: 0.8;
+}
+.ctn-shallow {
+  fill: var(--ctn-shallow);
+}
+.ctn-seam {
+  fill: var(--ctn-seam);
+}
+.ctn-shadow {
+  fill: var(--ctn-shade);
+}
+
+.ctn-motif {
+  opacity: 0.9;
+}
+.ctn-motif--forest {
+  --ink: var(--ctn-forest-ink);
+}
+.ctn-motif--pasture {
+  --ink: var(--ctn-pasture-ink);
+}
+.ctn-motif--fields {
+  --ink: var(--ctn-fields-ink);
+}
+.ctn-motif--hills {
+  --ink: var(--ctn-hills-ink);
+}
+.ctn-motif--mountains {
+  --ink: var(--ctn-mountains-ink);
+}
+.ctn-motif--desert {
+  --ink: var(--ctn-desert-ink);
+}
+.ctn-ink-fill {
+  fill: var(--ink);
+}
+.ctn-ink-line {
+  fill: none;
+  stroke: var(--ink);
+}
+.ctn-hi {
+  fill: none;
+  stroke: var(--ctn-stock);
+  stroke-opacity: 0.55;
+}
+.ctn-sheep {
+  fill: var(--ctn-stock);
+  fill-opacity: 0.9;
+}
+
+.ctn-pier-ink {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.13;
+  stroke-linecap: round;
+}
+.ctn-pier {
+  stroke: var(--ctn-wood);
+  stroke-width: 0.075;
+  stroke-linecap: round;
+}
+.ctn-plaque {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.035;
+}
+.ctn-plaque--any {
+  fill: var(--ctn-stock);
+}
+.ctn-plaque__art {
+  color: var(--ctn-stock);
+}
+.ctn-plaque__ratio {
+  font: 800 0.2px var(--font-plaque);
+  letter-spacing: 0.01px;
+  fill: var(--ctn-stock-ink);
+}
+.ctn-plaque__ratio--on {
+  font-size: 0.15px;
+  fill: var(--ctn-stock);
+}
+
+.ctn-disc__face {
+  fill: var(--ctn-stock);
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.03;
+}
+.ctn-disc__rule {
+  fill: none;
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.01;
+  opacity: 0.6;
+}
+.ctn-disc__n {
+  font: 800 0.32px var(--font-code);
+  fill: var(--ctn-stock-ink);
+}
+.ctn-disc__pip {
+  fill: var(--ctn-stock-ink);
+}
+.ctn-disc--red .ctn-disc__n {
+  font-size: 0.36px;
+  fill: var(--gules);
+}
+.ctn-disc--red .ctn-disc__pip {
+  fill: var(--gules);
+}
+
+.ctn-robber path {
+  fill: var(--sable);
+  stroke: var(--ctn-stock);
+  stroke-width: 0.03;
+}
+
+.ctn-road-ink {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.2;
+  stroke-linecap: round;
+}
+.ctn-road {
+  stroke-width: 0.12;
+  stroke-linecap: round;
+}
+.ctn-build {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+.ctn-window {
+  fill: var(--ctn-stock-ink);
+  opacity: 0.55;
+}
+
+/* What can be picked: dashed rings that breathe; the ghost piece waits for "Build here". */
+.ctn-spot {
+  fill: color-mix(in srgb, var(--ctn-stock) 72%, transparent);
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.035;
+  stroke-dasharray: 0.07 0.05;
+  cursor: pointer;
+  animation: ctn-breathe 1.6s var(--ease-out) infinite;
+}
+.ctn-spot:focus-visible {
+  outline: none;
+  stroke: var(--or);
+  stroke-width: 0.07;
+}
+.ctn-spot--tile {
+  fill: color-mix(in srgb, var(--ctn-stock) 22%, transparent);
+  stroke-width: 0.05;
+  stroke-dasharray: 0.12 0.08;
+}
+.ctn-ghost {
+  opacity: 0.8;
+}
+.ctn-ghost__ring {
+  fill: none;
+  stroke: var(--ctn-stock);
+  stroke-width: 0.05;
+  animation: ctn-breathe 1.6s var(--ease-out) infinite;
+}
+.ctn-paying {
+  fill: none;
+  stroke: var(--ctn-stock);
+  stroke-width: 0.085;
+  animation: ctn-glow 1.2s var(--ease-out) 3;
+  stroke-opacity: 0.55;
+}
+
+.ctn-flyer__card {
+  animation: ctn-fly 1.5s var(--ease-out) both;
+}
+.ctn-flyer__back {
+  fill: var(--ctn-stock);
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.03;
+}
+.ctn-flyer__n {
+  font: 900 0.15px var(--font-plaque);
+}
+
+@keyframes ctn-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes ctn-glow {
+  0%,
+  100% {
+    stroke-opacity: 0.2;
+  }
+  50% {
+    stroke-opacity: 1;
+  }
+}
+@keyframes ctn-fly {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(0, -0.3px) scale(1);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--fx), var(--fy)) scale(0.7);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctn-spot,
+  .ctn-ghost__ring,
+  .ctn-paying {
+    animation: none;
+  }
+  .ctn-flyer {
+    display: none;
+  }
+}
+
+/* Glyph sizes wherever they appear. */
+.ctn-piece {
+  width: 1.4em;
+  height: 1.4em;
+  flex: none;
+}
+.ctn-piece__body {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+.ctn-piece__card {
+  fill: var(--sable);
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 1.4;
+}
+.ctn-ink {
+  stroke: var(--ctn-stock-ink);
+}
+
+.ctn-pip {
+  position: relative;
+  width: 1.3em;
+  height: 1.3em;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  color: var(--ctn-stock);
+  outline: 1px solid var(--ctn-stock-ink);
+}
+.ctn-pip svg {
+  width: 78%;
+  height: 78%;
+}
+.ctn-pip__n {
+  position: absolute;
+  right: -0.45em;
+  bottom: -0.4em;
+  min-width: 1.05em;
+  padding: 0 0.15em;
+  font: 800 0.7em/1.3 var(--font-plaque);
+  text-align: center;
+  background: var(--sable);
+  color: var(--on-fill);
+}
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) {
+  /* A spot you can build on, under the pointer: an inked ring (the breathing keeps going). */
+  .ctn-spot:hover {
+    stroke: var(--ink);
+    stroke-width: 0.06;
+    stroke-dasharray: none;
+  }
+}

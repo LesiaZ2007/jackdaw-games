@@ -101,6 +101,7 @@ export const Icon = {
   back: (p: IconProps) => svg('0 0 24 24', <path d="M15 5l-7 7 7 7" {...stroke(2.4)} />, p),
   close: (p: IconProps) => svg('0 0 24 24', <path d="M6 6l12 12M18 6L6 18" {...stroke(2.4)} />, p),
   down: (p: IconProps) => svg('0 0 24 24', <path d="M6 9l6 6 6-6" {...stroke(2.4)} />, p),
+  plus: (p: IconProps) => svg('0 0 24 24', <path d="M12 5v14M5 12h14" {...stroke(2.4)} />, p),
   copy: (p: IconProps) =>
     svg(
       '0 0 24 24',
@@ -225,6 +226,31 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 46a24 24 0 0 1 48 0" />
       <path d="M32 46l12-16" />
       <circle cx="32" cy="46" r="3" />
+    </g>
+  ),
+  /** Two cards fanned, the front one with a Reverse's arrows (UNO). */
+  uno: (
+    <g {...stroke(3.4)}>
+      <path d="M10 18l16-6 10 28-16 6z" />
+      <path d="M30 12h22v34H30z" />
+      <path d="M35 27a6 6 0 0 1 10.5-3M47 31a6 6 0 0 1-10.5 3M46 19.5l-.5 4.5-4.4-.9M36 38.5l.5-4.5 4.4.9" />
+      <path d="M8 56h48" />
+    </g>
+  ),
+  /** Two war banners crossed (Risk). */
+  banners: (
+    <g {...stroke(3.4)}>
+      <path d="M14 58L46 8M50 58L18 8" />
+      <path d="M45 11l14 2-6 5 6 6-21-1M19 11l-14 2 6 5-6 6 21-1" />
+      <path d="M8 58h48" />
+    </g>
+  ),
+  /** Three island tiles with a settlement where they meet (Catan). */
+  hexes: (
+    <g {...stroke(3.4)}>
+      <path d="M23.3 14L32 19v10l-8.7 5-8.7-5V19zM40.7 14l8.7 5v10l-8.7 5L32 29V19zM32 29l8.7 5v10L32 49l-8.7-5V34z" />
+      <path d="M26 23v-6l6-6 6 6v6z" fill="currentColor" />
+      <path d="M8 58h48" />
     </g>
   ),
 };

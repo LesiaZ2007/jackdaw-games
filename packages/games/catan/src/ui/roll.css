@@ -1,0 +1,159 @@
+/* The roll: a light veil over the screen, two big printed dice tumbling in the middle, the total
+   stamped under them, then the pair glides up into the turn strip. About 2.4s; taps go through
+   to skip it. Colours are tokens; no glow, no gradient. */
+
+.ctn-roll {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  background: transparent;
+  cursor: pointer;
+  animation: ctn-roll-veil 2.4s linear both;
+}
+.ctn-roll--tv {
+  position: absolute;
+  gap: 36px;
+}
+.ctn-roll__pair {
+  display: flex;
+  gap: 22px;
+  animation: ctn-roll-glide 2.4s var(--ease-out) both;
+}
+.ctn-roll__die .ctn-die {
+  --d: 104px;
+  border-width: 3px;
+  box-shadow: 0 8px 0 var(--shadow);
+}
+.ctn-roll--tv .ctn-roll__die .ctn-die {
+  --d: 220px;
+  border-width: 6px;
+  box-shadow: 0 16px 0 var(--shadow);
+}
+.ctn-roll__die {
+  display: grid;
+}
+.ctn-roll__die--a {
+  animation: ctn-roll-tumble-a 900ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+.ctn-roll__die--b {
+  animation: ctn-roll-tumble-b 900ms 60ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+.ctn-roll__total {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 140px;
+  padding: 10px 22px 12px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: -7px;
+  box-shadow: 0 8px 0 var(--shadow);
+  animation: ctn-roll-stamp 2.4s var(--ease-out) both;
+}
+.ctn-roll__total b {
+  font: 800 96px / 0.9 var(--font-code);
+}
+.ctn-roll__total span {
+  font: 800 22px / 1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ctn-roll__total--seven {
+  color: var(--gules);
+}
+.ctn-roll--tv .ctn-roll__total {
+  min-width: 300px;
+  padding: 20px 44px 26px;
+  border-width: 4px;
+  outline-offset: -14px;
+}
+.ctn-roll--tv .ctn-roll__total b {
+  font-size: 200px;
+}
+.ctn-roll--tv .ctn-roll__total span {
+  font-size: 44px;
+}
+
+/* The turn strip's own dice wait while the big pair is on its way. */
+.ctn-dice--waiting {
+  visibility: hidden;
+}
+
+@keyframes ctn-roll-veil {
+  0% {
+    background: transparent;
+  }
+  10%,
+  66% {
+    background: color-mix(in srgb, var(--table) 82%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
+@keyframes ctn-roll-glide {
+  0%,
+  68% {
+    transform: none;
+  }
+  100% {
+    transform: translate(var(--gx, 0px), var(--gy, calc(-40 * var(--vh, 1vh))))
+      scale(var(--gs, 0.3));
+  }
+}
+@keyframes ctn-roll-tumble-a {
+  0% {
+    transform: translate(calc(-60 * var(--vw, 1vw)), calc(-20 * var(--vh, 1vh))) rotate(-540deg)
+      scale(0.4);
+  }
+  70% {
+    transform: translate(8px, 0) rotate(12deg) scale(1.08);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes ctn-roll-tumble-b {
+  0% {
+    transform: translate(calc(60 * var(--vw, 1vw)), calc(-24 * var(--vh, 1vh))) rotate(600deg)
+      scale(0.4);
+  }
+  70% {
+    transform: translate(-8px, 0) rotate(-10deg) scale(1.08);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes ctn-roll-stamp {
+  0%,
+  34% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  42% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  62% {
+    opacity: 1;
+  }
+  72%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctn-roll {
+    display: none;
+  }
+}

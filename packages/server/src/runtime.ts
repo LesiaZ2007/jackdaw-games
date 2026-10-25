@@ -3,6 +3,7 @@ import {
   ClientMessage,
   GameError,
   ONLINE_WINDOW_MS,
+  addBot,
   applyGameAction,
   backToLobby,
   chat,
@@ -21,6 +22,7 @@ import {
   rename,
   resetScores,
   setAvatar,
+  setBotLevel,
   setGame,
   setOptions,
   settleLinked,
@@ -62,7 +64,7 @@ import type { RoomStorage } from './storage';
  */
 
 export const LOBBY_TTL_SECONDS = 24 * 60 * 60;
-const LOCK_TTL_SECONDS = 5;
+const LOCK_TTL_SECONDS = 10;
 const LOCK_ATTEMPTS = 80;
 /** Presence is rewritten at most this often per id; "online" means seen within 45s. */
 export const PRESENCE_WRITE_MS = 25_000;
@@ -85,6 +87,11 @@ export interface RuntimeOptions {
   /** How long a poll may reuse a lobby read on this instance. Avalon uses 900ms. */
   readCacheMs?: number;
   rateLimit?: { posts: number; polls: number; windowMs: number };
+  /**
+   * Per client address, per window: lobby codes asked for that don't exist (someone guessing
+   * codes) and lobbies created. Tokens are made by the client, so they can't be the only key.
+   */
+  addressLimit?: { misses: number; creates: number };
   sleep?: (ms: number) => Promise<void>;
   /** Links for games played in another app, by game id (see GameLink in the engine). */
   links?: Record<string, GameLink>;
@@ -111,6 +118,8 @@ export interface RequestInfo {
 
 export interface CreateInput {
   token: string;
+  /** The client's address, when known. */
+  ip?: string | null;
   name: string;
   avatar?: Avatar;
   gameId?: string;
@@ -158,6 +167,7 @@ export function createRoomRuntime(opts: RuntimeOptions) {
   const seed = opts.seed ?? randomSeed;
   const readCacheMs = opts.readCacheMs ?? 900;
   const limits = opts.rateLimit ?? { posts: 30, polls: 40, windowMs: 10_000 };
+  const addressLimits = opts.addressLimit ?? { misses: 12, creates: 10 };
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const links = opts.links ?? {};
   const linkCheckMs = opts.linkCheckMs ?? 5_000;
@@ -191,6 +201,31 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       throw new RoomError(429, 'RATE_LIMITED', 'Slow down a little and try again.');
   }
 
+  /** Recent hits for `who`, without counting a new one. */
+  function recentHits(who: string): number[] {
+    const t = now();
+    return (hits.get(who) ?? []).filter((at) => t - at < limits.windowMs);
+  }
+
+  /**
+   * Guards one request from a client address: refuses it while that address has asked for too
+   * many lobbies that don't exist lately. The HTTP layer calls this before handling a request.
+   */
+  function checkAddress(ip: string) {
+    if (recentHits(`miss:${ip}`).length >= addressLimits.misses)
+      throw new RoomError(
+        429,
+        'RATE_LIMITED',
+        'Too many wrong codes. Wait a moment and try again.',
+      );
+  }
+
+  /** Counts a request for a lobby that doesn't exist against its address. */
+  function noteMiss(ip: string) {
+    hits.set(`miss:${ip}`, [...recentHits(`miss:${ip}`), now()]);
+    if (hits.size > 10_000) hits.clear();
+  }
+
   // ── Storage helpers ─────────────────────────────────────────────────────────────────────
   async function load(code: string): Promise<Lobby | null> {
     const raw = await storage.get(lobbyKey(code));
@@ -208,8 +243,19 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     return value;
   }
 
-  async function save(lobby: Lobby) {
-    await storage.set(lobbyKey(lobby.code), JSON.stringify(lobby), LOBBY_TTL_SECONDS);
+  /**
+   * Saves a lobby loaded under the lock `owner` holds. If the lock expired meanwhile (a stalled
+   * instance), someone else may have saved since, so nothing is written and the caller retries.
+   */
+  async function save(lobby: Lobby, owner: string) {
+    const saved = await storage.setIfHeld(
+      lockKey(lobby.code),
+      owner,
+      lobbyKey(lobby.code),
+      JSON.stringify(lobby),
+      LOBBY_TTL_SECONDS,
+    );
+    if (!saved) throw new RoomError(503, 'BUSY', 'The lobby is busy. Try again in a moment.');
     if (readCacheMs > 0) readCache.set(lobby.code, { at: now(), value: Promise.resolve(lobby) });
   }
 
@@ -263,11 +309,11 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     else await work;
   }
 
-  async function lock(code: string): Promise<() => Promise<void>> {
+  async function lock(code: string): Promise<{ owner: string; release: () => Promise<void> }> {
     const owner = randomString(12, ID_ALPHABET);
     for (let attempt = 0; attempt < LOCK_ATTEMPTS; attempt++) {
       if (await storage.setIfAbsent(lockKey(code), owner, LOCK_TTL_SECONDS)) {
-        return () => storage.delIfEquals(lockKey(code), owner).catch(() => {});
+        return { owner, release: () => storage.delIfEquals(lockKey(code), owner).catch(() => {}) };
       }
       await sleep(40 + Math.random() * 40);
     }
@@ -279,15 +325,37 @@ export function createRoomRuntime(opts: RuntimeOptions) {
    * overwrite each other. If `mutate` throws, nothing is saved.
    */
   async function withLobby<T>(code: string, mutate: (lobby: Lobby) => { lobby: Lobby; result: T }) {
-    const release = await lock(code);
+    const { owner, release } = await lock(code);
     try {
       const lobby = await load(code);
       if (!lobby) throw notFound();
       const out = mutate(lobby);
-      if (out.lobby !== lobby) await save(out.lobby);
+      if (out.lobby !== lobby) await save(out.lobby, owner);
       return out;
     } finally {
       await release();
+    }
+  }
+
+  /**
+   * Fires due game timers, but a game that throws while doing so (a bug, or a game no longer
+   * registered) must not take the whole lobby down with it: the error is logged and the lobby
+   * carries on unchanged, so chat, leaving and the host's End game still work.
+   */
+  function safeTimers(lobby: Lobby, c: Ctx): Lobby {
+    try {
+      return runTimers(lobby, c);
+    } catch (e) {
+      console.error(`[jackdaw] a game timer failed in ${lobby.code}`, e);
+      return lobby;
+    }
+  }
+
+  function safeTimerAt(lobby: Lobby, c: Ctx): number | null {
+    try {
+      return nextTimerAt(lobby, c);
+    } catch {
+      return null;
     }
   }
 
@@ -305,6 +373,7 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     input: CreateInput,
   ): Promise<{ code: string; playerId: string; snapshot: LobbySnapshot }> {
     rateLimit(`create:${input.token}`, 5);
+    if (input.ip) rateLimit(`create-ip:${input.ip}`, addressLimits.creates);
     const key = await tokenKey(input.token);
     if (input.gameId && !games[input.gameId])
       throw new RoomError(400, 'UNKNOWN_GAME', 'That game is not available.');
@@ -393,12 +462,12 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     // A linked game the host ends here should end in its own app too (after the save).
     let ending: { gameId: string; state: unknown } | undefined;
     let previous: Lobby | null = null;
-    const { lobby, result: playerId } = await withLobby(code, (loaded) => {
+    const started = withLobby(code, (loaded) => {
       const c = ctx();
       ending = undefined;
       previous = loaded;
       // A game timer that came due before this message fires first.
-      const current = runTimers(loaded, c);
+      const current = msg.type === 'endGame' ? loaded : safeTimers(loaded, c);
       if (msg.type === 'join') {
         const joined = join(
           current,
@@ -428,6 +497,15 @@ export function createRoomRuntime(opts: RuntimeOptions) {
         ending = { gameId: before.session.gameId, state: before.session.state };
       return { lobby: next, result: me };
     });
+    // The other app already opened a game for this Start; if it didn't take here (the table
+    // changed, a second tap got there first), close it again rather than leave it dealt.
+    const { lobby, result: playerId } = linked
+      ? await started.catch(async (e: unknown) => {
+          const gameId = (await load(code))?.selectedGameId;
+          if (gameId) await endLink(gameId, linked.data);
+          throw e;
+        })
+      : await started;
 
     if (ending) await endLink(ending.gameId, ending.state);
     await notifyWaiting(previous, lobby);
@@ -485,9 +563,18 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       case 'resetScores':
         return resetScores(lobby, me, c);
       case 'endGame':
-        return endGameEarly(lobby, me, c);
+        return endGameEarly(lobby, me, c, msg.save);
       case 'react':
         return react(lobby, me, msg.kind, randomString(10, ID_ALPHABET), c);
+      case 'addBot':
+        return addBot(
+          lobby,
+          me,
+          { newPlayerId: randomString(10, ID_ALPHABET), palette, pick: Math.random() },
+          c,
+        );
+      case 'setBotLevel':
+        return setBotLevel(lobby, me, msg.level, c);
     }
   }
 
@@ -523,20 +610,20 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     lobby = await checkLink(lobby);
 
     // A game timer that's due fires now (there are no alarms on Vercel).
-    const due = nextTimerAt(lobby, c);
+    const due = safeTimerAt(lobby, c);
     if (due !== null && due <= c.now) {
       let loaded: Lobby | null = null;
       lobby = (
         await withLobby(code, (l) => {
           loaded = l;
-          return { lobby: runTimers(l, ctx()), result: null };
+          return { lobby: safeTimers(l, ctx()), result: null };
         })
       ).lobby;
       await notifyWaiting(loaded, lobby);
     }
 
     if (sinceVersion === lobby.version) {
-      const timerAt = nextTimerAt(lobby, c);
+      const timerAt = safeTimerAt(lobby, c);
       const fresh = (id: string) => c.now - (presence[id] ?? 0) <= ONLINE_WINDOW_MS;
       return {
         unchanged: true,
@@ -623,6 +710,8 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       const out = redeemRejoinCode(current, rejoinCode, key, ctx());
       return { lobby: out.lobby, result: out.playerId };
     });
+    // Notifications belonged to the old device.
+    if (opts.push) await storage.hset(pushKey(code), playerId, '', LOBBY_TTL_SECONDS);
     const fresh = await checkIn(code, playerId, presence);
     return snapshotFor(lobby, playerId, fresh, ctx());
   }
@@ -638,7 +727,7 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     return { stats: lobbyStats(lobby.history), history: lobby.history };
   }
 
-  return { create, post, poll, redeemRejoin, stats, setPush };
+  return { create, post, poll, redeemRejoin, stats, setPush, checkAddress, noteMiss };
 }
 
 export type RoomRuntime = ReturnType<typeof createRoomRuntime>;

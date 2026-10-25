@@ -53,6 +53,40 @@
     display: grid;
   }
 }
+/* The host's End game: a stop square on phones, spelt out from tablets up. */
+.lobby-bar__end {
+  color: var(--gules);
+}
+.lobby-bar__end-text {
+  display: none;
+}
+/* One more button on a narrow phone: close up the bar so the menu still fits. */
+@media (max-width: 419px) {
+  .lobby-bar:has(.lobby-bar__end) {
+    gap: 6px;
+  }
+  .lobby-bar:has(.lobby-bar__end) .lobby-bar__actions {
+    gap: 4px;
+  }
+  .lobby-bar:has(.lobby-bar__end) .lobby-bar__actions .jd-iconbtn {
+    width: 40px;
+  }
+}
+@media (min-width: 768px) {
+  .lobby-bar__actions .lobby-bar__end {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    padding: 0 12px;
+  }
+  .lobby-bar__end-text {
+    display: inline;
+    font: 800 15px var(--font-plaque);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}
 @media (min-width: 420px) {
   .lobby-bar__label {
     display: inline;
@@ -225,8 +259,8 @@
 }
 @media (min-width: 768px) {
   .waiting {
-    /* the table gets the larger share, so tokens are easy to find on a laptop */
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    /* the game gets the larger share: its blurb and options read in lines, not single words */
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
     align-items: start;
     column-gap: var(--space-6);
   }
@@ -331,9 +365,10 @@
 }
 .options__row {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-1) var(--space-3);
   padding: var(--space-2) var(--space-3);
   min-height: 56px;
 }
@@ -345,6 +380,12 @@
 }
 .options dd {
   margin: 0;
+}
+.options .options__help {
+  flex-basis: 100%;
+  color: var(--ink-2);
+  font-size: var(--step--1);
+  line-height: 1.35;
 }
 .options dd b {
   font: 800 20px var(--font-plaque);
@@ -414,6 +455,19 @@
 .seat-sheet__note {
   font-size: var(--step-0);
   color: var(--ink-2);
+}
+/* How well every bot plays: Easy, Normal or Hard, in the options panel's buttons. */
+.bot-level {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+  margin-block: var(--space-2);
+}
+.bot-level b {
+  font: 800 16px var(--font-plaque);
+  text-transform: uppercase;
 }
 .seat-sheet__remove.jd-plaque {
   background: var(--gules);
@@ -780,7 +834,6 @@
   inset: 0 auto 0 0;
   background: var(--vert);
 }
-.pad__list,
 /* Tonight's awards: printed ribbons above the log, each with its holder. */
 .pad__awards {
   list-style: none;
@@ -809,6 +862,7 @@
   gap: 6px;
   color: var(--ink-2);
 }
+.pad__list,
 .pad__log {
   list-style: none;
   margin: 0;
@@ -854,7 +908,7 @@
 .share__qr {
   padding: 8px;
   border: 2px solid var(--ink);
-  background: #f7f7f5;
+  background: var(--qr-bg);
 }
 .share__row {
   display: flex;
@@ -878,6 +932,12 @@
 .menu__block p {
   margin: 0;
   color: var(--ink-2);
+}
+/* The host's Reset scores, below the score pad. */
+.pad__reset {
+  padding: var(--space-4) 0 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 0;
 }
 /* A setting with its On/Off plaque at the end of the row. */
 .menu__toggle {

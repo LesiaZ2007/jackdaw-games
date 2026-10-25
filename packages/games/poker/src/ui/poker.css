@@ -3,9 +3,19 @@
  * a double rule; the cards are cream stock with charcoal ink and gules for hearts and diamonds,
  * and the same in day and dark (they're printed). Everything else comes from @jackdaw/ui tokens.
  */
-.pk {
+.pk,
+.pk-table {
   --pk-card-ink: #1d1d1c;
   --pk-card-stock: #f6f0e1;
+  /* Cream print on the baize, at a few strengths, and the dark wash under a bet. */
+  --pk-on-felt-rule: rgba(246, 240, 225, 0.55);
+  --pk-on-felt-dash: rgba(246, 240, 225, 0.4);
+  --pk-on-felt-faint: rgba(246, 240, 225, 0.75);
+  --pk-on-felt-soft: rgba(246, 240, 225, 0.85);
+  --pk-on-felt-open: rgba(246, 240, 225, 0.45);
+  --pk-bet-wash: rgba(20, 20, 19, 0.45);
+}
+.pk {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -170,7 +180,7 @@
   container-type: inline-size;
   position: relative;
   /* As big as fits above your cards and the betting controls. */
-  width: max(280px, min(100%, calc(100dvh - 430px)));
+  width: max(280px, min(100%, calc(calc(100 * var(--vh, 1dvh)) - 430px)));
   aspect-ratio: 1 / 1.02;
   margin: 12px auto 30px;
 }
@@ -189,7 +199,7 @@
   background: var(--vert);
   box-shadow:
     inset 0 0 0 5px var(--vert),
-    inset 0 0 0 6.5px rgba(246, 240, 225, 0.55);
+    inset 0 0 0 6.5px var(--pk-on-felt-rule);
   display: grid;
   place-content: center;
   justify-items: center;
@@ -207,7 +217,7 @@
 .pk-slot {
   width: var(--pk-board-card);
   aspect-ratio: 5 / 7;
-  border: 1.5px dashed rgba(246, 240, 225, 0.4);
+  border: 1.5px dashed var(--pk-on-felt-dash);
   border-radius: calc(var(--pk-board-card) * 0.09);
 }
 .pk-pot {
@@ -219,14 +229,14 @@
   letter-spacing: 0.03em;
 }
 .pk-pot .jd-label {
-  color: rgba(246, 240, 225, 0.75);
+  color: var(--pk-on-felt-faint);
   font-size: 0.6em;
 }
 .pk-pot__line small {
   display: block;
   font: 700 clamp(13px, 3.4cqw, 20px) var(--font-body);
   letter-spacing: 0;
-  color: rgba(246, 240, 225, 0.85);
+  color: var(--pk-on-felt-soft);
 }
 
 .pk-seat {
@@ -343,7 +353,7 @@
   translate: -50% -50%;
   --pk-chip-font: clamp(12px, 3.4cqw, 22px);
   padding: 1px 6px 1px 3px;
-  background: rgba(20, 20, 19, 0.45);
+  background: var(--pk-bet-wash);
   animation: pk-push 360ms var(--ease-out) both;
 }
 @keyframes pk-push {
@@ -362,15 +372,47 @@
   display: block;
   font: 700 clamp(13px, 3.4cqw, 22px) var(--font-body);
   letter-spacing: 0;
-  color: rgba(246, 240, 225, 0.85);
+  color: var(--pk-on-felt-soft);
 }
 .pk-open {
   display: block;
   width: var(--pk-tok);
   aspect-ratio: 1;
   border-radius: 50%;
-  border: 2px dashed rgba(246, 240, 225, 0.45);
+  border: 2px dashed var(--pk-on-felt-open);
   background: color-mix(in srgb, var(--sable) 70%, var(--vert));
+}
+/* The host's "+" on an empty seat, printed on the baize like the empty seat it replaces. */
+.pk-seat .pk-addseat {
+  color: var(--pk-on-felt-faint);
+}
+.pk-seat .pk-addseat .jd-addseat__ring {
+  width: max(36px, var(--pk-tok));
+  background: color-mix(in srgb, var(--sable) 70%, var(--vert));
+}
+/* the ring takes the empty seat's place (which stays, unseen, to keep the seat's size) */
+.pk-addseat + .pk-seat__tok {
+  visibility: hidden;
+}
+@media (hover: hover) {
+  .pk-seat .pk-addseat:hover {
+    color: var(--pk-card-stock);
+  }
+}
+/* A computer player: a small plaque on the token's shoulder. */
+.pk-seat__bot {
+  position: absolute;
+  top: calc(var(--pk-tok) * -0.12);
+  right: calc(var(--pk-tok) * -0.3);
+  z-index: 1;
+  padding: 1px 5px;
+  background: var(--ink);
+  color: var(--paper);
+  border: 1.5px solid var(--paper);
+  font: 800 clamp(10px, 2.4cqw, 14px) / 1.2 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
 }
 .pk-seat__tap {
   position: absolute;
@@ -474,6 +516,15 @@
   background: var(--ink);
   color: var(--paper);
 }
+/* What you can't do right now is greyed out, not hidden. */
+.pk-dock__presets button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pk-bet-dock.is-waiting .pk-stepper,
+.pk-bet-dock.is-waiting .pk-dock__presets {
+  opacity: 0.6;
+}
 .pk-stepper {
   display: grid;
   grid-template-columns: 44px 1fr 44px;
@@ -504,23 +555,40 @@
   max-width: none;
   min-height: 0;
   height: 100%;
-  padding: 2vh 3vw;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 22px 48px 26px;
   box-sizing: border-box;
 }
 .pk--tv .pk__head {
   display: flex;
   align-items: baseline;
-  gap: 2vw;
+  gap: 32px;
+}
+.pk--tv .pk__head h2 {
+  margin: 0;
+  font-size: 68px;
+  line-height: 1;
 }
 .pk--tv .pk__head p {
-  font-size: 26px;
+  margin: 0 0 0 auto;
+  font-size: 30px;
+}
+/* The table keeps its shape and fills whatever room the screen leaves. */
+.pk-tv__stage {
+  min-height: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
 }
 .pk-table--tv {
-  --pk-tok: clamp(48px, 6cqw, 100px);
-  --pk-board-card: min(8cqw, 150px);
+  --pk-tok: clamp(56px, 6.4cqw, 116px);
+  --pk-board-card: min(8.4cqw, 160px);
   aspect-ratio: 2.05 / 1;
-  width: min(100%, calc((100vh - 420px) * 2.05));
-  margin: 7vh auto 9vh;
+  /* Room above and below for the seats that sit on the rim. */
+  width: min(100cqw, (100cqh - 170px) * 2.05);
+  margin: 0;
 }
 .pk-table--tv .pk-felt {
   inset: 13% 9%;
@@ -530,20 +598,23 @@
   gap: 0.8cqw;
 }
 .pk-table--tv .pk-pot {
-  font-size: clamp(22px, 2.6cqw, 48px);
+  font-size: clamp(28px, 3cqw, 56px);
   max-width: 44cqw;
 }
+.pk-table--tv .pk-pot .jd-label {
+  font-size: max(24px, 0.6em);
+}
 .pk-table--tv .pk-pot__line small {
-  font-size: clamp(16px, 1.6cqw, 30px);
+  font-size: clamp(24px, 1.9cqw, 34px);
 }
 .pk-table--tv .pk-seat__name {
-  font-size: clamp(16px, 1.7cqw, 30px);
+  font-size: clamp(24px, 2.1cqw, 38px);
 }
 .pk-table--tv .pk-seat__stack,
 .pk-table--tv .pk-tag,
 .pk-table--tv .pk-bet {
-  font-size: clamp(16px, 1.5cqw, 28px);
-  --pk-chip-font: clamp(16px, 1.5cqw, 28px);
+  font-size: clamp(24px, 1.9cqw, 34px);
+  --pk-chip-font: clamp(24px, 1.9cqw, 34px);
 }
 
 /* Wide and landscape (a laptop): the table on the left, your cards and the dock beside it. */
@@ -599,5 +670,15 @@
   .pk-bet,
   .pk-seat--turn .jd-token {
     animation: none;
+  }
+}
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .pk-dock__presets button:not(:disabled):hover,
+  .pk-stepper button:not(:disabled):hover {
+    transform: translateY(-2px);
+    transition: transform 120ms var(--ease-out);
   }
 }

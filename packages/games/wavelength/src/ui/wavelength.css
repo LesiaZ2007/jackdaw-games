@@ -1,0 +1,773 @@
+/*
+ * Wavelength: a printed dial board in the compendium. The dial is sable card with a cream rim,
+ * ticked like a radio tuner; the target zone is printed in bands (vert 4, tenné 3, gold 2) under a
+ * sable shutter that swings away round the pivot on the reveal. Sun team is gules, Moon azure.
+ * The board is printed, so it looks the same day and dark; its colours are set here and
+ * everything else comes from @jackdaw/ui tokens.
+ */
+.wl {
+  --wl-card: #26282b;
+  --wl-card-2: #34373b;
+  --wl-cream: #f6f0e1;
+  --wl-ink: #1d1d1c;
+  --wl-2: #b8892a;
+  --wl-3: #9a5a22;
+  --wl-4: #30634a;
+  --wl-sun: #a63a30;
+  --wl-moon: #2b5683;
+  --wl-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Phone: fits under the bar, never scrolls ───────────────────────────── */
+.wl--phone {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: var(--space-2);
+}
+.wl__head {
+  text-align: center;
+  min-width: 0;
+}
+.wl__by {
+  margin: 0;
+  color: var(--ink-2);
+  font: 700 15px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wl__clue {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-3);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+.wl__status {
+  margin: 0;
+  font-size: var(--step-2);
+  line-height: 1.05;
+}
+.wl-stage {
+  min-height: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+.wl-stage .wl-dial {
+  width: min(100cqw, (100cqh - 52px) * 1.78);
+}
+
+/* ── Scores ─────────────────────────────────────────────────────────────── */
+.wl-scores {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+.wl-score {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 10px;
+  border: 2px solid var(--wl-ink);
+  color: var(--on-fill);
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+.wl-score--sun {
+  background: var(--wl-sun);
+}
+.wl-score--moon {
+  background: var(--wl-moon);
+}
+.wl-score.is-turn,
+.wl--phone .wl-scores .wl-score:only-of-type {
+  opacity: 1;
+  outline: 1px solid var(--on-fill);
+  outline-offset: -5px;
+}
+.wl-score__you {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+.wl-score__n {
+  font-size: 22px;
+}
+.wl-scores__round {
+  margin-left: auto;
+  align-self: center;
+  color: var(--ink-2);
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+/* ── The dial ───────────────────────────────────────────────────────────── */
+.wl-dial {
+  position: relative;
+  width: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.wl-dial__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.wl-dial.is-live .wl-dial__svg {
+  cursor: grab;
+}
+.wl-dial.is-live .wl-dial__svg:active {
+  cursor: grabbing;
+}
+.wl-dial__svg:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 4px;
+}
+.wl-dial__rim {
+  fill: var(--wl-cream);
+  stroke: var(--wl-ink);
+  stroke-width: 1.2;
+}
+.wl-dial__face {
+  fill: var(--wl-card);
+}
+.wl-tick {
+  stroke: var(--wl-cream);
+  stroke-width: 0.5;
+  opacity: 0.55;
+}
+.wl-tick--long {
+  stroke-width: 0.9;
+  opacity: 0.9;
+}
+.wl-band {
+  stroke: var(--wl-card);
+  stroke-width: 0.4;
+}
+.wl-band--2 {
+  fill: var(--wl-2);
+}
+.wl-band--3 {
+  fill: var(--wl-3);
+}
+.wl-band--4 {
+  fill: var(--wl-4);
+}
+.wl-band__n {
+  fill: var(--wl-cream);
+  font: 800 7px var(--font-plaque);
+}
+/* The shutter swings down round the pivot, out of the face, to show the target. */
+.wl-shutter {
+  fill: var(--wl-card-2);
+  transform-box: view-box;
+  transform-origin: 100px 104px;
+  transition: transform 1100ms var(--wl-ease);
+}
+.wl-shutter.is-open {
+  transform: rotate(180deg);
+}
+.wl-shutter__rule {
+  fill: none;
+  stroke: var(--wl-cream);
+  stroke-width: 0.5;
+  opacity: 0.35;
+}
+.wl-mark {
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.wl-needle {
+  transform-box: view-box;
+  transform-origin: 100px 104px;
+  transition: transform 650ms var(--wl-ease);
+}
+.wl-needle.is-live {
+  transition: none;
+}
+.wl-needle__shaft {
+  stroke: var(--wl-cream);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+.wl-needle__knob {
+  fill: var(--wl-cream);
+  stroke: var(--wl-ink);
+  stroke-width: 1;
+}
+.wl-needle__cap {
+  stroke: var(--wl-cream);
+  stroke-width: 1.6;
+}
+.wl-needle__cap--sun {
+  fill: var(--wl-sun);
+}
+.wl-needle__cap--moon {
+  fill: var(--wl-moon);
+}
+.wl-dial__ends {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: 6px;
+}
+.wl-end {
+  max-width: 48%;
+  padding: 6px 10px;
+  border: 2px solid var(--wl-ink);
+  outline: 1px solid var(--wl-ink);
+  outline-offset: -5px;
+  background: var(--wl-cream);
+  color: var(--wl-ink);
+  font: 800 17px/1.05 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wl-end--right {
+  text-align: right;
+}
+
+/* ── Dock ───────────────────────────────────────────────────────────────── */
+.wl-dock {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.wl-dock__say {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 18px;
+}
+.wl-dock__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.wl-dock__row--next {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+.wl-dock__count {
+  color: var(--ink-2);
+  font: 700 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wl-clock {
+  flex: none;
+  padding: 2px 8px;
+  border: 2px solid var(--ink);
+  font: 800 18px var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+}
+.wl-clock.is-low {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* The two cards on offer, and the psychic's choice between them. */
+.wl-offer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wl-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 52px;
+  padding: 6px 10px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 15px/1.05 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+}
+.wl-card > span:last-child {
+  text-align: right;
+}
+.wl-card__line {
+  flex: 1;
+  min-width: 10px;
+  height: 0;
+  border-top: 2px dotted var(--rule);
+}
+button.wl-card {
+  cursor: pointer;
+}
+button.wl-card[aria-checked='true'] {
+  background: var(--wl-card);
+  color: var(--wl-cream);
+  outline: 1px solid var(--wl-cream);
+  outline-offset: -6px;
+}
+button.wl-card[aria-checked='true'] .wl-card__line {
+  border-color: var(--wl-cream);
+}
+button.wl-card:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+.wl-clue-in {
+  display: grid;
+  gap: 4px;
+}
+.wl-clue-in input {
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 500 19px var(--font-body);
+}
+.wl-clue-in input:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 1px;
+}
+
+/* The points, stamped on the reveal: printed on cream, so the inks read day and dark. */
+.wl-stamp {
+  justify-self: center;
+  margin: 0;
+  padding: 6px 18px;
+  background: var(--wl-cream);
+  border: 3px solid currentColor;
+  outline: 1px solid currentColor;
+  outline-offset: -7px;
+  font: 900 30px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  rotate: -4deg;
+  animation: wl-stamp 700ms var(--wl-ease) 900ms both;
+}
+.wl-stamp--4 {
+  color: var(--wl-4);
+}
+.wl-stamp--3 {
+  color: var(--wl-3);
+}
+.wl-stamp--2 {
+  color: var(--wl-2);
+}
+.wl-stamp--0 {
+  color: var(--wl-card-2);
+}
+.wl-stamp__call {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.5em;
+  letter-spacing: 0.06em;
+}
+@keyframes wl-stamp {
+  from {
+    opacity: 0;
+    scale: 1.8;
+  }
+  60% {
+    opacity: 1;
+    scale: 0.94;
+  }
+  to {
+    scale: 1;
+  }
+}
+
+/* ── TV: one 1920 × 1080 stage, sized in stage pixels ───────────────────── */
+.wl-tv {
+  position: relative;
+  isolation: isolate;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr) 330px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px 40px;
+  padding: 22px 48px 34px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.wl-tv--together {
+  grid-template-columns: 330px minmax(0, 1fr) 330px;
+}
+.wl-tv__head {
+  grid-column: 1 / -1;
+  text-align: center;
+}
+.wl-tv__line {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+  color: var(--ink-2);
+  font: 800 26px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wl-tv__line .wl-clock {
+  font-size: 30px;
+}
+.wl-tv__clue {
+  font-size: 104px;
+}
+.wl-tv__status {
+  margin: 0;
+  font-size: 76px;
+  line-height: 1.05;
+}
+.wl-tv__sub {
+  margin: 4px 0 0;
+  font-size: 32px;
+  color: var(--ink-2);
+}
+.wl-tv__board {
+  grid-column: 2;
+  grid-row: 2;
+  position: relative;
+  min-height: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+}
+.wl-tv__board .wl-dial {
+  width: min(100cqw, (100cqh - 90px) * 1.78);
+}
+.wl-dial--tv .wl-end {
+  padding: 10px 18px;
+  font-size: 40px;
+  border-width: 3px;
+  outline-offset: -8px;
+}
+.wl-dial--tv .wl-dial__ends {
+  margin-top: 12px;
+}
+/* While the psychic chooses, the two cards sit under a slightly smaller dial. */
+.wl-tv__board.has-offer .wl-dial {
+  width: min(100cqw, (100cqh - 200px) * 1.78);
+}
+.wl-tv__offer {
+  width: min(1000px, 100cqw);
+}
+.wl-tv__offer .wl-card {
+  min-height: 72px;
+  padding: 10px 16px;
+  font-size: 28px;
+}
+.wl-tv__stamp {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  translate: -50% -50%;
+  font-size: 92px;
+  border-width: 5px;
+  outline-offset: -12px;
+  padding: 14px 40px;
+}
+.wl-team {
+  grid-row: 2;
+  align-self: start;
+  border: 3px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: -8px;
+  background: var(--paper);
+  padding: 18px 20px 20px;
+  opacity: 0.8;
+}
+.wl-team--sun {
+  grid-column: 1;
+}
+.wl-team--moon {
+  grid-column: 3;
+}
+.wl-team.is-turn {
+  opacity: 1;
+}
+.wl-team__head {
+  margin: -18px -20px 14px;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--on-fill);
+  font: 900 40px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wl-team--sun .wl-team__head {
+  background: var(--wl-sun);
+}
+.wl-team--moon .wl-team__head {
+  background: var(--wl-moon);
+}
+.wl-team__score {
+  font-size: 56px;
+}
+.wl-team__list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wl-team__p {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  align-items: center;
+}
+.wl-team__tok {
+  position: relative;
+  grid-row: span 2;
+}
+.wl-team__name {
+  font: 700 30px/1.05 var(--font-body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wl-tv--together .wl-team__list {
+  grid-template-columns: 1fr;
+}
+.wl-tag {
+  justify-self: start;
+  padding: 1px 8px;
+  border: 2px solid var(--ink);
+  font: 800 24px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: wl-tag 420ms var(--wl-ease) both;
+}
+.wl-tag--psychic {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.wl-tag--lock {
+  background: var(--wl-4);
+  color: var(--on-fill);
+  border-color: var(--wl-4);
+}
+.wl-tag--call {
+  background: var(--wl-3);
+  color: var(--on-fill);
+  border-color: var(--wl-3);
+}
+@keyframes wl-tag {
+  from {
+    opacity: 0;
+    translate: -8px 0;
+  }
+}
+
+/* ── Lobby: chosen teams ────────────────────────────────────────────────── */
+.wl-pick {
+  display: grid;
+  gap: var(--space-3);
+}
+.wl-pick__teams {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--space-3);
+}
+.wl-pick__team,
+.wl-pick__wait {
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: -6px;
+  background: var(--paper);
+  padding: 0 12px 12px;
+}
+.wl-pick__wait {
+  padding-top: 12px;
+}
+.wl-pick__wait .jd-label {
+  margin: 0 0 var(--space-2);
+}
+.wl-pick__head {
+  margin: 0 -12px 10px;
+  padding: 8px 14px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--on-fill);
+  font: 900 22px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wl-pick__team--sun .wl-pick__head {
+  background: var(--wl-sun);
+}
+.wl-pick__team--moon .wl-pick__head {
+  background: var(--wl-moon);
+}
+.wl-pick__list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wl-pick__p {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+}
+.wl-pick__tok {
+  position: relative;
+}
+.wl-pick__tap {
+  position: absolute;
+  inset: -4px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.wl-pick__tap:focus-visible {
+  outline: 3px solid var(--or);
+}
+.wl-pick__name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wl-pick__p.is-me .wl-pick__name {
+  font-weight: 800;
+}
+.wl-pick__both {
+  display: flex;
+  gap: 6px;
+}
+.wl-pick__move {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid var(--wl-ink);
+  color: var(--on-fill);
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.wl-pick__move--sun {
+  background: var(--wl-sun);
+}
+.wl-pick__move--moon {
+  background: var(--wl-moon);
+}
+.wl-pick__move:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+.wl-pick__note {
+  margin: 8px 0 0;
+  color: var(--ink-2);
+  font-size: 15px;
+}
+/* a computer player: a small inked tag after the name */
+.wl-pick__bot {
+  margin-left: 8px;
+  padding: 2px 6px 3px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 11px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: 2px;
+}
+/* the host's "+" at the foot of each team: an open place in the team's list */
+.wl-pick__open .wl-pick__tok {
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+.wl-pick__add .jd-addseat__ring {
+  width: 40px;
+}
+.wl-pick__name--open {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* ── Results: every round ───────────────────────────────────────────────── */
+.wl-reveal__total {
+  margin: 0 0 var(--space-3);
+  font: 800 22px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wl-reveal__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wl-reveal__round {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  padding-left: var(--space-3);
+  border-left: 6px solid var(--wl-sun);
+}
+.wl-reveal__round--moon {
+  border-left-color: var(--wl-moon);
+}
+.wl-reveal__dial .wl-end {
+  font-size: 11px;
+  padding: 3px 5px;
+  outline: none;
+}
+.wl-reveal__text p {
+  margin: 0;
+}
+.wl-reveal__clue {
+  font: 800 24px/1.1 var(--font-display);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-shutter,
+  .wl-needle {
+    transition: none;
+  }
+  .wl-stamp,
+  .wl-tag {
+    animation: none;
+  }
+}
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  button.wl-card {
+    transition: transform 120ms var(--ease-out);
+  }
+  button.wl-card:hover {
+    transform: translateY(-3px);
+  }
+}

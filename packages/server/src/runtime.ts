@@ -22,6 +22,7 @@ import {
   rename,
   resetScores,
   setAvatar,
+  setBotLevel,
   setGame,
   setOptions,
   settleLinked,
@@ -566,7 +567,14 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       case 'react':
         return react(lobby, me, msg.kind, randomString(10, ID_ALPHABET), c);
       case 'addBot':
-        return addBot(lobby, me, { newPlayerId: randomString(10, ID_ALPHABET), palette }, c);
+        return addBot(
+          lobby,
+          me,
+          { newPlayerId: randomString(10, ID_ALPHABET), palette, pick: Math.random() },
+          c,
+        );
+      case 'setBotLevel':
+        return setBotLevel(lobby, me, msg.level, c);
     }
   }
 

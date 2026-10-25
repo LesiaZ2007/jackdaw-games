@@ -1,4 +1,4 @@
-import type { BotContext, Rng } from '@jackdaw/engine';
+import { botSlips, type BotContext, type BotLevel, type Rng } from '@jackdaw/engine';
 import { HITLER_ZONE, LIBERAL_WIN, type Policy } from './lineup';
 import type { ShAction, ShPlayerView, ShTableView } from './rules';
 
@@ -15,8 +15,12 @@ import type { ShAction, ShPlayerView, ShTableView } from './rules';
  *   they blend in.
  * - Hitler plays like a Liberal, mostly, so he looks clean enough to be elected later.
  *
- * Every choice has some noise from `ctx.rng`, and every move is legal from the view.
+ * Every choice has some noise from `ctx.rng`, more the lower its level (an Easy bot also passes
+ * the wrong policy now and then), and every move is legal from the view.
  */
+
+/** How much more noise a bot's choices and votes get by level. */
+const NOISE: Record<BotLevel, number> = { easy: 2.6, normal: 1.6, hard: 1 };
 
 type View = ShPlayerView;
 
@@ -49,11 +53,17 @@ const isHitler = (v: View) => v.myRole === 'hitler';
 const knowsTeam = (v: View) => v.myRole !== 'liberal' && v.known.length > 0;
 
 /** The highest-scoring item, with a little noise so bots don't all play the same. */
-function best<T>(items: T[], score: (x: T) => number, rng: Rng, noise = 0.6): T {
+function best<T>(
+  items: T[],
+  score: (x: T) => number,
+  rng: Rng,
+  noise = 0.6,
+  level: BotLevel = 'hard',
+): T {
   let top = items[0] as T;
   let topScore = -Infinity;
   for (const x of items) {
-    const s = score(x) + (rng.next() - 0.5) * noise;
+    const s = score(x) + (rng.next() - 0.5) * noise * NOISE[level];
     if (s > topScore) {
       topScore = s;
       top = x;
@@ -62,7 +72,7 @@ function best<T>(items: T[], score: (x: T) => number, rng: Rng, noise = 0.6): T 
   return top;
 }
 
-function nominate(v: View, rng: Rng): ShAction {
+function nominate(v: View, rng: Rng, level: BotLevel): ShAction {
   const t = trustScores(v);
   const mates = team(v);
   const hitler = hitlerOf(v);
@@ -81,11 +91,12 @@ function nominate(v: View, rng: Rng): ShAction {
     (id) => t[id]! + (zone && v.notHitler.includes(id) ? 2 : 0),
     rng,
     1.2,
+    level,
   );
   return { type: 'nominate', chancellor };
 }
 
-function vote(v: View, rng: Rng): ShAction {
+function vote(v: View, rng: Rng, level: BotLevel): ShAction {
   const president = v.president;
   const nominee = v.nominee!;
   if (president === v.me || nominee === v.me) return { type: 'vote', ja: true };
@@ -102,13 +113,13 @@ function vote(v: View, rng: Rng): ShAction {
   if (v.tracker >= 2) score += 1.5;
   if (v.myRole === 'liberal' && v.fascist >= HITLER_ZONE && !v.notHitler.includes(nominee))
     score -= t[nominee]! >= 1 ? 0.3 : 1.5;
-  score += (rng.next() - 0.5) * 1.5;
+  score += (rng.next() - 0.5) * 1.5 * NOISE[level];
   return { type: 'vote', ja: score >= 0 };
 }
 
 const has = (hand: Policy[], p: Policy) => hand.includes(p);
 
-function discard(v: View, rng: Rng): ShAction {
+function discard(v: View, rng: Rng, level: BotLevel): ShAction {
   const hand = v.hand;
   const keep = (p: Policy): ShAction => {
     // Discard one of the other kind if there is one; otherwise one of these.
@@ -122,6 +133,8 @@ function discard(v: View, rng: Rng): ShAction {
     return keep('liberal');
   }
   if (isHitler(v) && v.liberal < LIBERAL_WIN - 1 && rng.next() < 0.2) return keep('fascist');
+  // A Liberal's slip: the wrong card thrown away.
+  if (botSlips(level, rng, 0.5)) return keep('fascist');
   return keep('liberal');
 }
 
@@ -151,7 +164,7 @@ function vetoReply(v: View, rng: Rng): ShAction {
   return { type: 'vetoReply', accept: rng.next() < 0.5 };
 }
 
-function power(v: View, rng: Rng): ShAction {
+function power(v: View, rng: Rng, level: BotLevel): ShAction {
   const pending = v.pending!;
   if (pending === 'peek') return { type: 'power' };
   const others = living(v).filter((id) => id !== v.me);
@@ -169,8 +182,8 @@ function power(v: View, rng: Rng): ShAction {
     const pool = open.length > 0 ? open : others;
     // Look into whoever is most in doubt: the least trusted, or (for the team) a Liberal.
     const target = openTeam
-      ? best(pool, (id) => (mates.has(id) ? -5 : 0), rng, 1)
-      : best(pool, (id) => -Math.abs(t[id]! + 0.5) - (t[id]! < 0 ? 0 : 0.5), rng, 1);
+      ? best(pool, (id) => (mates.has(id) ? -5 : 0), rng, 1, level)
+      : best(pool, (id) => -Math.abs(t[id]! + 0.5) - (t[id]! < 0 ? 0 : 0.5), rng, 1, level);
     return { type: 'power', target };
   }
   if (pending === 'special') {
@@ -178,20 +191,23 @@ function power(v: View, rng: Rng): ShAction {
       const pals = others.filter((id) => mates.has(id));
       if (pals.length > 0) {
         const pick = hitler && pals.includes(hitler) && v.fascist >= HITLER_ZONE ? hitler : null;
-        return { type: 'power', target: pick ?? best(pals, () => 0, rng, 1) };
+        return { type: 'power', target: pick ?? best(pals, () => 0, rng, 1, level) };
       }
     }
-    return { type: 'power', target: best(others, (id) => t[id]!, rng, 1) };
+    return { type: 'power', target: best(others, (id) => t[id]!, rng, 1, level) };
   }
   // Execution. The team shoots the most trusted Liberal (never Hitler); a Liberal (or Hitler)
   // shoots the least trusted player.
   if (openTeam) {
     const liberals = others.filter((id) => !mates.has(id));
     if (liberals.length > 0)
-      return { type: 'power', target: best(liberals, (id) => t[id]!, rng, 1) };
-    return { type: 'power', target: best(others, (id) => (id === hitler ? -100 : 0), rng, 0.1) };
+      return { type: 'power', target: best(liberals, (id) => t[id]!, rng, 1, level) };
+    return {
+      type: 'power',
+      target: best(others, (id) => (id === hitler ? -100 : 0), rng, 0.1, level),
+    };
   }
-  return { type: 'power', target: best(others, (id) => -t[id]!, rng, 1) };
+  return { type: 'power', target: best(others, (id) => -t[id]!, rng, 1, level) };
 }
 
 /** The bot's next move, or null when the game isn't waiting on it. */
@@ -199,20 +215,21 @@ export function shBot(ctx: BotContext<ShPlayerView, ShTableView>): ShAction | nu
   const v = ctx.view;
   const me = ctx.playerId;
   const rng = ctx.rng;
+  const level = ctx.level;
   if (v.phase === 'over' || v.myRole === null || v.dead.includes(me)) return null;
   switch (v.phase) {
     case 'nominate':
-      return me === v.president && v.eligible.length > 0 ? nominate(v, rng) : null;
+      return me === v.president && v.eligible.length > 0 ? nominate(v, rng, level) : null;
     case 'vote':
-      return v.myVote === null ? vote(v, rng) : null;
+      return v.myVote === null ? vote(v, rng, level) : null;
     case 'president':
-      return me === v.president && v.hand.length === 3 ? discard(v, rng) : null;
+      return me === v.president && v.hand.length === 3 ? discard(v, rng, level) : null;
     case 'chancellor':
       return me === v.nominee && v.hand.length === 2 ? legislate(v, rng) : null;
     case 'veto':
       return me === v.president ? vetoReply(v, rng) : null;
     case 'power':
-      return me === v.president && v.pending ? power(v, rng) : null;
+      return me === v.president && v.pending ? power(v, rng, level) : null;
     case 'post':
       return me === v.president ? { type: 'endTerm' } : null;
   }

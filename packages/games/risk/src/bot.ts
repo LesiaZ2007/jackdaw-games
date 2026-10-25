@@ -1,4 +1,4 @@
-import type { BotContext } from '@jackdaw/engine';
+import { botChoose, botSlips, type BotContext, type BotLevel, type Rng } from '@jackdaw/engine';
 import { NEUTRAL, reachable, territoriesOf } from './board';
 import { allSets, bestSet } from './cards';
 import { getMap, type MapDef } from './maps';
@@ -21,6 +21,9 @@ import type { RiskAction, RiskTableView, RiskView } from './rules';
  *
  * Every attack costs armies and every turn ends with a fortify or End turn, so a turn always
  * finishes and the game moves on.
+ *
+ * By level: below Hard it sometimes stages on a lesser border, attacks a lesser target, or calls
+ * off its attacks early, so it can still win but doesn't play like a machine.
  */
 export function riskBot(ctx: BotContext<RiskView, RiskTableView>): RiskAction | null {
   const { playerId: me, view, rng } = ctx;
@@ -28,7 +31,7 @@ export function riskBot(ctx: BotContext<RiskView, RiskTableView>): RiskAction | 
   if (!view || t.phase === 'over' || !t.seats.includes(me) || t.eliminated.includes(me))
     return null;
   const map = getMap(t.map);
-  const b = new Brain(map, t, view, me, rng.shuffle(territoriesOf(t.owner, me)));
+  const b = new Brain(map, t, view, me, rng.shuffle(territoriesOf(t.owner, me)), rng, ctx.level);
 
   if (t.phase === 'draft') {
     if (view.draft || view.draftLeft <= 0) return null;
@@ -71,6 +74,8 @@ class Brain {
     private readonly me: string,
     /** Own territories, shuffled so ties break differently from game to game. */
     private readonly mine: string[],
+    private readonly rng: Rng,
+    private readonly level: BotLevel,
   ) {
     for (const x of map.territories) {
       this.continentOf.set(x.id, x.continent);
@@ -128,7 +133,7 @@ class Brain {
     if (n <= 0) return {};
     const fronts = this.fronts();
     const pool = fronts.length ? fronts : this.mine;
-    const best = [...pool].sort((a, b) => this.staging(b, n) - this.staging(a, n))[0]!;
+    const best = botChoose(pool, (x) => this.staging(x, n), this.level, this.rng);
     const out: Record<string, number> = {};
     const guard = n >= 6 ? Math.floor(n / 3) : 0;
     const threatened = [...pool]
@@ -143,18 +148,19 @@ class Brain {
 
   /** The attack worth making now, if there's one with a clear edge. */
   bestAttack(): { from: string; to: string; mode: 'roll' | 'blitz' } | null {
-    let pick: { from: string; to: string; score: number; edge: number } | null = null;
+    const options: { from: string; to: string; score: number; edge: number }[] = [];
     for (const from of this.mine) {
       const a = this.armies(from);
       if (a < 3) continue;
       for (const to of this.enemies(from)) {
         const edge = a - this.armies(to);
         if (edge < 2) continue;
-        const score = edge + 2 * this.want(to);
-        if (!pick || score > pick.score) pick = { from, to, score, edge };
+        options.push({ from, to, score: edge + 2 * this.want(to), edge });
       }
     }
-    if (!pick) return null;
+    // Calling it a day early now and then (more often the lower the level).
+    if (!options.length || botSlips(this.level, this.rng, 0.6)) return null;
+    const pick = botChoose(options, (o) => o.score, this.level, this.rng);
     const blitz = pick.edge >= 3 || this.armies(pick.to) <= 2;
     return { from: pick.from, to: pick.to, mode: blitz ? 'blitz' : 'roll' };
   }

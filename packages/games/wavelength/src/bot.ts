@@ -1,4 +1,4 @@
-import type { BotContext, Rng } from '@jackdaw/engine';
+import { botChoose, type BotContext, type BotLevel, type Rng } from '@jackdaw/engine';
 import { cluesFor } from './clues';
 import {
   MIDDLE,
@@ -18,7 +18,13 @@ import type { Spectrum } from './spectrums';
  * little wobble, as a person's hand has. On a shared dial the first bot to move sets it and the
  * rest agree, so bots never tug the dial back and forth. The other team calls left or right by
  * where it would have put the dial.
+ *
+ * By level: an Easy bot's hand wobbles most and its psychic settles for a looser clue more often;
+ * a Hard one is steady and picks the nearest clue almost every time.
  */
+
+/** How far a bot's hand wobbles on the dial, at most. */
+const WOBBLE: Record<BotLevel, number> = { easy: 16, normal: 10, hard: 6 };
 
 const clean = (s: string) =>
   s
@@ -47,23 +53,22 @@ export function placeClue(spectrum: Spectrum, clue: string): number | null {
 }
 
 /** Where this bot would turn the dial for the round's clue. */
-function estimate(view: WavelengthPlayerView, rng: Rng): number {
+function estimate(view: WavelengthPlayerView, rng: Rng, level: BotLevel): number {
   const r = view.round;
   const spectrum = r.spectrums[r.card ?? 0];
   const spot = placeClue(spectrum, r.clue ?? '');
-  return clamp(spot === null ? 30 + rng.next() * 40 : spot + wobble(rng, 7));
+  return clamp(spot === null ? 30 + rng.next() * 40 : spot + wobble(rng, WOBBLE[level]));
 }
 
-function giveClue(view: WavelengthPlayerView, rng: Rng): WavelengthAction {
+function giveClue(view: WavelengthPlayerView, rng: Rng, level: BotLevel): WavelengthAction {
   const target = view.target ?? MIDDLE;
-  const picks = ([0, 1] as const).map((card) => {
-    const options = cluesFor(view.round.spectrums[card]);
-    let best = options[0];
-    for (const o of options) if (Math.abs(o.at - target) < Math.abs(best!.at - target)) best = o;
-    return { card, clue: best, off: best ? Math.abs(best.at - target) : Infinity };
-  });
-  const [a, b] = picks as [(typeof picks)[0], (typeof picks)[0]];
-  const pick = a.off < b.off ? a : b.off < a.off ? b : rng.pick(picks);
+  // Every known clue on either card, the nearest to the target the likeliest.
+  const picks = ([0, 1] as const).flatMap((card) =>
+    cluesFor(view.round.spectrums[card]).map((clue) => ({ card, clue })),
+  );
+  const pick = picks.length
+    ? botChoose(picks, (p) => -Math.abs(p.clue.at - target) + rng.next() * 0.1, level, rng)
+    : { card: rng.pick([0, 1] as const), clue: undefined };
   if (pick.clue) return { type: 'clue', card: pick.card, text: pick.clue.text };
   // A card the table doesn't know (never, while clues.test.ts passes): name the nearer end.
   const [left, right] = view.round.spectrums[pick.card];
@@ -80,14 +85,15 @@ export function wavelengthBot(
   const { view, rng, playerId: me } = ctx;
   const r = view.round;
 
-  if (view.phase === 'clue') return r.psychic === me ? giveClue(view, rng) : null;
+  if (view.phase === 'clue') return r.psychic === me ? giveClue(view, rng, ctx.level) : null;
 
   if (view.phase === 'guess') {
     if (!view.guessers.includes(me) || r.locks.includes(me)) return null;
-    if (view.guessing === 'average') return { type: 'lock', on: true, at: estimate(view, rng) };
+    if (view.guessing === 'average')
+      return { type: 'lock', on: true, at: estimate(view, rng, ctx.level) };
     // Shared dial: the first to touch it sets it, everyone after agrees with what's there.
     if (r.dialSeq === 0) {
-      const at = estimate(view, rng);
+      const at = estimate(view, rng, ctx.level);
       if (Math.abs(at - r.dial) >= 0.5) return { type: 'dial', at };
     }
     return { type: 'lock', on: true, at: r.dial };
@@ -100,7 +106,7 @@ export function wavelengthBot(
     const left = made.filter((c) => c === 'left').length;
     const right = made.length - left;
     if (left !== right) return { type: 'call', side: left > right ? 'left' : 'right' };
-    const mine = estimate(view, rng);
+    const mine = estimate(view, rng, ctx.level);
     const side =
       mine < r.guess ? 'left' : mine > r.guess ? 'right' : rng.pick(['left', 'right'] as const);
     return { type: 'call', side };

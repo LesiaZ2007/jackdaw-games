@@ -11,13 +11,14 @@ import {
 } from '@jackdaw/ui';
 import type { CSSProperties } from 'react';
 import type { Reaction } from '@jackdaw/engine';
-import { getMap, type MapDef, type MapId } from '../maps';
+import { getMap, type MapDef } from '../maps';
+import { MAPS_BY_NAME } from '../rules';
 import { ARMY_NAME, armyOf } from './armies';
 import './risk.css';
 
-/** The chosen board (the options store "World" / "Realm"). */
+/** The chosen board (the options store its name: "World", "Twin Crowns"…). */
 const mapFor = (options: Record<string, unknown>): MapDef =>
-  getMap(String(options.map ?? 'World').toLowerCase() === 'realm' ? 'realm' : ('world' as MapId));
+  getMap(MAPS_BY_NAME[String(options.map) as keyof typeof MAPS_BY_NAME] ?? 'world');
 
 /** The board as a faint engraving behind the banners: land, continents and coast, no armies. */
 function Engraving({ map }: { map: MapDef }) {

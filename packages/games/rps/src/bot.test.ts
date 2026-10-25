@@ -22,6 +22,7 @@ function playOut(count: number, rounds: number, seed: number) {
         tableView,
         rng,
         now: 0,
+        level: 'hard',
       });
       if (!action) continue;
       rps.actionSchema.parse(action);

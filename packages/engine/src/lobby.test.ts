@@ -20,6 +20,7 @@ import {
   runTimers,
   setAvatar,
   setGame,
+  setBotLevel,
   setOptions,
   snapshotFor,
   start,
@@ -570,11 +571,53 @@ describe('computer players', () => {
     // Jay goes first, so no bot is due yet.
     expect(snapshotFor(lobby, 'p1', {}, bctx(1_000)).timerAt).toBeUndefined();
     lobby = add(lobby, 2_000);
-    expect(snapshotFor(lobby, 'p1', {}, bctx(2_000)).timerAt).toBe(2_000 + BOT_DELAY_MS);
-    expect(runTimers(lobby, bctx(2_500))).toBe(lobby);
-    const after = runTimers(lobby, bctx(3_200));
+    // A person's uneven pace: 0.8 to 1.8 times the delay, the same on every read.
+    const at = snapshotFor(lobby, 'p1', {}, bctx(2_000)).timerAt!;
+    expect(at).toBeGreaterThanOrEqual(2_000 + BOT_DELAY_MS * 0.8);
+    expect(at).toBeLessThanOrEqual(2_000 + BOT_DELAY_MS * 1.8);
+    expect(snapshotFor(lobby, 'p1', {}, bctx(2_100)).timerAt).toBe(at);
+    expect(runTimers(lobby, bctx(at - 1))).toBe(lobby);
+    const after = runTimers(lobby, bctx(at));
     expect((after.session!.state as S).log).toEqual(['p1', 'b1']);
-    expect(after.session!.movedAt).toBe(3_200);
+    expect(after.session!.movedAt).toBe(at);
+  });
+
+  it('draws bot names at random from the free birds', () => {
+    const named = (pick: number) =>
+      addBot(seated(), 'p1', { newPlayerId: 'b2', palette, pick }, bctx()).players[2]!.name;
+    expect(named(0)).toBe('Bot Rook');
+    expect(named(0.999)).toBe('Bot Dunnock');
+    expect(new Set([0.1, 0.3, 0.5, 0.7, 0.9].map(named)).size).toBe(5);
+  });
+
+  it('the host sets one level for every bot, any time, and the bots play at it', () => {
+    let lobby = seated();
+    expect(snapshotFor(lobby, 'p1', {}, bctx()).botLevel).toBe('normal');
+    expect(() => setBotLevel(lobby, 'b1', 'hard', bctx())).toThrow(/host/);
+    lobby = setBotLevel(lobby, 'p1', 'hard', bctx());
+    expect(snapshotFor(lobby, 'p1', {}, bctx()).botLevel).toBe('hard');
+    expect(setBotLevel(lobby, 'p1', 'hard', bctx())).toBe(lobby);
+
+    const levels: string[] = [];
+    const g = {
+      botty: {
+        ...botty,
+        bot: (c: { view: { myTurn: boolean }; level: string }) => {
+          levels.push(c.level);
+          return c.view.myTurn ? { type: 'add' as const } : null;
+        },
+      },
+    };
+    let game = start(seated(), 'p1', { sessionId: 's1', seed: 3 }, { now: 0, games: g });
+    game = setBotLevel(game, 'p1', 'easy', { now: 0, games: g });
+    game = applyGameAction(
+      game,
+      'p1',
+      { sessionId: 's1', seq: 0, action: { type: 'add' } },
+      { now: 0, games: g },
+    );
+    runTimers(game, { now: 60_000, games: g });
+    expect(levels.at(-1)).toBe('easy');
   });
 
   it('a bot whose move is refused sits out until the game moves on', () => {

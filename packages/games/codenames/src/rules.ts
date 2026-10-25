@@ -487,7 +487,7 @@ export const codenames: GameModule<
 
   bot: codenamesBot,
   /** A beat longer than the default, so people can read a bot's clue and see its suggestion. */
-  botDelayMs: 1600,
+  botDelayMs: 2600,
 
   /** Each clue goes in the chat, so people across the room can read it too. */
   announce(prev, next) {

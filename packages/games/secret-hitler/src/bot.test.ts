@@ -23,6 +23,7 @@ function playOut(n: number, seed: number, options: ShOptions = defaultOptions())
         tableView: game.getTableView(s),
         rng,
         now: 0,
+        level: 'hard',
       });
       if (!action) continue;
       const next = game.applyAction(s, id, action, rng, 0);
@@ -75,6 +76,7 @@ describe('the bot', () => {
           tableView: game.getTableView(s),
           rng,
           now: 0,
+          level: 'hard',
         }),
       ).toBe(null);
   });
@@ -97,6 +99,7 @@ describe('the bot', () => {
       tableView: game.getTableView(s),
       rng,
       now: 0,
+      level: 'hard',
     });
     expect(action).toEqual({ type: 'nominate', chancellor: 'p1' });
   });

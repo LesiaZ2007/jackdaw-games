@@ -155,9 +155,11 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         </p>
       </header>
       <Scores t={v} players={players} me={v.me} reactions={reactions} />
-      {/* Keyed by the move count, so a new turn starts with your tiles back on the rack. */}
+      {/* Keyed by the move count, so a new turn starts with your tiles back on the rack. Its key
+          differs from the meaning popup's below: siblings sharing a key left a stale rack on screen
+          after a bot played a word (2026-10-24: "letters appear on top of other letters"). */}
       <Turn
-        key={v.moves.length}
+        key={`turn-${v.moves.length}`}
         v={v}
         myTurn={myTurn}
         partner={partner ? name(partner) : undefined}
@@ -167,7 +169,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       />
       {meaning && (
         <MeaningPopup
-          key={v.moves.length}
+          key={`meaning-${v.moves.length}`}
           move={meaning}
           who={meaning.player === v.me ? 'You' : name(meaning.player)}
           onDone={dismiss}

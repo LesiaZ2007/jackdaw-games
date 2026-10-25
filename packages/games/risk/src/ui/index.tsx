@@ -42,6 +42,9 @@ export const riskUi: GameUi = {
     map: {
       World: 'The classic board: 42 territories over six continents.',
       Realm: 'Jackdaw’s own island kingdom: 42 provinces, six regions, a few sea crossings.',
+      Skerries: 'An archipelago: 42 territories on fifteen islands, every group reached by sea.',
+      'Twin Crowns':
+        'Two kingdoms facing each other across a strait, joined only by four stepping stones.',
     },
     goal: {
       'Secret missions':

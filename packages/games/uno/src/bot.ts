@@ -1,4 +1,4 @@
-import type { BotContext, Rng } from '@jackdaw/engine';
+import { botChoose, botSlips, type BotContext, type BotLevel, type Rng } from '@jackdaw/engine';
 import { COLOURS, cardOf, isWild, points, type Colour } from './cards';
 import { playable, type UnoAction, type UnoPlayerView, type UnoTableView } from './rules';
 
@@ -10,18 +10,24 @@ import { playable, type UnoAction, type UnoPlayerView, type UnoTableView } from 
  * choice, names the colour it holds most of, passes draw cards on when stacking is allowed, and
  * sometimes challenges a Wild Draw Four from a player with several cards left.
  *
+ * Below Hard it's more human (2026-10-24: "a bit more randomized but still can win"): it
+ * sometimes plays a weaker card than its best, now and then forgets to call UNO, and misses
+ * someone else's forgotten call more often.
+ *
  * A function declaration: rules.ts imports this file and this file imports rules.ts.
  */
 export function unoBot(ctx: BotContext<UnoPlayerView, UnoTableView>): UnoAction | null {
-  const { playerId: me, view: v, rng } = ctx;
+  const { playerId: me, view: v, rng, level } = ctx;
   if (v.phase !== 'play' || !v.players.includes(me)) return null;
-  if (v.uncalled && v.uncalled !== me) return { type: 'catch' };
-  if (v.hand.length === 1 && !v.called.includes(me)) return { type: 'call' };
+  // The draws are the same until the game moves on, so a miss or a slip holds for this moment.
+  if (v.uncalled && v.uncalled !== me && !botSlips(level, rng, 2)) return { type: 'catch' };
+  const forgets = botSlips(level, rng);
+  if (v.hand.length === 1 && !v.called.includes(me) && !forgets) return { type: 'call' };
   if (v.toAct !== me) return null;
 
   const options = playable(v);
   if (v.pending) {
-    if (options.length) return playCard(v, best(v, options, rng), rng);
+    if (options.length) return playCard(v, best(v, options, rng, level), rng, forgets);
     const from = v.counts[v.pending.from] ?? 0;
     if (v.pending.wild4 && from >= 3 && rng.next() < 0.5) return { type: 'challenge' };
     return { type: 'draw' };
@@ -29,10 +35,10 @@ export function unoBot(ctx: BotContext<UnoPlayerView, UnoTableView>): UnoAction 
   if (v.drawn !== null) {
     // Keep a drawn Wild Draw Four rather than bluff it.
     if (cardOf(v.drawn).face === 'wild4' && holdsColour(v, v.drawn)) return { type: 'pass' };
-    return playCard(v, v.drawn, rng);
+    return playCard(v, v.drawn, rng, forgets);
   }
   if (!options.length) return { type: 'draw' };
-  return playCard(v, best(v, options, rng), rng);
+  return playCard(v, best(v, options, rng, level), rng, forgets);
 }
 
 /** Holding something in the colour in play, besides `except`: a Wild Draw Four would be a bluff. */
@@ -47,7 +53,7 @@ function nextSeat(v: UnoPlayerView): string {
 }
 
 /** The card to play: the costliest to be caught with, action cards on a player close to out. */
-function best(v: UnoPlayerView, options: number[], rng: Rng): number {
+function best(v: UnoPlayerView, options: number[], rng: Rng, level: BotLevel): number {
   const threat = (v.counts[nextSeat(v)] ?? 7) <= 2;
   const most = favourite(v.hand, null, rng);
   const score = (id: number) => {
@@ -61,8 +67,9 @@ function best(v: UnoPlayerView, options: number[], rng: Rng): number {
     if (colour === most) n += 2;
     return n + rng.next() * 0.5;
   };
-  const scored = options.map((id) => ({ id, n: score(id) }));
-  return scored.reduce((a, b) => (b.n > a.n ? b : a)).id;
+  // Never a bluffed Wild Draw Four by mistake: a weaker pick is still an honest one.
+  const honest = options.filter((id) => score(id) > -40);
+  return botChoose(honest.length ? honest : options, score, level, rng);
 }
 
 /** The colour held most (ignoring `except` and the wilds); a random one when there's none. */
@@ -76,8 +83,8 @@ function favourite(hand: number[], except: number | null, rng: Rng): Colour {
   return rng.pick(COLOURS.filter((c) => count[c] === top));
 }
 
-function playCard(v: UnoPlayerView, card: number, rng: Rng): UnoAction {
-  const call = v.hand.length === 2;
+function playCard(v: UnoPlayerView, card: number, rng: Rng, forgets = false): UnoAction {
+  const call = v.hand.length === 2 && !forgets;
   return isWild(card)
     ? { type: 'play', card, colour: favourite(v.hand, card, rng), call }
     : { type: 'play', card, call };

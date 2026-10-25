@@ -1,4 +1,4 @@
-import { createRng } from '@jackdaw/engine';
+import { createRng, type BotLevel } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
 import { codenamesBot, readClue } from './bot';
 import {
@@ -17,7 +17,7 @@ import { WORDS } from './words';
 const birds = ['wren', 'rook', 'magpie', 'robin', 'finch', 'heron', 'swift', 'kite', 'crow'];
 const ids = (n: number) => Array.from({ length: n }, (_, i) => birds[i] ?? `bird${i}`);
 
-const ask = (s: CodenamesState, id: string, seed: number) =>
+const ask = (s: CodenamesState, id: string, seed: number, level: BotLevel = 'hard') =>
   codenamesBot({
     playerId: id,
     playerIds: s.players,
@@ -25,10 +25,16 @@ const ask = (s: CodenamesState, id: string, seed: number) =>
     tableView: codenames.getTableView(s),
     rng: createRng(seed),
     now: 0,
+    level,
   });
 
 /** Plays a whole game with a bot in every seat, as the platform would: whoever it waits on. */
-function playOut(players: string[], options: CodenamesOptions, seed: number) {
+function playOut(
+  players: string[],
+  options: CodenamesOptions,
+  seed: number,
+  level: BotLevel = 'hard',
+) {
   let s = codenames.setup({ playerIds: players, options, rng: createRng(seed), now: 0 });
   const clues: string[] = [];
   let moves = 0;
@@ -36,7 +42,7 @@ function playOut(players: string[], options: CodenamesOptions, seed: number) {
     if (++moves > 600) throw new Error(`no finish after 600 moves (seed ${seed})`);
     let acted = false;
     for (const id of codenames.waitingOn!(s)) {
-      const action = ask(s, id, seed * 1000 + moves);
+      const action = ask(s, id, seed * 1000 + moves, level);
       if (!action) continue;
       if (action.type === 'clue') {
         expect(clueProblem(action.word)).toBeNull();
@@ -97,6 +103,29 @@ describe('Codenames bots', () => {
       if (playOut(ids(6), defaultOptions(), seed).s.how === 'words') byWords++;
     }
     expect(byWords).toBeGreaterThan(24);
+  });
+
+  it('guess wrong now and then below Hard, more often at Easy', () => {
+    const missRate = (level: BotLevel) => {
+      let wrong = 0;
+      let all = 0;
+      for (let seed = 1; seed <= 30; seed++) {
+        const { s } = playOut(ids(6), defaultOptions(), seed, level);
+        for (const c of s.clues)
+          for (const g of c.guesses) {
+            all++;
+            if (g.card !== c.team) wrong++;
+          }
+      }
+      return wrong / all;
+    };
+    const [easy, normal, hard] = (['easy', 'normal', 'hard'] as const).map(missRate) as [
+      number,
+      number,
+      number,
+    ];
+    expect(easy).toBeGreaterThan(normal);
+    expect(normal).toBeGreaterThan(hard);
   });
 
   it('gives theme clues for several words', () => {

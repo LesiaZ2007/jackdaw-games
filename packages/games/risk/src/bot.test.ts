@@ -14,6 +14,7 @@ function botMove(s: RiskState, pid: string, rng: Rng, now: number): RiskAction |
     tableView: game.getTableView(s),
     rng,
     now,
+    level: 'hard',
   });
 }
 

@@ -1,5 +1,6 @@
 import {
   GameError,
+  type BotLevel,
   type GameModule,
   type GameResult,
   type RecapEvent,
@@ -85,16 +86,24 @@ function tableView(state: RpsState): RpsTableView {
   };
 }
 
+/** How often a bot plays against last round's throws, by level (an Easy one never does). */
+const LEAN: Record<BotLevel, number> = { easy: 0, normal: 0.35, hard: 0.5 };
+
 /**
  * A computer player's throw (2026-10-24: "play against bots"), from its own view only. It
  * throws once a round and then waits. Usually it picks at random; now and then it leans against
  * what the others threw last round (people often throw the same again), so it plays the throw
  * that would have beaten the most of them. Randomness only from `rng`.
  */
-export function botPick(v: RpsPlayerView, me: string, rng: Rng): RpsAction | null {
+export function botPick(
+  v: RpsPlayerView,
+  me: string,
+  rng: Rng,
+  level: BotLevel = 'normal',
+): RpsAction | null {
   if (v.round > v.rounds || v.myPick || !v.players.includes(me)) return null;
   const last = v.history[v.history.length - 1];
-  if (last && rng.next() < 0.35) {
+  if (last && rng.next() < LEAN[level]) {
     const theirs = Object.entries(last.picks)
       .filter(([id]) => id !== me)
       .map(([, p]) => p);
@@ -204,5 +213,5 @@ export const rps: GameModule<RpsState, RpsAction, RpsPlayerView, RpsTableView, R
     );
   },
 
-  bot: ({ view, playerId, rng }) => botPick(view, playerId, rng),
+  bot: ({ view, playerId, rng, level }) => botPick(view, playerId, rng, level),
 };

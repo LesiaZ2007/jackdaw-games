@@ -704,7 +704,8 @@ export const BOT_DELAY_MS = 2_000;
  * state without moving it, so every read agrees on when the bot moves.
  */
 function botDelay(game: AnyGameModule, session: Session): number {
-  const base = game.botDelayMs ?? BOT_DELAY_MS;
+  const pace = game.botDelayMs;
+  const base = typeof pace === 'function' ? pace(session.state) : (pace ?? BOT_DELAY_MS);
   const u = createRng((session.rngState ^ Math.imul(session.seq + 1, 0x9e3779b1)) >>> 0).next();
   return Math.round(base * (0.8 + u));
 }

@@ -620,6 +620,20 @@ describe('computer players', () => {
     expect(levels.at(-1)).toBe('easy');
   });
 
+  it('a game can set its bots’ pace from the state', () => {
+    const g = { botty: { ...botty, botDelayMs: (s: S) => (s.count > 0 ? 10_000 : 100) } };
+    let lobby = start(seated(), 'p1', { sessionId: 's1', seed: 3 }, { now: 0, games: g });
+    lobby = applyGameAction(
+      lobby,
+      'p1',
+      { sessionId: 's1', seq: 0, action: { type: 'add' } },
+      { now: 0, games: g },
+    );
+    const at = nextTimerAt(lobby, { games: g, now: 0 })!;
+    expect(at).toBeGreaterThanOrEqual(8_000);
+    expect(at).toBeLessThanOrEqual(18_000);
+  });
+
   it('a bot whose move is refused sits out until the game moves on', () => {
     const g = { botty: { ...botty, bot: () => ({ type: 'add' as const }) } };
     let lobby = start(seated(), 'p1', { sessionId: 's1', seed: 3 }, { now: 1_000, games: g });

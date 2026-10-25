@@ -169,9 +169,10 @@ export interface GameModule<State, Action, View, TableView, Options> {
   bot?(ctx: BotContext<View, TableView>): Action | null;
   /**
    * How long a bot waits after the last move before making its own, in ms (default 2000). Each
-   * move takes between 0.8 and 1.8 times this, so bots keep a person's uneven pace.
+   * move takes between 0.8 and 1.8 times this, so bots keep a person's uneven pace. A function
+   * gets the state, for a game that wants longer after some moves (Catan, after a roll).
    */
-  botDelayMs?: number;
+  botDelayMs?: number | ((state: State) => number);
 
   /** Played in another app through a `GameLink` registered with the runtime (see GameLink). */
   linked?: boolean;

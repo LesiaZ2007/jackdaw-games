@@ -672,3 +672,13 @@
     animation: none;
   }
 }
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .pk-dock__presets button:not(:disabled):hover,
+  .pk-stepper button:not(:disabled):hover {
+    transform: translateY(-2px);
+    transition: transform 120ms var(--ease-out);
+  }
+}

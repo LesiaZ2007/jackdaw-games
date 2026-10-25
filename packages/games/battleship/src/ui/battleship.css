@@ -433,10 +433,10 @@ button.bs-cell:focus-visible {
 .bs-smoke {
   position: absolute;
   z-index: 5;
-  left: calc((var(--col) + 0.78) * 10%);
-  top: calc((var(--row) + 0.02) * 10%);
-  width: 5.5%;
-  height: 7%;
+  left: calc((var(--col) + 0.68) * 10%);
+  top: calc((var(--row) + 0.18) * 10%);
+  width: 3.4%;
+  height: 4.6%;
   transform: translate(-50%, 0);
   pointer-events: none;
   color: var(--bs-ink);

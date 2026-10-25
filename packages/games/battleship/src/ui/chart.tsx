@@ -37,20 +37,12 @@ const HULL_H: Record<ShipId, string> = {
   carrier:
     'M2 15 C12 8 20 4 32 4 H93 C97 4 99 8 99 12 V20 C99 24 97 26 93 26 H84 V31 H66 V26 H32 C20 26 12 22 2 15 Z',
   battleship:
-    'M1 16 C8 10 14 6 22 5 C28 4 32 2 38 2 C44 2 46 5 52 5 C56 4 58 2 64 2 C70 2 72 5 78 5 C84 4 88 6 94 11 C98 15 98 17 94 21 C88 26 84 28 78 27 C72 27 70 30 64 30 C58 30 56 28 52 27 C46 27 44 30 38 30 C32 30 28 28 22 27 C14 26 8 22 1 16 Z',
+    'M1 16 C6 11 10 7 16 6 C20 5 24 1 32 1 C40 1 42 6 48 6 C52 5 54 1 62 1 C70 1 72 6 78 6 C82 5 86 2 92 2 C98 2 99 8 99 16 C99 24 98 30 92 30 C86 30 82 27 78 26 C72 26 70 31 62 31 C54 31 52 27 48 26 C42 26 40 31 32 31 C24 31 20 27 16 26 C10 25 6 21 1 16 Z',
   cruiser:
-    'M0 16 C14 8 24 4 36 3 C44 2 48 1 54 1 C60 1 62 3 70 4 H86 C94 6 99 11 99 16 C99 21 94 26 86 27 H70 C62 29 60 31 54 31 C48 31 44 29 36 29 C24 28 14 24 0 16 Z',
+    'M0 16 C16 7 28 3 40 3 C46 3 48 0 56 0 C64 0 66 3 74 4 H84 C92 6 99 11 99 16 C99 22 94 27 84 28 H74 C66 29 64 32 56 32 C48 32 46 29 40 29 C28 29 16 25 0 16 Z',
   submarine:
-    'M18 16 C18 8 26 4 38 4 H42 V1 H56 V4 H74 C88 4 98 9 98 16 C98 23 88 28 74 28 H38 C26 28 18 24 18 16 Z',
-  destroyer: 'M0 16 C5 10 12 4 22 3 H76 L84 8 H99 V24 H84 L76 29 H22 C12 28 5 22 0 16 Z',
-};
-
-/** Engraved marks so the silhouette reads as that ship. Stroke only. */
-const HULL_LINE: Partial<Record<ShipId, string>> = {
-  carrier: 'M24 15 H90 M66 26 V31 M84 26 V31',
-  battleship: 'M35 8 V24 M32 16 H44 M61 8 V24 M58 16 H70 M83 9 V23 M80 16 H90',
-  cruiser: 'M51 6 V26 M46 16 H58',
-  destroyer: 'M30 9 V23 M26 16 H36',
+    'M8 16 C8 8 16 5 28 5 H36 V0 H58 V5 H78 C90 5 99 10 99 16 C99 22 90 27 78 27 H28 C16 27 8 24 8 16 Z',
+  destroyer: 'M0 16 C3 11 8 5 18 3 H68 L76 8 H99 V24 H76 L68 29 H18 C8 27 3 21 0 16 Z',
 };
 
 export interface HullDraw {
@@ -326,7 +318,6 @@ export function Chart({
 
 function HullGlyph({ id, dir }: { id: ShipId; dir: Dir }) {
   const horizontal = dir === 'h';
-  const line = HULL_LINE[id];
   return (
     <svg
       className="bs-hull__shape"
@@ -335,7 +326,6 @@ function HullGlyph({ id, dir }: { id: ShipId; dir: Dir }) {
       aria-hidden="true"
     >
       <path d={horizontal ? HULL_H[id] : upright(HULL_H[id])} />
-      {line && <path className="bs-hull__line" d={horizontal ? line : upright(line)} />}
     </svg>
   );
 }

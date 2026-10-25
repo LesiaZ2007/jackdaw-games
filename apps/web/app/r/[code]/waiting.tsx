@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import {
+  BOT_LEVELS,
+  BOT_LEVEL_NAMES,
   MAX_PLAYERS,
   startBlocker,
   type ClientMessage,
@@ -71,6 +73,45 @@ function useSeatStyle(want: string): string {
     });
   }, [want, shown, settled]);
   return shown;
+}
+
+/**
+ * How well the bots play, one level for every bot at the table (Lesia, 2026-10-24: "game wide,
+ * not bot specific"). The host picks Easy, Normal or Hard; everyone else sees which.
+ */
+function BotLevel({
+  level,
+  send,
+}: {
+  level: LobbySnapshot['botLevel'];
+  /** Only the host's copy can change it. */
+  send?: (m: ClientMessage) => Promise<LobbySnapshot | null>;
+}) {
+  const id = useId();
+  return (
+    <div className="bot-level">
+      <span className="jd-label" id={id}>
+        Bots play
+      </span>
+      {send ? (
+        <span className="options__choices" role="radiogroup" aria-labelledby={id}>
+          {BOT_LEVELS.map((l) => (
+            <button
+              key={l}
+              type="button"
+              role="radio"
+              aria-checked={level === l}
+              onClick={() => void send({ type: 'setBotLevel', level: l })}
+            >
+              {BOT_LEVEL_NAMES[l]}
+            </button>
+          ))}
+        </span>
+      ) : (
+        <b>{BOT_LEVEL_NAMES[level]}</b>
+      )}
+    </div>
+  );
 }
 
 /** Mirror the server's start check, so the button explains itself before anyone taps it. */
@@ -260,6 +301,9 @@ export function Waiting({
               )}
             </div>
           )}
+          {s.players.some((p) => p.bot) && (
+            <BotLevel level={s.botLevel} send={isHost ? send : undefined} />
+          )}
           {mine && (
             <ReactionBar
               className="waiting__react"
@@ -378,6 +422,7 @@ export function Waiting({
                     : `${other.name} is away from their phone.`}
               </span>
             </div>
+            {other.bot && <BotLevel level={s.botLevel} send={send} />}
             <Plaque
               className="seat-sheet__remove"
               onClick={() =>
@@ -403,6 +448,7 @@ export function Waiting({
       </Sheet>
 
       <Sheet open={managing} onClose={() => setManaging(false)} title="Manage players">
+        {s.players.some((p) => p.bot) && <BotLevel level={s.botLevel} send={send} />}
         <ul className="manage">
           {s.players
             .filter((p) => p.id !== s.me)

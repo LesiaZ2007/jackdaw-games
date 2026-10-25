@@ -37,6 +37,35 @@ export function cellName(cell: number): string {
   return `${'ABCDEFGHIJ'[col] ?? '?'}${row + 1}`;
 }
 
+/**
+ * Squares a hover would cover, bow at `at`. A ship that hangs off keeps the squares that
+ * still lie on the chart, and `illegal` is set. Overlap with `taken` is illegal too.
+ * This is a placement preview only. It is not a fleet and it is not sent anywhere.
+ */
+export function aimSquares(
+  at: number,
+  dir: Dir,
+  len: number,
+  taken: ReadonlySet<number>,
+): { cells: number[]; illegal: boolean } | null {
+  if (!Number.isInteger(at) || at < 0 || at >= CELLS) return null;
+  const row = Math.floor(at / GRID);
+  const col = at % GRID;
+  const cells: number[] = [];
+  let hung = false;
+  for (let i = 0; i < len; i++) {
+    const r = dir === 'v' ? row + i : row;
+    const c = dir === 'h' ? col + i : col;
+    if (r >= GRID || c >= GRID) {
+      hung = true;
+      break;
+    }
+    cells.push(r * GRID + c);
+  }
+  if (cells.length === 0) return null;
+  return { cells, illegal: hung || cells.some((cell) => taken.has(cell)) };
+}
+
 /** The cells a ship covers, or null if it would leave the chart. */
 export function span(at: number, dir: Dir, len: number): number[] | null {
   if (!Number.isInteger(at) || at < 0 || at >= CELLS) return null;

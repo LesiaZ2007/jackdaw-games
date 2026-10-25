@@ -91,10 +91,21 @@ is `1000` minus the winner's shots, so fewer shots rank higher.
 
 ## Screens
 
-A printed naval chart: cream card (`--on-fill`), charcoal ink (`--print-ink`), a double
-rule, and a heraldic counter per ship (gules, azure, vert, purpure, tenné). The chart
-stays cream in both looks. The bar, names and dock follow the shell through `useTheme()`.
-No gradients as decoration, no glows, no spinning rings, no stained glass.
+A printed chart on pale water. The sea, its ink, and a few engraved wave lines are tokens
+on `.bs` (`--bs-sea`, `--bs-ink`, `--bs-wave`), with a darker sea when `useTheme()` is dark.
+Each ship is a pointed rounded rectangle: a broad hull, rounded corners, and a pointed
+bow, in the heraldic fill for its length (gules, azure, vert, purpure, tenné). Your own
+fleet is drawn that way. A sunk ship is too, on the phone and the TV, tilted a little and
+transparent so the squares show through, still on the cells it occupies. An unsunk enemy
+ship is never drawn. The frame,
+compass, and miss marks use the sea ink. Jackdaw's bar is left alone. No gradients as
+decoration, no glows, no spinning rings, no stained glass.
+
+On a computer, while you are placing, a faded copy of the ship you have picked follows
+the mouse and snaps to the squares it would occupy. Same shape, length, and fill. A spot
+that hangs off the chart or overlaps another ship is drawn as a warning, not as a placed
+hull. Touch screens do not show it. The preview lives only on your own chart. It is not
+part of either player's view, the table view, or the TV.
 
 - **Phone (`fit`):** one chart at a time, Your fleet or Their sea. From 740px of the
   game container both charts sit side by side and the switch hides. While placing, the
@@ -104,13 +115,14 @@ No gradients as decoration, no glows, no spinning rings, no stained glass.
   chart fits under the bar at 375px; the dock and the chart switch stay at least 44px.
 - **A shot:** the peg travels in from above the chart and stamps into the square. A
   miss lands as an ink cross. A hit lands as a red peg. A ship that just sank is drawn
-  across its squares and then lists down. A salvo staggers the pegs.
+  across its squares, then tilts and turns transparent, still on those squares. A salvo
+  staggers the pegs.
 - **VerdictMoment** still fires for a result the player can feel: you hit (reveal),
   you sank a ship (win), they hit you or sank one of yours (loss), and the final
   result. A miss does not raise one. The seal waits until the peg has landed.
 - **TV:** both seas, shots and sunk ships only, read from the sofa. The last volley is
   stamped large over the chart it landed on (Miss in ink, Hit in gules, Sunk in vert),
-  and a ship that went down sinks across that chart. Nothing on the stage is under
+  and a ship that went down tilts on its squares and lets the chart show through. Nothing on the stage is under
   24px. No bare `vh` or `vw`. `VerdictMoment` at TV size for a hit or a sink.
 - **Results:** both fleets, now public, under the verdict.
 

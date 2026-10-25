@@ -1,6 +1,7 @@
 import { createRng, GameError } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
 import {
+  aimSquares,
   cellName,
   dealFleet,
   fleetError,
@@ -386,5 +387,17 @@ describe('the chart', () => {
     expect(cellName(0)).toBe('A1');
     expect(cellName(23)).toBe('D3');
     expect(cellName(99)).toBe('J10');
+  });
+
+  it('previews a ship on the squares under the bow, and marks a hang or an overlap', () => {
+    const open = new Set<number>();
+    expect(aimSquares(0, 'h', 5, open)).toEqual({ cells: [0, 1, 2, 3, 4], illegal: false });
+    expect(aimSquares(6, 'h', 5, open)).toEqual({ cells: [6, 7, 8, 9], illegal: true });
+    expect(aimSquares(90, 'v', 3, open)?.illegal).toBe(true);
+    const taken = new Set([12]);
+    const over = aimSquares(10, 'h', 4, taken);
+    expect(over?.cells).toEqual([10, 11, 12, 13]);
+    expect(over?.illegal).toBe(true);
+    expect(aimSquares(-1, 'h', 2, open)).toBeNull();
   });
 });

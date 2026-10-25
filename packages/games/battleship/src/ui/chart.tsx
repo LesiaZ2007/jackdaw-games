@@ -1,6 +1,6 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import type { CSSProperties, PointerEvent } from 'react';
 import { cellName, GRID, type Dir, type ShipId } from '../fleet';
 import type { Mark, OwnShip, Volley, Wreck } from '../rules';
 
@@ -23,6 +23,12 @@ const LETTER: Record<ShipId, string> = {
 
 const COLS = 'ABCDEFGHIJ'.split('');
 
+/** Broad hull: pointed bow at the start (left, or the top), then a rounded rectangle. */
+const HULL_H =
+  'M1 16 C18 5 28 2 38 2 H84 C96 2 99 8 99 16 C99 24 96 30 84 30 H38 C28 30 18 27 1 16 Z';
+const HULL_V =
+  'M16 1 C5 18 2 28 2 38 V84 C2 96 8 99 16 99 C24 99 30 96 30 84 V38 C30 28 27 18 16 1 Z';
+
 export interface HullDraw {
   id: ShipId;
   dir: Dir;
@@ -40,7 +46,10 @@ interface ChartProps {
   sinking: readonly ShipId[];
   settling: ShipId | null;
   selected?: readonly number[];
-  ghost?: { id: ShipId; dir: Dir; cells: number[] } | null;
+  /** Faded preview while placing. Local to this screen. Never an enemy hull. */
+  ghost?: { id: ShipId; dir: Dir; cells: number[]; illegal: boolean } | null;
+  /** Mouse entered a square, or left the chart. Ignored for touch. */
+  onAim?: (cell: number | null) => void;
   interactive: boolean;
   onCell?: (cell: number) => void;
   size: 'phone' | 'tv';
@@ -74,6 +83,7 @@ export function Chart({
   settling,
   selected,
   ghost,
+  onAim,
   interactive,
   onCell,
   size,
@@ -99,7 +109,18 @@ export function Chart({
           ))}
         </div>
         <div className="bs-chart__fit">
-          <div className="bs-chart__grid">
+          <div
+            className="bs-chart__grid"
+            onPointerLeave={
+              onAim
+                ? (event) => {
+                    if (event.pointerType !== 'mouse') return;
+                    onAim(null);
+                  }
+                : undefined
+            }
+          >
+            <Sea />
             {cells.map((mark, cell) => {
               const picked = selected?.includes(cell) ?? false;
               const flying = freshCells.has(cell);
@@ -146,6 +167,14 @@ export function Chart({
                   aria-label={mark === 'blank' ? name : described}
                   aria-pressed={picked || undefined}
                   disabled={mark !== 'blank'}
+                  onPointerEnter={
+                    onAim
+                      ? (event: PointerEvent<HTMLButtonElement>) => {
+                          if (event.pointerType !== 'mouse') return;
+                          onAim(cell);
+                        }
+                      : undefined
+                  }
                   onClick={() => onCell?.(cell)}
                 >
                   {peg}
@@ -155,24 +184,57 @@ export function Chart({
             {hulls.map((hull) => (
               <span
                 key={hull.id}
-                className={`bs-hull${hull.sunk ? ' is-sunk' : ''}${sinking.includes(hull.id) ? ' is-sinking' : ''}${settling === hull.id ? ' is-settling' : ''}`}
+                className={`bs-hull bs-hull--${hull.dir}${hull.sunk ? ' is-sunk' : ''}${sinking.includes(hull.id) ? ' is-sinking' : ''}${settling === hull.id ? ' is-settling' : ''}`}
                 style={{ ...place(hull.cells, hull.dir), '--hull': HULL[hull.id] } as CSSProperties}
               >
+                <HullGlyph dir={hull.dir} />
                 <span className="bs-hull__name">{LETTER[hull.id]}</span>
               </span>
             ))}
             {ghost && ghost.cells.length > 0 && (
               <span
-                className="bs-hull bs-hull--ghost"
+                className={`bs-hull bs-hull--${ghost.dir} bs-hull--ghost${ghost.illegal ? ' is-illegal' : ''}`}
                 style={
                   { ...place(ghost.cells, ghost.dir), '--hull': HULL[ghost.id] } as CSSProperties
                 }
-              />
+                aria-hidden="true"
+              >
+                <HullGlyph dir={ghost.dir} />
+              </span>
             )}
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function HullGlyph({ dir }: { dir: Dir }) {
+  const horizontal = dir === 'h';
+  return (
+    <svg
+      className="bs-hull__shape"
+      viewBox={horizontal ? '0 0 100 32' : '0 0 32 100'}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <path d={horizontal ? HULL_H : HULL_V} />
+    </svg>
+  );
+}
+
+/** A few engraved wave lines. Stroke only, so the sea stays flat print. */
+function Sea() {
+  const lines = [14, 30, 46, 62, 78, 94];
+  return (
+    <svg className="bs-sea" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      {lines.map((y) => (
+        <path
+          key={y}
+          d={`M0 ${y} Q 8 ${y - 2.2} 16 ${y} T 32 ${y} T 48 ${y} T 64 ${y} T 80 ${y} T 96 ${y}`}
+        />
+      ))}
+    </svg>
   );
 }
 

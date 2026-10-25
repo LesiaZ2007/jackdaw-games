@@ -11,7 +11,7 @@ import {
   type GameUi,
   type ScreenPlayer,
 } from '@jackdaw/ui';
-import { SHIPS, shipOf, span, type Dir, type Placement, type ShipId } from '../fleet';
+import { aimSquares, SHIPS, shipOf, span, type Dir, type Placement, type ShipId } from '../fleet';
 import type { BattleshipAction, BattleshipPlayerView, OwnShip } from '../rules';
 import { Chart, hullsFromShips, hullsFromWrecks, HULL } from './chart';
 import { feltMoment, useArrival, useDelayedFelt } from './motion';
@@ -53,6 +53,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const [busy, setBusy] = useState(false);
   const [salvo, setSalvo] = useState<number[]>([]);
   const [settling, setSettling] = useState<ShipId | null>(null);
+  const [aim, setAim] = useState<number | null>(null);
 
   const seq = v.last?.seq ?? 0;
   const arrived = useArrival(seq);
@@ -81,6 +82,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   }
 
   const placing = v.phase === 'place' && !v.ready;
+  // The preview is local. Leaving placement drops it, and it is never part of a view.
+  if (!placing && aim !== null) setAim(null);
   const firing = v.phase === 'fire' && v.toAct === v.me && !busy;
   const mine = placing ? draftShips(draft) : v.ships;
   const sinking = fresh?.at === v.me ? fresh.sunk.map((w) => w.id) : [];
@@ -93,14 +96,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       setNote(`${spec.name} hangs off the chart.`);
       return;
     }
-    const taken = new Set<number>();
-    for (const spec of SHIPS) {
-      if (spec.id === picked) continue;
-      const laid = draft[spec.id];
-      if (!laid) continue;
-      for (const square of span(laid.at, laid.dir, spec.len) ?? []) taken.add(square);
-    }
-    if (cells.some((square) => taken.has(square))) {
+    if (cells.some((square) => takenExcept(draft, picked).has(square))) {
       setNote("Ships can't share a square.");
       return;
     }
@@ -151,6 +147,12 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 
   const ready = SHIPS.every((ship) => draft[ship.id]);
   const showFleet = focus === 'fleet';
+  const spec = shipOf(picked);
+  const preview =
+    placing && aim !== null ? aimSquares(aim, dir, spec.len, takenExcept(draft, picked)) : null;
+  const ghost = preview
+    ? { id: picked, dir, cells: preview.cells, illegal: preview.illegal }
+    : null;
 
   return (
     <div className="bs bs--phone" data-look={look}>
@@ -206,6 +208,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               fresh={fresh?.at === v.me ? fresh : null}
               sinking={sinking}
               settling={settling}
+              ghost={ghost}
+              onAim={placing ? setAim : undefined}
               interactive={placing}
               onCell={placing ? lay : undefined}
             />
@@ -301,6 +305,17 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     </div>
   );
 };
+
+function takenExcept(draft: Draft, picked: ShipId): Set<number> {
+  const taken = new Set<number>();
+  for (const spec of SHIPS) {
+    if (spec.id === picked) continue;
+    const laid = draft[spec.id];
+    if (!laid) continue;
+    for (const square of span(laid.at, laid.dir, spec.len) ?? []) taken.add(square);
+  }
+  return taken;
+}
 
 function draftShips(draft: Draft): OwnShip[] {
   const ships: OwnShip[] = [];

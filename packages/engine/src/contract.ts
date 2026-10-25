@@ -1,5 +1,6 @@
 import type { ZodType } from 'zod';
 import type { Rng } from './rng';
+import type { BotLevel } from './protocol';
 
 /**
  * The game module contract. Every game implements GameModule so the platform can run it without
@@ -166,7 +167,10 @@ export interface GameModule<State, Action, View, TableView, Options> {
    * Randomness comes from `ctx.rng`. Games without it can't be started with bots seated.
    */
   bot?(ctx: BotContext<View, TableView>): Action | null;
-  /** How long a bot waits after the last move before making its own, in ms (default 1100). */
+  /**
+   * How long a bot waits after the last move before making its own, in ms (default 2000). Each
+   * move takes between 0.8 and 1.8 times this, so bots keep a person's uneven pace.
+   */
   botDelayMs?: number;
 
   /** Played in another app through a `GameLink` registered with the runtime (see GameLink). */
@@ -184,6 +188,8 @@ export interface BotContext<View, TableView> {
   rng: Rng;
   /** Server time in ms. */
   now: number;
+  /** How well this bot plays: use `botChoose` and `botSlips` (bots.ts) to vary its choices. */
+  level: BotLevel;
 }
 
 /**

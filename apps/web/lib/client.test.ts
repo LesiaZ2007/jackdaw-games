@@ -47,6 +47,7 @@ const snapshot = (over: Partial<LobbySnapshot> = {}): LobbySnapshot => ({
   displays: 0,
   selectedGameId: null,
   gameOptions: {},
+  botLevel: 'normal',
   history: [],
   historyCount: 0,
   scores: {},

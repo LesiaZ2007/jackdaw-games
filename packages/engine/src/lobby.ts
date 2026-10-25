@@ -6,6 +6,7 @@ import type {
   Reaction,
   Standing,
 } from './contract';
+import { DEFAULT_BOT_LEVEL } from './bots';
 import { GameError } from './errors';
 import {
   CHAT_LIMIT,
@@ -13,6 +14,7 @@ import {
   REACTION_GAP_MS,
   REACTION_MS,
   type Avatar,
+  type BotLevel,
   type ChatMessage,
   type HistoryEntry,
   type LobbySnapshot,
@@ -69,6 +71,8 @@ export interface Lobby {
   status: LobbyStatus;
   selectedGameId: string | null;
   gameOptions: Record<string, unknown>;
+  /** How well every bot at the table plays; absent means Normal (lobbies saved before levels). */
+  botLevel?: BotLevel;
   session: Session | null;
   results: (GameResult & { gameId: string }) | null;
   history: HistoryEntry[];
@@ -280,7 +284,7 @@ export function join(lobby: Lobby, input: JoinInput, ctx: Ctx): { lobby: Lobby; 
   return { lobby: say(next, [`{${player.id}} joined.`], ctx.now), playerId: player.id };
 }
 
-/** Names for computer players, handed out in order: "Bot Wren", "Bot Rook"… */
+/** Names for computer players, drawn at random from those free: "Bot Wren", "Bot Rook"… */
 export const BOT_NAMES = [
   'Wren',
   'Rook',
@@ -301,12 +305,13 @@ export const BOT_NAMES = [
 
 /**
  * The host seats a computer player in the next free seat (2026-10-24). It plays through
- * the chosen game's `bot`; the host removes it like anyone else.
+ * the chosen game's `bot`; the host removes it like anyone else. Its bird is drawn from the free
+ * names by `pick` (in [0, 1), from the caller).
  */
 export function addBot(
   lobby: Lobby,
   hostId: string,
-  input: { newPlayerId: string; palette: Avatar[] },
+  input: { newPlayerId: string; palette: Avatar[]; pick?: number },
   ctx: Ctx,
 ): Lobby {
   requireHost(lobby, hostId);
@@ -316,8 +321,10 @@ export function addBot(
   const game = lobby.selectedGameId ? ctx.games[lobby.selectedGameId] : undefined;
   if (game && !game.bot)
     fail('NO_BOTS', `${game.meta.name} can’t be played with computer players yet.`);
-  const name =
-    BOT_NAMES.find((n) => !nameClash(lobby.players, n)) ?? `Bot ${lobby.players.length + 1}`;
+  const free = BOT_NAMES.filter((n) => !nameClash(lobby.players, n));
+  const name = free.length
+    ? free[Math.min(free.length - 1, Math.floor((input.pick ?? 0) * free.length))]!
+    : `Bot ${lobby.players.length + 1}`;
   const player: Player = {
     id: input.newPlayerId,
     name,
@@ -327,6 +334,17 @@ export function addBot(
   };
   const next = touch({ ...lobby, players: [...lobby.players, player] }, ctx.now);
   return say(next, [`{${player.id}} sat down to play.`], ctx.now);
+}
+
+/**
+ * The host sets how well the bots play, all of them at once (2026-10-24: "set difficulty
+ * level with bots", then "game wide, not bot specific"). Any time, mid-game too: they play their
+ * next moves at the new level.
+ */
+export function setBotLevel(lobby: Lobby, hostId: string, level: BotLevel, ctx: Ctx): Lobby {
+  requireHost(lobby, hostId);
+  if ((lobby.botLevel ?? DEFAULT_BOT_LEVEL) === level) return lobby;
+  return touch({ ...lobby, botLevel: level }, ctx.now);
 }
 
 /** Remove a player outright (leave or kick). Only outside games, so no game loses a seat. */
@@ -675,8 +693,21 @@ export function waitingFor(lobby: Lobby, ctx: Pick<Ctx, 'games'>): string[] {
 /** At most this many timers fire in one go, in case a game keeps scheduling ones already due. */
 const TIMER_BURST = 20;
 
-/** How long a bot waits after the last move before making its own, unless the game says. */
-export const BOT_DELAY_MS = 1_100;
+/**
+ * How long a bot waits after the last move before making its own, unless the game says (
+ * 2026-10-24: "bots go too fast"). Each move takes 0.8 to 1.8 times it (see `botDelay`).
+ */
+export const BOT_DELAY_MS = 2_000;
+
+/**
+ * This move's wait: the game's pace times a factor from 0.8 to 1.8, drawn from the session's rng
+ * state without moving it, so every read agrees on when the bot moves.
+ */
+function botDelay(game: AnyGameModule, session: Session): number {
+  const base = game.botDelayMs ?? BOT_DELAY_MS;
+  const u = createRng((session.rngState ^ Math.imul(session.seq + 1, 0x9e3779b1)) >>> 0).next();
+  return Math.round(base * (0.8 + u));
+}
 
 /**
  * The first bot (in seat order) with a move to make in the running game, and the move, decided
@@ -689,6 +720,7 @@ function botMove(lobby: Lobby, ctx: Ctx): { id: string; action: unknown; rng: Rn
   const game = ctx.games[session.gameId];
   if (!game?.bot) return null;
   const bots = new Set(lobby.players.filter((p) => p.bot).map((p) => p.id));
+  const level = lobby.botLevel ?? DEFAULT_BOT_LEVEL;
   const failed = session.botFailed?.seq === session.seq ? session.botFailed.ids : [];
   const tableView = game.getTableView(session.state);
   for (const id of session.playerIds) {
@@ -701,6 +733,7 @@ function botMove(lobby: Lobby, ctx: Ctx): { id: string; action: unknown; rng: Rn
       tableView,
       rng,
       now: ctx.now,
+      level,
     });
     if (action != null) return { id, action, rng };
   }
@@ -713,7 +746,7 @@ function nextBotAt(lobby: Lobby, ctx: Pick<Ctx, 'games'> & { now?: number }): nu
   if (lobby.status !== 'in_game' || !session) return null;
   const game = ctx.games[session.gameId];
   if (!game?.bot || !lobby.players.some((p) => p.bot)) return null;
-  const at = (session.movedAt ?? session.startedAt) + (game.botDelayMs ?? BOT_DELAY_MS);
+  const at = (session.movedAt ?? session.startedAt) + botDelay(game, session);
   return botMove(lobby, { games: ctx.games, now: Math.max(at, ctx.now ?? 0) }) ? at : null;
 }
 
@@ -944,6 +977,7 @@ export function snapshotFor(
       lobby.selectedGameId && ctx.games[lobby.selectedGameId]
         ? optionsWithDefaults(lobby, ctx.games[lobby.selectedGameId]!)
         : lobby.gameOptions,
+    botLevel: lobby.botLevel ?? DEFAULT_BOT_LEVEL,
     // Polls carry only the latest games; the full record is served separately as stats.
     history: lobby.history.slice(0, SNAPSHOT_HISTORY),
     historyCount: lobby.history.length,

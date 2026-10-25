@@ -15,6 +15,7 @@ const ask = (s: UnoState, pid: string, seed = 1): UnoAction | null =>
     tableView: game.getTableView(s),
     rng: createRng(seed),
     now: 0,
+    level: 'hard',
   });
 
 /** A round in progress with these hands, red 5 on the pile, the first player to act. */
@@ -53,6 +54,7 @@ function playOut(players: string[], o: Partial<UnoOptions>, seed: number, cap: n
         tableView: game.getTableView(s),
         rng,
         now,
+        level: 'hard',
       });
       if (!a) continue;
       const next = game.applyAction(s, pid, game.actionSchema.parse(a), rng, now);

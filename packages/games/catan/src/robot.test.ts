@@ -1,18 +1,20 @@
 import { createRng, type Rng } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
 import { layout } from './geometry';
+import { OFFER_WAIT_MS } from './robot';
 import { catan, type CatanAction, type CatanOptions, type CatanState } from './rules';
 import { act, hand, main, start, withDev } from './testkit';
 
 const game = catan;
-const ask = (s: CatanState, pid: string, seed = 1): CatanAction | null =>
+const ask = (s: CatanState, pid: string, seed = 1, now = 0): CatanAction | null =>
   game.bot!({
     playerId: pid,
     playerIds: s.seats,
     view: game.getPlayerView(s, pid),
     tableView: game.getTableView(s),
     rng: createRng(seed),
-    now: 0,
+    now,
+    level: 'hard',
   });
 
 /**
@@ -35,6 +37,7 @@ function playOut(players: string[], options: Partial<CatanOptions>, seed: number
         tableView: game.getTableView(s),
         rng,
         now,
+        level: 'hard',
       });
       if (!a) continue;
       const next = game.applyAction(s, pid, game.actionSchema.parse(a), rng, now);
@@ -73,6 +76,11 @@ describe('the computer player', () => {
         expect(game.getResult(s)).not.toBe(null);
       });
 
+  it('trades with the other bots over a game', () => {
+    const { s } = playOut(['wren', 'rook', 'magpie', 'robin'], {}, 2, 3000);
+    expect(s.log.some((e) => e.text.includes('traded'))).toBe(true);
+  });
+
   it('answers an offer made to it: yes when it gains, no otherwise', () => {
     const s0 = main({ a: { ore: 3 }, b: { wool: 4 }, c: { wool: 1 } });
     const me = s0.turn;
@@ -89,6 +97,44 @@ describe('the computer player', () => {
     // Nothing to answer once it has replied to everything.
     s = act(s, other, { type: 'answer', offer: s.offerSeq, reply: 'decline' });
     expect(ask(s, other)).toBe(null);
+  });
+
+  it('offers the table a spare card for one it needs, then trades on a yes', () => {
+    const s0 = main();
+    const me = s0.turn;
+    const other = s0.seats.find((p) => p !== me)!;
+    let s: CatanState = {
+      ...s0,
+      hands: {
+        ...s0.hands,
+        [me]: hand({ ore: 3, grain: 1, wool: 2 }),
+        [other]: hand({ grain: 3 }),
+      },
+    };
+    const offer = ask(s, me);
+    expect(offer).toEqual({ type: 'offer', give: { wool: 1 }, want: { grain: 1 }, to: null });
+    s = game.applyAction(s, me, offer!, createRng(1), 1_000);
+    expect(s.offers[0]!.at).toBe(1_000);
+    // It waits for answers; the other bots say yes when they gain.
+    expect(ask(s, me, 1, 2_000)).toBe(null);
+    expect(ask(s, other)).toEqual({ type: 'answer', offer: s.offerSeq, reply: 'accept' });
+    s = act(s, other, { type: 'answer', offer: s.offerSeq, reply: 'accept' });
+    expect(ask(s, me, 1, 2_000)).toEqual({ type: 'accept', offer: s.offerSeq, with: other });
+  });
+
+  it('takes its offer back when nobody answers in time, and offers once a turn', () => {
+    const s0 = main();
+    const me = s0.turn;
+    let s: CatanState = {
+      ...s0,
+      hands: { ...s0.hands, [me]: hand({ ore: 3, grain: 1, wool: 2 }) },
+    };
+    s = game.applyAction(s, me, ask(s, me)!, createRng(1), 1_000);
+    expect(ask(s, me, 1, 1_000 + OFFER_WAIT_MS - 1)).toBe(null);
+    const back = ask(s, me, 1, 1_000 + OFFER_WAIT_MS);
+    expect(back).toEqual({ type: 'withdraw', offer: s.offerSeq });
+    s = act(s, me, back!);
+    expect(ask(s, me)?.type).not.toBe('offer');
   });
 
   it('builds a city when it can, and ends its turn when it has nothing to do', () => {

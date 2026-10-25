@@ -35,6 +35,7 @@ function playOut(count: number, options: Partial<PokerOptions>, seed: number, ca
         tableView,
         rng,
         now,
+        level: 'hard',
       });
       if (!action) continue;
       game.actionSchema.parse(action);

@@ -1022,7 +1022,7 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
   getResult,
   partialResult,
   bot: riskBot,
-  botDelayMs: 750,
+  botDelayMs: 1300,
   announce,
   waitingOn,
   nextTimer: (s) =>

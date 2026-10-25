@@ -20,6 +20,20 @@ const timed = (s: CatanState, now = 0): CatanState => {
   return { ...t, actBy: now + MIN };
 };
 
+describe('the bots’ pace', () => {
+  it('waits at least 3 s after a roll (the roll takes the screen), 2.1–4.7 s otherwise', () => {
+    const r = ready();
+    const pace = game.botDelayMs as (s: CatanState) => number;
+    expect(pace(r)).toBe(2_600);
+    const rolled = act(r, r.turn, { type: 'roll' }, seedFor(6));
+    expect(rolled.justRolled).toBe(true);
+    expect(pace(rolled) * 0.8).toBeGreaterThanOrEqual(3_000);
+    const after = act(rolled, r.turn, { type: 'endTurn' });
+    expect(after.justRolled).toBeUndefined();
+    expect(pace(after)).toBe(2_600);
+  });
+});
+
 describe('waitingOn', () => {
   it('names the placer, the player on their turn (or paired), or everyone still to discard', () => {
     const s = start(['a', 'b', 'c']);

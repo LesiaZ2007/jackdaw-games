@@ -175,6 +175,8 @@ export interface CatanState {
   offerSeq: number;
   /** Offers the player on their turn has made to the table this turn (absent in older saves). */
   tradeTries?: number;
+  /** The last move was a roll: bots wait for its moment on screen before moving (see botPace). */
+  justRolled?: boolean;
   /** Numbers robberies, award changes and monopolies, for the screens' moments. */
   eventSeq: number;
   robbery: Robbery | null;
@@ -1184,6 +1186,22 @@ function stamp(prev: CatanState | null, s: CatanState, now: number): CatanState 
   return { ...s, actBy: now + s.turnSecs * 1000 };
 }
 
+/** Notes whether this move was a roll (by a player or the timer), for the bots' pace. */
+function rolled(prev: CatanState, s: CatanState): CatanState {
+  if (s.rollSeq !== prev.rollSeq) return { ...s, justRolled: true };
+  if (!s.justRolled) return s;
+  const { justRolled: _, ...rest } = s;
+  return rest;
+}
+
+/**
+ * How long a bot waits before its move (2026-10-25: Catan should be slower like Risk): 2.6 s
+ * as a base (2.1–4.7 s a move), and at least 3 s after a roll, which takes the screen for 2.4 s.
+ */
+function botPace(s: CatanState): number {
+  return s.justRolled ? 3_750 : 2_600;
+}
+
 /** New offers get the time they were made. */
 function dated(prev: CatanState, s: CatanState, now: number): CatanState {
   if (s.offerSeq === prev.offerSeq) return s;
@@ -1204,14 +1222,16 @@ export const catan: CatanModule = {
   setup: (ctx) => stamp(null, setup(ctx), ctx.now),
   getPlayerView,
   getTableView,
-  applyAction: (s, who, a, rng, now) => stamp(s, dated(s, applyMove(s, who, a, rng), now), now),
+  applyAction: (s, who, a, rng, now) =>
+    stamp(s, rolled(s, dated(s, applyMove(s, who, a, rng), now)), now),
   getResult,
   partialResult,
   bot: catanBot,
+  botDelayMs: botPace,
   announce,
   waitingOn,
   nextTimer: (s) =>
     s.turnSecs && s.actBy !== null && s.phase !== 'over' ? { id: 'turn', at: s.actBy } : null,
   onTimer: (s, timer, rng, now) =>
-    timer !== 'turn' || s.phase === 'over' ? s : stamp(s, timeUp(s, rng), now),
+    timer !== 'turn' || s.phase === 'over' ? s : stamp(s, rolled(s, timeUp(s, rng)), now),
 };

@@ -5,14 +5,22 @@ import { useEffect, useState } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
 import { AvatarButton, Chits, Plaque, ReactionBar, Sheet } from '@jackdaw/ui';
 import { forgetSeat } from '@/lib/identity';
-import { ThemeToggle } from '../../theme-toggle';
+import { ThemeChoice } from '../../theme-toggle';
 import { AlertSettings } from './alert-settings';
 
 /**
- * Ending a game takes two taps, as in Avalon: the first arms it for four seconds, the second
- * ends it for everyone.
+ * A step that can't be undone takes two taps, as in Avalon: the first arms it for four seconds,
+ * the second does it.
  */
-function EndGameButton({ onEnd }: { onEnd: () => Promise<void> }) {
+export function ConfirmButton({
+  label,
+  armedLabel,
+  onConfirm,
+}: {
+  label: string;
+  armedLabel: string;
+  onConfirm: () => Promise<void>;
+}) {
   const [armed, setArmed] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -28,13 +36,68 @@ function EndGameButton({ onEnd }: { onEnd: () => Promise<void> }) {
       onClick={async () => {
         if (!armed) return setArmed(true);
         setBusy(true);
-        await onEnd();
+        await onConfirm();
         setBusy(false);
         setArmed(false);
       }}
     >
-      {armed ? 'Tap again to end the game for everyone' : 'End this game'}
+      {armed ? armedLabel : label}
     </Plaque>
+  );
+}
+
+/** What ending early does to the scores, in words. */
+const endNote = (canSave: boolean) =>
+  canSave
+    ? 'Stop the game for everyone. Save the rounds played so far (the leader wins), or end it without scoring.'
+    : 'Stop the game for everyone and go back to the lobby. It won’t be scored.';
+
+/**
+ * The host's End game button in the bar opens this: the sheet is the confirm, so one tap ends it.
+ * When the game has rounds worth keeping (2026-10-24), saving them is the first choice.
+ */
+export function EndGameSheet({
+  open,
+  onClose,
+  send,
+  canSave,
+}: {
+  open: boolean;
+  onClose: () => void;
+  send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
+  canSave: boolean;
+}) {
+  const [busy, setBusy] = useState(false);
+  const end = async (save: boolean) => {
+    setBusy(true);
+    const out = await send({ type: 'endGame', save });
+    setBusy(false);
+    if (out) onClose();
+  };
+  return (
+    <Sheet open={open} onClose={onClose} title="End this game?">
+      <section className="menu__block">
+        <p>{endNote(canSave)}</p>
+        <div className="flex flex-wrap gap-2">
+          {canSave && (
+            <Plaque small go disabled={busy} onClick={() => void end(true)}>
+              Save the rounds so far
+            </Plaque>
+          )}
+          <Plaque
+            small
+            className="menu__end is-armed"
+            disabled={busy}
+            onClick={() => void end(false)}
+          >
+            {canSave ? 'End without saving' : 'End it for everyone'}
+          </Plaque>
+          <Plaque small onClick={onClose}>
+            Keep playing
+          </Plaque>
+        </div>
+      </section>
+    </Sheet>
   );
 }
 
@@ -49,6 +112,7 @@ export function MenuSheet({
   snapshot: s,
   send,
   onEdit,
+  onLeaving,
 }: {
   open: boolean;
   onClose: () => void;
@@ -56,6 +120,8 @@ export function MenuSheet({
   snapshot: LobbySnapshot;
   send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
   onEdit: () => void;
+  /** Leaving has started (true) or was refused (false). */
+  onLeaving: (leaving: boolean) => void;
 }) {
   const router = useRouter();
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -67,11 +133,13 @@ export function MenuSheet({
     : '';
 
   async function leave() {
+    // Tell the page first, so the moment the seat is gone it doesn't read as a removal.
+    onLeaving(true);
     const out = await send({ type: 'leave' });
     if (out) {
       forgetSeat(code);
       router.push('/');
-    }
+    } else onLeaving(false);
   }
 
   return (
@@ -89,6 +157,13 @@ export function MenuSheet({
         </section>
       )}
 
+      <section className="menu__block">
+        <div className="menu__toggle">
+          <h3 className="jd-label">Look</h3>
+          <ThemeChoice />
+        </div>
+      </section>
+
       {me && s.status !== 'waiting' && (
         <section className="menu__block">
           <h3 className="jd-label">React</h3>
@@ -105,12 +180,25 @@ export function MenuSheet({
       {s.status === 'in_game' && s.hostId === s.me && (
         <section className="menu__block">
           <h3 className="jd-label">This game</h3>
-          <p>Stop the game for everyone and go back to the lobby. It won&rsquo;t be scored.</p>
-          <EndGameButton
-            onEnd={async () => {
-              if (await send({ type: 'endGame' })) onClose();
-            }}
-          />
+          <p>{endNote(Boolean(s.canSave))}</p>
+          <div className="flex flex-wrap gap-2">
+            {s.canSave && (
+              <ConfirmButton
+                label="End and save the rounds"
+                armedLabel="Tap again to save and end"
+                onConfirm={async () => {
+                  if (await send({ type: 'endGame', save: true })) onClose();
+                }}
+              />
+            )}
+            <ConfirmButton
+              label={s.canSave ? 'End without saving' : 'End this game'}
+              armedLabel="Tap again to end the game for everyone"
+              onConfirm={async () => {
+                if (await send({ type: 'endGame' })) onClose();
+              }}
+            />
+          </div>
         </section>
       )}
 
@@ -128,20 +216,12 @@ export function MenuSheet({
           </>
         ) : (
           <>
-            <p>
-              Get a one-time code that moves your seat, and everything you can see, to a different
-              phone.
-            </p>
+            <p>Get a one-time code to carry your seat over to another phone.</p>
             <Plaque small onClick={() => send({ type: 'createRejoinCode' })}>
               Get a rejoin code
             </Plaque>
           </>
         )}
-      </section>
-
-      <section className="menu__block">
-        <h3 className="jd-label">Look</h3>
-        <ThemeToggle />
       </section>
 
       <section className="menu__block">

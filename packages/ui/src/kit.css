@@ -216,7 +216,7 @@
   content: '';
   position: absolute;
   inset: calc(var(--t) * 0.07);
-  border: 1px solid rgba(246, 240, 225, 0.55);
+  border: 1px solid color-mix(in srgb, var(--on-fill) 55%, transparent);
   clip-path: polygon(14% 0, 86% 0, 100% 12%, 100% 88%, 86% 100%, 14% 100%, 0 88%, 0 12%);
 }
 .jd-chit--blank {
@@ -340,7 +340,7 @@
   height: calc(var(--z) * 0.46);
   border-radius: 50%;
   background: var(--or);
-  color: #24211e;
+  color: var(--print-ink);
   display: grid;
   place-items: center;
   box-shadow: 0 0 0 2px var(--ring-bg);
@@ -432,15 +432,75 @@
   left: 0;
   padding: 3px 6px 4px;
   background: var(--or);
-  color: #24211e;
+  color: var(--print-ink);
   font: 800 11px/1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+.jd-space .jd-you--bot {
+  background: var(--ink);
+  color: var(--paper);
 }
 .jd-space--free .jd-n {
   position: static;
   font: 600 clamp(20px, calc(100cqi / var(--cols, 5) * 0.3), 44px) var(--font-display);
   color: var(--rule);
+}
+/* the host's "+" on an open seat: a dashed token ring, inked on hover */
+.jd-addseat {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.jd-addseat__ring {
+  display: grid;
+  place-items: center;
+  width: clamp(36px, 46%, 84px);
+  aspect-ratio: 1;
+  border: 2px dashed currentColor;
+  border-radius: 50%;
+  background: var(--paper);
+  transition:
+    color 160ms,
+    border-color 160ms,
+    transform 160ms var(--ease-out);
+}
+.jd-addseat__ring svg {
+  width: 52%;
+  height: 52%;
+}
+/* the seat number stays legible beside the ring */
+.jd-space--free:has(.jd-addseat) .jd-n {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font: 700 12px var(--font-plaque);
+  color: var(--ink-2);
+}
+@media (hover: hover) {
+  .jd-addseat:hover {
+    color: var(--ink);
+  }
+  .jd-addseat:hover .jd-addseat__ring {
+    border-style: solid;
+  }
+}
+.jd-addseat:active .jd-addseat__ring {
+  transform: scale(0.94);
+}
+.jd-addseat:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
 }
 .jd-space--landing .jd-token {
   animation: jd-place 900ms var(--ease-out) both;
@@ -492,7 +552,7 @@
   content: '';
   position: absolute;
   inset: 5px;
-  border: 1px solid rgba(246, 240, 225, 0.6);
+  border: 1px solid color-mix(in srgb, var(--on-fill) 60%, transparent);
 }
 .jd-box__dev {
   width: 58%;
@@ -501,7 +561,7 @@
   display: grid;
   place-items: center;
   background: var(--band);
-  box-shadow: 0 0 0 2px rgba(246, 240, 225, 0.75);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--on-fill) 75%, transparent);
 }
 .jd-box__dev svg {
   width: 68%;
@@ -568,9 +628,9 @@
 }
 .jd-field-checky {
   --field: conic-gradient(
-      rgba(246, 240, 225, 0.18) 25%,
+      color-mix(in srgb, var(--on-fill) 18%, transparent) 25%,
       transparent 0 50%,
-      rgba(246, 240, 225, 0.18) 0 75%,
+      color-mix(in srgb, var(--on-fill) 18%, transparent) 0 75%,
       transparent 0
     )
     0 0 / 22px 22px;
@@ -580,17 +640,29 @@
 }
 .jd-field-fretty {
   --field:
-    repeating-linear-gradient(45deg, transparent 0 9px, rgba(246, 240, 225, 0.25) 9px 11px),
-    repeating-linear-gradient(-45deg, transparent 0 9px, rgba(246, 240, 225, 0.25) 9px 11px);
+    repeating-linear-gradient(
+      45deg,
+      transparent 0 9px,
+      color-mix(in srgb, var(--on-fill) 25%, transparent) 9px 11px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 9px,
+      color-mix(in srgb, var(--on-fill) 25%, transparent) 9px 11px
+    );
 }
 .jd-field-paly {
-  --field: repeating-linear-gradient(90deg, transparent 0 9px, rgba(246, 240, 225, 0.2) 9px 18px);
+  --field: repeating-linear-gradient(
+    90deg,
+    transparent 0 9px,
+    color-mix(in srgb, var(--on-fill) 20%, transparent) 9px 18px
+  );
 }
 .jd-field-bendy {
   --field: repeating-linear-gradient(
     135deg,
     transparent 0 10px,
-    rgba(246, 240, 225, 0.18) 10px 20px
+    color-mix(in srgb, var(--on-fill) 18%, transparent) 10px 20px
   );
 }
 
@@ -727,5 +799,18 @@
   }
   .jd-code-entry input:focus + .jd-chits .jd-chit--next::after {
     animation: none;
+  }
+}
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .jd-plaque:not(:disabled):not([aria-disabled='true']):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 0 var(--shadow);
+  }
+  .jd-plaque:not(:disabled):not([aria-disabled='true']):hover:active {
+    transform: translateY(1px);
+    box-shadow: none;
   }
 }

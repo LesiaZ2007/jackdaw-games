@@ -5,7 +5,7 @@ import type { LobbyStatus } from '@jackdaw/engine';
 import { BirdMark, Chits, Icon } from '@jackdaw/ui';
 import { badgeText } from '@/lib/unread';
 
-export type Panel = 'share' | 'stats' | 'chat' | 'menu' | 'me' | null;
+export type Panel = 'share' | 'stats' | 'chat' | 'menu' | 'me' | 'end' | null;
 
 /** The Jackdaw frame's top bar: always shows the code, sharing, stats and chat, even mid-game. */
 export function LobbyBar({
@@ -13,9 +13,12 @@ export function LobbyBar({
   status,
   onOpen,
   unread,
+  host = false,
 }: {
   code: string;
   status: LobbyStatus;
+  /** The host gets an End game button in the bar while any game is running. */
+  host?: boolean;
   onOpen: (p: Panel) => void;
   /** Messages from others since the chat was last open (phones only; laptops dock the chat). */
   unread: number;
@@ -35,6 +38,19 @@ export function LobbyBar({
         <Chits code={code} size={28} />
       </button>
       <div className="lobby-bar__actions">
+        {host && status === 'in_game' && (
+          <button
+            type="button"
+            className="jd-iconbtn lobby-bar__end"
+            onClick={() => onOpen('end')}
+            aria-label="End game"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="6" y="6" width="12" height="12" fill="currentColor" />
+            </svg>
+            <span className="lobby-bar__end-text">End game</span>
+          </button>
+        )}
         <button
           type="button"
           className="jd-iconbtn lobby-bar__share"

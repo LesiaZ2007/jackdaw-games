@@ -89,8 +89,8 @@ async function lobbyWithLink(opts: { withLink?: boolean } = {}) {
     readCacheMs: 0,
     sleep: () => new Promise((r) => setTimeout(r, 1)),
   });
-  const { code } = await runtime.create({ token: TOKENS.ana, name: 'Ana', gameId: 'far' });
-  await runtime.post(code, TOKENS.ben, { type: 'join', name: 'Ben' });
+  const { code } = await runtime.create({ token: TOKENS.ana, name: 'Jay', gameId: 'far' });
+  await runtime.post(code, TOKENS.ben, { type: 'join', name: 'Crow' });
   return { runtime, code, clock, fake };
 }
 
@@ -114,7 +114,7 @@ describe('linked games', () => {
     const call = fake.calls[0]!;
     expect(call.returnUrl).toBe(`https://jackdaw.test/r/${code}`);
     expect(call.look).toBe('dark');
-    expect(call.players.map((p) => p.name)).toEqual(['Ana', 'Ben']);
+    expect(call.players.map((p) => p.name)).toEqual(['Jay', 'Crow']);
     expect(call.hostId).toBe(started.hostId);
 
     const [ana, ben] = started.players;
@@ -221,12 +221,28 @@ describe('linked games', () => {
     const original = fake.link.start.bind(fake.link);
     fake.link.start = async (ctx) => {
       const out = await original(ctx);
-      await runtime.post(code, late, { type: 'join', name: 'Cy' });
+      await runtime.post(code, late, { type: 'join', name: 'Kite' });
       return out;
     };
     await expect(runtime.post(code, TOKENS.ana, { type: 'start' })).rejects.toThrow(
       'Press Start again',
     );
     expect((await snap(runtime.poll(code, { token: TOKENS.ana }))).status).toBe('waiting');
+    // The room the other app opened for the refused Start is closed again.
+    expect(fake.ended.map((s) => s.room)).toEqual(['ROOM1']);
+  });
+
+  it('closes the extra room when two Starts race and only one can begin', async () => {
+    const { runtime, code, fake } = await lobbyWithLink();
+    const outcomes = await Promise.allSettled([
+      runtime.post(code, TOKENS.ana, { type: 'start' }),
+      runtime.post(code, TOKENS.ana, { type: 'start' }),
+    ]);
+    expect(outcomes.filter((o) => o.status === 'fulfilled')).toHaveLength(1);
+    expect(fake.calls).toHaveLength(2);
+    expect(fake.ended).toHaveLength(1);
+    const s = await snap(runtime.poll(code, { token: TOKENS.ana }));
+    expect(s.status).toBe('in_game');
+    expect(fake.ended[0]!.room).not.toBe((s.tableView as { room: string }).room);
   });
 });

@@ -542,7 +542,7 @@
 
 .avalon .hand-title {
   font-family: var(--font-heading-stack);
-  font-size: clamp(24px, 4vw, 32px);
+  font-size: clamp(24px, calc(4 * var(--vw, 1vw)), 32px);
   line-height: 1.1;
 }
 
@@ -561,7 +561,7 @@
   top: 0;
   bottom: 0;
   z-index: 40;
-  width: min(420px, 92vw);
+  width: min(420px, calc(92 * var(--vw, 1vw)));
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line);

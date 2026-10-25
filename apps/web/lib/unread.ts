@@ -2,7 +2,7 @@ import type { ChatMessage } from '@jackdaw/engine';
 
 /**
  * Messages from other people that arrived after `seenAt` (a message timestamp). System lines
- * ("Bran joined.") don't count.
+ * ("Rook joined.") don't count.
  */
 export function unreadCount(chat: ChatMessage[], me: string | null, seenAt: number): number {
   let n = 0;

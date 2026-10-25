@@ -28,7 +28,8 @@ export function Chat({
     const t = text.trim();
     if (!t) return;
     setText('');
-    await send({ type: 'chat', text: t });
+    // Not sent: put it back, unless they've started typing something else.
+    if (!(await send({ type: 'chat', text: t }))) setText((now) => now || t);
   }
 
   return (

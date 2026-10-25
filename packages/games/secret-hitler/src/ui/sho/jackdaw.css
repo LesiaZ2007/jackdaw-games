@@ -50,7 +50,7 @@ body:has(.sho-page),
   }
   .sho #board-container #board {
     min-width: 0;
-    width: min(90vmin, calc(50cqw - 32px));
+    width: min(calc(90 * var(--vmin, 1vmin)), calc(50cqw - 32px));
     max-width: none;
   }
 }
@@ -62,7 +62,7 @@ body:has(.sho-page),
     position: sticky;
     top: 66px;
     z-index: 1;
-    height: calc(100dvh - 66px);
+    height: calc(calc(100 * var(--vh, 1dvh)) - 66px);
     max-height: none;
   }
 }
@@ -92,7 +92,7 @@ body:has(.sho-page),
 
 /* ── The lobby: one screen, no scrolling ─────────────────────────────────── */
 .sho.sho-lobby {
-  height: calc(100dvh - 66px - env(safe-area-inset-top, 0px));
+  height: calc(calc(100 * var(--vh, 1dvh)) - 66px - env(safe-area-inset-top, 0px));
   min-height: 420px;
 }
 .sho.sho-lobby > .sho-frame__main {
@@ -185,6 +185,32 @@ body:has(.sho-page),
 .sho.sho-lobby #player-image {
   width: var(--sho-tile, 100px);
   max-width: none;
+}
+/* The host's "+" (2026-10-24): an empty tile the size of a player's, printed as a dashed
+   outline on the dark band, that seats a computer player. */
+.sho .sho-addseat {
+  position: relative;
+  flex: none;
+  width: var(--sho-tile, 100px);
+  aspect-ratio: 443 / 633;
+  box-sizing: border-box;
+  border: 2px dashed var(--textColorOnDark);
+  border-radius: 16% / 10%;
+  background-color: var(--backgroundDark);
+}
+.sho .sho-addseat .jd-addseat {
+  color: var(--textColorOnDark);
+}
+.sho .sho-addseat .jd-addseat__ring {
+  background: var(--backgroundLight);
+}
+.sho .sho-addseat:hover,
+.sho .sho-addseat:focus-within {
+  border-color: var(--textColorHighlight);
+}
+.sho .sho-addseat:hover .jd-addseat,
+.sho .sho-addseat .jd-addseat:focus-visible {
+  color: var(--textColorHighlight);
 }
 .sho.sho-lobby #lobby-button-container {
   display: block;
@@ -344,15 +370,15 @@ body:has(.sho-page),
 .sho .sho-tvlobby__body {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-  gap: 4vmin;
+  gap: calc(4 * var(--vmin, 1vmin));
   align-items: start;
-  padding: 4vmin;
+  padding: calc(4 * var(--vmin, 1vmin));
 }
 .sho .sho-tvlobby__join {
   display: grid;
   justify-items: center;
-  gap: 2vmin;
-  padding: 3vmin;
+  gap: calc(2 * var(--vmin, 1vmin));
+  padding: calc(3 * var(--vmin, 1vmin));
   background-color: var(--backgroundDark);
   border-radius: 10px;
   color: var(--textColorWhite);
@@ -375,5 +401,19 @@ body:has(.sho-page),
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* Policy and vote cards you can pick rise a little (sho.css is generated, so it lives here). */
+  .sho #legislative-policy.selectable,
+  .sho #voting-card.selectable {
+    transition: translate 140ms var(--ease-out);
+  }
+  .sho #legislative-policy.selectable:not(.disabled):hover,
+  .sho #voting-card.selectable:not(.disabled):hover {
+    translate: 0 -8px;
   }
 }

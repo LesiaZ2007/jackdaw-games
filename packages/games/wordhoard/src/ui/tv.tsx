@@ -2,6 +2,7 @@
 
 import { Token, useMoment, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { Move, WordhoardTableView } from '../rules';
+import { MeaningCard } from './define';
 import { BoardGrid, Tile } from './pieces';
 import { Scores, TurnClock, moveText, sideName } from './player';
 import './wordhoard.css';
@@ -20,6 +21,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
   const byId = new Map(players.map((p) => [p.id, p]));
   const name = (id: string) => byId.get(id)?.name ?? 'Someone';
   const last = t.moves[t.moves.length - 1];
+  const lastPlay = [...t.moves].reverse().find((m) => m.kind === 'play');
   // Only a move that lands while the TV is watching animates; a refresh just shows the board.
   const [fresh, dismiss] = useMoment(t.moves.length);
   const landing = fresh !== null && last ? last : null;
@@ -59,9 +61,10 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
         <p className="wh-tv__bag">
           {t.bagCount} tile{t.bagCount === 1 ? '' : 's'} in the bag
         </p>
+        <MeaningCard move={lastPlay} who={lastPlay ? name(lastPlay.player) : ''} />
         <ol className="wh-tv__moves" aria-label="Latest plays">
           {t.moves
-            .slice(-6)
+            .slice(-4)
             .reverse()
             .map((m, i) => (
               <li key={t.moves.length - i}>{moveText(m, name)}</li>

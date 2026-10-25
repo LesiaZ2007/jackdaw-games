@@ -9,25 +9,28 @@ export const rpsUi: GameUi = {
   art: { band: 'purpure', field: 'paly', glyph: 'rps' },
   about: {
     description:
-      'Everyone throws at once, in secret. You score a point for every friend your throw beats. After the last round, the most points wins.',
+      'Everyone picks at the same time. You get a point for every person your throw beats, so it pays to guess what the rest of the table will do. Most points after the last round wins.',
     steps: [
-      'Everyone picks rock, paper or scissors in secret.',
-      'When the last pick is in, all throws are shown together.',
-      'Score one point for each player your throw beats.',
-      'Most points after the last round wins; ties share the win.',
+      'Pick rock, paper or scissors. Nobody sees it yet.',
+      'Once everyone has picked, all the throws are shown at once.',
+      'You score a point for each player you beat.',
+      'Most points after the last round wins. Ties share the win.',
     ],
-    credit: 'A schoolyard classic. This is the test game for Jackdaw.',
+    credit: 'The playground classic. It’s also the game we test Jackdaw with.',
     pictures: [
       {
         src: '/games/rps/game-phone.png',
-        alt: 'Rock Paper Scissors on a phone: who has thrown, the scores, last round’s throws and the three throw buttons.',
+        alt: 'Rock Paper Scissors on a phone: who has picked, the scores, last round’s throws and the three buttons.',
       },
       {
-        src: '/games/rps/tv.png',
-        alt: 'Rock Paper Scissors on a TV: the round, who is still thinking, last round’s throws and the scores.',
-        wide: true,
+        src: '/games/rps/desktop.png',
+        alt: 'Rock Paper Scissors on a laptop: the round, the scores, last round’s throws and the three buttons.',
+        desktop: true,
       },
     ],
+  },
+  optionHelp: {
+    rounds: 'How many throws before the scores are added up. Each round takes a few seconds.',
   },
   PlayerScreen,
   TvScreen,

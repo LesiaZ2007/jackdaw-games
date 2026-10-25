@@ -6,6 +6,7 @@ import type {
   Reaction,
   Standing,
 } from './contract';
+import { DEFAULT_BOT_LEVEL } from './bots';
 import { GameError } from './errors';
 import {
   CHAT_LIMIT,
@@ -13,6 +14,7 @@ import {
   REACTION_GAP_MS,
   REACTION_MS,
   type Avatar,
+  type BotLevel,
   type ChatMessage,
   type HistoryEntry,
   type LobbySnapshot,
@@ -20,7 +22,7 @@ import {
   type ReactionKind,
   type ScoreLine,
 } from './protocol';
-import { createRng } from './rng';
+import { createRng, type Rng } from './rng';
 
 /**
  * The lobby state machine: pure functions from (lobby, input) to a new lobby. No I/O, no clocks,
@@ -34,6 +36,8 @@ export interface Player {
   name: string;
   avatar: Avatar;
   joinedAt: number;
+  /** A computer player the host added (see GameModule.bot). It has no device and no seat key. */
+  bot?: true;
 }
 
 export interface Session {
@@ -47,6 +51,10 @@ export interface Session {
   seq: number;
   startedAt: number;
   rngState: number;
+  /** When the game last moved (an action, a timer or a bot), so bots wait a moment after it. */
+  movedAt?: number;
+  /** Bots whose move the game refused at this seq: they sit it out until the game moves on. */
+  botFailed?: { seq: number; ids: string[] };
 }
 
 export interface Lobby {
@@ -63,6 +71,8 @@ export interface Lobby {
   status: LobbyStatus;
   selectedGameId: string | null;
   gameOptions: Record<string, unknown>;
+  /** How well every bot at the table plays; absent means Normal (lobbies saved before levels). */
+  botLevel?: BotLevel;
   session: Session | null;
   results: (GameResult & { gameId: string }) | null;
   history: HistoryEntry[];
@@ -168,14 +178,29 @@ function gameFor(ctx: Ctx, gameId: string | null): AnyGameModule {
   return ctx.games[gameId] ?? fail('UNKNOWN_GAME', 'That game is not available.');
 }
 
-/** Pick an avatar no one else has, preferring the requested one. */
+/**
+ * Pick an avatar no one else has, preferring the requested one: first one whose crest and tint
+ * are both free, then a free crest with a free tint from the palette (players who chose their own
+ * can use up palette pairs), then any crest and tint pair no one has.
+ */
 function freeAvatar(lobby: Lobby, wanted: Avatar | undefined, palette: Avatar[]): Avatar {
-  const taken = (a: Avatar) =>
-    lobby.players.some((p) => p.avatar.crest === a.crest || p.avatar.tint === a.tint);
+  const crests = new Set(lobby.players.map((p) => p.avatar.crest));
+  const tints = new Set(lobby.players.map((p) => p.avatar.tint));
+  const taken = (a: Avatar) => crests.has(a.crest) || tints.has(a.tint);
   if (wanted && !taken(wanted)) return wanted;
-  return (
-    palette.find((a) => !taken(a)) ?? wanted ?? palette[0] ?? { crest: 'jackdaw', tint: 'ink' }
-  );
+  const fromPalette = palette.find((a) => !taken(a));
+  if (fromPalette) return fromPalette;
+  const freeCrest = palette.find((a) => !crests.has(a.crest))?.crest;
+  const freeTint = palette.find((a) => !tints.has(a.tint))?.tint;
+  if (freeCrest && freeTint) return { crest: freeCrest, tint: freeTint };
+  const same = (a: Avatar, b: Avatar) => a.crest === b.crest && a.tint === b.tint;
+  for (const { crest } of palette) {
+    for (const { tint } of palette) {
+      const pair = { crest, tint };
+      if (!lobby.players.some((p) => same(p.avatar, pair))) return pair;
+    }
+  }
+  return wanted ?? palette[0] ?? { crest: 'jackdaw', tint: 'ink' };
 }
 
 // ── Creating and joining ────────────────────────────────────────────────────────────────────
@@ -239,6 +264,8 @@ export function join(lobby: Lobby, input: JoinInput, ctx: Ctx): { lobby: Lobby; 
   if (lobby.players.length >= MAX_PLAYERS)
     fail('LOBBY_FULL', `This lobby is full (${MAX_PLAYERS} players).`);
   requireFreeName(lobby, input.name);
+  // Everyone left (so the host is gone too): whoever comes in next runs the lobby.
+  const hostless = !lobby.players.some((p) => p.id === lobby.hostId);
   const player: Player = {
     id: input.newPlayerId,
     name: input.name,
@@ -250,22 +277,89 @@ export function join(lobby: Lobby, input: JoinInput, ctx: Ctx): { lobby: Lobby; 
       ...lobby,
       players: [...lobby.players, player],
       seats: { ...lobby.seats, [input.tokenKey]: player.id },
+      hostId: hostless ? player.id : lobby.hostId,
     },
     ctx.now,
   );
   return { lobby: say(next, [`{${player.id}} joined.`], ctx.now), playerId: player.id };
 }
 
+/** Names for computer players, drawn at random from those free: "Bot Wren", "Bot Rook"… */
+export const BOT_NAMES = [
+  'Wren',
+  'Rook',
+  'Magpie',
+  'Robin',
+  'Finch',
+  'Heron',
+  'Starling',
+  'Linnet',
+  'Plover',
+  'Kestrel',
+  'Lark',
+  'Thrush',
+  'Siskin',
+  'Curlew',
+  'Dunnock',
+].map((bird) => `Bot ${bird}`);
+
+/**
+ * The host seats a computer player in the next free seat (2026-10-24). It plays through
+ * the chosen game's `bot`; the host removes it like anyone else. Its bird is drawn from the free
+ * names by `pick` (in [0, 1), from the caller).
+ */
+export function addBot(
+  lobby: Lobby,
+  hostId: string,
+  input: { newPlayerId: string; palette: Avatar[]; pick?: number },
+  ctx: Ctx,
+): Lobby {
+  requireHost(lobby, hostId);
+  requireStatus(lobby, 'waiting');
+  if (lobby.players.length >= MAX_PLAYERS)
+    fail('LOBBY_FULL', `This lobby is full (${MAX_PLAYERS} players).`);
+  const game = lobby.selectedGameId ? ctx.games[lobby.selectedGameId] : undefined;
+  if (game && !game.bot)
+    fail('NO_BOTS', `${game.meta.name} can’t be played with computer players yet.`);
+  const free = BOT_NAMES.filter((n) => !nameClash(lobby.players, n));
+  const name = free.length
+    ? free[Math.min(free.length - 1, Math.floor((input.pick ?? 0) * free.length))]!
+    : `Bot ${lobby.players.length + 1}`;
+  const player: Player = {
+    id: input.newPlayerId,
+    name,
+    avatar: freeAvatar(lobby, undefined, input.palette),
+    joinedAt: ctx.now,
+    bot: true,
+  };
+  const next = touch({ ...lobby, players: [...lobby.players, player] }, ctx.now);
+  return say(next, [`{${player.id}} sat down to play.`], ctx.now);
+}
+
+/**
+ * The host sets how well the bots play, all of them at once (2026-10-24: "set difficulty
+ * level with bots", then "game wide, not bot specific"). Any time, mid-game too: they play their
+ * next moves at the new level.
+ */
+export function setBotLevel(lobby: Lobby, hostId: string, level: BotLevel, ctx: Ctx): Lobby {
+  requireHost(lobby, hostId);
+  if ((lobby.botLevel ?? DEFAULT_BOT_LEVEL) === level) return lobby;
+  return touch({ ...lobby, botLevel: level }, ctx.now);
+}
+
 /** Remove a player outright (leave or kick). Only outside games, so no game loses a seat. */
 function removePlayer(lobby: Lobby, playerId: string, ctx: Ctx): Lobby {
-  const players = lobby.players.filter((p) => p.id !== playerId);
+  let players = lobby.players.filter((p) => p.id !== playerId);
+  // Bots don't keep a lobby going on their own.
+  if (!players.some((p) => !p.bot)) players = [];
   const seats = Object.fromEntries(Object.entries(lobby.seats).filter(([, id]) => id !== playerId));
   const rejoinCodes = Object.fromEntries(
     Object.entries(lobby.rejoinCodes).filter(([, r]) => r.playerId !== playerId),
   );
   let hostId = lobby.hostId;
-  if (hostId === playerId && players.length > 0) {
-    hostId = players.reduce((a, b) => (b.joinedAt < a.joinedAt ? b : a)).id;
+  const people = players.filter((p) => !p.bot);
+  if (hostId === playerId && people.length > 0) {
+    hostId = people.reduce((a, b) => (b.joinedAt < a.joinedAt ? b : a)).id;
   }
   return touch({ ...lobby, players, seats, rejoinCodes, hostId }, ctx.now);
 }
@@ -299,6 +393,8 @@ export function transferHost(lobby: Lobby, hostId: string, playerId: string, ctx
   requireHost(lobby, hostId);
   requirePlayer(lobby, playerId);
   if (playerId === hostId) return lobby;
+  if (lobby.players.find((p) => p.id === playerId)?.bot)
+    fail('BAD_REQUEST', 'A computer player can’t be the host.');
   return say(
     touch({ ...lobby, hostId: playerId }, ctx.now),
     [`{${playerId}} is now the host.`],
@@ -415,6 +511,13 @@ export function redeemRejoinCode(
     fail('REJOIN_INVALID', 'That rejoin code is wrong or has expired.');
   }
   const { playerId } = entry!;
+  // A device holds one seat. Taking another would strand its old one with no device behind it.
+  const current = playerIdForToken(lobby, tokenKey);
+  if (current === playerId) return { lobby, playerId };
+  if (current) {
+    const name = lobby.players.find((p) => p.id === current)?.name ?? 'someone';
+    fail('REJOIN_INVALID', `This device is already ${name} here. Leave first, then use the code.`);
+  }
   const seats = Object.fromEntries(Object.entries(lobby.seats).filter(([, id]) => id !== playerId));
   seats[tokenKey] = playerId;
   const rejoinCodes = { ...lobby.rejoinCodes };
@@ -473,6 +576,8 @@ export function startBlocker(lobby: Lobby, ctx: Pick<Ctx, 'games'>): string | nu
       ? `Needs exactly ${minPlayers} players.`
       : `Needs ${minPlayers} to ${maxPlayers} players.`;
   }
+  if (!game.bot && lobby.players.some((p) => p.bot))
+    return `${game.meta.name} can’t be played with computer players yet. Remove them first.`;
   const parsed = game.optionsSchema.safeParse(optionsWithDefaults(lobby, game));
   if (!parsed.success) return parsed.error.issues[0]?.message ?? 'Those options are not valid.';
   return game.validateOptions?.(parsed.data, n) ?? null;
@@ -509,6 +614,7 @@ function beginSession(lobby: Lobby, input: StartInput, ctx: Ctx): Lobby {
     seq: 0,
     startedAt: ctx.now,
     rngState: rng.state,
+    movedAt: ctx.now,
   };
   const started = say(
     touch({ ...lobby, status: 'in_game', session, results: null }, ctx.now),
@@ -551,15 +657,30 @@ export function applyGameAction(
   if (!parsed.success) fail('BAD_REQUEST', "That move isn't understood.");
   const rng = createRng(session.rngState);
   const state = game.applyAction(session.state, playerId, parsed.data, rng, ctx.now);
-  const next = say(
+  return finishIfOver(moved(lobby, game, state, rng.state, ctx), ctx);
+}
+
+/** The session after a move: the new state, seq and rng, and the game's chat lines for it. */
+function moved(
+  lobby: Lobby,
+  game: AnyGameModule,
+  state: unknown,
+  rngState: number,
+  ctx: Ctx,
+): Lobby {
+  const session = lobby.session!;
+  const { botFailed: _, ...rest } = session;
+  return say(
     touch(
-      { ...lobby, session: { ...session, state, seq: session.seq + 1, rngState: rng.state } },
+      {
+        ...lobby,
+        session: { ...rest, state, seq: session.seq + 1, rngState, movedAt: ctx.now },
+      },
       ctx.now,
     ),
     game.announce?.(session.state, state) ?? [],
     ctx.now,
   );
-  return finishIfOver(next, ctx);
 }
 
 /** Who the running game is waiting on (see GameModule.waitingOn); empty between games. */
@@ -572,17 +693,85 @@ export function waitingFor(lobby: Lobby, ctx: Pick<Ctx, 'games'>): string[] {
 /** At most this many timers fire in one go, in case a game keeps scheduling ones already due. */
 const TIMER_BURST = 20;
 
-/** When the running game's next timer is due (server time), or null if it has none. */
-export function nextTimerAt(lobby: Lobby, ctx: Pick<Ctx, 'games'>): number | null {
-  const session = lobby.session;
-  if (lobby.status !== 'in_game' || !session) return null;
-  return ctx.games[session.gameId]?.nextTimer?.(session.state)?.at ?? null;
+/**
+ * How long a bot waits after the last move before making its own, unless the game says (
+ * 2026-10-24: "bots go too fast"). Each move takes 0.8 to 1.8 times it (see `botDelay`).
+ */
+export const BOT_DELAY_MS = 2_000;
+
+/**
+ * This move's wait: the game's pace times a factor from 0.8 to 1.8, drawn from the session's rng
+ * state without moving it, so every read agrees on when the bot moves.
+ */
+function botDelay(game: AnyGameModule, session: Session): number {
+  const pace = game.botDelayMs;
+  const base = typeof pace === 'function' ? pace(session.state) : (pace ?? BOT_DELAY_MS);
+  const u = createRng((session.rngState ^ Math.imul(session.seq + 1, 0x9e3779b1)) >>> 0).next();
+  return Math.round(base * (0.8 + u));
 }
 
 /**
- * Fires every game timer that is due (there are no alarms on Vercel, so the runtime calls this on
- * reads and writes). Each one counts as a move: the seq goes up, the game may announce it, and the
- * game can end. Returns the same lobby when nothing was due.
+ * The first bot (in seat order) with a move to make in the running game, and the move, decided
+ * from that bot's own view at `now`. `rng` is where the decision left the session's rng, so the
+ * move is applied with the same draws. Null when no bot has anything to do.
+ */
+function botMove(lobby: Lobby, ctx: Ctx): { id: string; action: unknown; rng: Rng } | null {
+  const session = lobby.session;
+  if (lobby.status !== 'in_game' || !session) return null;
+  const game = ctx.games[session.gameId];
+  if (!game?.bot) return null;
+  const bots = new Set(lobby.players.filter((p) => p.bot).map((p) => p.id));
+  const level = lobby.botLevel ?? DEFAULT_BOT_LEVEL;
+  const failed = session.botFailed?.seq === session.seq ? session.botFailed.ids : [];
+  const tableView = game.getTableView(session.state);
+  for (const id of session.playerIds) {
+    if (!bots.has(id) || failed.includes(id)) continue;
+    const rng = createRng(session.rngState);
+    const action = game.bot({
+      playerId: id,
+      playerIds: session.playerIds,
+      view: game.getPlayerView(session.state, id),
+      tableView,
+      rng,
+      now: ctx.now,
+      level,
+    });
+    if (action != null) return { id, action, rng };
+  }
+  return null;
+}
+
+/** When a bot will next move (server time), or null if none has anything to do. */
+function nextBotAt(lobby: Lobby, ctx: Pick<Ctx, 'games'> & { now?: number }): number | null {
+  const session = lobby.session;
+  if (lobby.status !== 'in_game' || !session) return null;
+  const game = ctx.games[session.gameId];
+  if (!game?.bot || !lobby.players.some((p) => p.bot)) return null;
+  const at = (session.movedAt ?? session.startedAt) + botDelay(game, session);
+  return botMove(lobby, { games: ctx.games, now: Math.max(at, ctx.now ?? 0) }) ? at : null;
+}
+
+/**
+ * When the running game next needs a nudge (server time): its next timer, or a bot's move,
+ * whichever comes first. Null if it has neither.
+ */
+export function nextTimerAt(
+  lobby: Lobby,
+  ctx: Pick<Ctx, 'games'> & { now?: number },
+): number | null {
+  const session = lobby.session;
+  if (lobby.status !== 'in_game' || !session) return null;
+  const timer = ctx.games[session.gameId]?.nextTimer?.(session.state)?.at ?? null;
+  const bot = nextBotAt(lobby, ctx);
+  if (timer === null) return bot;
+  return bot === null ? timer : Math.min(timer, bot);
+}
+
+/**
+ * Fires every game timer that is due, then lets one bot move if its moment has come (there are no
+ * alarms on Vercel, so the runtime calls this on reads and writes). Each counts as a move: the seq
+ * goes up, the game may announce it, and the game can end. Returns the same lobby when nothing was
+ * due.
  */
 export function runTimers(lobby: Lobby, ctx: Ctx): Lobby {
   let out = lobby;
@@ -591,23 +780,41 @@ export function runTimers(lobby: Lobby, ctx: Ctx): Lobby {
     if (out.status !== 'in_game' || !session) return out;
     const game = gameFor(ctx, session.gameId);
     const timer = game.nextTimer?.(session.state);
-    if (!timer || timer.at > ctx.now || !game.onTimer) return out;
+    if (!timer || timer.at > ctx.now || !game.onTimer) break;
     const rng = createRng(session.rngState);
     const state = game.onTimer(session.state, timer.id, rng, ctx.now);
-    if (state === session.state) return out;
-    out = finishIfOver(
-      say(
-        touch(
-          { ...out, session: { ...session, state, seq: session.seq + 1, rngState: rng.state } },
-          ctx.now,
-        ),
-        game.announce?.(session.state, state) ?? [],
-        ctx.now,
-      ),
-      ctx,
+    if (state === session.state) break;
+    out = finishIfOver(moved(out, game, state, rng.state, ctx), ctx);
+  }
+  return runBot(out, ctx);
+}
+
+/**
+ * One bot move, if one is due. A move the game refuses (a bot that got it wrong) benches that bot
+ * until the game moves on, so it can't stall the lobby by trying again on every read.
+ */
+function runBot(lobby: Lobby, ctx: Ctx): Lobby {
+  const at = nextBotAt(lobby, ctx);
+  if (at === null || at > ctx.now) return lobby;
+  const move = botMove(lobby, ctx);
+  if (!move) return lobby;
+  const session = lobby.session!;
+  const game = gameFor(ctx, session.gameId);
+  try {
+    const action = game.actionSchema.parse(move.action);
+    const state = game.applyAction(session.state, move.id, action, move.rng, ctx.now);
+    if (state === session.state) throw new Error('nothing changed');
+    return finishIfOver(moved(lobby, game, state, move.rng.state, ctx), ctx);
+  } catch {
+    const ids = session.botFailed?.seq === session.seq ? session.botFailed.ids : [];
+    return touch(
+      {
+        ...lobby,
+        session: { ...session, botFailed: { seq: session.seq, ids: [...ids, move.id] } },
+      },
+      ctx.now,
     );
   }
-  return out;
 }
 
 function finishIfOver(lobby: Lobby, ctx: Ctx): Lobby {
@@ -672,12 +879,26 @@ export function endGame(lobby: Lobby, result: GameResult, ctx: Ctx): Lobby {
 }
 
 /**
- * The host stops the running game for everyone. Nothing is recorded: no history entry, no
- * scores. The lobby goes back to waiting with the same game and options.
+ * What the running game would record if the host ended it now (see GameModule.partialResult),
+ * or null when it has no rounds worth saving.
  */
-export function endGameEarly(lobby: Lobby, hostId: string, ctx: Ctx): Lobby {
+export function partialResultOf(lobby: Lobby, ctx: Pick<Ctx, 'games'>): GameResult | null {
+  const session = lobby.session;
+  if (lobby.status !== 'in_game' || !session) return null;
+  return ctx.games[session.gameId]?.partialResult?.(session.state) ?? null;
+}
+
+/**
+ * The host stops the running game for everyone. With `save` and rounds worth saving (
+ * 2026-10-24), it finishes as usual on the rounds played so far: history, scores, results.
+ * Otherwise nothing is recorded and the lobby goes back to waiting with the same game and options.
+ */
+export function endGameEarly(lobby: Lobby, hostId: string, ctx: Ctx, save = false): Lobby {
   requireHost(lobby, hostId);
   requireStatus(lobby, 'in_game');
+  const partial = save ? partialResultOf(lobby, ctx) : null;
+  if (partial)
+    return endGame(lobby, { ...partial, summary: `Ended early. ${partial.summary}` }, ctx);
   const stopped = touch({ ...lobby, status: 'waiting', session: null, results: null }, ctx.now);
   return say(stopped, ['The host ended the game early.'], ctx.now);
 }
@@ -747,8 +968,9 @@ export function snapshotFor(
       name: p.name,
       avatar: p.avatar,
       joinedAt: p.joinedAt,
-      online: ctx.now - (presence[p.id] ?? 0) <= ONLINE_WINDOW_MS,
+      online: Boolean(p.bot) || ctx.now - (presence[p.id] ?? 0) <= ONLINE_WINDOW_MS,
       seated: lobby.status !== 'in_game' || seatedIds.has(p.id),
+      ...(p.bot ? { bot: true as const } : {}),
     })),
     displays,
     selectedGameId: lobby.selectedGameId,
@@ -756,6 +978,7 @@ export function snapshotFor(
       lobby.selectedGameId && ctx.games[lobby.selectedGameId]
         ? optionsWithDefaults(lobby, ctx.games[lobby.selectedGameId]!)
         : lobby.gameOptions,
+    botLevel: lobby.botLevel ?? DEFAULT_BOT_LEVEL,
     // Polls carry only the latest games; the full record is served separately as stats.
     history: lobby.history.slice(0, SNAPSHOT_HISTORY),
     historyCount: lobby.history.length,
@@ -771,6 +994,7 @@ export function snapshotFor(
   const timerAt = nextTimerAt(lobby, ctx);
   if (timerAt !== null) snapshot.timerAt = timerAt;
   if (lobby.status === 'in_game') snapshot.waitingOn = waitingFor(lobby, ctx);
+  if (partialResultOf(lobby, ctx)) snapshot.canSave = true;
   if (session && lobby.status === 'in_game') {
     const game = gameFor(ctx, session.gameId);
     snapshot.tableView = game.getTableView(session.state);

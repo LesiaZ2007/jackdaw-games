@@ -4,6 +4,7 @@ export * from './pieces';
 export * from './game-ui';
 export * from './avatars';
 export * from './overlays';
+export * from './recap';
 export * from './avatar-picker';
 export * from './theme';
 export * from './cover';

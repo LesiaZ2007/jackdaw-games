@@ -11,6 +11,9 @@ interface FieldDef {
   description?: string;
 }
 
+/** The kinds of option the panel draws. */
+const DRAWN = new Set(['number', 'boolean', 'enum']);
+
 /** Turn "roundsToWin" into "Rounds to win". */
 function label(key: string) {
   const words = key.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
@@ -26,10 +29,13 @@ export function OptionsPanel({
   options,
   editable,
   onChange,
+  help,
 }: {
   schema: ZodType;
   options: Record<string, unknown>;
   editable: boolean;
+  /** A line under each option, by key: one for the option, or one per choice. */
+  help?: Record<string, string | Record<string, string>>;
   /** Sends the new options; may return the save's promise. */
   onChange: (next: Record<string, unknown>) => unknown;
 }) {
@@ -37,14 +43,20 @@ export function OptionsPanel({
 
   const shape = (schema as unknown as { shape?: Record<string, ZodType> }).shape;
   if (!shape || Object.keys(shape).length === 0) return null;
+  // Only plain choices are drawn here; a game sets anything richer itself (Wavelength's teams).
+  const fields = Object.entries(shape).filter(([, f]) =>
+    DRAWN.has((f as unknown as { def: { type: string } }).def.type),
+  );
 
   return (
     <dl className="options">
-      {Object.entries(shape).map(([key, field]) => {
+      {fields.map(([key, field]) => {
         const f = field as unknown as FieldDef & { def: { type: string } };
         const type = f.def.type;
         const value = current[key];
         const set = (v: unknown) => save({ ...current, [key]: v });
+        const h = help?.[key];
+        const note = typeof h === 'string' ? h : h?.[String(value)];
         return (
           <div key={key} className="options__row">
             <dt>{f.description ?? label(key)}</dt>
@@ -109,6 +121,7 @@ export function OptionsPanel({
                 <b>{String(value ?? '')}</b>
               )}
             </dd>
+            {note && <dd className="options__help">{note}</dd>}
           </div>
         );
       })}

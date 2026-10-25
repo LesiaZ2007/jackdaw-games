@@ -176,7 +176,6 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               </span>
               <span className="bs-name__text">
                 <b>{id === v.me ? 'You' : name(id)}</b>
-                <span>{v.boards[id]?.afloat ?? 5} afloat</span>
               </span>
             </span>
           );
@@ -208,6 +207,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               fresh={fresh?.at === v.me ? fresh : null}
               sinking={sinking}
               settling={settling}
+              tally={tallyOf(v.boards[v.me])}
+              smoke="own"
               ghost={ghost}
               onAim={placing ? setAim : undefined}
               interactive={placing}
@@ -223,6 +224,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               fresh={fresh?.at === foe ? fresh : null}
               sinking={theirSinking}
               settling={null}
+              tally={tallyOf(v.boards[foe])}
+              smoke="sea"
               selected={salvo}
               interactive={firing}
               onCell={firing ? (cell) => void fire(cell) : undefined}
@@ -305,6 +308,10 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     </div>
   );
 };
+
+function tallyOf(board: { afloat: number; wrecks: readonly unknown[] } | undefined) {
+  return { afloat: board?.afloat ?? 5, sunk: board?.wrecks.length ?? 0 };
+}
 
 function takenExcept(draft: Draft, picked: ShipId): Set<number> {
   const taken = new Set<number>();

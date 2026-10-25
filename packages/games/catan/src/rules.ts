@@ -110,6 +110,8 @@ export interface Offer {
   replies: Record<string, 'accept' | 'decline'>;
   /** The offer this one answers, for a counter-offer. */
   counter: number | null;
+  /** When it was made (server time), so a bot knows how long it has waited for answers. */
+  at?: number;
 }
 
 /** The last robbery. `resource` is secret: only the thief and the victim see it. */
@@ -171,6 +173,8 @@ export interface CatanState {
   army: string | null;
   offers: Offer[];
   offerSeq: number;
+  /** Offers the player on their turn has made to the table this turn (absent in older saves). */
+  tradeTries?: number;
   /** Numbers robberies, award changes and monopolies, for the screens' moments. */
   eventSeq: number;
   robbery: Robbery | null;
@@ -215,6 +219,8 @@ export interface CatanTableView {
   /** Points everyone can see (without hidden victory point cards). */
   points: Record<string, number>;
   offers: Offer[];
+  /** Offers the player on their turn has made to the table this turn. */
+  tradeTries: number;
   /** Who robbed whom, and whether a card changed hands (never which). */
   robbery: (Omit<Robbery, 'resource'> & { took: boolean }) | null;
   award: AwardChange | null;
@@ -634,7 +640,13 @@ function makeOffer(
     replies: {},
     counter,
   };
-  return { ...s, offerSeq: id, offers: [...s.offers, offer] };
+  const tries = who === s.turn && counter === null ? (s.tradeTries ?? 0) + 1 : s.tradeTries;
+  return {
+    ...s,
+    offerSeq: id,
+    offers: [...s.offers, offer],
+    ...(tries !== undefined ? { tradeTries: tries } : {}),
+  };
 }
 
 type Response = Extract<CatanAction, { type: 'answer' | 'counter' | 'propose' | 'withdraw' }>;
@@ -891,7 +903,14 @@ function play(s: CatanState, who: string, a: PlayAction): CatanState {
 function endTurn(s: CatanState): CatanState {
   const n = s.seats.length;
   const i = s.seats.indexOf(s.turn);
-  const base = { ...s, offers: [], devPlayed: false, turnSeq: s.turnSeq + 1, produced: {} };
+  const base = {
+    ...s,
+    offers: [],
+    tradeTries: 0,
+    devPlayed: false,
+    turnSeq: s.turnSeq + 1,
+    produced: {},
+  };
   if (n >= 5 && !s.paired) {
     const paired = s.seats[(i + 3) % n]!;
     return startOf(
@@ -958,6 +977,7 @@ function getTableView(s: CatanState): CatanTableView {
     army: s.army,
     points: Object.fromEntries(s.seats.map((p) => [p, points(s, p, over)])),
     offers: s.offers,
+    tradeTries: s.tradeTries ?? 0,
     robbery: s.robbery && {
       seq: s.robbery.seq,
       thief: s.robbery.thief,
@@ -1164,6 +1184,12 @@ function stamp(prev: CatanState | null, s: CatanState, now: number): CatanState 
   return { ...s, actBy: now + s.turnSecs * 1000 };
 }
 
+/** New offers get the time they were made. */
+function dated(prev: CatanState, s: CatanState, now: number): CatanState {
+  if (s.offerSeq === prev.offerSeq) return s;
+  return { ...s, offers: s.offers.map((o) => (o.id > prev.offerSeq ? { ...o, at: now } : o)) };
+}
+
 /** One move with the win check after it, as the platform applies it (the timer uses it too). */
 export const applyMove = (s: CatanState, who: string, a: CatanAction, rng: Rng): CatanState =>
   settle(applyAction(s, who, a, rng), who);
@@ -1178,7 +1204,7 @@ export const catan: CatanModule = {
   setup: (ctx) => stamp(null, setup(ctx), ctx.now),
   getPlayerView,
   getTableView,
-  applyAction: (s, who, a, rng, now) => stamp(s, applyMove(s, who, a, rng), now),
+  applyAction: (s, who, a, rng, now) => stamp(s, dated(s, applyMove(s, who, a, rng), now), now),
   getResult,
   partialResult,
   bot: catanBot,

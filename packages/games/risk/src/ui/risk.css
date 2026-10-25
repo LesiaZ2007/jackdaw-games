@@ -1323,3 +1323,28 @@
     animation: none;
   }
 }
+
+/* ── Hover on a computer (Lesia, 2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) {
+  /* The territory under the pointer lights up; brighter still where you can pick it. */
+  .rk-terr__land {
+    transition:
+      opacity 280ms var(--ease-out),
+      filter 140ms var(--ease-out);
+  }
+  .rk-terr:hover .rk-terr__land {
+    filter: brightness(1.08) saturate(1.15);
+  }
+  .rk-terr.is-pickable:hover .rk-terr__land {
+    filter: brightness(1.16) saturate(1.35);
+  }
+  .rk-terr.is-pickable:hover .rk-terr__line {
+    stroke-opacity: 1;
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .rk-card:not(.is-picked):not(:disabled):hover {
+    transform: translateY(-4px);
+  }
+}

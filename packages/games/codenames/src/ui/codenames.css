@@ -1158,3 +1158,19 @@ button.cn-card {
     transition: none !important;
   }
 }
+
+/* ── Hover on a computer (Lesia, 2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  button.cn-card {
+    transition:
+      transform 140ms var(--ease-out),
+      box-shadow 140ms var(--ease-out);
+  }
+  button.cn-card:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 1px 0 var(--cn-panel-edge),
+      0 6px 10px var(--cn-shadow);
+  }
+}

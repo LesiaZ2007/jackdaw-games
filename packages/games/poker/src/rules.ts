@@ -1,5 +1,6 @@
 import {
   GameError,
+  type BotLevel,
   type GameModule,
   type GameResult,
   type RecapEvent,
@@ -570,6 +571,9 @@ export function choices(t: PokerTableView, id: string) {
   return { bet, stack, owe, max, minTo, canRaise, canCheck: owe === 0 };
 }
 
+/** How far off a bot's read of its share of the pot can be, by level. */
+const MISREAD: Record<BotLevel, number> = { easy: 0.3, normal: 0.16, hard: 0.08 };
+
 /**
  * A computer player's move (Lesia, 2026-10-24: "play against bots"), from its own view only: its
  * two cards, the board, the pot and the bets. It estimates its share of the pot against the
@@ -588,7 +592,11 @@ export function choices(t: PokerTableView, id: string) {
  * Every move it makes is legal from its view: raises are clamped to the smallest and largest
  * allowed, and a raise it can't make becomes a call or a check. Randomness only from `rng`.
  */
-export function botMove(v: PokerPlayerView, rng: Rng): PokerAction | null {
+export function botMove(
+  v: PokerPlayerView,
+  rng: Rng,
+  level: BotLevel = 'hard',
+): PokerAction | null {
   const me = v.me;
   if (v.phase === 'done') return v.canBuyBack.includes(me) ? { type: 'buyBack' } : null;
   if (v.phase === 'over' || v.toAct !== me || v.hole.length < 2) return null;
@@ -603,8 +611,9 @@ export function botMove(v: PokerPlayerView, rng: Rng): PokerAction | null {
   const order = around(v, v.dealer, (id) => id === me || others.includes(id));
   const pos = order.length > 1 ? order.indexOf(me) / (order.length - 1) : 1;
   const e = equity(v.hole, v.board, n, rng, samples);
-  // A little noise so it isn't predictable, plus position and looseness.
-  const score = e + (rng.next() - 0.5) * 0.08 + pos * 0.03 + loose * fair * 2;
+  // A little noise so it isn't predictable (more the lower its level: an Easy bot misreads its
+  // hand often), plus position and looseness.
+  const score = e + (rng.next() - 0.5) * MISREAD[level] + pos * 0.03 + loose * fair * 2;
   // Strong against this many players, or simply a favourite; a monster wins most of the time.
   const strong = score > 0.62 || (n > 1 && score > fair * 1.8);
   const monster = score > 0.78 || (n > 1 && score > fair * 2.6);
@@ -906,5 +915,5 @@ export const poker: GameModule<
     );
   },
 
-  bot: ({ view, rng }) => botMove(view, rng),
+  bot: ({ view, rng, level }) => botMove(view, rng, level),
 };

@@ -26,6 +26,7 @@ function playOut(n: number, seed: number, options: WordhoardOptions, times: numb
         tableView: game.getTableView(s),
         rng,
         now,
+        level: 'hard' as const,
       });
       times.push(performance.now() - t0);
       if (!action) continue;
@@ -123,6 +124,7 @@ describe('the bot', () => {
       tableView: game.getTableView(st),
       rng,
       now: 0,
+      level: 'hard' as const,
     });
     expect(game.bot!(ctx(s, other))).toBe(null);
     const stuck = { ...s, racks: { ...s.racks, [s.turn]: [...'QQXZJVV'] } };

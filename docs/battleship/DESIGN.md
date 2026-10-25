@@ -19,11 +19,17 @@ Each player hides a fleet on a 10×10 chart the other cannot see. Columns are A�
 
 Ships lie horizontal or vertical. They may touch, including along an edge, and they may
 not overlap or leave the chart. Both fleets are placed in secret. When the second fleet
-locks, one player is drawn to fire first. Players then alternate until one fleet is sunk.
-A hit does not earn another shot.
+locks, one player is drawn to fire first.
 
-A miss is an ink cross. A hit is a red peg. A ship is named and drawn only on the shot
-that sinks it, and then every square of it is marked sunk. The turn passes either way.
+In One shot, a hit earns another shot. That includes a hit which sinks a ship while any
+of the fleet remains. A miss ends the turn. The shot that sinks the last ship ends the
+battle, and does not offer another shot. Salvo stays one volley per turn: every square
+resolves, then the other player fires, even when the volley was all hits. The bot
+follows the same rule, because it is only asked while it is the player to act.
+
+A miss is an ink cross. A hit is a red peg. On your own chart the peg is drawn on top
+of that part of the ship. A ship is named and drawn only on the shot that sinks it, and
+then every square of it is marked sunk.
 
 ## Options (Jackdaw's options panel)
 
@@ -32,12 +38,14 @@ that sinks it, and then every square of it is marked sunk. The turn passes eithe
 | `firing`    | Firing     | One shot, Salvo             | One shot |
 | `turnTimer` | Turn timer | Off, 30 seconds, 60 seconds | Off      |
 
-One shot is the classic game: one square, then the other player, hit or miss.
+One shot fires a single square. A hit lets you fire again. A miss passes the turn.
+Sinking the last ship ends the game.
 
 Salvo is the old variant from the same family. On your turn you fire once for each of
 **your** ships still afloat (five at the start, one fewer each time one of yours is
 sunk). You name the whole volley, then every square resolves, even if the enemy fleet
-goes down partway through. The turn passes after the volley.
+goes down partway through. The turn passes after the volley, hits or not. A volley
+that sinks the last ship ends the battle.
 
 The turn timer is one shared clock. While placing, it is a single deadline from the
 start of the game; anyone still laying a fleet has one dealt for them, then firing
@@ -93,13 +101,27 @@ is `1000` minus the winner's shots, so fewer shots rank higher.
 
 A printed chart on pale water. The sea, its ink, and a few engraved wave lines are tokens
 on `.bs` (`--bs-sea`, `--bs-ink`, `--bs-wave`), with a darker sea when `useTheme()` is dark.
-Each ship is a pointed rounded rectangle: a broad hull, rounded corners, and a pointed
-bow, in the heraldic fill for its length (gules, azure, vert, purpure, tenné). Your own
-fleet is drawn that way. A sunk ship is too, on the phone and the TV, tilted a little and
-transparent so the squares show through, still on the cells it occupies. An unsunk enemy
-ship is never drawn. The frame,
-compass, and miss marks use the sea ink. Jackdaw's bar is left alone. No gradients as
-decoration, no glows, no spinning rings, no stained glass.
+Each ship has its own broad silhouette, bow to the left or the top, still wide enough to
+cover its squares: the carrier's flight deck and island, the battleship's three turret
+knuckles, the cruiser's clipper bow and spoon stern, the submarine's round nose and sail,
+the destroyer's sharp bow and cut stern. Heraldic fills stay (gules, azure, vert,
+purpure, tenné). Your own fleet, the placement ghost, and a sunk ship use these shapes.
+A sunk hull tilts a little and turns transparent so the squares show through, still on
+the cells it occupies. An unsunk enemy ship is never drawn. The frame, compass, and miss
+marks use the sea ink. Jackdaw's bar is left alone. No gradients as decoration, no glows,
+no spinning rings, no stained glass.
+
+The tally belongs to the chart on screen. Your fleet says how many of your ships are
+still afloat and how many are sunk. Their sea says the same for their fleet. On a laptop
+or the TV, each chart carries its own tally. On a phone, switching charts switches the
+tally.
+
+Letters A–J and numbers 1–10 sit on the same tracks as the columns and rows. A miss or a
+hit is inside the cell. The labels are not buttons, so tapping one does not fire.
+
+A hit part of your own ship smokes, and the red peg sits on that square of the hull. On
+their sea, smoke marks the hit cell only, until that ship sinks. After it sinks, the
+hull can smoke. Smoke is ink, with no blur.
 
 On a computer, while you are placing, a faded copy of the ship you have picked follows
 the mouse and snaps to the squares it would occupy. Same shape, length, and fill. A spot
@@ -113,10 +135,11 @@ part of either player's view, the table view, or the TV.
   selected ship, which drops onto its squares. Fleet ready locks it. One shot fires on
   the tap. Salvo selects squares, then Fire salvo. Grid squares shrink so the 10×10
   chart fits under the bar at 375px; the dock and the chart switch stay at least 44px.
-- **A shot:** the peg travels in from above the chart and stamps into the square. A
-  miss lands as an ink cross. A hit lands as a red peg. A ship that just sank is drawn
-  across its squares, then tilts and turns transparent, still on those squares. A salvo
-  staggers the pegs.
+- **A shot:** the peg travels across the chart, then lands in the square. Printed, with
+  no glow. A miss lands as an ink cross. A hit lands as a red peg. On your fleet that peg
+  is drawn on the ship. A ship that just sank is drawn across its squares, then tilts and
+  turns transparent, still on those squares. A salvo staggers the pegs. The flight is only
+  the mark, never an unsunk enemy hull. `prefers-reduced-motion` snaps to the landed mark.
 - **VerdictMoment** still fires for a result the player can feel: you hit (reveal),
   you sank a ship (win), they hit you or sank one of yours (loss), and the final
   result. A miss does not raise one. The seal waits until the peg has landed.
@@ -132,12 +155,15 @@ Entrances use `--ease-out` (`cubic-bezier(.22, 1, .36, 1)`), between 640ms and 9
 ## Testing
 
 - Rules: touching ships, overlap, off the chart, both must lock, the first shot is
-  drawn, a second placement is refused, a hit passes the turn and leaves the rest of
-  the ship blank, a sink reveals the wreck and still passes, repeat and out-of-turn
-  shots, the show beat then the result and highlight, salvo size after you lose a
-  ship, the place timer and a timed salvo.
+  drawn, a second placement is refused, a hit keeps the turn and leaves the rest of
+  the ship blank, a miss passes, a sink that is not the last ship keeps the turn and
+  reveals the wreck, the shot that sinks the last ship ends the battle with no extra
+  shot, repeat and out-of-turn shots, the show beat then the result and highlight,
+  salvo size after you lose a ship, an all-hit salvo still passes, the place timer
+  and a timed shot that follows the same hit rule.
 - Hidden information: moving an unhit destroyer does not change the table or the
   other player; chat does not name a ship until it sinks; the recap secret is not in
   the views; eight random games, including secret moves.
-- Bot: all-bot games for one shot and salvo, with and without the timer, and a check
-  that the bot aims from its own chart.
+- Bot: all-bot games for one shot and salvo, with and without the timer, a check that
+  the bot aims from its own chart, and that it is asked again after its own hit and
+  not after its miss.

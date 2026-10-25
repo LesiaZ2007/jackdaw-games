@@ -107,4 +107,62 @@ describe('Battleship bots', () => {
     const next = game.applyAction(s, s.toAct!, shot, createRng(7), 4_000);
     expect(next.volleys).toHaveLength(1);
   });
+
+  it('fires again after a hit, and waits after a miss', () => {
+    let s = game.setup({
+      playerIds: ['wren', 'rook'],
+      options: game.defaultOptions(2),
+      rng: createRng(1),
+      now: 0,
+    });
+    s = game.applyAction(
+      s,
+      'wren',
+      {
+        type: 'place',
+        ships: [
+          { id: 'carrier', dir: 'h', at: 0 },
+          { id: 'battleship', dir: 'h', at: 10 },
+          { id: 'cruiser', dir: 'v', at: 7 },
+          { id: 'submarine', dir: 'h', at: 33 },
+          { id: 'destroyer', dir: 'h', at: 98 },
+        ],
+      },
+      createRng(2),
+      1_000,
+    );
+    s = game.applyAction(
+      s,
+      'rook',
+      {
+        type: 'place',
+        ships: [
+          { id: 'carrier', dir: 'v', at: 9 },
+          { id: 'battleship', dir: 'h', at: 20 },
+          { id: 'cruiser', dir: 'h', at: 50 },
+          { id: 'submarine', dir: 'v', at: 44 },
+          { id: 'destroyer', dir: 'h', at: 77 },
+        ],
+      },
+      createRng(3),
+      2_000,
+    );
+    const attacker = s.toAct!;
+    const defender = s.players.find((id) => id !== attacker)!;
+    const bow = s.fleets[defender]!.ships.find((ship) => ship.id === 'destroyer')!.cells[0]!;
+    s = game.applyAction(s, attacker, { type: 'fire', cells: [bow] }, createRng(4), 3_000);
+    expect(s.toAct).toBe(attacker);
+    expect(ask(s, attacker, 8, 4_000)?.type).toBe('fire');
+    expect(ask(s, defender, 9, 4_000)).toBeNull();
+
+    const fleet = s.fleets[defender]!.ships;
+    const miss = game.getPlayerView(s, attacker).boards[defender]!.cells.findIndex((mark, cell) => {
+      return mark === 'blank' && !fleet.some((ship) => ship.cells.includes(cell));
+    });
+    s = game.applyAction(s, attacker, { type: 'fire', cells: [miss] }, createRng(5), 5_000);
+    expect(s.volleys.at(-1)!.shots[0]!.result).toBe('miss');
+    expect(s.toAct).toBe(defender);
+    expect(ask(s, attacker, 10, 6_000)).toBeNull();
+    expect(ask(s, defender, 11, 6_000)?.type).toBe('fire');
+  });
 });

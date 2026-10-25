@@ -21,6 +21,7 @@ const ask = (s: WavelengthState, id: string, seed: number, now: number) =>
     tableView: game.getTableView(s),
     rng: createRng(seed),
     now,
+    level: 'hard',
   });
 
 /** A whole game with a bot in every seat, timers fired as the platform would. */

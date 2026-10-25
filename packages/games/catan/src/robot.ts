@@ -1,4 +1,4 @@
-import type { BotContext } from '@jackdaw/engine';
+import { botChoose, botSlips, type BotContext, type BotLevel, type Rng } from '@jackdaw/engine';
 import { pips } from './board';
 import {
   COSTS,
@@ -31,7 +31,15 @@ import { RESOURCES, YIELD, countCards, type Cards, type Resource } from './types
  * builds whatever it can afford (cities, settlements, roads toward new sites), buys development
  * cards once the island is full, trades surplus with the bank toward its next build, robs the
  * leader, discards its biggest piles on a 7, and answers every trade offered to it (yes when it
- * gains, no otherwise). It never offers trades itself, so it never waits on anyone.
+ * gains, no otherwise).
+ *
+ * It trades with people too (2026-10-24: "make catan bots able to trade"): once a turn,
+ * short a card or two for its next build, it offers the table one spare card for one it needs,
+ * takes the first yes from someone who can pay, and takes the offer back once everyone has
+ * answered or after OFFER_WAIT_MS, so a turn never hangs on a player who looks away.
+ *
+ * By level: below Hard it sometimes opens, settles or builds on a lesser spot, and robs a lesser
+ * tile (see botChoose), and now and then skips a trade it could have made.
  *
  * Function declarations throughout: rules.ts imports this file and this file imports rules.ts.
  */
@@ -39,9 +47,11 @@ export function catanBot(ctx: BotContext<CatanView, CatanTableView>): CatanActio
   const { playerId: me, view: v, tableView: t } = ctx;
   if (t.phase === 'over' || !t.seats.includes(me)) return null;
   const L = layoutOf(t);
+  const pick: Pick = (items, score) =>
+    items.length ? botChoose(items, score, ctx.level, ctx.rng) : null;
   switch (t.phase) {
     case 'setup':
-      return t.actor === me ? opening(L, t, me) : null;
+      return t.actor === me ? opening(L, t, me, pick) : null;
     case 'discard': {
       const owe = t.discards[me];
       return owe
@@ -49,7 +59,7 @@ export function catanBot(ctx: BotContext<CatanView, CatanTableView>): CatanActio
         : null;
     }
     case 'robber':
-      return t.robberBy === me ? robber(L, t, me) : null;
+      return t.robberBy === me ? robber(L, t, me, pick) : null;
     case 'roll': {
       if (t.actor !== me) return null;
       if (v.dev.some((d) => d.card === 'knight' && d.playable) && robbed(L, t, me))
@@ -58,15 +68,23 @@ export function catanBot(ctx: BotContext<CatanView, CatanTableView>): CatanActio
     }
     case 'roadBuilding': {
       if (t.actor !== me) return null;
-      const at = piecesLeft(t.buildings, t.roads, me).road > 0 ? bestRoad(L, t, me) : null;
+      const at = piecesLeft(t.buildings, t.roads, me).road > 0 ? bestRoad(L, t, me, pick) : null;
       return at ? build('road', at) : { type: 'endRoads' };
     }
     case 'main':
-      return t.actor === me ? turn(L, t, v, me) : answer(L, t, v.hand, me);
+      return t.actor === me
+        ? turn(L, t, v, me, pick, ctx.now, ctx.level, ctx.rng)
+        : answer(L, t, v.hand, me);
   }
 }
 
 type T = CatanTableView;
+
+/** How long a bot waits for answers to its offer before taking it back. */
+export const OFFER_WAIT_MS = 20_000;
+
+/** Chooses among scored spots by the bot's level (see botChoose); null when there are none. */
+type Pick = <X>(items: readonly X[], score: (x: X) => number) => X | null;
 type Goal = Piece | 'dev' | null;
 
 const build = (kind: Piece, at: string): CatanAction => ({ type: 'build', kind, at });
@@ -117,10 +135,10 @@ function bestBy<X>(items: readonly X[], score: (x: X) => number): X | null {
 }
 
 /** Opening placements: the best corner, then a road pointing at the best site beyond it. */
-function opening(L: Layout, t: T, me: string): CatanAction | null {
+function opening(L: Layout, t: T, me: string, pick: Pick): CatanAction | null {
   const corner = t.setup?.corner;
   if (!corner) {
-    const at = bestBy(settlementSpots(L, t.buildings, t.roads, me, true), (c) =>
+    const at = pick(settlementSpots(L, t.buildings, t.roads, me, true), (c) =>
       cornerScore(L, t, me, c),
     );
     return at ? build('settlement', at) : null;
@@ -155,8 +173,8 @@ function roadOwnedByOther(
   return !!e && !!roads[e] && roads[e] !== me;
 }
 
-function bestRoad(L: Layout, t: T, me: string): string | null {
-  return bestBy(roadSpots(L, t.buildings, t.roads, me), (e) => roadScore(L, t, me, e));
+function bestRoad(L: Layout, t: T, me: string, pick: Pick): string | null {
+  return pick(roadSpots(L, t.buildings, t.roads, me), (e) => roadScore(L, t, me, e));
 }
 
 /** The robber sits on a tile where `me` builds. */
@@ -168,7 +186,7 @@ function robbed(L: Layout, t: T, me: string): boolean {
 }
 
 /** Robber: the tile that hurts the leaders most and spares `me`; rob its richest leader. */
-function robber(L: Layout, t: T, me: string): CatanAction | null {
+function robber(L: Layout, t: T, me: string, pick: Pick): CatanAction | null {
   const tiles = robberSpots(t, me, (p) => t.points[p] ?? 0);
   const harm = (i: number) => {
     const tile = t.board.tiles[i]!;
@@ -183,7 +201,7 @@ function robber(L: Layout, t: T, me: string): CatanAction | null {
     if (victimsAt(t, i, me).some((p) => (t.handCounts[p] ?? 0) > 0)) n += 3;
     return n;
   };
-  const tile = bestBy(tiles, harm);
+  const tile = pick(tiles, harm);
   if (tile === null) return null;
   const rich = victimsAt(t, tile, me).filter((p) => (t.handCounts[p] ?? 0) > 0);
   const victim = bestBy(rich, (p) => (t.points[p] ?? 0) * 10 + (t.handCounts[p] ?? 0));
@@ -282,7 +300,16 @@ function goodProposal(t: T, hand: Cards, me: string, g: Goal): Offer | null {
 }
 
 /** On its turn (or paired phase): trade, play a card, build, buy, then end the turn. */
-function turn(L: Layout, t: T, v: CatanView, me: string): CatanAction {
+function turn(
+  L: Layout,
+  t: T,
+  v: CatanView,
+  me: string,
+  pick: Pick,
+  now: number,
+  level: BotLevel,
+  rng: Rng,
+): CatanAction | null {
   const hand = v.hand;
   const left = piecesLeft(t.buildings, t.roads, me);
   const g = goal(L, t, me, hand);
@@ -290,24 +317,28 @@ function turn(L: Layout, t: T, v: CatanView, me: string): CatanAction {
   const offer = goodProposal(t, hand, me, g);
   if (offer) return { type: 'accept', offer: offer.id, with: offer.from };
 
+  // Its own offer to the table: close it with a yes, take it back, or wait for answers.
+  const mine = t.offers.find((o) => o.from === me);
+  if (mine) return settleOffer(t, hand, me, mine, now);
+
   const card = devToPlay(L, t, v, me, g);
   if (card) return card;
 
   if (canAfford(hand, COSTS.city) && left.city > 0) {
-    const at = bestBy(citySpots(t.buildings, me), (c) => yieldOf(L, t, c));
+    const at = pick(citySpots(t.buildings, me), (c) => yieldOf(L, t, c));
     if (at) return build('city', at);
   }
   const sites = left.settlement > 0 ? settlementSpots(L, t.buildings, t.roads, me, false) : [];
   if (canAfford(hand, COSTS.settlement) && sites.length)
     return build(
       'settlement',
-      bestBy(sites, (c) => cornerScore(L, t, me, c))!,
+      pick(sites, (c) => cornerScore(L, t, me, c))!,
     );
   // Roads when there's nowhere to settle yet (or to spend a big hand before a 7 takes it).
   if (canAfford(hand, COSTS.road) && left.road > 0) {
     const reach = !sites.length && left.settlement > 0;
     const flush = countCards(hand) > 7 && g !== 'settlement';
-    const at = reach || flush ? bestRoad(L, t, me) : null;
+    const at = reach || flush ? bestRoad(L, t, me, pick) : null;
     if (at) return build('road', at);
   }
   if (
@@ -317,9 +348,45 @@ function turn(L: Layout, t: T, v: CatanView, me: string): CatanAction {
   )
     return { type: 'buy' };
 
+  const ask = tradeOffer(t, hand, g);
+  if (ask && !botSlips(level, rng, 2)) return ask;
   const swap = bankTrade(L, t, hand, me, g);
   if (swap) return swap;
   return { type: 'endTurn' };
+}
+
+/**
+ * What to do with its own open offer: trade with the first who said yes and can pay, take it back
+ * once all have answered (or it can't pay any more, or it has waited long enough), else wait.
+ */
+function settleOffer(t: T, hand: Cards, me: string, o: Offer, now: number): CatanAction | null {
+  const others = t.seats.filter((p) => p !== me && (o.to === null || o.to === p));
+  const yes = others.find(
+    (p) => o.replies[p] === 'accept' && (t.handCounts[p] ?? 0) >= countCards(o.want),
+  );
+  if (yes && covers(hand, o.give)) return { type: 'accept', offer: o.id, with: yes };
+  const answered = others.every((p) => o.replies[p]);
+  if (answered || !covers(hand, o.give) || now - (o.at ?? 0) >= OFFER_WAIT_MS)
+    return { type: 'withdraw', offer: o.id };
+  return null;
+}
+
+/**
+ * Once a turn, when its goal is a card or two short: one spare card (the one it has most to
+ * spare) to the table for one it needs. Never in a paired phase, where there's no trading.
+ */
+function tradeOffer(t: T, hand: Cards, g: Goal): CatanAction | null {
+  if (t.paired || !g || t.tradeTries > 0) return null;
+  const need = COSTS[g];
+  const short = missing(hand, need);
+  if (countCards(short) < 1 || countCards(short) > 2) return null;
+  const want = RESOURCES.find((r) => (short[r] ?? 0) > 0)!;
+  const spare = bestBy(
+    RESOURCES.filter((r) => r !== want && hand[r] - (need[r] ?? 0) >= 1),
+    (r) => hand[r] - (need[r] ?? 0),
+  );
+  if (!spare) return null;
+  return { type: 'offer', give: { [spare]: 1 }, want: { [want]: 1 }, to: null };
 }
 
 /** A development card worth playing now, if any. */

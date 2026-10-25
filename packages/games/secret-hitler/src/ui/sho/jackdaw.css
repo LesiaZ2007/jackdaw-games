@@ -403,3 +403,17 @@ body:has(.sho-page),
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* Policy and vote cards you can pick rise a little (sho.css is generated, so it lives here). */
+  .sho #legislative-policy.selectable,
+  .sho #voting-card.selectable {
+    transition: translate 140ms var(--ease-out);
+  }
+  .sho #legislative-policy.selectable:not(.disabled):hover,
+  .sho #voting-card.selectable:not(.disabled):hover {
+    translate: 0 -8px;
+  }
+}

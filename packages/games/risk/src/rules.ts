@@ -40,14 +40,20 @@ import {
  * board with a passive neutral army.
  */
 
-const MAPS_BY_NAME = { World: 'world', Realm: 'realm' } as const satisfies Record<string, MapId>;
+/** The Map option's names for each board (Skerries and Twin Crowns added 2026-10-24). */
+export const MAPS_BY_NAME = {
+  World: 'world',
+  Realm: 'realm',
+  Skerries: 'skerries',
+  'Twin Crowns': 'twin',
+} as const satisfies Record<string, MapId>;
 const GOALS = ['Secret missions', 'World domination'] as const;
 const SETUPS = ['Quick', 'Draft'] as const;
 const CARD_SETS = ['Rising', 'Fixed'] as const;
 const CLOCKS = ['Off', '1 minute', '2 minutes', '3 minutes'] as const;
 
 export const optionsSchema = z.object({
-  map: z.enum(['World', 'Realm']).describe('Map'),
+  map: z.enum(['World', 'Realm', 'Skerries', 'Twin Crowns']).describe('Map'),
   goal: z.enum(GOALS).describe('Goal'),
   setup: z.enum(SETUPS).describe('Setup'),
   cardSets: z.enum(CARD_SETS).describe('Card sets'),
@@ -1022,7 +1028,7 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
   getResult,
   partialResult,
   bot: riskBot,
-  botDelayMs: 750,
+  botDelayMs: 1300,
   announce,
   waitingOn,
   nextTimer: (s) =>

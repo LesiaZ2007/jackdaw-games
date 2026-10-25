@@ -1,3 +1,4 @@
+export * from './bots';
 export * from './contract';
 export * from './errors';
 export * from './lobby';

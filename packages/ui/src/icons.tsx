@@ -147,79 +147,39 @@ export const GLYPHS: Record<string, ReactNode> = {
   ),
   ballot: (
     <g {...stroke(3.4)}>
-      <path d="M26 30V9h15v21M30 14.5l7 7M37 14.5l-7 7" />
-      <path d="M10 30h44v26H10zM22 30h20M10 37h44" />
+      <path d="M10 30h44v26H10zM20 30V10h24v20M26 18h12M26 24h8M24 38h16" />
     </g>
   ),
-  agent: (
-    <>
-      <g {...stroke(3.4)}>
-        <path d="M18 25c1-9 5-15 10-15 2 0 3 2 4 2s2-2 4-2c5 0 9 6 10 15" />
-        <path d="M8 27c7 2.6 15 4 24 4s17-1.4 24-4M14 58l6-14 12 7 12-7 6 14" />
-      </g>
-      <path
-        fill="currentColor"
-        d="M18.5 20.5c4 1.4 8.6 2 13.5 2s9.5-.6 13.5-2l.6 3.4c-4.2 1.4-9 2.1-14.1 2.1s-9.9-.7-14.1-2.1zM17 35.5h12.5c0 4-2.4 6-6.2 6S17 39.5 17 35.5zM34.5 35.5H47c0 4-2.4 6-6.2 6s-6.3-2-6.3-6z"
-      />
-      <path d="M29 36.5h6" {...stroke(2.4)} />
-    </>
-  ),
-  wolf: (
-    <>
-      <g {...stroke(3.4)}>
-        <path d="M32 56l-9-10-9-4-2-15-2-19 12 10h20l12-10-2 19-2 15-9 4z" />
-        <path d="M15 15l3 6M49 15l-3 6M27 47l5 4 5-4M14 42l5-1M50 42l-5-1" />
-      </g>
-      <path
-        fill="currentColor"
-        d="M18 29l9 3-2 3.5c-3.4-.5-5.8-2.8-7-6.5zM46 29l-9 3 2 3.5c3.4-.5 5.8-2.8 7-6.5z"
-      />
-    </>
-  ),
-  spy: (
-    <>
-      <g {...stroke(3.4)}>
-        <path d="M32 58S14 40 14 26a18 18 0 0 1 36 0c0 14-18 32-18 32z" />
-        <path d="M26.5 22.5a5.5 5.5 0 1 1 7.5 5.2c-1.3.6-2 1.5-2 3v1.8" />
-      </g>
-      <circle cx="32" cy="38.6" r="2.2" fill="currentColor" />
-    </>
+  grid: (
+    <g {...stroke(3.4)}>
+      <path d="M8 8h14v14H8zM25 8h14v14H25zM42 8h14v14H42zM8 25h14v14H8zM42 25h14v14H42zM8 42h14v14H8zM25 42h14v14H25zM42 42h14v14H42z" />
+      <path d="M25 25h14v14H25z" fill="currentColor" />
+    </g>
   ),
   rps: (
     <g {...stroke(3.4)}>
-      <path d="M8 30l1.5-9.5 7-7L26 12l6 5.5.5 9L27 31z" fill="currentColor" />
-      <path d="M37 8h12l7 7v18H37zM49 8v7h7" />
-      <circle cx="25" cy="52" r="5" />
-      <circle cx="39" cy="52" r="5" />
-      <path d="M28.5 48L40 34M35.5 48L24 34" />
+      <circle cx="20" cy="22" r="10" />
+      <path d="M38 12h16v20H38z" />
+      <path d="M24 40l20 16M24 56l20-16" />
+      <circle cx="21" cy="40" r="4" />
+      <circle cx="21" cy="56" r="4" />
     </g>
   ),
   cards: (
-    <>
-      <g {...stroke(3.4)}>
-        <rect x="9" y="12" width="26" height="38" rx="3.5" transform="rotate(-14 22 31)" />
-        <rect x="27" y="10" width="26" height="38" rx="3.5" transform="rotate(10 40 29)" />
-        <path d="M14 57h36" />
-      </g>
-      <path
-        fill="currentColor"
-        transform="rotate(10 40 29)"
-        d="M40 17c-5 5.6-9 8.6-9 12.6a4.4 4.4 0 0 0 7.6 3.1L37 39h6l-1.6-6.3a4.4 4.4 0 0 0 7.6-3.1c0-4-4-7-9-12.6z"
-      />
-    </>
+    <g {...stroke(3.4)}>
+      <path d="M12 16l18-6 10 30-18 6z" />
+      <path d="M30 12h20v34H30" />
+      <path d="M40 22c-4 4-7 6-7 9a3.5 3.5 0 0 0 7 0 3.5 3.5 0 0 0 7 0c0-3-3-5-7-9zM40 34v5" />
+      <path d="M8 56h48" />
+    </g>
   ),
   tiles: (
-    <>
-      <g {...stroke(3.4)}>
-        <g transform="rotate(-10 21 23)">
-          <rect x="8" y="10" width="26" height="26" rx="3.5" />
-          <path d="M17 15v15h9" />
-        </g>
-        <rect x="28" y="22" width="28" height="28" rx="3.5" />
-        <path d="M33 44l6.5-16 6.5 16M35.4 38h8.2M6 57h52" />
-      </g>
-      <path d="M51 41v6" {...stroke(2.4)} />
-    </>
+    <g {...stroke(3.4)}>
+      <path d="M8 18h22v22H8zM34 24h22v22H34z" />
+      <path d="M13 34l6-12 6 12M15 30h8M40 30h8l-8 10h8" />
+      <circle cx="26" cy="36" r="1.2" fill="currentColor" />
+      <path d="M8 50h48" />
+    </g>
   ),
   dial: (
     <g {...stroke(3.4)}>

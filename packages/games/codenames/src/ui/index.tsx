@@ -9,7 +9,7 @@ import { CodenamesTvLobby } from './tv-lobby';
 
 /** Codenames: catalog art, detail page, its own lobby, and the screens. */
 export const codenamesUi: GameUi = {
-  art: { band: 'gules', field: 'checky', glyph: 'agent' },
+  art: { band: 'gules', field: 'checky', glyph: 'grid' },
   about: {
     description:
       'Two teams, 25 words on the table. Only the spymasters know which words belong to which team, and they can only help with one word and a number. Guess wrong and you might hand the other team a point, or hit the assassin and lose right there.',

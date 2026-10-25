@@ -11,6 +11,7 @@ const config: NextConfig = {
     '@jackdaw/game-risk',
     '@jackdaw/game-avalon',
     '@jackdaw/game-battleship',
+    '@jackdaw/game-monopoly',
     '@jackdaw/game-catan',
     '@jackdaw/game-codenames',
     '@jackdaw/game-uno',

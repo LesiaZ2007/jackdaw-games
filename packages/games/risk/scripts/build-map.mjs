@@ -1,4 +1,4 @@
-// Builds a map's outlines: `node scripts/build-map.mjs <world|realm>`.
+// Builds a map's outlines: `node scripts/build-map.mjs <map>` (world, realm, skerries, twin).
 //
 // Reads scripts/coasts/<map>.json (coast polygons + one seed point per territory), roughens the
 // coasts a little so they read as engraved rather than ruled, cuts each landmass into Voronoi cells
@@ -7,17 +7,17 @@
 // pairs of territories that touch on land (a test checks those against the map's borders), and
 // each continent's outline (its territories merged), for the heavier rule between continents.
 import { Delaunay } from 'd3-delaunay';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import polygonClipping from 'polygon-clipping';
 
 const id = process.argv[2];
-if (!['world', 'realm'].includes(id)) {
-  console.error('usage: node scripts/build-map.mjs <world|realm>');
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+if (!/^[a-z]+$/.test(id ?? '') || !existsSync(join(root, 'scripts/coasts', `${id}.json`))) {
+  console.error('usage: node scripts/build-map.mjs <map>, with scripts/coasts/<map>.json');
   process.exit(1);
 }
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = JSON.parse(readFileSync(join(root, 'scripts/coasts', `${id}.json`), 'utf8'));
 const [W, H] = src.viewBox;
 

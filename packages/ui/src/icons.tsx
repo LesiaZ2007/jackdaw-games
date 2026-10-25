@@ -205,6 +205,15 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 58h48" />
     </g>
   ),
+  /** A warship in profile, for Battleship's chart. */
+  ship: (
+    <g {...stroke(3.4)}>
+      <path d="M8 40h46l-7 8H16z" />
+      <path d="M22 40V28h14l6 12" />
+      <path d="M30 28V14M30 18h12" />
+      <path d="M8 56h48" />
+    </g>
+  ),
   /** Three island tiles with a settlement where they meet (Catan). */
   hexes: (
     <g {...stroke(3.4)}>

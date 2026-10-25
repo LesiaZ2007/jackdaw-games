@@ -42,7 +42,7 @@ describe('the bot', () => {
   const configs: [number, Partial<RiskOptions>, number][] = [];
   let seed = 1;
   for (const n of [2, 3, 6])
-    for (const map of ['World', 'Realm'] as const)
+    for (const map of ['World', 'Realm', 'Skerries', 'Twin Crowns'] as const)
       for (const fog of [false, true])
         for (const goal of ['Secret missions', 'World domination'] as const)
           configs.push([

@@ -1,5 +1,5 @@
 /** Which board a game is played on. */
-export type MapId = 'world' | 'realm';
+export type MapId = 'world' | 'realm' | 'skerries' | 'twin';
 
 /** A heraldic tincture for a continent's wash (the UI maps it to a token). */
 export type Tint = 'gules' | 'azure' | 'vert' | 'sable' | 'purpure' | 'tenne';

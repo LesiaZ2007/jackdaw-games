@@ -357,6 +357,103 @@ const DECOR: Record<MapId, Decor> = {
       </>
     ),
   },
+  skerries: {
+    names: {
+      'great-skerry': [600, 172],
+      northholm: [104, 300],
+      saltreach: [176, 596],
+      gannets: [870, 24],
+      teeth: [474, 522],
+      wyvern: [905, 612],
+    },
+    sea: (
+      <>
+        <Cartouche at={[368, 300]} w={140} title="The Skerries" sub="Drawn for Jackdaw" />
+        <Compass at={[772, 498]} r={22} />
+        <Ship at={[590, 112]} s={0.85} />
+        <Ship at={[40, 560]} s={0.8} flip />
+        <Serpent at={[380, 452]} s={0.8} />
+      </>
+    ),
+    land: (
+      <>
+        <Lighthouse at={[612, 256]} s={1} />
+        <Castle at={[622, 336]} s={1.1} />
+        <Peaks
+          at={[
+            [58, 206],
+            [72, 200],
+            [86, 206],
+          ]}
+          s={8}
+        />
+        <Trees
+          at={[
+            [100, 432],
+            [110, 428],
+            [106, 442],
+          ]}
+          s={7}
+        />
+        <Reeds
+          at={[
+            [96, 508],
+            [106, 512],
+          ]}
+          s={8}
+        />
+      </>
+    ),
+  },
+  twin: {
+    names: {
+      westmark: [235, 68],
+      eastreach: [622, 70],
+      ashfall: [462, 305],
+      lowhollow: [230, 568],
+      sunmarch: [925, 548],
+      stones: [500, 545],
+    },
+    sea: (
+      <>
+        <Cartouche at={[520, 55]} w={150} title="Twin Crowns" sub="Drawn for Jackdaw" />
+        <Compass at={[52, 572]} r={22} />
+        <Ship at={[945, 72]} s={0.85} flip />
+        <Ship at={[560, 592]} s={0.8} />
+        <Serpent at={[432, 586]} s={0.7} />
+      </>
+    ),
+    land: (
+      <>
+        <Castle at={[300, 132]} s={1.3} />
+        <Castle at={[782, 212]} s={1.3} />
+        <Peaks
+          at={[
+            [110, 330],
+            [124, 324],
+            [138, 330],
+          ]}
+          s={8}
+        />
+        <Trees
+          at={[
+            [120, 482],
+            [130, 478],
+            [126, 492],
+            [300, 482],
+          ]}
+          s={7}
+        />
+        <Reeds
+          at={[
+            [730, 442],
+            [740, 446],
+          ]}
+          s={8}
+        />
+      </>
+    ),
+  },
 };
 
 /** The sea's ornaments and the continents' names (under the land). */
@@ -374,7 +471,7 @@ export function SeaDecor({ map }: { map: MapDef }) {
             x={at[0]}
             y={at[1]}
             className="rk-continent-name"
-            fontSize={map.id === 'realm' ? 11 : 14}
+            fontSize={map.id === 'world' ? 14 : 11}
           >
             {c.name.replace(/^The /, '')}
             <tspan className="rk-continent-name__bonus"> +{c.bonus}</tspan>

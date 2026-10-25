@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { MAPS } from './index';
 import { REALM_LAND } from './realm.shapes';
+import { SKERRIES_LAND } from './skerries.shapes';
+import { TWIN_LAND } from './twin.shapes';
 import { WORLD_LAND } from './world.shapes';
 
-const LAND = { world: WORLD_LAND, realm: REALM_LAND };
+const LAND = { world: WORLD_LAND, realm: REALM_LAND, skerries: SKERRIES_LAND, twin: TWIN_LAND };
 
 describe.each(Object.values(MAPS))('the $name map', (map) => {
   const ids = new Set(map.territories.map((t) => t.id));
@@ -91,20 +93,35 @@ describe.each(Object.values(MAPS))('the $name map', (map) => {
   });
 });
 
-describe('the realm map', () => {
-  const map = MAPS.realm;
-
-  it('is its own map', () => {
-    expect(map.id).toBe('realm');
-  });
-
-  it('has bonuses spread like the classic board', () => {
+describe.each([MAPS.realm, MAPS.skerries, MAPS.twin])('the $name map (Jackdaw’s own)', (map) => {
+  it('has bonuses spread like the classic board, over regions sized like it', () => {
     expect(map.continents.map((c) => c.bonus).sort((a, b) => b - a)).toEqual([7, 5, 5, 3, 2, 2]);
+    const size = (id: string) => map.territories.filter((t) => t.continent === id).length;
+    expect(map.continents.map((c) => size(c.id)).sort((a, b) => b - a)).toEqual([
+      12, 9, 7, 6, 4, 4,
+    ]);
   });
 
   it('names are unique across territories and regions', () => {
     const names = [...map.territories, ...map.continents].map((x) => x.name);
     expect(new Set(names).size).toBe(names.length);
+  });
+});
+
+describe('the twin crowns map', () => {
+  it('crosses the strait only by the stepping stones', () => {
+    const map = MAPS.twin;
+    const side = (id: string) =>
+      ['westmark', 'ashfall', 'lowhollow'].includes(
+        map.territories.find((t) => t.id === id)!.continent,
+      )
+        ? 'west'
+        : map.territories.find((t) => t.id === id)!.continent === 'stones'
+          ? 'stones'
+          : 'east';
+    for (const t of map.territories)
+      for (const n of t.adj)
+        expect([side(t.id), side(n)].sort().join(), `${t.id}–${n}`).not.toBe('east,west');
   });
 });
 

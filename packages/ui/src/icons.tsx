@@ -214,6 +214,16 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 56h48" />
     </g>
   ),
+  /** A townhouse with a pitched roof, a chimney and a door (Monopoly). */
+  house: (
+    <g {...stroke(3.4)}>
+      <path d="M16 30h32v24H16z" />
+      <path d="M10 31L32 10l22 21" />
+      <path d="M40 18V11h6v12" />
+      <path d="M28 54V42h8v12" />
+      <path d="M8 58h48" />
+    </g>
+  ),
   /** Three island tiles with a settlement where they meet (Catan). */
   hexes: (
     <g {...stroke(3.4)}>

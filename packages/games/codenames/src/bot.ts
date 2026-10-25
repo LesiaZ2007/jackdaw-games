@@ -1,4 +1,4 @@
-import type { BotContext } from '@jackdaw/engine';
+import { botChoose, botFate, botSlips, type BotContext, type BotLevel } from '@jackdaw/engine';
 import { HINTS, THEMES, type Theme } from './associations';
 import type { Card, CodenamesAction, CodenamesPlayerView, CodenamesTableView } from './rules';
 import type { Team } from './teams';
@@ -14,6 +14,11 @@ import type { Team } from './teams';
  * Operative: the board words the clue points to by the same table (or by spelling, for a
  * person's clue like SNOWMAN), as many as the number, then ends the turn. It backs a teammate's
  * suggestion when it likes it as much as its own, so a team of bots agrees instead of arguing.
+ *
+ * By level (2026-10-24: "make codenames bots sometimes guess wrong"): a spymaster below
+ * Hard sometimes gives a weaker clue than its best, and an operative sometimes reaches for the
+ * wrong word (one the clue half suggests, or any hidden one): about one guess in eight at Normal,
+ * one in three at Easy, hardly ever at Hard.
  */
 
 const norm = (w: string) => w.trim().toUpperCase();
@@ -40,7 +45,12 @@ export function readClue(clue: string, words: readonly string[]): number[] {
 
 type View = CodenamesPlayerView;
 
-function giveClue(view: View, me: Team, rng: BotContext<View, CodenamesTableView>['rng']) {
+function giveClue(
+  view: View,
+  me: Team,
+  rng: BotContext<View, CodenamesTableView>['rng'],
+  level: BotLevel,
+) {
   const key = view.key!;
   const open = view.words.map((_, i) => view.revealed[i] === null);
   const given = new Set(view.clues.map((c) => c.word));
@@ -65,8 +75,10 @@ function giveClue(view: View, me: Team, rng: BotContext<View, CodenamesTableView
     const score = ours - risk;
     if (score >= 0.5) picks.push({ word: name, count: ours, score: score + rng.next() * 0.01 });
   }
-  picks.sort((a, b) => b.score - a.score);
-  if (picks[0]) return { type: 'clue', word: picks[0].word, count: picks[0].count } as const;
+  if (picks.length) {
+    const pick = botChoose(picks, (p) => p.score, level, rng);
+    return { type: 'clue', word: pick.word, count: pick.count } as const;
+  }
 
   // No theme links two safely: one word, by its hint. Never the same hint twice in a row.
   const fresh = mine.filter((w) => HINTS[w] && !given.has(HINTS[w]));
@@ -145,6 +157,23 @@ function guess(
     }
   }
 
+  // Now and then a slip: the wrong word, the same one each time this bot is asked about this
+  // guess (it suggests first, then guesses), so it follows through on it.
+  const fate = botFate(`${ctx.playerId}|${view.clues.length}|${made}|${view.words.join()}`);
+  // The wrong word hangs only on the board and the clue (not on teammates' suggestions), so the
+  // bot doesn't change its mind as they change theirs.
+  if (botSlips(ctx.level, fate)) {
+    const top = Math.max(...weight.filter((_, i) => open(i)));
+    const others = view.words.map((_, i) => i).filter((i) => open(i) && weight[i]! < top);
+    const half = others.filter((i) => weight[i]! > 0);
+    if (others.length) {
+      const wrong = fate.pick(half.length && fate.next() < 0.6 ? half : others);
+      return mySuggestion === wrong
+        ? { type: 'guess', index: wrong }
+        : { type: 'suggest', index: wrong };
+    }
+  }
+
   if (mySuggestion !== best) return { type: 'suggest', index: best };
   return { type: 'guess', index: best };
 }
@@ -153,6 +182,7 @@ export function codenamesBot(ctx: BotContext<View, CodenamesTableView>): Codenam
   const { view } = ctx;
   const me = view.myTeam;
   if (!me || view.phase === 'over' || view.turn !== me) return null;
-  if (view.spymaster) return view.phase === 'clue' && view.key ? giveClue(view, me, ctx.rng) : null;
+  if (view.spymaster)
+    return view.phase === 'clue' && view.key ? giveClue(view, me, ctx.rng, ctx.level) : null;
   return view.phase === 'guess' ? guess(view, ctx, me) : null;
 }

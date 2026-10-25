@@ -1,4 +1,4 @@
-import type { BotContext, Rng } from '@jackdaw/engine';
+import { botChoose, type BotContext, type BotLevel, type Rng } from '@jackdaw/engine';
 import {
   BINGO,
   CENTRE,
@@ -18,8 +18,8 @@ import { isWord, wordSet } from './words';
  * own rack and the public board, and finds its plays the classic way (Appel and Jacobson's
  * crossword move generator): a letter tree of the game's own word list, the empty squares next
  * to tiles as anchors, and the letters each square allows going the other way. It takes one of
- * its best plays (usually the very best), swaps when it finds none, and passes when the bag is
- * too low to swap.
+ * its good plays by level (Hard: usually the very best; Normal: around 85% of the best it found;
+ * Easy: around 60%), swaps when it finds none, and passes when the bag is too low to swap.
  *
  * The search has a fixed budget of steps, so a turn never takes long (blanks multiply the
  * choices); the first call on a server builds the letter tree once (a few hundred ms).
@@ -95,8 +95,11 @@ const ALL = (1 << 26) - 1;
 const N = SIZE * SIZE;
 /** Most search steps per turn: keeps a turn to a few milliseconds even with two blanks. */
 const BUDGET = 100_000;
-/** How many of the best plays to keep for the final choice. */
-const KEEP = 8;
+/** How many of the best plays to keep for the final choice (enough for a weaker one by level). */
+const KEEP = 30;
+
+/** What share of its best play's score a bot aims for, by level. */
+const AIM: Record<BotLevel, number> = { easy: 0.6, normal: 0.85, hard: 1 };
 
 const LETTER_VALUE = Array.from({ length: 26 }, (_, i) => VALUE[String.fromCharCode(65 + i)] ?? 0);
 
@@ -359,10 +362,10 @@ export function wordhoardBot(
   const worth = (p: FoundPlay) => p.score - (p.blanks > 0 && p.score < 30 ? 10 * p.blanks : 0);
   const ranked = plays.filter((p) => p.score > 0).sort((a, b) => worth(b) - worth(a));
   if (ranked.length > 0) {
-    const top = worth(ranked[0]!);
-    const close = ranked.filter((p) => worth(p) >= top * 0.75);
-    const order = rng.next() < 0.7 ? ranked : [rng.pick(close), ...ranked];
-    for (const p of order) if (legal(v.board, p.tiles)) return { type: 'play', tiles: p.tiles };
+    const aim = worth(ranked[0]!) * AIM[ctx.level];
+    const pick = botChoose(ranked, (p) => -Math.abs(worth(p) - aim), ctx.level, rng);
+    for (const p of [pick, ...ranked])
+      if (legal(v.board, p.tiles)) return { type: 'play', tiles: p.tiles };
   }
   if (v.bagCount >= RACK) return { type: 'swap', tiles: swapTiles(v.rack) };
   // A zero-point play (blanks only) still beats a pass when that's all there is.

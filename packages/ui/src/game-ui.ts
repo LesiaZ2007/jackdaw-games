@@ -8,6 +8,7 @@ import type {
   TvScreenProps,
 } from '@jackdaw/engine';
 import type { GameArt, Seat } from './pieces';
+import type { Theme } from './theme';
 
 /**
  * The client half of a game: how it looks in the catalog, its detail page, and its two screens.
@@ -24,7 +25,8 @@ import type { GameArt, Seat } from './pieces';
  *   and running scores use `Tally` so they pop when they go up. The end-of-game results screen
  *   already gives each player their `Verdict`; a game's `Reveal` sits under it.
  * - **Day and dark.** Screens follow the shell's choice via `useTheme()` (`theme.ts`). A game
- *   with its own looks maps day and dark onto them (Avalon: day is its Parchment look, dark its Night).
+ *   with its own looks maps day and dark onto them. Avalon is the exception: it sets `look` and
+ *   is Parchment everywhere unless a player switches it to Night (`useGameLook`).
  */
 export interface GameAbout {
   /** A short paragraph: what it's like to play. */
@@ -33,8 +35,11 @@ export interface GameAbout {
   steps: string[];
   /** Credit for the original game, shown at the bottom of its detail page. */
   credit?: string;
-  /** Screenshots of the game in play (paths under /public). */
-  pictures?: { src: string; alt: string; wide?: boolean }[];
+  /**
+   * Screenshots of the game in play (paths under /public). Phones are shown the phone ones and
+   * laptops the `desktop` ones, so each sees the game as it will look for them.
+   */
+  pictures?: { src: string; alt: string; desktop?: boolean }[];
 }
 
 /** Players as the screens receive them: the engine's {id, name} plus look and presence. */
@@ -43,11 +48,19 @@ export interface ScreenPlayer {
   name: string;
   avatar: Avatar;
   online: boolean;
+  /** A computer player. */
+  bot?: boolean;
 }
 
 export interface GameUi {
   art: GameArt;
   about: GameAbout;
+  /**
+   * Optional: the game's own default look, used instead of Jackdaw's day and dark ('light' is
+   * Avalon's Parchment). Each player can switch it on their device with `setGameLook`; the
+   * starter's choice goes out with Start.
+   */
+  look?: Theme;
   // Each game narrows these; the shell only passes what the server sent.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   PlayerScreen: ComponentType<PlayerScreenProps<any, any, any> & ScreenExtras>;
@@ -72,6 +85,11 @@ export interface GameUi {
    * same seats as the track, the game's most players, and the options chosen so far.
    */
   LobbySeats?: ComponentType<LobbySeatsProps>;
+  /**
+   * Optional: one plain line under each option in Jackdaw's lobby, by option key. A string
+   * explains the option; a record explains each choice (the line follows the one chosen).
+   */
+  optionHelp?: Record<string, string | Record<string, string>>;
   /**
    * Optional themed waiting room shown in the lobby once this game is chosen (e.g. Avalon's
    * round table). The lobby shows the game's box lid and options when it's absent.
@@ -112,6 +130,16 @@ export interface LobbySeatsProps {
   /** A seat with an `action` was tapped (your own opens your look; the host's opens remove). */
   onSeat?: (id: string) => void;
   reactions?: Reaction[];
+  /**
+   * Host only: change the game's options from the seats (Wavelength: placing players on teams in
+   * an option the options panel doesn't draw).
+   */
+  setOptions?: (options: Record<string, unknown>) => void;
+  /**
+   * Host only, when the game has a bot (2026-10-24): draw the kit's `AddSeat` "+" on each
+   * open seat; tapping it seats a computer player. Bot seats come with `bot: true`.
+   */
+  onAddBot?: () => void;
 }
 
 /** What the platform adds to the engine's screen props. */
@@ -152,6 +180,11 @@ export interface GameLobbyProps {
   react: (kind: ReactionKind) => void;
   /** The lobby's chat, drawn in the game's own style. */
   chat: LobbyChat;
+  /**
+   * Host only, when the game has a bot (2026-10-24): draw the kit's `AddSeat` "+" on each
+   * open seat; tapping it seats a computer player. Bot players come with `bot: true`.
+   */
+  onAddBot?: () => void;
 }
 
 /** What a game's own end-of-game screen receives. */
@@ -178,7 +211,7 @@ export interface GameTvLobbyProps {
   reactions: Reaction[];
   /** How to join: the address, the code chits and the QR code, ready to place. */
   join: ReactNode;
-  /** "Waiting for the owner to start", or why the game can't start yet. */
+  /** "Waiting for Wren to start", or why the game can't start yet. */
   status: string;
 }
 

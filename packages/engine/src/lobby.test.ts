@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BOT_DELAY_MS,
+  addBot,
   applyGameAction,
   backToLobby,
   chat,
@@ -9,6 +11,7 @@ import {
   join,
   kick,
   leave,
+  nextTimerAt,
   playAgain,
   react,
   reassignHostIfAway,
@@ -17,6 +20,7 @@ import {
   runTimers,
   setAvatar,
   setGame,
+  setBotLevel,
   setOptions,
   snapshotFor,
   start,
@@ -40,7 +44,7 @@ function lobbyWith(n: number, gameId?: string): Lobby {
     {
       code: 'ABCD',
       hostId: 'p1',
-      hostName: 'Ana',
+      hostName: 'Jay',
       hostAvatar: palette[0]!,
       tokenKey: 't1',
       gameId,
@@ -107,6 +111,43 @@ describe('creating and joining', () => {
     expect(crests.size).toBe(4);
     expect(tints.size).toBe(4);
     expect(() => setAvatar(lobby, 'p2', lobby.players[0]!.avatar, ctx())).toThrow(/already has/);
+  });
+});
+
+describe('an emptied lobby and avatars', () => {
+  it('makes the next joiner host once everyone has left', () => {
+    const empty = leave(lobbyWith(1), 'p1', ctx());
+    const { lobby } = join(
+      empty,
+      { tokenKey: 't9', newPlayerId: 'p9', name: 'Wren', palette },
+      ctx(),
+    );
+    expect(lobby.hostId).toBe('p9');
+  });
+
+  it('hands out an unused avatar after custom picks use up the palette', () => {
+    let lobby = lobbyWith(1);
+    // Each custom pick blocks two palette entries: one by crest, one by tint.
+    const picks: Avatar[] = [
+      { crest: 'crest-b', tint: 'tint-2' },
+      { crest: 'crest-d', tint: 'tint-4' },
+    ];
+    picks.forEach((avatar, i) => {
+      lobby = join(
+        lobby,
+        { tokenKey: `c${i}`, newPlayerId: `c${i}`, name: `C${i}`, avatar, palette },
+        ctx(),
+      ).lobby;
+    });
+    for (let i = 0; i < 5; i++) {
+      lobby = join(
+        lobby,
+        { tokenKey: `n${i}`, newPlayerId: `n${i}`, name: `N${i}`, palette },
+        ctx(),
+      ).lobby;
+    }
+    const keys = lobby.players.map((p) => `${p.avatar.crest}/${p.avatar.tint}`);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });
 
@@ -273,6 +314,13 @@ describe('rejoin codes and chat', () => {
     expect(() => redeemRejoinCode(lobby, 'ZXCVBN', 'late', ctx(11 * 60_000))).toThrow(/expired/);
   });
 
+  it("won't move a seat onto a device that already has another one", () => {
+    const lobby = createRejoinCode(lobbyWith(3), 'p2', 'ZXCVBN', ctx());
+    expect(() => redeemRejoinCode(lobby, 'ZXCVBN', 't3', ctx())).toThrow(/already P3/);
+    const own = createRejoinCode(lobbyWith(3), 'p2', 'ZXCVBN', ctx());
+    expect(redeemRejoinCode(own, 'ZXCVBN', 't2', ctx()).lobby).toBe(own);
+  });
+
   it('keeps the last 120 chat messages', () => {
     let lobby = lobbyWith(2);
     for (let i = 0; i < 130; i++) lobby = chat(lobby, 'p1', `m${i}`, `id${i}`, ctx());
@@ -288,7 +336,7 @@ describe('history and standings', () => {
     );
     const entry = lobby.history[0]!;
     expect(entry.players).toEqual(['p1', 'p2', 'p3']);
-    expect(entry.names).toEqual({ p1: 'Ana', p2: 'P2', p3: 'P3' });
+    expect(entry.names).toEqual({ p1: 'Jay', p2: 'P2', p3: 'P3' });
     expect(entry.startedAt).toBe(500);
     expect(entry.standings.map((s) => s.outcome).sort()).toEqual(['loss', 'loss', 'win']);
     const winner = entry.winners[0]!;
@@ -344,11 +392,11 @@ describe('platform additions', () => {
   it('refuses a name someone at the table already has, in any case', () => {
     const lobby = lobbyWith(2);
     expect(() =>
-      join(lobby, { tokenKey: 'tx', newPlayerId: 'px', name: ' ana ', palette }, ctx()),
-    ).toThrow('Someone at the table is already called Ana.');
-    expect(() => rename(lobby, 'p2', 'ANA', ctx())).toThrow(/already called Ana/);
+      join(lobby, { tokenKey: 'tx', newPlayerId: 'px', name: ' jay ', palette }, ctx()),
+    ).toThrow('Someone at the table is already called Jay.');
+    expect(() => rename(lobby, 'p2', 'JAY', ctx())).toThrow(/already called Jay/);
     // Changing only the case of your own name is fine.
-    expect(rename(lobby, 'p1', 'ANA', ctx()).players[0]!.name).toBe('ANA');
+    expect(rename(lobby, 'p1', 'JAY', ctx()).players[0]!.name).toBe('JAY');
   });
 
   it('lets the host end a game early without recording it', () => {
@@ -391,7 +439,7 @@ describe('platform additions', () => {
       'P3 joined.',
       'P4 joined.',
       'P4 was removed by the host.',
-      'Ana left.',
+      'Jay left.',
       'P2 is now the host.',
       'Counter started.',
     ]);
@@ -463,5 +511,153 @@ describe('game timers', () => {
     const over = runTimers(started(), tctx(60_000));
     expect(over.status).toBe('results');
     expect(over.results?.summary).toBe('Reached 10');
+  });
+});
+
+describe('computer players', () => {
+  // The counter game with a bot that adds on its turn, and a partial result (the last to add leads).
+  type S = Parameters<typeof counterGame.applyAction>[0];
+  const botty = {
+    ...counterGame,
+    meta: { ...counterGame.meta, id: 'botty' },
+    bot: ({ view }: { view: { myTurn: boolean } }) =>
+      view.myTurn ? { type: 'add' as const } : null,
+    partialResult: (s: S) =>
+      s.log.length
+        ? { winners: [s.log.at(-1)!], summary: `${s.count} counted`, reveal: null, recap: [] }
+        : null,
+  };
+  const games = { counter: counterGame, botty };
+  const bctx = (now = 1_000): Ctx => ({ now, games });
+  const add = (lobby: Lobby, now = 1_000) =>
+    applyGameAction(
+      lobby,
+      'p1',
+      { sessionId: 's1', seq: lobby.session!.seq, action: { type: 'add' } },
+      bctx(now),
+    );
+  const seated = (gameId = 'botty') => {
+    let lobby = setGame(lobbyWith(1), 'p1', gameId, bctx());
+    lobby = addBot(lobby, 'p1', { newPlayerId: 'b1', palette }, bctx());
+    return setOptions(lobby, 'p1', { target: 4 }, bctx());
+  };
+
+  it('the host seats bots with bird names; they show as online bots', () => {
+    let lobby = seated();
+    expect(() => addBot(lobby, 'b1', { newPlayerId: 'x', palette }, bctx())).toThrow(/host/);
+    lobby = addBot(lobby, 'p1', { newPlayerId: 'b2', palette }, bctx());
+    expect(lobby.players.map((p) => p.name)).toEqual(['Jay', 'Bot Wren', 'Bot Rook']);
+    expect(lobby.chat.at(-1)?.text).toBe('{b2} sat down to play.');
+    const snap = snapshotFor(lobby, 'p1', {}, bctx());
+    expect(snap.players[1]).toMatchObject({ bot: true, online: true });
+    expect(snap.players[0]!.bot).toBeUndefined();
+    expect(() => transferHost(lobby, 'p1', 'b1', bctx())).toThrow(/can’t be the host/);
+    // Removed like anyone else.
+    expect(kick(lobby, 'p1', 'b2', bctx()).players).toHaveLength(2);
+  });
+
+  it('only games with a bot start with bots seated', () => {
+    const lobby = seated();
+    expect(startBlocker(lobby, bctx())).toBeNull();
+    const plain = setGame(lobby, 'p1', 'counter', bctx());
+    expect(startBlocker(plain, bctx())).toMatch(/can’t be played with computer players/);
+    expect(() => addBot(plain, 'p1', { newPlayerId: 'b9', palette }, bctx())).toThrow(
+      /can’t be played with computer players/,
+    );
+  });
+
+  it('a bot moves a moment after the last move, from its own view', () => {
+    let lobby = start(seated(), 'p1', { sessionId: 's1', seed: 3 }, bctx(1_000));
+    // Jay goes first, so no bot is due yet.
+    expect(snapshotFor(lobby, 'p1', {}, bctx(1_000)).timerAt).toBeUndefined();
+    lobby = add(lobby, 2_000);
+    // A person's uneven pace: 0.8 to 1.8 times the delay, the same on every read.
+    const at = snapshotFor(lobby, 'p1', {}, bctx(2_000)).timerAt!;
+    expect(at).toBeGreaterThanOrEqual(2_000 + BOT_DELAY_MS * 0.8);
+    expect(at).toBeLessThanOrEqual(2_000 + BOT_DELAY_MS * 1.8);
+    expect(snapshotFor(lobby, 'p1', {}, bctx(2_100)).timerAt).toBe(at);
+    expect(runTimers(lobby, bctx(at - 1))).toBe(lobby);
+    const after = runTimers(lobby, bctx(at));
+    expect((after.session!.state as S).log).toEqual(['p1', 'b1']);
+    expect(after.session!.movedAt).toBe(at);
+  });
+
+  it('draws bot names at random from the free birds', () => {
+    const named = (pick: number) =>
+      addBot(seated(), 'p1', { newPlayerId: 'b2', palette, pick }, bctx()).players[2]!.name;
+    expect(named(0)).toBe('Bot Rook');
+    expect(named(0.999)).toBe('Bot Dunnock');
+    expect(new Set([0.1, 0.3, 0.5, 0.7, 0.9].map(named)).size).toBe(5);
+  });
+
+  it('the host sets one level for every bot, any time, and the bots play at it', () => {
+    let lobby = seated();
+    expect(snapshotFor(lobby, 'p1', {}, bctx()).botLevel).toBe('normal');
+    expect(() => setBotLevel(lobby, 'b1', 'hard', bctx())).toThrow(/host/);
+    lobby = setBotLevel(lobby, 'p1', 'hard', bctx());
+    expect(snapshotFor(lobby, 'p1', {}, bctx()).botLevel).toBe('hard');
+    expect(setBotLevel(lobby, 'p1', 'hard', bctx())).toBe(lobby);
+
+    const levels: string[] = [];
+    const g = {
+      botty: {
+        ...botty,
+        bot: (c: { view: { myTurn: boolean }; level: string }) => {
+          levels.push(c.level);
+          return c.view.myTurn ? { type: 'add' as const } : null;
+        },
+      },
+    };
+    let game = start(seated(), 'p1', { sessionId: 's1', seed: 3 }, { now: 0, games: g });
+    game = setBotLevel(game, 'p1', 'easy', { now: 0, games: g });
+    game = applyGameAction(
+      game,
+      'p1',
+      { sessionId: 's1', seq: 0, action: { type: 'add' } },
+      { now: 0, games: g },
+    );
+    runTimers(game, { now: 60_000, games: g });
+    expect(levels.at(-1)).toBe('easy');
+  });
+
+  it('a game can set its bots’ pace from the state', () => {
+    const g = { botty: { ...botty, botDelayMs: (s: S) => (s.count > 0 ? 10_000 : 100) } };
+    let lobby = start(seated(), 'p1', { sessionId: 's1', seed: 3 }, { now: 0, games: g });
+    lobby = applyGameAction(
+      lobby,
+      'p1',
+      { sessionId: 's1', seq: 0, action: { type: 'add' } },
+      { now: 0, games: g },
+    );
+    const at = nextTimerAt(lobby, { games: g, now: 0 })!;
+    expect(at).toBeGreaterThanOrEqual(8_000);
+    expect(at).toBeLessThanOrEqual(18_000);
+  });
+
+  it('a bot whose move is refused sits out until the game moves on', () => {
+    const g = { botty: { ...botty, bot: () => ({ type: 'add' as const }) } };
+    let lobby = start(seated(), 'p1', { sessionId: 's1', seed: 3 }, { now: 1_000, games: g });
+    lobby = runTimers(lobby, { now: 5_000, games: g });
+    expect(lobby.session!.botFailed).toEqual({ seq: 0, ids: ['b1'] });
+    expect(nextTimerAt(lobby, { games: g, now: 5_000 })).toBeNull();
+    expect(runTimers(lobby, { now: 9_000, games: g })).toBe(lobby);
+  });
+
+  it('bots leave with the last person', () => {
+    const lobby = addBot(seated(), 'p1', { newPlayerId: 'b2', palette }, bctx());
+    expect(leave(lobby, 'p1', bctx()).players).toEqual([]);
+  });
+
+  it('ending early can save the rounds played so far', () => {
+    let lobby = start(seated(), 'p1', { sessionId: 's1', seed: 3 }, bctx());
+    expect(snapshotFor(lobby, 'p1', {}, bctx()).canSave).toBeUndefined();
+    expect(endGameEarly(lobby, 'p1', bctx(), true).status).toBe('waiting');
+    lobby = add(lobby);
+    expect(snapshotFor(lobby, 'p1', {}, bctx()).canSave).toBe(true);
+    expect(endGameEarly(lobby, 'p1', bctx()).history).toEqual([]);
+    const saved = endGameEarly(lobby, 'p1', bctx(), true);
+    expect(saved.status).toBe('results');
+    expect(saved.history[0]!.summary).toBe('Ended early. 1 counted');
+    expect(saved.scores.p1).toEqual({ wins: 1, losses: 0, played: 1 });
   });
 });

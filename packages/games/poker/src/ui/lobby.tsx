@@ -1,13 +1,14 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { PlayerReaction, Token, seatTransition, type GameUi } from '@jackdaw/ui';
+import { AddSeat, PlayerReaction, Token, seatTransition, type GameUi } from '@jackdaw/ui';
 import { chips } from './pieces';
 import './poker.css';
 
 /**
  * The poker lobby's seats: the same card table as the game, with everyone round the rail in seat
  * order (you at the bottom, as you'll sit) and the empty seats waiting. The felt shows the stakes.
+ * The host gets a "+" on each empty seat to seat a computer player, and those are tagged "Bot".
  */
 export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
   seats,
@@ -15,6 +16,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
   options,
   onSeat,
   reactions,
+  onAddBot,
 }) => {
   const n = Math.max(max, seats.length);
   const mine = seats.findIndex((s) => s.me);
@@ -46,7 +48,13 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
         } as CSSProperties;
         if (!seat) {
           return (
-            <div key={`open-${k}`} className="pk-seat pk-seat--open" style={style} aria-hidden>
+            <div
+              key={`open-${k}`}
+              className="pk-seat pk-seat--open"
+              style={style}
+              aria-hidden={onAddBot ? undefined : true}
+            >
+              {onAddBot && <AddSeat onAdd={onAddBot} className="pk-addseat" />}
               <span className="pk-seat__tok">
                 <span className="pk-open" />
               </span>
@@ -60,7 +68,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
               .filter(Boolean)
               .join(' ')}
             style={style}
-            aria-label={`${seat.name}${seat.me ? ' (you)' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}`}
+            aria-label={`${seat.name}${seat.me ? ' (you)' : ''}${seat.bot ? ', computer player' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}`}
           >
             <span className="pk-seat__tok">
               <Token
@@ -70,6 +78,11 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
                 transitionName={seatTransition(seat.id).token}
               />
               <PlayerReaction reactions={reactions} playerId={seat.id} name={seat.name} />
+              {seat.bot && (
+                <span className="pk-seat__bot" aria-hidden="true">
+                  Bot
+                </span>
+              )}
             </span>
             <span
               className="pk-seat__name"

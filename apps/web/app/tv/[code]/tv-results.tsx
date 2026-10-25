@@ -1,18 +1,19 @@
 'use client';
 
 import type { LobbySnapshot, RecapEvent, Standing } from '@jackdaw/engine';
-import { BirdMark, OutcomeChip, Token, Verdict, type ScreenPlayer } from '@jackdaw/ui';
+import {
+  BirdMark,
+  OutcomeChip,
+  Token,
+  Verdict,
+  recapLine,
+  withNames,
+  type ScreenPlayer,
+} from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 
 const RECAP_ROWS = 8;
 const OUTCOME: Record<Standing['outcome'], string> = { win: 'Won', loss: 'Lost', draw: 'Draw' };
-
-/** Swap player ids for names in recap text, so "p_3k9 voted" reads "Bran voted". */
-function withNames(text: string, names: Map<string, string>): string {
-  let out = text;
-  for (const [id, name] of names) out = out.split(id).join(name);
-  return out;
-}
 
 /**
  * The big reveal on the TV: winners rise, the summary in large type, everyone's standing, and
@@ -33,7 +34,7 @@ export function TvResults({
   const TvReveal = catalogEntry(result.gameId)?.ui?.TvReveal;
   const latest = snapshot.history[0];
   // Names as they were when the game ended (people may have left or renamed since).
-  const names = new Map<string, string>([
+  const names: Record<string, string> = Object.fromEntries([
     ...players.map((p) => [p.id, p.name] as const),
     ...Object.entries(latest?.gameId === result.gameId ? (latest.names ?? {}) : {}),
   ]);
@@ -47,7 +48,7 @@ export function TvResults({
   const recap: RecapEvent[] = result.recap;
   const shown = recap.slice(0, RECAP_ROWS);
   const more = recap.length - shown.length;
-  const winnerNames = result.winners.map((id) => names.get(id) ?? 'A player who left');
+  const winnerNames = result.winners.map((id) => names[id] ?? 'A player who left');
   const title =
     winnerNames.length === 0
       ? 'No winner this time'
@@ -82,7 +83,7 @@ export function TvResults({
             return (
               <li key={id} className="tv-winner" style={{ animationDelay: `${900 + i * 160}ms` }}>
                 {p ? <Token avatar={p.avatar} size={96} /> : null}
-                <span className="tv-winner__name">{names.get(id) ?? 'A player who left'}</span>
+                <span className="tv-winner__name">{names[id] ?? 'A player who left'}</span>
               </li>
             );
           })}
@@ -97,9 +98,7 @@ export function TvResults({
             return (
               <li key={s.playerId} className={`tv-standing tv-standing--${s.outcome}`}>
                 {p ? <Token avatar={p.avatar} size={48} /> : <span className="tv-standing__gone" />}
-                <span className="tv-standing__name">
-                  {names.get(s.playerId) ?? 'Left the lobby'}
-                </span>
+                <span className="tv-standing__name">{names[s.playerId] ?? 'Left the lobby'}</span>
                 {(s.team || s.role) && (
                   <span className="tv-standing__role">
                     {[s.team, s.role].filter(Boolean).join(', ')}
@@ -125,17 +124,19 @@ export function TvResults({
             <p className="tv-recap__empty">No recap for this game.</p>
           ) : (
             <ol>
-              {shown.map((e, i) => (
-                <li key={i} className="tv-recap__event">
-                  {e.round !== undefined && <span className="tv-recap__round">{e.round}</span>}
-                  <span className="tv-recap__text">
-                    {withNames(e.text, names)}
-                    {e.secret && (
-                      <span className="tv-recap__secret">{withNames(e.secret, names)}</span>
-                    )}
-                  </span>
-                </li>
-              ))}
+              {shown.map((e, i) => {
+                const line = recapLine(e, names);
+                return (
+                  <li key={i} className="tv-recap__event">
+                    {e.round !== undefined && <span className="tv-recap__round">{e.round}</span>}
+                    <span className="tv-recap__text">
+                      {line.actor && <b>{line.actor}: </b>}
+                      {line.text}
+                      {line.secret && <span className="tv-recap__secret">{line.secret}</span>}
+                    </span>
+                  </li>
+                );
+              })}
             </ol>
           )}
           {more > 0 && <p className="tv-recap__more">And {more} more on everyone&apos;s phones.</p>}

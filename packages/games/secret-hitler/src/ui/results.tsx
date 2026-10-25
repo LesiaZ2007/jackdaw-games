@@ -36,6 +36,11 @@ export function Results({
         gameState={final}
         startFrom={from}
         user={seated ? name(me) : null}
+        victoryMessage={
+          reveal.ended
+            ? `The game was ended early, with the ${reveal.winner === 'liberal' ? 'Liberals' : 'Fascists'} ahead.`
+            : undefined
+        }
         renderVictoryButtons={() =>
           isHost ? (
             <>

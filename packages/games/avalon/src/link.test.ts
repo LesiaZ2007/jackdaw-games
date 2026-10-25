@@ -68,7 +68,7 @@ function fakeAvalon() {
   };
 }
 
-const NAMES = ['Wren', 'Bran', 'Cerys', 'Dafydd', 'Elin'];
+const NAMES = ['Wren', 'Rook', 'Magpie', 'Robin', 'Finch'];
 const tokenFor = (name: string) => `token-${name.toLowerCase()}-0123456789`;
 
 async function fiveAtTheTable() {
@@ -149,8 +149,8 @@ describe('the Avalon link', () => {
       });
     });
     const wren = reads[0]!.view as AvalonPlayerView;
-    expect(wren.seat).toEqual({ playerId: 'av0', token: 'secret-token-the owner' });
-    expect(seatUrl(wren)).toBe(`${BASE}/j/ABCD#seat=av0.secret-token-the owner`);
+    expect(wren.seat).toEqual({ playerId: 'av0', token: 'secret-token-Wren' });
+    expect(seatUrl(wren)).toBe(`${BASE}/j/ABCD#seat=av0.secret-token-Wren`);
     expect(reads[5]!.view).toBeUndefined();
     expect(tvUrl(reads[5]!.tableView as AvalonPlayerView)).toBe(`${BASE}/tv/ABCD`);
   });
@@ -174,7 +174,7 @@ describe('the Avalon link', () => {
       })),
     });
     clock.advance(5_000);
-    const done = await snap(runtime.poll(code, { token: tokenFor('Bran') }));
+    const done = await snap(runtime.poll(code, { token: tokenFor('Rook') }));
     expect(done.status).toBe('results');
     expect(done.results?.summary).toBe('Good wins: Merlin survived the assassination');
     expect(done.results?.winners).toEqual(ids.slice(0, 3));
@@ -194,7 +194,7 @@ describe('the Avalon link', () => {
     await runtime.post(code, tokenFor('Wren'), { type: 'start' });
     app.setStatus({ phase: 'lobby', over: true, endedEarly: true });
     clock.advance(5_000);
-    const back = await snap(runtime.poll(code, { token: tokenFor('Elin') }));
+    const back = await snap(runtime.poll(code, { token: tokenFor('Finch') }));
     expect(back.status).toBe('waiting');
     expect(back.historyCount).toBe(0);
   });
@@ -236,5 +236,59 @@ describe('the Avalon link', () => {
         },
       }),
     ).toThrow("Avalon didn't seat everyone.");
+  });
+
+  describe('talking to Avalon', () => {
+    const state = { avalonCode: 'ABCD', avalonUrl: BASE, seats: {} };
+    const linkWith = (fn: (init?: RequestInit) => Response | Promise<Response>) =>
+      createAvalonLink({
+        baseUrl: BASE,
+        secret: SECRET,
+        fetch: (async (_: unknown, init?: RequestInit) => fn(init)) as typeof fetch,
+      });
+    const startCtx = {
+      lobbyCode: 'WXYZ',
+      hostId: 'a',
+      players: [],
+      options: defaultOptions(),
+      returnUrl: 'https://jackdaw.test/r/WXYZ',
+      look: 'light' as const,
+    };
+
+    it('gives every call a timeout', async () => {
+      const signals: (AbortSignal | null | undefined)[] = [];
+      const link = linkWith((init) => {
+        signals.push(init?.signal);
+        return Response.json({ code: 'ABCD', seats: {}, phase: 'team', over: false });
+      });
+      await link.start(startCtx);
+      await link.check(state);
+      await link.end!(state);
+      expect(signals).toHaveLength(3);
+      for (const s of signals) expect(s).toBeInstanceOf(AbortSignal);
+    });
+
+    it("says it couldn't reach Avalon when Start times out", async () => {
+      const link = linkWith(() => {
+        throw new DOMException('The operation timed out.', 'TimeoutError');
+      });
+      await expect(link.start(startCtx)).rejects.toThrow("Couldn't reach Avalon.");
+      await expect(link.check(state)).rejects.toThrow('timed out');
+    });
+
+    it('only gives up on the game when Avalon itself says the room is gone', async () => {
+      const gone = linkWith(() =>
+        Response.json({ error: 'That room does not exist or has expired.' }, { status: 404 }),
+      );
+      expect(await gone.check(state)).toEqual({ over: true, abandoned: true });
+      const misrouted = linkWith(
+        () =>
+          new Response('<!doctype html><h1>404</h1>', {
+            status: 404,
+            headers: { 'content-type': 'text/html' },
+          }),
+      );
+      await expect(misrouted.check(state)).rejects.toThrow('404');
+    });
   });
 });

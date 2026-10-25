@@ -28,6 +28,10 @@ export const Avatar = z.object({
 });
 export type Avatar = z.infer<typeof Avatar>;
 
+/** How well a computer player plays (see bots.ts). */
+export const BotLevel = z.enum(['easy', 'normal', 'hard']);
+export type BotLevel = z.infer<typeof BotLevel>;
+
 export const MAX_PLAYERS = 15;
 export const CHAT_LIMIT = 120;
 export const REJOIN_CODE_ALPHABET = CODE_ALPHABET;
@@ -74,8 +78,13 @@ export const ClientMessage = z.discriminatedUnion('type', [
   z.object({ type: z.literal('createRejoinCode') }),
   z.object({ type: z.literal('resetScores') }),
   // Added 2026-10-13 with the owner's approval: platform features for every game.
-  z.object({ type: z.literal('endGame') }),
+  /** `save` (2026-10-24): record the rounds played so far, when the game can (`canSave`). */
+  z.object({ type: z.literal('endGame'), save: z.boolean().optional() }),
   z.object({ type: z.literal('react'), kind: z.enum(REACTIONS) }),
+  // Added 2026-10-24 ("play against bots"): the host seats a computer player.
+  z.object({ type: z.literal('addBot') }),
+  // Added 2026-10-24 ("set difficulty level with bots", "game wide"): every bot's level.
+  z.object({ type: z.literal('setBotLevel'), level: BotLevel }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
@@ -106,6 +115,8 @@ export interface PublicPlayer {
   joinedAt: number;
   /** False while a game they joined too late for is running (they watch the table view). */
   seated: boolean;
+  /** A computer player the host added. Always online; plays through the game's `bot`. */
+  bot?: true;
 }
 
 /**
@@ -165,6 +176,8 @@ export interface LobbySnapshot {
   displays: number;
   selectedGameId: string | null;
   gameOptions: Record<string, unknown>;
+  /** How well every bot at the table plays. */
+  botLevel: BotLevel;
   /** The latest games, newest first (at most 10). The full record comes from the stats endpoint. */
   history: HistoryEntry[];
   /** How many games the lobby has recorded in total. */
@@ -182,6 +195,8 @@ export interface LobbySnapshot {
   timerAt?: number;
   /** Who the running game is waiting on, so their phones can alert them. */
   waitingOn?: string[];
+  /** The running game has rounds worth saving if the host ends it now (`endGame { save }`). */
+  canSave?: true;
   /** This player's private view. Only for seated players during a game. */
   view?: unknown;
   /** Public table view. Everyone gets it during a game. */

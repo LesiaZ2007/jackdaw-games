@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTheme, type GameUi } from '@jackdaw/ui';
+import { useGameLook, type GameUi } from '@jackdaw/ui';
 import { seatUrl, tvUrl, type AvalonPlayerView, type AvalonTableView } from '../rules';
 import { ShieldMark } from './art';
 import './avalon-copied.css';
@@ -10,28 +10,29 @@ import './avalon-lobby.css';
 /**
  * While Avalon runs, phones are in the Avalon app. Each phone is sent to its own seat once, as
  * soon as the game starts; if a player comes back to Jackdaw mid-game, this screen offers the
- * way back instead of bouncing them straight out again.
+ * way back instead of bouncing them straight out again. Keyed by the Avalon room and the seat, so
+ * a tab that changes hands (or a reused room code) still sends the new seat across.
  */
-const wentKey = (code: string) => `jackdaw:avalon-went:${code}`;
+const wentKey = (code: string, seat: string) => `jackdaw:avalon-went:${code}:${seat}`;
 
-function alreadyWent(code: string): boolean {
+function alreadyWent(code: string, seat: string): boolean {
   try {
-    return sessionStorage.getItem(wentKey(code)) === '1';
+    return sessionStorage.getItem(wentKey(code, seat)) === '1';
   } catch {
     return false;
   }
 }
 
-function markWent(code: string) {
+function markWent(code: string, seat: string) {
   try {
-    sessionStorage.setItem(wentKey(code), '1');
+    sessionStorage.setItem(wentKey(code, seat), '1');
   } catch {
     // Private mode: we just send them every time.
   }
 }
 
 function Away({ title, children }: { title: string; children: React.ReactNode }) {
-  const look = useTheme();
+  const look = useGameLook('avalon', 'light');
   return (
     <div className="avalon av-away" data-printed={look === 'light' ? '' : undefined}>
       <span className="av-away__crest">
@@ -47,13 +48,14 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view }) => {
   const v = view as AvalonPlayerView;
   const url = seatUrl(v);
   // Decided once, on the first render: the lobby only draws game screens in the browser.
-  const [leaving] = useState(() => Boolean(v.seat) && !alreadyWent(v.avalonCode));
+  const seat = v.seat?.playerId ?? '';
+  const [leaving] = useState(() => Boolean(v.seat) && !alreadyWent(v.avalonCode, seat));
 
   useEffect(() => {
     if (!leaving) return;
-    markWent(v.avalonCode);
+    markWent(v.avalonCode, seat);
     window.location.assign(url);
-  }, [leaving, v.avalonCode, url]);
+  }, [leaving, v.avalonCode, seat, url]);
 
   return (
     <Away title={leaving ? 'Taking you to your seat…' : 'Avalon is underway'}>

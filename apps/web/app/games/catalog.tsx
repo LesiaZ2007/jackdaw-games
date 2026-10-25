@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { BirdMark, GameCover } from '@jackdaw/ui';
 import { catalog, catalogEntry, CATEGORY_LABEL, unfitReason } from '@/lib/catalog';
 import { GameDetail, StartLobby } from './detail';
+import { ThemeButton } from '../theme-toggle';
 import { FilterBar } from './filter-bar';
 import { filterQuery, type Filters, hasFilters, matches, NO_FILTERS, readFilters } from './filters';
 
@@ -36,8 +37,13 @@ export function Catalog() {
           <BirdMark width={44} height={44} weight={3} />
         </Link>
         <h1 className="jd-display cat-bar__title">The games</h1>
-        <Link href="/" className="jd-plaque jd-plaque--small cat-bar__join">
-          Join a lobby
+        <ThemeButton className="cat-bar__join" />
+        <Link
+          href="/"
+          className="jd-plaque jd-plaque--small cat-bar__joinlink"
+          aria-label="Join a lobby"
+        >
+          Join<span className="cat-bar__long"> a lobby</span>
         </Link>
       </header>
 

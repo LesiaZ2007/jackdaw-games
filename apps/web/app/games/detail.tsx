@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { GameCategory } from '@jackdaw/engine';
 import { Glyph, Plaque } from '@jackdaw/ui';
 import { COMPLEXITY_LABEL, type CatalogEntry } from '@/lib/catalog';
@@ -25,9 +25,12 @@ const range = ([a, b]: [number, number]) => (a === b ? `${a}` : `${a}–${b}`);
 export function GameDetail({
   entry,
   headingLevel = 1,
+  back,
 }: {
   entry: CatalogEntry;
   headingLevel?: 1 | 2;
+  /** A back button, pinned to the banner's top-left corner (the full page has one). */
+  back?: React.ReactNode;
 }) {
   const { meta, art, about } = entry;
   const Heading = headingLevel === 1 ? 'h1' : 'h2';
@@ -38,6 +41,7 @@ export function GameDetail({
         className={`cat-detail__hero jd-field-${art.field}`}
         style={{ '--band': `var(--${art.band})` } as React.CSSProperties}
       >
+        {back && <div className="cat-detail__back">{back}</div>}
         <span className="cat-detail__dev">
           <Glyph id={art.glyph} />
         </span>
@@ -68,18 +72,25 @@ export function GameDetail({
           </div>
         </dl>
         {about.pictures?.length ? (
-          <div className="cat-pics" tabIndex={0} aria-label={`Pictures of ${meta.name}`}>
-            {about.pictures.map((p) => (
-              // Plain img: these are local screenshots of fixed size, shown at a fixed height.
-              <img
-                key={p.src}
-                src={p.src}
-                alt={p.alt}
-                className={p.wide ? 'is-wide' : undefined}
-                loading="lazy"
-              />
-            ))}
-          </div>
+          (['phone', 'desktop'] as const).map((kind) => {
+            const pics = about.pictures!.filter((p) => (p.desktop ? 'desktop' : 'phone') === kind);
+            return (
+              pics.length > 0 && (
+                <ul
+                  key={kind}
+                  className={`cat-pics cat-pics--${kind}`}
+                  aria-label={`${meta.name} on a ${kind}`}
+                >
+                  {pics.map((p) => (
+                    <li key={p.src}>
+                      {/* Plain img: local screenshots of a known size. */}
+                      <img src={p.src} alt={p.alt} loading="lazy" />
+                    </li>
+                  ))}
+                </ul>
+              )
+            );
+          })
         ) : (
           <div className="cat-pics cat-pics--empty">
             <Glyph id={art.glyph} size={40} />
@@ -100,10 +111,42 @@ export function GameDetail({
 }
 
 /**
- * The docked button under a game's details. Playable games open a lobby with the game already
- * chosen; it asks for a name first if this device hasn't used one before.
+ * Whether a docked bar should step aside: hidden while the page scrolls down, back as soon as it
+ * scrolls up or reaches the end. Focus inside the bar (typing a name) keeps it up.
  */
-export function StartLobby({ entry }: { entry: CatalogEntry }) {
+function useHideOnScroll(on: boolean) {
+  const [hidden, setHidden] = useState(false);
+  const last = useRef(0);
+  useEffect(() => {
+    if (!on) return;
+    last.current = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      const atEnd = y + window.innerHeight >= document.documentElement.scrollHeight - 24;
+      const typing = document.activeElement?.closest('.cat-dock');
+      if (atEnd || typing || y < 40) setHidden(false);
+      else if (Math.abs(y - last.current) > 6) setHidden(y > last.current);
+      last.current = y;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [on]);
+  return on && hidden;
+}
+
+/**
+ * The docked button under a game's details. Playable games open a lobby with the game already
+ * chosen; it asks for a name first if this device hasn't used one before. On the full page
+ * (`autoHide`) it gets out of the way while you read.
+ */
+export function StartLobby({
+  entry,
+  autoHide = false,
+}: {
+  entry: CatalogEntry;
+  autoHide?: boolean;
+}) {
+  const hidden = useHideOnScroll(autoHide);
   const router = useRouter();
   const [name, setName] = useState('');
   const [known, setKnown] = useState(false);
@@ -154,7 +197,7 @@ export function StartLobby({ entry }: { entry: CatalogEntry }) {
 
   const askName = !known || editing;
   return (
-    <div className="cat-dock">
+    <div className={hidden ? 'cat-dock is-hidden' : 'cat-dock'}>
       {askName ? (
         <label className="cat-dock__name">
           <span className="jd-label">Your name</span>

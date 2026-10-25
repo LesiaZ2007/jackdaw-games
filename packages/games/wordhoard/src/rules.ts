@@ -1,4 +1,10 @@
-import { GameError, type GameModule, type GameResult, type RecapEvent } from '@jackdaw/engine';
+import {
+  GameError,
+  type GameModule,
+  type GameResult,
+  type RecapEvent,
+  type Rng,
+} from '@jackdaw/engine';
 import { z } from 'zod';
 import {
   COUNTS,
@@ -9,6 +15,7 @@ import {
   type Board,
   type FormedWord,
 } from './board';
+import { wordhoardBot } from './bot';
 import { meta } from './meta';
 import { isWord } from './words';
 
@@ -235,7 +242,12 @@ function clock(prev: WordhoardState | null, s: WordhoardState, now: number): Wor
 const words = (ws: FormedWord[]) => ws.map((w) => w.word).join(', ');
 
 /** One player's move, before the turn timer is set (see `clock`). */
-function act(s: WordhoardState, playerId: string, action: WordhoardAction): WordhoardState {
+function act(
+  s: WordhoardState,
+  playerId: string,
+  action: WordhoardAction,
+  rng: Rng,
+): WordhoardState {
   if (s.over) throw new GameError('over', 'The game is over.');
   const side = sideOf(s, playerId);
   if (!side || s.turn !== side) throw new GameError('not_your_turn', 'It’s not your turn.');
@@ -258,11 +270,11 @@ function act(s: WordhoardState, playerId: string, action: WordhoardAction): Word
     const left = takeFrom(rack, action.tiles);
     if (!left) throw new GameError('not_yours', 'Those tiles aren’t on your rack.');
     const d = draw(s.bag, left);
-    // The swapped tiles go back into the bag, below the ones still to be drawn.
+    // The swapped tiles go back into the bag, which is shaken so nobody knows where they are.
     const next: WordhoardState = {
       ...s,
       racks: { ...s.racks, [side]: d.rack },
-      bag: [...d.bag, ...action.tiles],
+      bag: rng.shuffle([...d.bag, ...action.tiles]),
       turn: nextSide(s),
       moves: [...s.moves, { player: playerId, kind: 'swap', score: 0, count: action.tiles.length }],
       scoreless: s.scoreless + 1,
@@ -308,7 +320,8 @@ function act(s: WordhoardState, playerId: string, action: WordhoardAction): Word
         bingo: check.bingo,
       },
     ],
-    scoreless: 0,
+    // A play worth nothing (blanks alone) counts as scoreless too.
+    scoreless: check.score > 0 ? 0 : s.scoreless + 1,
     recap: [
       ...s.recap,
       {
@@ -317,7 +330,59 @@ function act(s: WordhoardState, playerId: string, action: WordhoardAction): Word
       },
     ],
   };
-  return d.rack.length === 0 && d.bag.length === 0 ? finish(next, side, playerId) : next;
+  if (d.rack.length === 0 && d.bag.length === 0) return finish(next, side, playerId);
+  return next.scoreless >= SCORELESS_END ? finish(next, null) : next;
+}
+
+/**
+ * The result from the scores as they stand: at the end of the game, or (`partialResult`) when the
+ * host ends it early, before the tiles left on the racks are settled.
+ */
+function resultOf(s: WordhoardState): GameResult {
+  const top = Math.max(...keys(s).map((id) => s.scores[id] ?? 0));
+  const won = keys(s).filter((id) => (s.scores[id] ?? 0) === top);
+  const winners = s.players.filter((id) => won.includes(sideOf(s, id)!));
+  const best = s.moves
+    .filter((m) => m.kind === 'play')
+    .reduce<Move | null>((a, m) => (!a || m.score > a.score ? m : a), null);
+  const paired = s.sides.some((side) => side.length > 1);
+  const reveal: WordhoardReveal = {
+    sides: s.sides,
+    board: s.board,
+    scores: s.scores,
+    racks: s.racks,
+    endBonus: s.endBonus,
+    moves: s.moves,
+  };
+  return {
+    winners,
+    summary:
+      won.length > 1
+        ? `A tie on ${top} points`
+        : `${top} points${best ? `; best play ${best.words?.[0]?.word} for ${best.score}` : ''}`,
+    reveal,
+    recap: s.recap,
+    highlights: best
+      ? [
+          {
+            award: 'Best word',
+            playerIds: [best.player],
+            text: `${best.words?.[0]?.word} for ${best.score}`,
+            value: best.score,
+          },
+        ]
+      : [],
+    standings: s.players.map((id) => {
+      const side = s.sides.find((x) => x.includes(id)) ?? [id];
+      return {
+        playerId: id,
+        outcome: winners.includes(id) ? (won.length > 1 ? 'draw' : 'win') : 'loss',
+        // In a game of pairs, stats can tell playing with a partner from playing alone.
+        ...(paired ? { team: side.length > 1 ? 'In a pair' : 'On their own' } : {}),
+        role: `${s.scores[side[0]!] ?? 0} points`,
+      };
+    }),
+  };
 }
 
 export const wordhoard: GameModule<
@@ -374,8 +439,8 @@ export const wordhoard: GameModule<
 
   getTableView: view,
 
-  applyAction(s, playerId, action, _rng, now) {
-    return clock(s, act(s, playerId, action), now);
+  applyAction(s, playerId, action, rng, now) {
+    return clock(s, act(s, playerId, action, rng), now);
   },
 
   nextTimer: (s) => (!s.over && s.turnBy ? { id: 'turn', at: s.turnBy } : null),
@@ -395,45 +460,14 @@ export const wordhoard: GameModule<
 
   waitingOn: (s) => (s.over ? [] : (s.sides.find((side) => side[0] === s.turn) ?? [])),
 
-  getResult(s): GameResult | null {
-    if (!s.over) return null;
-    const top = Math.max(...keys(s).map((id) => s.scores[id] ?? 0));
-    const won = keys(s).filter((id) => (s.scores[id] ?? 0) === top);
-    const winners = s.players.filter((id) => won.includes(sideOf(s, id)!));
-    const best = s.moves
-      .filter((m) => m.kind === 'play')
-      .reduce<Move | null>((a, m) => (!a || m.score > a.score ? m : a), null);
-    const reveal: WordhoardReveal = {
-      sides: s.sides,
-      board: s.board,
-      scores: s.scores,
-      racks: s.racks,
-      endBonus: s.endBonus,
-      moves: s.moves,
-    };
-    return {
-      winners,
-      summary:
-        won.length > 1
-          ? `A tie on ${top} points`
-          : `${top} points${best ? `; best play ${best.words?.[0]?.word} for ${best.score}` : ''}`,
-      reveal,
-      recap: s.recap,
-      highlights: best
-        ? [
-            {
-              award: 'Best word',
-              playerIds: [best.player],
-              text: `${best.words?.[0]?.word} for ${best.score}`,
-              value: best.score,
-            },
-          ]
-        : [],
-      standings: s.players.map((id) => ({
-        playerId: id,
-        outcome: winners.includes(id) ? (won.length > 1 ? 'draw' : 'win') : 'loss',
-        role: `${s.scores[sideOf(s, id)!] ?? 0} points`,
-      })),
-    };
+  getResult: (s) => (s.over ? resultOf(s) : null),
+
+  /** Ending early: the highest score so far wins (ties share it); null before anyone scores. */
+  partialResult(s) {
+    if (s.over) return null;
+    const scored = keys(s).some((id) => (s.scores[id] ?? 0) > 0);
+    return scored ? resultOf(s) : null;
   },
+
+  bot: wordhoardBot,
 };

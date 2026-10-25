@@ -51,7 +51,28 @@ async function readJson(req: Request): Promise<unknown> {
   }
 }
 
+/** The client's address as Vercel (or any proxy in front) reports it. */
+function clientIp(req: Request): string | null {
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  return req.headers.get('x-real-ip') || forwarded || null;
+}
+
 export function createHttpHandlers(runtime: RoomRuntime) {
+  /**
+   * Runs a request for one lobby. An address that keeps asking for lobbies that don't exist
+   * (guessing codes) is turned away for a while.
+   */
+  async function forLobby(req: Request, handle: () => Promise<Response>): Promise<Response> {
+    const ip = clientIp(req);
+    try {
+      if (ip) runtime.checkAddress(ip);
+      return await handle();
+    } catch (e) {
+      if (ip && e instanceof RoomError && e.code === 'NOT_FOUND') runtime.noteMiss(ip);
+      return errorResponse(e);
+    }
+  }
+
   return {
     async createLobby(req: Request): Promise<Response> {
       try {
@@ -59,14 +80,14 @@ export function createHttpHandlers(runtime: RoomRuntime) {
         const body = CreateLobbyRequest.safeParse(await readJson(req));
         if (!body.success)
           throw new RoomError(400, 'BAD_REQUEST', body.error.issues[0]?.message ?? 'Bad request.');
-        return json(await runtime.create({ token, ...body.data }), 201);
+        return json(await runtime.create({ token, ...body.data, ip: clientIp(req) }), 201);
       } catch (e) {
         return errorResponse(e);
       }
     },
 
     async getLobby(req: Request, rawCode: string): Promise<Response> {
-      try {
+      return forLobby(req, async () => {
         const code = parseCode(rawCode);
         const token = req.headers.get(TOKEN_HEADER);
         const displayId = req.headers.get(DISPLAY_HEADER);
@@ -82,54 +103,44 @@ export function createHttpHandlers(runtime: RoomRuntime) {
             since,
           ),
         );
-      } catch (e) {
-        return errorResponse(e);
-      }
+      });
     },
 
     async postLobby(req: Request, rawCode: string): Promise<Response> {
-      try {
+      return forLobby(req, async () => {
         const code = parseCode(rawCode);
         const token = requireToken(req);
         return json(
           await runtime.post(code, token, await readJson(req), { origin: new URL(req.url).origin }),
         );
-      } catch (e) {
-        return errorResponse(e);
-      }
+      });
     },
 
-    async getStats(_req: Request, rawCode: string): Promise<Response> {
-      try {
+    async getStats(req: Request, rawCode: string): Promise<Response> {
+      return forLobby(req, async () => {
         return json(await runtime.stats(parseCode(rawCode)));
-      } catch (e) {
-        return errorResponse(e);
-      }
+      });
     },
 
     async setPush(req: Request, rawCode: string): Promise<Response> {
-      try {
+      return forLobby(req, async () => {
         const code = parseCode(rawCode);
         const token = requireToken(req);
         const body = (await readJson(req)) as { subscription?: unknown } | null;
         await runtime.setPush(code, token, body?.subscription ?? null);
         return json({ ok: true });
-      } catch (e) {
-        return errorResponse(e);
-      }
+      });
     },
 
     async rejoin(req: Request, rawCode: string): Promise<Response> {
-      try {
+      return forLobby(req, async () => {
         const code = parseCode(rawCode);
         const token = requireToken(req);
         const body = RedeemRejoinRequest.safeParse(await readJson(req));
         if (!body.success)
           throw new RoomError(400, 'REJOIN_INVALID', 'Rejoin codes are 6 letters.');
         return json(await runtime.redeemRejoin(code, token, body.data.rejoinCode));
-      } catch (e) {
-        return errorResponse(e);
-      }
+      });
     },
   };
 }

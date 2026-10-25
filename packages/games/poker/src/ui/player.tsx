@@ -22,7 +22,7 @@ import { PlayingCard, chips } from './pieces';
 import { PokerTable } from './table';
 import './poker.css';
 
-const STREET_NAME: Record<string, string> = {
+export const STREET_NAME: Record<string, string> = {
   preflop: 'Before the flop',
   flop: 'The flop',
   turn: 'The turn',
@@ -48,13 +48,28 @@ export function handLine(t: PokerTableView): string {
 export function handMoment(t: PokerTableView, me: string | null, name: (id: string) => string) {
   const last = t.last;
   if (!last) return null;
-  const top = last.pots[last.pots.length - 1] ?? last.pots[0];
+  // The main pot: everyone still in at the end played for it.
+  const main = last.pots[0];
   const winners = [...new Set(last.pots.flatMap((p) => p.winners))];
-  const headline = top
-    ? `${top.winners.map(name).join(' and ')} ${top.winners.length > 1 ? 'split' : 'wins'} ${chips(top.amount)}`
+  // Each pot's winners once, biggest first: "Rook wins 3,000 · Wren wins 200".
+  const shares = new Map<string, { who: string[]; amount: number }>();
+  for (const p of last.pots) {
+    const key = p.winners.join();
+    const got = shares.get(key);
+    if (got) got.amount += p.amount;
+    else shares.set(key, { who: p.winners, amount: p.amount });
+  }
+  const headline = main
+    ? [...shares.values()]
+        .sort((a, b) => b.amount - a.amount)
+        .map(
+          (x) =>
+            `${x.who.map(name).join(' and ')} ${x.who.length > 1 ? 'split' : 'wins'} ${chips(x.amount)}`,
+        )
+        .join(' · ')
     : 'The hand is over';
   if (!me || !t.inHand.includes(me)) {
-    return { outcome: 'reveal' as Outcome, title: headline, detail: top?.hand };
+    return { outcome: 'reveal' as Outcome, title: headline, detail: main?.hand };
   }
   const net = last.net[me] ?? 0;
   if (winners.includes(me) && net >= 0) {
@@ -69,7 +84,9 @@ export function handMoment(t: PokerTableView, me: string | null, name: (id: stri
   return {
     outcome: 'loss' as Outcome,
     title: `You lost ${chips(-net)}`,
-    detail: top ? `${top.winners.map(name).join(' and ')}: ${top.hand.toLowerCase()}` : undefined,
+    detail: main
+      ? `${main.winners.map(name).join(' and ')}: ${main.hand.toLowerCase()}`
+      : undefined,
   };
 }
 
@@ -104,6 +121,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         ? bestHand([...v.hole, ...v.board]).name
         : startingHandName(v.hole);
   const folded = v.folded.includes(v.me);
+  // Still in the hand with chips to bet: the betting dock stays up, greyed out until your turn.
+  const inHand = !done && !folded && v.hole.length === 2 && choices(v, v.me).stack > 0;
 
   return (
     <div className="pk pk--phone">
@@ -135,8 +154,15 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 
       {done ? (
         <NextHand key={v.hand} t={v} me={v.me} send={send} now={now} />
-      ) : v.toAct === v.me ? (
-        <Betting key={`${v.hand}-${v.log.length}`} t={v} me={v.me} send={send} now={now} />
+      ) : v.toAct === v.me || inHand ? (
+        <Betting
+          key={`${v.hand}-${v.log.length}`}
+          t={v}
+          me={v.me}
+          send={send}
+          now={now}
+          waitingOn={v.toAct === v.me ? null : v.toAct ? name(v.toAct) : 'the deal'}
+        />
       ) : (
         <Waiting t={v} name={name} now={now} />
       )}
@@ -234,19 +260,27 @@ function NextHand({
   );
 }
 
-/** Fold, check or call, and a raise with its amount. */
+/**
+ * Fold, check or call, and a raise with its amount. It stays on screen while you're in the hand:
+ * anything you can't do right now is greyed out (all of it while someone else is acting).
+ */
 function Betting({
   t,
   me,
   send,
   now,
+  waitingOn,
 }: {
   t: PokerTableView;
   me: string;
   send: (a: PokerAction) => Promise<boolean>;
   now: () => number;
+  /** Who the table is waiting on, when it isn't you. */
+  waitingOn: string | null;
 }) {
   const c = choices(t, me);
+  const live = waitingOn === null;
+  const canRaise = live && c.canRaise;
   const [to, setTo] = useState(c.minTo);
   const [busy, setBusy] = useState(false);
   const potAfterCall = t.pot + c.owe;
@@ -255,7 +289,14 @@ function Betting({
     { label: '½ pot', to: t.currentBet + potAfterCall / 2 },
     { label: 'Pot', to: t.currentBet + potAfterCall },
     { label: 'All in', to: c.max },
-  ].map((p) => ({ ...p, to: clamp(p.to, c.minTo, c.max) }));
+  ]
+    .map((p) => ({ ...p, to: clamp(p.to, c.minTo, c.max) }))
+    // ½ pot and Pot are greyed out when they come to the same as Min or All in.
+    .map((p, i, all) => ({
+      ...p,
+      same:
+        i > 0 && i < all.length - 1 && (p.to === all[0]!.to || p.to === all[all.length - 1]!.to),
+    }));
   const go = async (a: PokerAction) => {
     setBusy(true);
     try {
@@ -268,71 +309,75 @@ function Betting({
   const verb = t.currentBet === 0 ? 'Bet' : 'Raise to';
 
   return (
-    <section className="pk-dock pk-bet-dock" aria-label="Your move">
-      {t.actBy && (
-        <p className="pk-dock__wait">
-          <span>Your move.</span>
+    <section
+      className={live ? 'pk-dock pk-bet-dock' : 'pk-dock pk-bet-dock is-waiting'}
+      aria-label="Your move"
+    >
+      {(t.actBy || !live) && (
+        <p className="pk-dock__wait" role={live ? undefined : 'status'}>
+          <span>{live ? 'Your move.' : `Waiting for ${waitingOn}.`}</span>
           <TurnClock t={t} now={now} />
         </p>
       )}
       <div className="pk-dock__row">
-        <Plaque disabled={busy} onClick={() => void go({ type: 'fold' })}>
+        <Plaque disabled={busy || !live} onClick={() => void go({ type: 'fold' })}>
           Fold
         </Plaque>
         {c.canCheck ? (
-          <Plaque disabled={busy} onClick={() => void go({ type: 'check' })}>
+          <Plaque disabled={busy || !live} onClick={() => void go({ type: 'check' })}>
             Check
           </Plaque>
         ) : (
-          <Plaque disabled={busy} onClick={() => void go({ type: 'call' })}>
+          <Plaque disabled={busy || !live} onClick={() => void go({ type: 'call' })}>
             {c.owe >= c.stack ? `Call all in ${chips(c.owe)}` : `Call ${chips(c.owe)}`}
           </Plaque>
         )}
       </div>
-      {c.canRaise && (
-        <>
-          <div className="pk-dock__presets" role="group" aria-label="Raise size">
-            {presets.map((p) => (
-              <button
-                key={p.label}
-                type="button"
-                aria-pressed={to === p.to}
-                onClick={() => setTo(p.to)}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <div className="pk-dock__row pk-dock__raise">
-            <span className="pk-stepper">
-              <button
-                type="button"
-                aria-label="Less"
-                disabled={to <= c.minTo}
-                onClick={() => setTo(clamp(to - t.bb, c.minTo, c.max))}
-              >
-                −
-              </button>
-              <output aria-live="polite">{chips(to)}</output>
-              <button
-                type="button"
-                aria-label="More"
-                disabled={to >= c.max}
-                onClick={() => setTo(clamp(to + t.bb, c.minTo, c.max))}
-              >
-                +
-              </button>
-            </span>
-            <Plaque
-              go
-              disabled={busy}
-              onClick={() => void go(allIn ? { type: 'allIn' } : { type: 'raise', to })}
-            >
-              {allIn ? `All in ${chips(c.max)}` : `${verb} ${chips(to)}`}
-            </Plaque>
-          </div>
-        </>
-      )}
+      <div className="pk-dock__presets" role="group" aria-label="Raise size">
+        {presets.map((p) => (
+          <button
+            key={p.label}
+            type="button"
+            aria-pressed={canRaise && to === p.to}
+            disabled={!canRaise || p.same}
+            onClick={() => setTo(p.to)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+      <div className="pk-dock__row pk-dock__raise">
+        <span className="pk-stepper">
+          <button
+            type="button"
+            aria-label="Less"
+            disabled={!canRaise || to <= c.minTo}
+            onClick={() => setTo(clamp(to - t.bb, c.minTo, c.max))}
+          >
+            −
+          </button>
+          <output aria-live="polite">{canRaise ? chips(to) : '–'}</output>
+          <button
+            type="button"
+            aria-label="More"
+            disabled={!canRaise || to >= c.max}
+            onClick={() => setTo(clamp(to + t.bb, c.minTo, c.max))}
+          >
+            +
+          </button>
+        </span>
+        <Plaque
+          go={canRaise}
+          disabled={busy || !canRaise}
+          onClick={() => void go(allIn ? { type: 'allIn' } : { type: 'raise', to })}
+        >
+          {!live || canRaise
+            ? allIn
+              ? `All in ${chips(c.max)}`
+              : `${verb} ${chips(to)}`
+            : 'No raise now'}
+        </Plaque>
+      </div>
     </section>
   );
 }

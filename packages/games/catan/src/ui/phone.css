@@ -1,0 +1,825 @@
+/* Catan on a phone: fits under the bar without scrolling. Whose turn, everyone else, the island
+   as big as the space allows, your hand, the dock; sheets for building, trading and cards. On a
+   laptop the hand and dock sit beside the island. Colours are Jackdaw's and catan.css's tokens. */
+
+.ctn--phone {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ctn-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  background: var(--ctn-sea);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--ctn-stock);
+  outline-offset: -6px;
+  overflow: hidden;
+}
+.ctn-label {
+  font: 700 14px/1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  padding: 0;
+}
+
+.ctn-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: var(--space-1) var(--space-3);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.ctn-strip__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  display: grid;
+}
+.ctn-strip__text b {
+  font: 800 19px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ctn-strip__text small {
+  font: 500 15px/1.2 var(--font-body);
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ctn-seattok {
+  display: inline-grid;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px var(--paper),
+    0 0 0 5px var(--ctn-own);
+  flex: none;
+}
+.ctn-mypts {
+  display: grid;
+  justify-items: end;
+  line-height: 1;
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--rule);
+}
+.ctn-mypts b {
+  font: 800 26px/1 var(--font-code);
+}
+.ctn-mypts small {
+  font: 700 13px/1 var(--font-plaque);
+  color: var(--ink-2);
+}
+.ctn-clock {
+  font: 800 18px/1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  padding: 4px 6px;
+  border: 1.5px solid var(--ink);
+}
+.ctn-clock--late {
+  background: var(--gules);
+  color: var(--on-fill);
+  border-color: var(--gules);
+}
+
+.ctn-dice {
+  display: flex;
+  gap: 4px;
+  animation: ctn-tumble 600ms var(--ease-out);
+}
+.ctn-die {
+  --d: 32px;
+  width: var(--d);
+  height: var(--d);
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  padding: calc(var(--d) * 0.13);
+  background: var(--ctn-stock);
+  border: 1.5px solid var(--ctn-stock-ink);
+  border-radius: calc(var(--d) * 0.16);
+}
+.ctn-die--red {
+  background: var(--gules);
+}
+.ctn-die i {
+  width: calc(var(--d) * 0.19);
+  height: calc(var(--d) * 0.19);
+  place-self: center;
+  border-radius: 50%;
+}
+.ctn-die i.is-on {
+  background: var(--ctn-stock-ink);
+}
+.ctn-die--red i.is-on {
+  background: var(--ctn-stock);
+}
+@keyframes ctn-tumble {
+  0% {
+    transform: rotate(-30deg) scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: rotate(8deg) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.ctn-rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: var(--space-1);
+}
+.ctn-opp {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 6px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+}
+.ctn-opp.is-acting {
+  box-shadow: inset 0 -4px 0 var(--ctn-own);
+}
+.ctn-opp__tok {
+  position: relative;
+  display: grid;
+}
+.ctn-opp__body {
+  display: grid;
+  min-width: 0;
+}
+.ctn-opp__name {
+  font: 800 15px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ctn-opp__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 14px/1 var(--font-plaque);
+  color: var(--ink-2);
+}
+.ctn-opp__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.ctn-opp__meta svg {
+  width: 14px;
+  height: 14px;
+}
+.ctn-devchit {
+  width: 9px;
+  height: 12px;
+  background: var(--sable);
+  border: 1px solid var(--ctn-stock-ink);
+}
+.ctn-opp__pts {
+  font: 800 24px/1 var(--font-code);
+}
+.ctn-award-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  background: var(--ctn-stock);
+  color: var(--ctn-stock-ink);
+  outline: 1px solid var(--ctn-stock-ink);
+}
+.ctn-award-mark svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ctn-hand {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 64px));
+  justify-content: center;
+  gap: var(--space-2);
+  padding-top: 8px;
+}
+.ctn-rcard {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  padding: 4px;
+  background: var(--ctn-stock);
+  color: var(--ctn-stock-ink);
+  border: 1.5px solid var(--ctn-stock-ink);
+  outline: 1px solid var(--ctn-stock-ink);
+  outline-offset: -4px;
+}
+.ctn-rcard.is-none {
+  opacity: 0.4;
+}
+.ctn-rcard__art {
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--ctn-stock);
+}
+.ctn-rcard__art svg {
+  width: 26px;
+  height: 26px;
+}
+.ctn-rcard__name {
+  font: 800 11px/1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.ctn-rcard__n {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  background: var(--sable);
+  color: var(--on-fill);
+  font: 800 15px/1 var(--font-plaque);
+  border: 1.5px solid var(--ctn-stock);
+}
+.ctn-got {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  z-index: 2;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--vert);
+  color: var(--on-fill);
+  font: 800 16px/1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  /* after the big roll has landed in the strip */
+  animation: ctn-rise 2.8s var(--ease-out) 1.8s both;
+}
+.ctn-got .ctn-pip {
+  outline-color: var(--on-fill);
+}
+@keyframes ctn-rise {
+  0% {
+    transform: translate(-50%, 16px);
+    opacity: 0;
+  }
+  12%,
+  85% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -8px);
+    opacity: 0;
+  }
+}
+
+.ctn-dock {
+  display: grid;
+  gap: var(--space-2);
+  padding-bottom: var(--space-1);
+}
+.ctn-dock .jd-plaque {
+  min-height: 52px;
+  padding: 0 8px;
+  font-size: 19px;
+}
+.ctn-dock--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.ctn-dock .jd-plaque {
+  white-space: nowrap;
+}
+/* Four to a row on a phone: the label shrinks with the screen and the counts sit on the corner
+   as badges, so "Cards 3" never runs past its button. */
+.ctn-dock--4 .jd-plaque {
+  position: relative;
+  min-width: 0;
+  gap: 6px;
+  padding: 0 4px;
+  font-size: min(17px, 4.3cqi);
+}
+.ctn-dock--4 .ctn-count {
+  position: absolute;
+  top: -9px;
+  right: -5px;
+  font-size: 13px;
+  padding: 3px 5px;
+}
+.ctn-count--go {
+  background: var(--vert);
+  color: var(--on-fill);
+}
+.ctn-count {
+  min-width: 1.4em;
+  padding: 2px 4px;
+  font-size: 0.8em;
+  line-height: 1;
+  background: var(--ink);
+  color: var(--paper);
+}
+.ctn-dock--2 {
+  grid-template-columns: 1fr 1.5fr;
+}
+/* A long label ("Trade with Bot Starling") wraps rather than running out of its button. */
+.ctn-dock--2 .jd-plaque {
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.05;
+}
+.ctn-dock--2 > .ctn-hint,
+.ctn-dock--robber > .ctn-hint {
+  grid-column: 1 / -1;
+}
+.ctn-hint {
+  margin: 0;
+  text-align: center;
+  font: 500 16px/1.3 var(--font-body);
+  color: var(--ink);
+}
+.ctn-victims {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--space-2);
+}
+.ctn-victims button,
+.ctn-to button {
+  min-height: 44px;
+  padding: 4px 10px;
+  font: 800 16px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  cursor: pointer;
+}
+.ctn-victims button small {
+  display: block;
+  font: 500 13px/1.2 var(--font-body);
+  text-transform: none;
+  color: var(--ink-2);
+}
+.ctn-victims button.is-on,
+.ctn-to button.is-on {
+  background: var(--ink);
+  color: var(--paper);
+}
+.ctn-victims button.is-on small {
+  color: var(--paper);
+}
+
+/* An offer to you, laid over the bottom of the island. */
+.ctn-offercard {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 0 12px 30px -16px var(--shadow);
+  animation: ctn-slide 360ms var(--ease-out);
+}
+.ctn-offercard__btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.3fr;
+  gap: var(--space-2);
+}
+.ctn-offercard__btns--2 {
+  grid-template-columns: 1fr 1.4fr;
+}
+.ctn-offercard__btns .jd-plaque {
+  min-height: 48px;
+  font-size: 18px;
+  padding: 0 6px;
+}
+.ctn-offercard__wait,
+.ctn-offercard__more {
+  margin: 0;
+  font: 500 15px/1.3 var(--font-body);
+  color: var(--ink-2);
+}
+@keyframes ctn-slide {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+.ctn-offer__line {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font: 500 17px/1.3 var(--font-body);
+}
+.ctn-cardrow {
+  display: inline-flex;
+  gap: 8px;
+  font-size: 20px;
+  margin-right: 4px;
+}
+
+/* ---------- Sheets ---------- */
+
+.ctn-sheet {
+  display: grid;
+  gap: var(--space-4);
+}
+.ctn-sheet section {
+  display: grid;
+  gap: var(--space-3);
+}
+.ctn-wide {
+  width: 100%;
+}
+.ctn-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0 4px;
+  min-height: 32px;
+  font: 700 15px var(--font-body);
+  color: var(--ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ctn-trade__why,
+.ctn-trade__note {
+  margin: 0;
+  font: 500 16px/1.35 var(--font-body);
+  color: var(--ink-2);
+}
+
+.ctn-picker,
+.ctn-onepick,
+.ctn-to {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.ctn-picker,
+.ctn-onepick {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.ctn-picker > legend,
+.ctn-onepick > legend,
+.ctn-to > legend {
+  margin-bottom: 6px;
+}
+.ctn-picker__cell {
+  display: grid;
+  border: 1.5px solid var(--rule);
+}
+.ctn-picker__cell.is-set {
+  border-color: var(--ink);
+}
+.ctn-picker__add,
+.ctn-picker__less {
+  appearance: none;
+  border: 0;
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.ctn-picker__add {
+  min-height: 64px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 6px 2px;
+}
+.ctn-picker__cell.is-set .ctn-picker__add {
+  background: var(--ctn-stock);
+  color: var(--ctn-stock-ink);
+}
+.ctn-picker__art {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: var(--ctn-stock);
+}
+.ctn-picker__art svg {
+  width: 22px;
+  height: 22px;
+}
+.ctn-picker__add b {
+  font: 800 19px/1 var(--font-code);
+}
+.ctn-picker__less {
+  min-height: 40px;
+  border-top: 1px solid var(--rule);
+  font: 800 22px/1 var(--font-plaque);
+}
+.ctn-picker button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ctn-onepick__opt {
+  min-height: 56px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 6px 2px;
+  font: 700 13px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--rule);
+  cursor: pointer;
+}
+.ctn-onepick__opt .ctn-pip {
+  font-size: 20px;
+}
+.ctn-onepick__opt.is-on {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.ctn-onepick__opt:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ctn-to {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ctn-offer {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1.5px solid var(--ink);
+}
+.ctn-offer__btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.ctn-replies {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.ctn-replies li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font: 500 16px/1.2 var(--font-body);
+}
+.ctn-ans {
+  font: 800 13px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+}
+.ctn-ans--accept {
+  background: var(--vert);
+  color: var(--on-fill);
+}
+.ctn-ans--decline {
+  background: var(--sable);
+  color: var(--on-fill);
+}
+.ctn-ans--wait {
+  border: 1.5px dashed var(--rule);
+  color: var(--ink-2);
+}
+
+.ctn-buildlist,
+.ctn-devlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.ctn-buildrow {
+  width: 100%;
+  min-height: 60px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  font-size: 20px;
+}
+.ctn-buildrow:disabled {
+  border-color: var(--rule);
+  cursor: default;
+}
+.ctn-buildrow:disabled .ctn-piece,
+.ctn-buildrow:disabled .ctn-cardrow {
+  opacity: 0.45;
+}
+.ctn-buildrow__text {
+  display: grid;
+  gap: 2px;
+}
+.ctn-buildrow__text b {
+  font: 800 18px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ctn-buildrow__text small {
+  font: 500 15px/1.25 var(--font-body);
+  color: var(--ink-2);
+}
+.ctn-buildrow:disabled small {
+  color: var(--danger);
+}
+.ctn-buildrow .ctn-cardrow {
+  font-size: 18px;
+  gap: 4px;
+}
+
+.ctn-dev {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border: 1.5px solid var(--ink);
+}
+.ctn-dev__art {
+  width: 44px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  color: var(--on-fill);
+  background: var(--sable);
+  outline: 1px solid var(--ctn-stock);
+  outline-offset: -4px;
+}
+.ctn-dev__art svg {
+  width: 26px;
+  height: 26px;
+}
+.ctn-dev__art--roadBuilding {
+  background: var(--tenne);
+}
+.ctn-dev__art--yearOfPlenty {
+  background: var(--vert);
+}
+.ctn-dev__art--monopoly {
+  background: var(--purpure);
+}
+.ctn-dev__art--victoryPoint {
+  background: var(--or);
+}
+.ctn-dev__text {
+  display: grid;
+  gap: 2px;
+}
+.ctn-dev__text b {
+  font: 800 17px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ctn-dev__text small {
+  font: 500 15px/1.25 var(--font-body);
+  color: var(--ink-2);
+}
+.ctn-cardpick {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--table-2);
+}
+.ctn-cardpick p {
+  margin: 0;
+  font: 500 16px/1.3 var(--font-body);
+}
+.ctn-cardpick__row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.ctn-cardpick__opt {
+  min-height: 56px;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font: 700 13px/1 var(--font-plaque);
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  cursor: pointer;
+}
+.ctn-cardpick__opt .ctn-pip {
+  font-size: 20px;
+}
+.ctn-cardpick__chosen {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 22px;
+}
+
+@container game (min-width: 760px) and (orientation: landscape) {
+  .ctn--phone {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+    grid-template-rows: auto auto auto auto minmax(0, 1fr);
+    column-gap: var(--space-4);
+    row-gap: var(--space-2);
+  }
+  .ctn--phone > .ctn-stage {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+  .ctn--phone > .ctn-strip {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .ctn--phone > .ctn-rail {
+    grid-column: 2;
+    grid-row: 2;
+    grid-template-columns: 1fr;
+    align-content: start;
+  }
+  .ctn--phone > .ctn-hand {
+    grid-column: 2;
+    grid-row: 3;
+    padding-top: 48px;
+  }
+  .ctn--phone > .ctn-dock,
+  .ctn--phone > .ctn-hint {
+    grid-column: 2;
+    grid-row: 4;
+    align-self: start;
+  }
+  .ctn-opp {
+    padding: 6px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctn-dice,
+  .ctn-got,
+  .ctn-offercard {
+    animation: none;
+  }
+}
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .ctn-onepick__opt:not(:disabled):hover,
+  .ctn-cardpick__opt:not(:disabled):hover,
+  .ctn-buildrow:not(:disabled):hover,
+  .ctn-victims button:not(:disabled):hover,
+  .ctn-to button:not(:disabled):hover {
+    transform: translateY(-2px);
+    transition: transform 120ms var(--ease-out);
+  }
+}

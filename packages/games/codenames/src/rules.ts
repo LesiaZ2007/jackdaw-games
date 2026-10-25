@@ -6,6 +6,7 @@ import {
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
+import { codenamesBot } from './bot';
 import { meta } from './meta';
 import { other, place, TEAM_NAME, TEAMS, type Team } from './teams';
 import { WORDS } from './words';
@@ -358,7 +359,12 @@ export const codenames: GameModule<
     if (!theirTurn) throw new GameError('NOT_YOUR_TURN', "It isn't your team's turn.");
     if (state.phase !== 'guess') throw new GameError('NO_CLUE', 'Wait for your spymaster’s clue.');
 
-    if (action.type === 'pass') return endTurn(state, 'pass');
+    if (action.type === 'pass') {
+      // The rules ask operatives to make at least one guess before they stop.
+      if (state.clues[state.clues.length - 1]!.guesses.length === 0)
+        throw new GameError('GUESS_FIRST', 'Make at least one guess first.');
+      return endTurn(state, 'pass');
+    }
 
     const index = action.index;
     if (index !== null && state.revealed[index])
@@ -437,6 +443,52 @@ export const codenames: GameModule<
     };
   },
 
+  /**
+   * Ended early: the team that has found more of its own words wins; level is a draw for
+   * everyone. Nothing to save before either team has found a word.
+   */
+  partialResult(state): GameResult | null {
+    if (state.phase === 'over') return null;
+    const found = (t: Team) => state.key.filter((c, i) => c === t && state.revealed[i]).length;
+    const red = found('red');
+    const blue = found('blue');
+    if (red === 0 && blue === 0) return null;
+    const leader: Team | null = red > blue ? 'red' : blue > red ? 'blue' : null;
+    const words = (n: number) => `${n} word${n === 1 ? '' : 's'}`;
+    const summary = leader
+      ? `${TEAM_NAME[leader]} led ${words(found(leader))} to ${found(other(leader))}`
+      : `Level at ${words(red)} each`;
+    return {
+      winners: leader ? state.players.filter((id) => state.teams[id] === leader) : [],
+      summary,
+      reveal: {
+        words: state.words,
+        key: state.key,
+        revealed: state.revealed,
+        clues: state.clues,
+        teams: state.teams,
+        spymasters: state.spymasters,
+        starting: state.starting,
+        winner: leader,
+        how: null,
+      } satisfies CodenamesReveal,
+      recap: state.recap,
+      standings: state.players.map((playerId) => {
+        const team = state.teams[playerId]!;
+        return {
+          playerId,
+          outcome: leader === null ? 'draw' : team === leader ? 'win' : 'loss',
+          team: TEAM_NAME[team],
+          role: state.spymasters[team] === playerId ? 'Spymaster' : 'Operative',
+        };
+      }),
+    };
+  },
+
+  bot: codenamesBot,
+  /** A beat longer than the default, so people can read a bot's clue and see its suggestion. */
+  botDelayMs: 2600,
+
   /** Each clue goes in the chat, so people across the room can read it too. */
   announce(prev, next) {
     if (!prev || next.clues.length <= prev.clues.length) return [];
@@ -456,6 +508,7 @@ export interface CodenamesReveal {
   teams: Record<string, Team>;
   spymasters: Record<Team, string>;
   starting: Team;
-  winner: Team;
+  /** Null when the host ended a level game early. */
+  winner: Team | null;
   how: CodenamesState['how'];
 }

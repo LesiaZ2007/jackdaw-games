@@ -14,6 +14,16 @@ a {
   color: inherit;
 }
 
+/* Phones and tablets scroll by touch, so no scrollbars there (laptops keep theirs). */
+@media (pointer: coarse), (max-width: 760px) {
+  * {
+    scrollbar-width: none;
+  }
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Home */
 .home-fan {
   position: relative;
@@ -40,7 +50,7 @@ a {
   content: '';
   position: absolute;
   inset: 4px;
-  border: 1px solid rgba(246, 240, 225, 0.55);
+  border: 1px solid color-mix(in srgb, var(--on-fill) 55%, transparent);
 }
 .home-link {
   appearance: none;
@@ -58,6 +68,7 @@ a {
 
 /* The welcome fills the first screen; the game shelves start just below it */
 .home-hero {
+  position: relative;
   min-height: 100svh;
   display: grid;
   align-items: center;
@@ -69,7 +80,8 @@ a {
   width: 100%;
   max-width: 1180px;
   margin-inline: auto;
-  padding: var(--space-5) var(--gutter) var(--space-6);
+  /* room at the foot for the "the games are below" arrow */
+  padding: var(--space-5) var(--gutter) calc(var(--space-6) + 64px);
 }
 .home-start {
   display: grid;
@@ -195,4 +207,119 @@ a {
   margin: 0;
   padding-left: 1.4em;
   font-size: var(--step-0);
+}
+
+/* Day or dark: two printed halves, the chosen one inked in */
+.look-choice {
+  display: inline-flex;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+.look-choice__opt {
+  appearance: none;
+  min-width: 72px;
+  min-height: var(--tap);
+  padding: 0 14px;
+  font: 800 16px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.look-choice__opt + .look-choice__opt {
+  border-left: 2px solid var(--ink);
+}
+.look-choice__opt[aria-checked='true'] {
+  color: var(--paper);
+  background: var(--ink);
+}
+.look-choice__opt:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+
+/* The day/dark button in the top corner of the home page */
+/* "the games are below": a printed ring with a chevron, bobbing at the foot of the hero */
+.home-more {
+  appearance: none;
+  position: absolute;
+  left: 50%;
+  bottom: max(var(--space-4), env(safe-area-inset-bottom, 0px));
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  translate: -50% 0;
+  transition:
+    opacity 240ms,
+    visibility 240ms;
+}
+.home-more.is-gone {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.home-more__label {
+  padding: 2px 8px 3px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  font: 800 12px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.home-more__ring {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4.5px var(--ink);
+  animation: home-more-bob 2.2s var(--ease-out) infinite;
+}
+.home-more__ring svg {
+  width: 24px;
+  height: 24px;
+}
+.home-more:focus-visible .home-more__ring {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .home-more:hover .home-more__ring {
+    background: color-mix(in srgb, var(--paper) 84%, var(--or));
+  }
+}
+@keyframes home-more-bob {
+  0%,
+  60%,
+  100% {
+    translate: 0 0;
+  }
+  30% {
+    translate: 0 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-more__ring {
+    animation: none;
+  }
+}
+.home-corner {
+  position: absolute;
+  top: max(var(--space-3), env(safe-area-inset-top, 0px));
+  right: var(--gutter);
+  z-index: 2;
 }

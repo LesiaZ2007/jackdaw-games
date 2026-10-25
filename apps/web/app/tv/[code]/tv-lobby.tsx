@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useState, useSyncExternalStore } from 'react';
-import type { LobbySnapshot } from '@jackdaw/engine';
-import { BirdMark, BoxLid, Chits, SeatTrack, type ScreenPlayer, type Seat } from '@jackdaw/ui';
+import { BirdMark, BoxLid, Chits, SeatTrack, type Seat } from '@jackdaw/ui';
 import { catalogEntry, gameUis } from '@/lib/catalog';
+import { optionsSummary, screenPlayers } from '@/lib/lobby-view';
 import { QrCode } from '@/lib/qr-code';
+import { games } from '@/lib/registry';
 import { serverClock } from '@/lib/clock';
 import { siteUrl } from '@/lib/qr';
 import { useLobby } from '@/lib/use-lobby';
@@ -21,15 +22,6 @@ const serverSiteUrl = () => (process.env.NEXT_PUBLIC_SITE_URL ?? '').replace(/\/
 /** The public address, read after hydration so server and browser agree. */
 function useSiteUrl() {
   return useSyncExternalStore(noSubscribe, siteUrl, serverSiteUrl);
-}
-
-export function screenPlayers(snapshot: LobbySnapshot): ScreenPlayer[] {
-  return snapshot.players.map((p) => ({
-    id: p.id,
-    name: p.name,
-    avatar: p.avatar,
-    online: p.online,
-  }));
 }
 
 /**
@@ -160,9 +152,12 @@ export function TvLobby({ code }: { code: string }) {
     avatar: p.avatar,
     host: p.id === snapshot.hostId,
     away: !p.online,
+    bot: p.bot,
     landing: arrivals.has(p.id),
   }));
   const next = catalogEntry(snapshot.selectedGameId);
+  const schema = next ? games[next.meta.id]?.optionsSchema : undefined;
+  const summary = schema ? optionsSummary(schema, snapshot.gameOptions) : '';
   const count = snapshot.players.length;
   const join = (
     <div className="tv-join-panel">
@@ -224,7 +219,7 @@ export function TvLobby({ code }: { code: string }) {
                 tagline={next.meta.tagline}
                 artWidth={150}
               />
-              <OptionsLine options={snapshot.gameOptions} />
+              {summary && <p className="tv-options">{summary}</p>}
               <p className="tv-waiting">Waiting for {hostName} to start</p>
             </>
           ) : (
@@ -237,17 +232,4 @@ export function TvLobby({ code }: { code: string }) {
       </div>
     </TvStage>
   );
-}
-
-/** "3 rounds" style summary of the chosen options, from whatever the game stores. */
-function OptionsLine({ options }: { options: Record<string, unknown> }) {
-  const parts = Object.entries(options)
-    .filter(([, v]) => typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string')
-    .map(([k, v]) => {
-      const label = k.replace(/([A-Z])/g, ' $1').toLowerCase();
-      if (typeof v === 'boolean') return v ? label : `no ${label}`;
-      return `${v} ${v === 1 ? label.replace(/s$/, '') : label}`;
-    });
-  if (parts.length === 0) return null;
-  return <p className="tv-options">{parts.join(', ')}</p>;
 }

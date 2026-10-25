@@ -12,24 +12,24 @@ export const codenamesUi: GameUi = {
   art: { band: 'gules', field: 'checky', glyph: 'agent' },
   about: {
     description:
-      'Two teams race to find their agents among 25 words. Only the two spymasters can see which word is whose, and each turn they get one word and one number to steer their team. Find a bystander and your turn ends; find the assassin and you lose on the spot.',
+      'Two teams, 25 words on the table. Only the spymasters know which words belong to which team, and they can only help with one word and a number. Guess wrong and you might hand the other team a point, or hit the assassin and lose right there.',
     steps: [
-      'The host splits the table into Red and Blue, each with a spymaster.',
+      'The host splits everyone into Red and Blue, and each team gets a spymaster.',
       'Your spymaster gives a one-word clue and a number.',
-      'Tap words to suggest them. Most of the team agreeing, or one long press, makes the guess.',
-      'You get the number plus one guesses. A wrong colour ends the turn.',
-      'First team to uncover all its words wins. The assassin loses it on the spot.',
+      'Tap a word to suggest it. It gets guessed once most of your team agrees, or someone holds it down.',
+      'You get as many guesses as the number, plus one. A wrong guess ends your turn.',
+      'Find all your words first to win. Touch the assassin and you lose.',
     ],
-    credit: 'Based on Codenames by Vlaada Chvátil. Jackdaw’s own word list and art.',
+    credit: 'Based on Codenames by Vlaada Chvátil, with our own word list and art.',
     pictures: [
       {
         src: '/games/codenames/operative-phone.png',
-        alt: 'Codenames on a phone: the clue stamped at the top, both teams, and the 25 words with two already uncovered.',
+        alt: 'Codenames on a phone: the clue at the top and the 25 words, two already turned over.',
       },
       {
-        src: '/games/codenames/tv.png',
-        alt: 'Codenames on a TV: the big board of words, the current clue, both teams and the clues so far.',
-        wide: true,
+        src: '/games/codenames/desktop.png',
+        alt: 'Codenames on a laptop: the board of words, the clue, both teams and the clues so far.',
+        desktop: true,
       },
     ],
   },

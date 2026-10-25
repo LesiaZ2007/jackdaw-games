@@ -23,6 +23,7 @@ import {
   type ShOptions,
   type Team,
 } from './lineup';
+import { shBot } from './bot';
 import { meta } from './meta';
 
 /**
@@ -749,7 +750,10 @@ export interface ShReveal {
   chaos: Chaos[];
   dead: string[];
   winner: Winner;
+  /** For a game the host ended early, the policy win of the side that was ahead. */
   reason: WinReason;
+  /** The host ended the game early and `winner` was ahead on policies (see partialResult). */
+  ended?: boolean;
   liberal: number;
   fascist: number;
   tracker: number;
@@ -757,6 +761,59 @@ export interface ShReveal {
   discardCount: number;
   deckTotal: { liberal: number; fascist: number };
   lineup: { liberals: number; fascists: number };
+}
+
+function resultFor(s: ShState, winner: Winner, reason: WinReason, ended: boolean): GameResult {
+  const reveal: ShReveal = {
+    players: s.players,
+    roles: s.roles,
+    governments: s.governments,
+    chaos: s.chaos,
+    dead: s.dead,
+    winner,
+    reason,
+    ...(ended ? { ended: true } : {}),
+    liberal: s.liberal,
+    fascist: s.fascist,
+    tracker: s.tracker,
+    deckCount: s.deck.length,
+    discardCount: s.discard.length,
+    deckTotal: deckFor(s.players.length, s.options),
+    lineup: tableView(s).lineup,
+  };
+  const side = winner === 'liberal' ? 'Liberals' : 'Fascists';
+  return {
+    winners: s.players.filter((id) => teamOf(s.roles[id]!) === winner),
+    summary: ended
+      ? `The ${side} were ahead: ${s.liberal} of ${LIBERAL_WIN} Liberal policies to ${s.fascist} of ${FASCIST_WIN} Fascist.`
+      : REASON[reason],
+    reveal,
+    recap: s.recap,
+    standings: s.players.map((playerId) => {
+      const role = s.roles[playerId]!;
+      return {
+        playerId,
+        outcome: teamOf(role) === winner ? 'win' : 'loss',
+        team: teamOf(role) === 'liberal' ? 'Liberal' : 'Fascist',
+        role: NAMES[role],
+      };
+    }),
+  };
+}
+
+/**
+ * The result if the host ends the game now: the side further along its policy track wins
+ * (Liberals need five, Fascists six, so 2 Liberal to 2 Fascist puts the Liberals ahead). Null
+ * before any policy is down. The two tracks can only be level at none each, so there is no draw.
+ */
+export function partialResult(s: ShState): GameResult | null {
+  if (s.phase === 'over') return null;
+  const lib = s.liberal * FASCIST_WIN;
+  const fas = s.fascist * LIBERAL_WIN;
+  if (lib === fas) return null;
+  return lib > fas
+    ? resultFor(s, 'liberal', 'liberal-policies', true)
+    : resultFor(s, 'fascist', 'fascist-policies', true);
 }
 
 export const secretHitler: GameModule<ShState, ShAction, ShPlayerView, ShTableView, ShOptions> = {
@@ -786,39 +843,11 @@ export const secretHitler: GameModule<ShState, ShAction, ShPlayerView, ShTableVi
 
   getResult(s): GameResult | null {
     if (s.phase !== 'over' || !s.winner || !s.reason) return null;
-    const winners = s.players.filter((id) => teamOf(s.roles[id]!) === s.winner);
-    const reveal: ShReveal = {
-      players: s.players,
-      roles: s.roles,
-      governments: s.governments,
-      chaos: s.chaos,
-      dead: s.dead,
-      winner: s.winner,
-      reason: s.reason,
-      liberal: s.liberal,
-      fascist: s.fascist,
-      tracker: s.tracker,
-      deckCount: s.deck.length,
-      discardCount: s.discard.length,
-      deckTotal: deckFor(s.players.length, s.options),
-      lineup: tableView(s).lineup,
-    };
-    return {
-      winners,
-      summary: REASON[s.reason],
-      reveal,
-      recap: s.recap,
-      standings: s.players.map((playerId) => {
-        const role = s.roles[playerId]!;
-        return {
-          playerId,
-          outcome: teamOf(role) === s.winner ? 'win' : 'loss',
-          team: teamOf(role) === 'liberal' ? 'Liberal' : 'Fascist',
-          role: NAMES[role],
-        };
-      }),
-    };
+    return resultFor(s, s.winner, s.reason, false);
   },
+
+  partialResult,
+  bot: shBot,
 
   announce(prev, next) {
     if (!prev) return ['The roles are dealt. {' + next.president + '} is the first president.'];

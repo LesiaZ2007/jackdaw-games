@@ -8,6 +8,11 @@
   --wh-bone: #efe4c6;
   --wh-bone-edge: #c4b285;
   --wh-tile-ink: #1d1d1c;
+  /* The pale double-letter square, mixed from azure and this paper white. */
+  --wh-dl-paper: #f7f7f5;
+  --wh-dl-ink: #1d1d1c;
+  /* An empty rack slot, dashed on the sable rack. */
+  --wh-slot-edge: rgba(246, 240, 225, 0.35);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -228,8 +233,8 @@ button.wh-sq:focus-visible {
   background: var(--azure);
 }
 .wh-sq--dl {
-  background: color-mix(in srgb, var(--azure) 42%, #f7f7f5);
-  color: #1d1d1c;
+  background: color-mix(in srgb, var(--azure) 42%, var(--wh-dl-paper));
+  color: var(--wh-dl-ink);
 }
 .wh-sq__label {
   font: 800 2.4cqw / 1 var(--font-plaque);
@@ -356,8 +361,24 @@ button.wh-sq:focus-visible {
 .wh-rack__slot:disabled {
   cursor: default;
 }
+/* Not your turn: the tiles can't go on the board, but they can be rearranged. */
+.wh-rack__slot[aria-disabled='true'] {
+  cursor: grab;
+}
+.wh-rack__slot[aria-disabled='true'] .wh-tile {
+  filter: saturate(0.7);
+}
+/* Dropping a tile on another slot puts it there: a bar in or marks the spot. */
+.wh-rack__slot.is-drop {
+  translate: 0 -4px;
+}
+.wh-rack__slot.is-drop .wh-tile {
+  box-shadow:
+    inset 0 -0.12em 0 var(--wh-bone-edge),
+    -6px 0 0 var(--or);
+}
 .wh-rack__slot.is-empty {
-  border: 1.5px dashed rgba(246, 240, 225, 0.35);
+  border: 1.5px dashed var(--wh-slot-edge);
 }
 .wh-dock__row {
   display: grid;
@@ -404,23 +425,30 @@ button.wh-sq:focus-visible {
   height: 100%;
   display: grid;
   grid-template-columns: auto minmax(360px, 1fr);
-  gap: 3vw;
+  gap: calc(3 * var(--vw, 1vw));
   align-items: start;
-  padding: 3vh 3vw;
+  padding: calc(3 * var(--vh, 1vh)) calc(3 * var(--vw, 1vw));
   box-sizing: border-box;
 }
 .wh-tv__board {
-  width: calc(100vh - 240px);
+  width: calc(calc(100 * var(--vh, 1vh)) - 240px);
   border: 3px solid var(--ink);
   outline: 1px solid var(--ink);
   outline-offset: 5px;
 }
 .wh-tv__side {
   display: grid;
-  gap: var(--space-4);
+  align-content: start;
+  gap: 24px;
+  min-width: 0;
+  /* Four sides, a long definition and the latest plays can outgrow the screen: the oldest plays,
+     at the bottom, are what gets cut. */
+  align-self: stretch;
+  min-height: 0;
+  overflow: hidden;
 }
 .wh-tv__side h2 {
-  font-size: 56px;
+  font-size: 68px;
 }
 .wh--tv .wh-scores {
   grid-auto-flow: row;
@@ -431,24 +459,24 @@ button.wh-sq:focus-visible {
   border-top: 1px solid var(--rule);
 }
 .wh--tv .wh-scores li {
-  padding: 12px 16px;
-  gap: 14px;
+  padding: 14px 20px;
+  gap: 18px;
 }
 .wh--tv .wh-scores__name {
-  font-size: 30px;
+  font-size: 38px;
 }
 .wh--tv .wh-scores__name small {
-  font-size: 20px;
+  font-size: 26px;
 }
 .wh--tv .wh-scores__n {
-  font-size: 44px;
+  font-size: 58px;
 }
 .wh--tv .wh-scores .jd-token {
-  --z: 54px !important;
+  --z: 72px !important;
 }
 .wh-tv__bag {
   margin: 0;
-  font: 800 26px var(--font-plaque);
+  font: 800 30px var(--font-plaque);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-2);
@@ -457,11 +485,20 @@ button.wh-sq:focus-visible {
   margin: 0;
   padding-left: 1.2em;
   display: grid;
-  gap: 8px;
-  font-size: 26px;
+  gap: 10px;
+  font-size: 32px;
 }
 .wh-tv__moves li:first-child {
   font-weight: 800;
+}
+/* Square labels and tile values would be too small to read across the room: the fills say which
+   bonus a square is, and the phones show the values. */
+.wh--tv .wh-sq__label,
+.wh--tv .wh-tile__value,
+.wh-final--tv .wh-sq__label,
+.wh-final--tv .wh-tile__value,
+.wh-mean--tv .wh-tile__value {
+  display: none;
 }
 
 /* ── The TV as a move lands ───────────────────────────────────────────── */
@@ -557,7 +594,7 @@ button.wh-sq:focus-visible {
   animation: wh-stamp 420ms var(--ease-out) both;
 }
 .wh-landing__score small {
-  font: 800 2cqw/1.3 var(--font-plaque);
+  font: 800 max(24px, 2cqw) / 1.3 var(--font-plaque);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -721,5 +758,183 @@ button.wh-sq:focus-visible {
     88% {
       opacity: 1;
     }
+  }
+}
+
+/* ── What a played word means ─────────────────────────────────────────── */
+/* A printed card: the word, who played it, then each sense with its part of speech as a label. */
+.wh-mean {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  text-align: left;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
+}
+.wh-mean__who {
+  color: var(--ink-2);
+  font: 800 var(--step--1) / 1.2 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wh-mean__who b {
+  color: var(--ink);
+  letter-spacing: 0.1em;
+}
+.wh-mean__senses {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.wh-mean__senses dt {
+  display: inline-block;
+  margin-right: 0.5em;
+  padding: 0 6px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 0.72em / 1.5 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wh-mean__senses dd {
+  display: inline;
+  margin: 0;
+}
+.wh-mean__senses div {
+  font: 500 var(--step-0) / 1.35 var(--font-body);
+}
+.wh-mean__also,
+.wh-mean__none,
+.wh-mean__wait {
+  margin: 0;
+  color: var(--ink-2);
+  font: 500 var(--step--1) / 1.35 var(--font-body);
+}
+.wh-mean__also b,
+.wh-mean__more b {
+  color: var(--ink);
+  font-family: var(--font-plaque);
+  letter-spacing: 0.06em;
+}
+
+/* On a phone it drops over the top of the board for a few seconds; a tap puts it away. */
+.wh--phone {
+  position: relative;
+}
+.wh-mean--pop {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: 22%;
+  translate: -50% 0;
+  width: min(92%, 440px);
+  box-sizing: border-box;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  box-shadow: 0 18px 40px -16px var(--shadow);
+  cursor: pointer;
+  animation: wh-mean 9s var(--ease-out) both;
+}
+.wh-mean__close {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: 700 28px / 1 var(--font-body);
+  cursor: pointer;
+}
+.wh-mean--pop .wh-mean__who {
+  padding-right: 40px;
+}
+@keyframes wh-mean {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+  5%,
+  92% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+/* On the TV it stands beside the board until the next word. */
+.wh-mean--tv {
+  gap: 14px;
+  padding: 22px 26px 26px;
+}
+.wh-mean--tv .wh-mean__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.wh-mean--tv .wh-mean__tiles .wh-tile {
+  width: 64px;
+  height: 64px;
+  font-size: 44px;
+}
+.wh-mean--tv .wh-mean__who {
+  font-size: 28px;
+}
+.wh-mean--tv .wh-mean__senses div {
+  font-size: 34px;
+}
+.wh-mean--tv .wh-mean__more,
+.wh-mean--tv .wh-mean__none,
+.wh-mean--tv .wh-mean__wait {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 28px;
+}
+.wh-mean__more {
+  display: grid;
+  gap: 6px;
+  color: var(--ink-2);
+  font: 500 var(--step--1) / 1.35 var(--font-body);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wh-mean--pop {
+    animation: wh-mean-fade 9s both;
+  }
+  @keyframes wh-mean-fade {
+    0%,
+    92% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
+/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* A rack tile lifts off the rack; a picked or dragged one keeps its own place. */
+  .wh-rack__slot .wh-tile {
+    transition: transform 140ms var(--ease-out);
+  }
+  .wh-rack__slot:not(:disabled):not(.is-picked):not(.is-dragging):hover .wh-tile {
+    transform: translateY(-6px) rotate(-2deg);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  /* The empty square under the pointer, when a tile could go there. */
+  button.wh-sq:hover {
+    outline: 2px solid var(--or);
+    outline-offset: -2px;
+    z-index: 1;
   }
 }

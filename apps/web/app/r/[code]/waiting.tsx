@@ -1,8 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { startBlocker, type ClientMessage, type Lobby, type LobbySnapshot } from '@jackdaw/engine';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import {
+  BOT_LEVELS,
+  BOT_LEVEL_NAMES,
+  MAX_PLAYERS,
+  startBlocker,
+  type ClientMessage,
+  type Lobby,
+  type LobbySnapshot,
+} from '@jackdaw/engine';
 import {
   AvatarButton,
   Icon,
@@ -11,11 +20,11 @@ import {
   SeatTrack,
   Sheet,
   Token,
-  useTheme,
   type LobbyChat,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
+import { useStartLook } from '@/lib/game-ui';
 import { games } from '@/lib/registry';
 import { useOptionsDraft } from '@/lib/use-options-draft';
 import type { Panel } from './bar';
@@ -35,6 +44,74 @@ function useArrivals(ids: string[]): Set<string> {
     seen.current = now;
   }, [key]);
   return fresh;
+}
+
+/**
+ * The seats as drawn ("track:15", "risk:6"): when they change (the host picks a game with its own
+ * seats, or the track grows or shrinks), the old seats stay up one frame while a view transition
+ * captures them, then each player's crest and name fly to their new seat. Without View
+ * Transitions, or with reduced motion, it just switches.
+ */
+function useSeatStyle(want: string): string {
+  const [shown, setShown] = useState(want);
+  const running = useRef(false);
+  // Bumped when a transition finishes, to catch up with anything that changed meanwhile.
+  const [settled, setSettled] = useState(0);
+  useEffect(() => {
+    if (want === shown || running.current) return;
+    const swap = () => flushSync(() => setShown(want));
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (still || typeof document.startViewTransition !== 'function') {
+      swap();
+      return;
+    }
+    running.current = true;
+    const t = document.startViewTransition(swap);
+    void t.finished.finally(() => {
+      running.current = false;
+      setSettled((n) => n + 1);
+    });
+  }, [want, shown, settled]);
+  return shown;
+}
+
+/**
+ * How well the bots play, one level for every bot at the table (2026-10-24: "game wide,
+ * not bot specific"). The host picks Easy, Normal or Hard; everyone else sees which.
+ */
+function BotLevel({
+  level,
+  send,
+}: {
+  level: LobbySnapshot['botLevel'];
+  /** Only the host's copy can change it. */
+  send?: (m: ClientMessage) => Promise<LobbySnapshot | null>;
+}) {
+  const id = useId();
+  return (
+    <div className="bot-level">
+      <span className="jd-label" id={id}>
+        Bots play
+      </span>
+      {send ? (
+        <span className="options__choices" role="radiogroup" aria-labelledby={id}>
+          {BOT_LEVELS.map((l) => (
+            <button
+              key={l}
+              type="button"
+              role="radio"
+              aria-checked={level === l}
+              onClick={() => void send({ type: 'setBotLevel', level: l })}
+            >
+              {BOT_LEVEL_NAMES[l]}
+            </button>
+          ))}
+        </span>
+      ) : (
+        <b>{BOT_LEVEL_NAMES[level]}</b>
+      )}
+    </div>
+  );
 }
 
 /** Mirror the server's start check, so the button explains itself before anyone taps it. */
@@ -81,6 +158,19 @@ export function Waiting({
   const blocker = blockerFor(s);
   const count = s.players.length;
   const showPicker = picking || !entry;
+  // A game can seat everyone its own way in Jackdaw's lobby (poker: round the card table; Risk:
+  // the war council's banners), drawn once that game is chosen. Otherwise the seat track, with as
+  // many spaces as the chosen game seats (all 15 while choosing). A change of either flies.
+  const seatStyle = useSeatStyle(
+    `${(!showPicker && entry?.ui?.LobbySeats && entry.meta.id) || 'track'}:${
+      entry && !showPicker ? Math.max(entry.meta.maxPlayers, count) : 15
+    }`,
+  );
+  const [seatsOf, shownSpaces] = seatStyle.split(':') as [string, string];
+  const spaces = Number(shownSpaces);
+  const cols = spaces <= 4 ? spaces : spaces <= 6 ? 3 : spaces <= 8 ? 4 : 5;
+  const seatsEntry = seatsOf === 'track' ? undefined : catalogEntry(seatsOf);
+  const GameSeats = seatsEntry?.ui?.LobbySeats;
 
   const seats = s.players.map((p) => ({
     id: p.id,
@@ -89,28 +179,46 @@ export function Waiting({
     host: p.id === s.hostId,
     away: !p.online,
     me: p.id === s.me,
+    bot: p.bot,
     landing: arrivals.has(p.id),
     // Your own seat opens your look; the host can tap anyone else's to remove them.
     action:
       p.id === s.me
         ? `${p.name} (you): change your name, crest or colour`
         : isHost
-          ? `${p.name}: remove or make host`
+          ? p.bot
+            ? `${p.name}: remove`
+            : `${p.name}: remove or make host`
           : undefined,
   }));
+  // The host can seat computer players in open seats, once the chosen game can play them (or
+  // while no game is chosen yet).
+  const selected = s.selectedGameId ? games[s.selectedGameId] : undefined;
+  const addBot =
+    isHost && (!selected || selected.bot) && count < Math.min(spaces, MAX_PLAYERS)
+      ? () => void send({ type: 'addBot' })
+      : undefined;
   const other = s.players.find((p) => p.id === tapped && p.id !== s.me);
   const mine = s.players.find((p) => p.id === s.me);
   const ThemedLobby = entry?.ui?.Lobby;
-  // A game can seat everyone its own way in Jackdaw's lobby (poker: round the card table).
-  const GameSeats = !showPicker ? entry?.ui?.LobbySeats : undefined;
   // A game with its own lobby (Avalon's round table) draws the players and the options itself,
   // and fills the screen under Jackdaw's bar. The host can still go back to the list of games.
   const themed = Boolean(entry && ThemedLobby && showOwnLobby);
-  const look = useTheme();
+  const look = useStartLook(entry);
   const [lobbyOptions, setLobbyOptions] = useOptionsDraft(s.gameOptions, (o) =>
     send({ type: 'setOptions', options: o }),
   );
-  const startGame = () => send({ type: 'start', look });
+  // A second tap on Start while the first is in flight does nothing.
+  const [starting, setStarting] = useState(false);
+  const startGame = async () => {
+    if (starting) return null;
+    setStarting(true);
+    try {
+      return await send({ type: 'start', look });
+    } finally {
+      setStarting(false);
+    }
+  };
   const onSeat = (id: string) => (id === s.me ? onOpen('me') : isHost && setTapped(id));
 
   async function choose(id: string) {
@@ -138,6 +246,7 @@ export function Waiting({
             reactions={s.reactions}
             react={(kind) => void send({ type: 'react', kind })}
             chat={chat}
+            onAddBot={addBot}
           />
         </section>
       )}
@@ -149,27 +258,37 @@ export function Waiting({
               At the table
             </h2>
             <span>
-              {count} of {GameSeats && entry ? entry.meta.maxPlayers : 15} seats
+              {count} of {spaces} seats
               {s.displays > 0 && `, ${s.displays} TV`}
             </span>
           </div>
-          {GameSeats && entry ? (
+          {GameSeats && seatsEntry ? (
             <GameSeats
               seats={seats}
-              max={entry.meta.maxPlayers}
-              options={s.gameOptions}
+              max={seatsEntry.meta.maxPlayers}
+              options={lobbyOptions}
               onSeat={onSeat}
               reactions={s.reactions}
+              setOptions={isHost ? setLobbyOptions : undefined}
+              onAddBot={addBot}
             />
           ) : (
-            <SeatTrack seats={seats} onSeat={onSeat} reactions={s.reactions} transitions />
+            <SeatTrack
+              seats={seats}
+              spaces={spaces}
+              cols={cols}
+              onSeat={onSeat}
+              reactions={s.reactions}
+              transitions
+              onAddBot={addBot}
+            />
           )}
           {mine && (
             <div className="you-strip">
               <AvatarButton avatar={mine.avatar} size={44} onClick={() => onOpen('me')} />
               <span className="you-strip__who">
                 <b>{mine.name}</b>
-                <span>That&rsquo;s you. Tap your token to change your name, crest or colour.</span>
+                <span>That&rsquo;s you. Tap to change your look.</span>
               </span>
               {isHost && count > 1 && (
                 <button
@@ -181,6 +300,9 @@ export function Waiting({
                 </button>
               )}
             </div>
+          )}
+          {s.players.some((p) => p.bot) && (
+            <BotLevel level={s.botLevel} send={isHost ? send : undefined} />
           )}
           {mine && (
             <ReactionBar
@@ -260,9 +382,9 @@ export function Waiting({
             <>
               <Plaque
                 go
-                disabled={Boolean(blocker)}
-                aria-disabled={Boolean(blocker)}
-                onClick={startGame}
+                disabled={Boolean(blocker) || starting}
+                aria-disabled={Boolean(blocker) || starting}
+                onClick={() => void startGame()}
               >
                 {entry ? `Start ${entry.meta.name}` : 'Start'}
               </Plaque>
@@ -293,11 +415,14 @@ export function Waiting({
             <div className="seat-sheet__who">
               <Token avatar={other.avatar} size={64} away={!other.online} />
               <span className="seat-sheet__note">
-                {other.online
-                  ? `${other.name} is at the table.`
-                  : `${other.name} is away from their phone.`}
+                {other.bot
+                  ? `${other.name} is a computer player.`
+                  : other.online
+                    ? `${other.name} is at the table.`
+                    : `${other.name} is away from their phone.`}
               </span>
             </div>
+            {other.bot && <BotLevel level={s.botLevel} send={send} />}
             <Plaque
               className="seat-sheet__remove"
               onClick={() =>
@@ -306,19 +431,24 @@ export function Waiting({
             >
               Remove {other.name} from the lobby
             </Plaque>
-            <Plaque
-              small
-              onClick={() =>
-                send({ type: 'transferHost', playerId: other.id }).then((r) => r && setTapped(null))
-              }
-            >
-              Make {other.name} host
-            </Plaque>
+            {!other.bot && (
+              <Plaque
+                small
+                onClick={() =>
+                  send({ type: 'transferHost', playerId: other.id }).then(
+                    (r) => r && setTapped(null),
+                  )
+                }
+              >
+                Make {other.name} host
+              </Plaque>
+            )}
           </div>
         )}
       </Sheet>
 
       <Sheet open={managing} onClose={() => setManaging(false)} title="Manage players">
+        {s.players.some((p) => p.bot) && <BotLevel level={s.botLevel} send={send} />}
         <ul className="manage">
           {s.players
             .filter((p) => p.id !== s.me)
@@ -327,16 +457,18 @@ export function Waiting({
                 <Token avatar={p.avatar} size={36} away={!p.online} />
                 <span className="manage__name">
                   {p.name}
-                  {!p.online && <small> away</small>}
+                  {p.bot ? <small> bot</small> : !p.online && <small> away</small>}
                 </span>
-                <Plaque
-                  small
-                  onClick={() =>
-                    send({ type: 'transferHost', playerId: p.id }).then(() => setManaging(false))
-                  }
-                >
-                  Make host
-                </Plaque>
+                {!p.bot && (
+                  <Plaque
+                    small
+                    onClick={() =>
+                      send({ type: 'transferHost', playerId: p.id }).then(() => setManaging(false))
+                    }
+                  >
+                    Make host
+                  </Plaque>
+                )}
                 <Plaque small onClick={() => send({ type: 'kick', playerId: p.id })}>
                   Remove
                 </Plaque>

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createRng } from '@jackdaw/engine';
 import {
+  AddSeat,
   LobbyChatPanel,
   PlayerReaction,
   ReactionBar,
@@ -64,6 +65,7 @@ export function CodenamesLobby({
   reactions,
   react,
   chat,
+  onAddBot,
 }: GameLobbyProps) {
   const look = useTheme();
   const parsed = optionsSchema.safeParse({ ...defaultOptions(), ...raw });
@@ -84,6 +86,21 @@ export function CodenamesLobby({
     if (team && spy) nextSpies[team] = id;
     save({ teams: nextTeams, spymasters: nextSpies });
     setPicked(null);
+  };
+
+  // A bot added from a team's "+" goes on that team as soon as its seat arrives.
+  const pending = useRef<{ team: Team; known: Set<string> } | null>(null);
+  useEffect(() => {
+    const p = pending.current;
+    if (!p) return;
+    const fresh = players.find((pl) => pl.bot && !p.known.has(pl.id));
+    if (!fresh) return;
+    pending.current = null;
+    if (!teams[fresh.id]) moveTo(fresh.id, p.team);
+  });
+  const addTo = (team: Team) => {
+    pending.current = { team, known: new Set(players.map((p) => p.id)) };
+    onAddBot?.();
   };
 
   const tap = (id: string) => {
@@ -115,10 +132,10 @@ export function CodenamesLobby({
         aria-pressed={isHost ? picked === p.id : undefined}
         aria-label={
           isHost
-            ? `${p.name}${p.id === me ? ' (you)' : ''}: choose where they play`
+            ? `${p.name}${p.id === me ? ' (you)' : ''}${p.bot ? ', computer player' : ''}: choose where they play`
             : p.id === me
               ? `${p.name} (you): change your name, crest or colour`
-              : p.name
+              : `${p.name}${p.bot ? ', computer player' : ''}`
         }
       >
         <span className="cn-agent__tok">
@@ -135,6 +152,11 @@ export function CodenamesLobby({
             name={p.name}
             size={spy ? 46 : 40}
           />
+          {p.bot && (
+            <span className="cn-agent__bot" aria-hidden="true">
+              Bot
+            </span>
+          )}
         </span>
         <span className="cn-agent__name" style={{ viewTransitionName: t.name }}>
           {p.name}
@@ -260,10 +282,16 @@ export function CodenamesLobby({
                   )}
                 </div>
                 <div className="cn-file__ops">
-                  {ops.length > 0 ? (
-                    ops.map((p) => person(p))
-                  ) : (
-                    <p className="cn-file__empty">No operatives yet</p>
+                  {ops.length > 0
+                    ? ops.map((p) => person(p))
+                    : !onAddBot && <p className="cn-file__empty">No operatives yet</p>}
+                  {onAddBot && (
+                    <span className="cn-agent cn-agent--open">
+                      <span className="cn-agent__tok cn-agent__tok--open">
+                        <AddSeat onAdd={() => addTo(t)} className="cn-addseat" />
+                      </span>
+                      <span className="cn-agent__name cn-agent__name--open">Add bot</span>
+                    </span>
                   )}
                 </div>
                 {isHost && picked && teams[picked] !== t && (

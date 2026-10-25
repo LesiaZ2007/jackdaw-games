@@ -1,6 +1,13 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import type { Avatar } from '@jackdaw/engine';
 import { Icon } from './icons';
 import { Token } from './pieces';
@@ -25,7 +32,7 @@ const vars = (v: Record<string, string | number>) => v as CSSProperties;
 
 export interface VerdictProps {
   outcome: Outcome;
-  /** Short and plain: "You won the round", "Bran wins". */
+  /** Short and plain: "You won the round", "Rook wins". */
   title: string;
   /** One line under the banner: who beat whom, the score. */
   detail?: ReactNode;
@@ -93,15 +100,22 @@ export function VerdictMoment({
   ms = 3400,
   ...props
 }: VerdictProps & { onDone: () => void; ms?: number }) {
+  // The latest onDone, so a re-render (every snapshot) doesn't restart the timer.
+  const done = useRef(onDone);
   useEffect(() => {
-    const t = setTimeout(onDone, ms);
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onDone();
+    done.current = onDone;
+  }, [onDone]);
+  const { outcome, title } = props;
+  useEffect(() => {
+    const t = setTimeout(() => done.current(), ms);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && done.current();
     document.addEventListener('keydown', onKey);
     return () => {
       clearTimeout(t);
       document.removeEventListener('keydown', onKey);
     };
-  }, [onDone, ms]);
+    // A new moment (outcome or title) starts its own clock.
+  }, [ms, outcome, title]);
   return (
     <div
       className={cx('jd-moment', props.size === 'tv' && 'jd-moment--tv')}
@@ -201,7 +215,8 @@ export function useMoment<K extends string | number>(key: K): [K | null, () => v
     setSeen(key);
     setFresh(key);
   }
-  return [fresh, () => setFresh(null)];
+  const dismiss = useCallback(() => setFresh(null), []);
+  return [fresh, dismiss];
 }
 
 function SealMark() {

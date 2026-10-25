@@ -1,19 +1,20 @@
-/* Rock Paper Scissors on the TV, in TV pixels (the stage is 1920×1080, this fills below the strip). */
+/* Rock Paper Scissors on the TV, in TV pixels (the stage is 1920×1080, this fills below the strip).
+   Read from the sofa: nothing is smaller than 28px. */
 .rps-tv {
   height: 100%;
   display: grid;
-  grid-template-columns: 440px 1fr;
+  grid-template-columns: 500px 1fr;
   grid-template-rows: auto 1fr;
   grid-template-areas:
     'round now'
     'board last';
-  gap: 28px 72px;
-  padding: 36px 80px 40px;
+  gap: 36px 80px;
+  padding: 40px 72px 44px;
   position: relative;
 }
 .rps-tv__heading {
-  margin: 0 0 14px;
-  font: 800 40px/1 var(--font-display);
+  margin: 0 0 18px;
+  font: 800 56px/1 var(--font-display);
 }
 .rps-tv__round {
   grid-area: round;
@@ -22,23 +23,23 @@
   align-content: start;
 }
 .rps-tv__label {
-  font: 700 26px/1 var(--font-plaque);
+  font: 700 32px/1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--ink-2);
 }
 .rps-tv__num {
-  font: 800 200px/0.85 var(--font-code);
+  font: 800 240px/0.85 var(--font-code);
 }
 .rps-tv__of {
-  font: 800 40px/1 var(--font-plaque);
+  font: 800 52px/1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ink-2);
 }
 .rps-tv__status {
-  margin: 18px 0 0;
-  font: 800 30px/1.1 var(--font-plaque);
+  margin: 22px 0 0;
+  font: 800 40px/1.1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -52,18 +53,18 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: 12px;
 }
 .rps-tv__board li {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 110px 48px;
+  grid-template-columns: 56px minmax(0, 1fr) 120px 64px;
   align-items: center;
-  gap: 16px;
-  font-size: 26px;
+  gap: 18px;
+  font-size: 36px;
   font-variant-numeric: tabular-nums;
 }
 .rps-tv__board .jd-tally {
-  font: 800 34px/1 var(--font-code);
+  font: 800 46px/1 var(--font-code);
   text-align: right;
 }
 .rps-tv__who {
@@ -73,7 +74,7 @@
   white-space: nowrap;
 }
 .rps-tv__bar {
-  height: 12px;
+  height: 16px;
   background: var(--table-2);
   position: relative;
 }
@@ -92,7 +93,7 @@
   padding: 0;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 18px 16px;
+  gap: 22px 20px;
 }
 .rps-tv__tok {
   position: relative;
@@ -101,15 +102,15 @@
 .rps-tv__seats li {
   display: grid;
   justify-items: center;
-  gap: 10px;
-  padding: 18px 8px 14px;
+  gap: 14px;
+  padding: 24px 10px 18px;
   background: var(--paper);
-  border: 2px solid var(--ink);
+  border: 3px solid var(--ink);
   --ring-bg: var(--paper);
 }
 .rps-tv__seat-name {
   max-width: 100%;
-  font: 800 24px/1 var(--font-plaque);
+  font: 800 36px/1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   overflow: hidden;
@@ -117,10 +118,10 @@
   white-space: nowrap;
 }
 .rps-tv__state {
-  font: 800 20px/1 var(--font-plaque);
+  font: 800 28px/1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  padding: 6px 12px;
+  padding: 8px 16px;
 }
 .rps-tv__seats .is-picked .rps-tv__state {
   background: var(--vert);
@@ -128,7 +129,7 @@
 }
 .rps-tv__seats .is-thinking .rps-tv__state {
   color: var(--ink-2);
-  border: 1.5px dashed var(--rule);
+  border: 2px dashed var(--rule);
   animation: rps-tv-think 1.6s ease-in-out infinite;
 }
 @keyframes rps-tv-think {
@@ -146,15 +147,15 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 20px;
 }
 .rps-tv__card {
   display: grid;
   justify-items: center;
-  gap: 6px;
-  padding: 14px 6px 12px;
-  border: 2px solid var(--ink);
+  gap: 10px;
+  padding: 20px 8px 18px;
+  border: 3px solid var(--ink);
   background: var(--paper);
   animation: rps-tv-flip 620ms var(--ease-out) both;
 }
@@ -168,7 +169,7 @@
 }
 .rps-tv__card--loss {
   opacity: 0.55;
-  border: 2px dashed var(--rule);
+  border: 3px dashed var(--rule);
 }
 @keyframes rps-tv-flip {
   from {
@@ -177,13 +178,13 @@
   }
 }
 .rps-tv__throw-name {
-  font: 800 22px/1 var(--font-plaque);
+  font: 800 32px/1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-2);
 }
 .rps-tv__pts {
-  font: 800 32px/1 var(--font-code);
+  font: 800 46px/1 var(--font-code);
   color: var(--ink-2);
 }
 .rps-tv__pts--won {
@@ -191,8 +192,8 @@
 }
 .rps-tv__empty {
   margin: 0;
-  max-width: 34ch;
-  font-size: 28px;
+  max-width: 30ch;
+  font-size: 36px;
   color: var(--ink-2);
 }
 

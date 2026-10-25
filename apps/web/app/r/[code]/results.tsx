@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { ClientMessage, LobbySnapshot, Standing } from '@jackdaw/engine';
 import {
   Lid,
@@ -8,17 +9,17 @@ import {
   RecapTimeline,
   Token,
   Verdict,
-  useTheme,
   type LobbyChat,
   type Outcome,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
+import { useStartLook } from '@/lib/game-ui';
 import '../results.css';
 
 const OUTCOME: Record<Standing['outcome'], string> = { win: 'Won', loss: 'Lost', draw: 'Draw' };
 
-/** "Bran", "Bran and Cerys", "Bran, Cerys and Dai". */
+/** "Rook", "Rook and Magpie", "Rook, Magpie and Swift". */
 const joinNames = (names: string[]) =>
   names.length <= 1
     ? (names[0] ?? '')
@@ -42,7 +43,18 @@ export function Results({
   /** Table talk, for a game that draws its own end screen. */
   chat: LobbyChat;
 }) {
-  const look = useTheme();
+  const look = useStartLook(catalogEntry(s.results?.gameId));
+  // One choice at a time: a second tap while the first is in flight does nothing.
+  const [busy, setBusy] = useState(false);
+  const choose = async (m: ClientMessage) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await send(m);
+    } finally {
+      setBusy(false);
+    }
+  };
   const result = s.results;
   if (!result) return null;
   const entry = catalogEntry(result.gameId);
@@ -68,8 +80,8 @@ export function Results({
         me={s.me}
         hostId={s.hostId}
         isHost={isHost}
-        playAgain={() => void send({ type: 'playAgain', look })}
-        backToLobby={() => void send({ type: 'backToLobby' })}
+        playAgain={() => void choose({ type: 'playAgain', look })}
+        backToLobby={() => void choose({ type: 'backToLobby' })}
         chat={chat}
       />
     );
@@ -187,10 +199,12 @@ export function Results({
       <div className="dock">
         {isHost ? (
           <>
-            <Plaque go onClick={() => send({ type: 'playAgain', look })}>
+            <Plaque go disabled={busy} onClick={() => void choose({ type: 'playAgain', look })}>
               Play {entry?.meta.name ?? 'it'} again
             </Plaque>
-            <Plaque onClick={() => send({ type: 'backToLobby' })}>Back to lobby</Plaque>
+            <Plaque disabled={busy} onClick={() => void choose({ type: 'backToLobby' })}>
+              Back to lobby
+            </Plaque>
           </>
         ) : (
           <p className="dock__wait">

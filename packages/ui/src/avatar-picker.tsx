@@ -21,7 +21,7 @@ export function AvatarPicker({
 }: {
   value: Avatar;
   onChange: (avatar: Avatar) => void;
-  /** Who already holds a crest or tint id, e.g. `{ raven: 'Bran', slate: 'Bran' }`. */
+  /** Who already holds a crest or tint id, e.g. `{ raven: 'Rook', slate: 'Rook' }`. */
   takenBy?: Record<string, string>;
 }) {
   return (

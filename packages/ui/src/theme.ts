@@ -45,3 +45,48 @@ export function setTheme(theme: Theme) {
     // private mode: the choice just won't be remembered
   }
 }
+
+/**
+ * A game's own look on this device, for a game that doesn't follow Jackdaw's day and dark
+ * (`GameUi.look`: Avalon is Parchment unless you switch it to Night in its lobby). Kept per
+ * game, so switching Avalon to Night leaves Jackdaw's own look alone.
+ */
+const gameKey = (id: string) => `jackdaw:look:${id}`;
+const GAME_LOOK_EVENT = 'jackdaw:look';
+
+function readGameLook(id: string, fallback: Theme): Theme {
+  try {
+    const v = localStorage.getItem(gameKey(id));
+    return v === 'light' || v === 'dark' ? v : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function subscribeGameLook(onChange: () => void) {
+  window.addEventListener(GAME_LOOK_EVENT, onChange);
+  window.addEventListener('storage', onChange);
+  return () => {
+    window.removeEventListener(GAME_LOOK_EVENT, onChange);
+    window.removeEventListener('storage', onChange);
+  };
+}
+
+/** This game's look on this device: what the player picked, or the game's default. */
+export function useGameLook(id: string, fallback: Theme): Theme {
+  return useSyncExternalStore(
+    subscribeGameLook,
+    () => readGameLook(id, fallback),
+    () => fallback,
+  );
+}
+
+/** Pick this game's look on this device (and remember it). */
+export function setGameLook(id: string, theme: Theme) {
+  try {
+    localStorage.setItem(gameKey(id), theme);
+  } catch {
+    // private mode: it lasts until the page closes
+  }
+  window.dispatchEvent(new Event(GAME_LOOK_EVENT));
+}

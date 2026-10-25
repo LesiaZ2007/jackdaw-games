@@ -92,6 +92,35 @@ describe('dealing a hand', () => {
     expect(s.toAct).toBe(s.bbSeat);
   });
 
+  it('heads-up, a big blind all in for less leaves nothing to decide: the board runs out', () => {
+    let s = passive(deal(['a', 'b']));
+    // The button moves, so this hand's big blind is the last hand's button.
+    const short = s.dealer;
+    const sb = short === 'a' ? 'b' : 'a';
+    s = { ...s, stacks: { [short]: 7, [sb]: 1000 } };
+    s = act(s, sb, { type: 'deal' });
+    expect(s.bbSeat).toBe(short);
+    expect(s.toAct).toBeNull();
+    expect(s.phase).toBe('done');
+    expect(s.last!.showdown).toBe(true);
+    expect(s.last!.board).toHaveLength(5);
+    expect(s.last!.pots.reduce((n, p) => n + p.amount, 0)).toBe(14);
+    expect(s.stacks[short]! + s.stacks[sb]!).toBe(1007);
+  });
+
+  it('three-handed, once the button folds the small blind isn’t asked to call a short big blind', () => {
+    let s = passive(deal());
+    const short = s.dealer;
+    s = { ...s, stacks: Object.fromEntries(ids.map((id) => [id, id === short ? 7 : 1000])) };
+    s = act(s, short, { type: 'deal' });
+    expect(s.bbSeat).toBe(short);
+    s = act(s, s.dealer, { type: 'fold' });
+    expect(s.toAct).toBeNull();
+    expect(s.phase).toBe('done');
+    expect(s.last!.showdown).toBe(true);
+    expect(s.last!.pots.reduce((n, p) => n + p.amount, 0)).toBe(14);
+  });
+
   it('never shows a hand or the deck to the table, and each player only their own cards', () => {
     const s = deal();
     const table = JSON.stringify(game.getTableView(s));

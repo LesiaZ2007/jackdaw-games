@@ -14,7 +14,9 @@ import {
   Crest,
   reactionOf,
   seatTransition,
-  useTheme,
+  setGameLook,
+  useGameLook,
+  type Theme,
   type GameLobbyProps,
   type LobbyChat,
   type ScreenPlayer,
@@ -44,7 +46,7 @@ import './avalon-lobby.css';
  * Avalon's lobby, as the live app draws it (components/Lobby.js, RoundTable.js, Fan.js): the
  * round table with everyone's shield, and the hand with the deal and the settings. It sits in
  * Jackdaw's frame; Start ("Deal the roles") opens the real Avalon room with the roles dealt.
- * Parchment by day, Night in the dark look.
+ * Parchment unless the player switches it to Night (per phone, in the settings).
  */
 
 const vars = (v: Record<string, string | number>) => v as CSSProperties;
@@ -351,7 +353,7 @@ export function AvalonLobby({
   react,
   chat,
 }: GameLobbyProps) {
-  const look = useTheme();
+  const look = useGameLook('avalon', 'light');
   const parsed = optionsSchema.safeParse({ ...defaultOptions(), ...raw });
   const s: AvalonOptions = parsed.success ? parsed.data : defaultOptions();
   const count = players.length;
@@ -555,9 +557,17 @@ export function AvalonLobby({
 
                 <Setting
                   label="Look"
-                  hint="Avalon follows Jackdaw's day and dark looks: Parchment by day, Night in the dark."
+                  hint="Just for your phone. The game opens in the host's look."
                 >
-                  <span className="setting-value">{look === 'dark' ? 'Night' : 'Parchment'}</span>
+                  <select
+                    className="setting-select"
+                    value={look}
+                    onChange={(e) => setGameLook('avalon', e.target.value as Theme)}
+                    aria-label="Look"
+                  >
+                    <option value="light">Parchment</option>
+                    <option value="dark">Night</option>
+                  </select>
                 </Setting>
               </div>
               {(s.talkTimer > 0 || s.voteTimer > 0) && (

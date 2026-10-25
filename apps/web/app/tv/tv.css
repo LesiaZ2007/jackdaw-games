@@ -61,6 +61,17 @@
   transform-origin: 0 0;
   overflow: hidden;
 }
+/* The type scale in TV pixels, read from across the room: the smallest step is 24px (18px on a
+   1440px laptop), and nothing follows the window, which on a TV's browser is often tiny. */
+.tv-stage {
+  --step--1: 24px;
+  --step-0: 28px;
+  --step-1: 32px;
+  --step-2: 40px;
+  --step-3: 50px;
+  --step-4: 68px;
+  --step-5: 96px;
+}
 .tv-stage .jd-label {
   font-size: 26px;
 }
@@ -223,7 +234,7 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   --b: min(44cqi, 84px);
 }
 .tv-track .jd-n {
-  font-size: 20px;
+  font-size: 24px;
   top: 6px;
   left: 9px;
 }
@@ -418,7 +429,7 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
 .tv-board__record {
   grid-column: 4;
   grid-row: 2;
-  font-size: 22px;
+  font-size: 24px;
   color: var(--ink-2);
   text-align: right;
 }
@@ -468,7 +479,7 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   margin-left: -12px;
 }
 .tv-played__winners .jd-chip {
-  font-size: 22px;
+  font-size: 24px;
 }
 .tv-played__time {
   font: 700 24px var(--font-plaque);

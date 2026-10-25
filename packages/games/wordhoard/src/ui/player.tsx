@@ -13,18 +13,21 @@ import {
   Tally,
   Token,
   useCountdown,
+  useMoment,
   type GameUi,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import type { Reaction } from '@jackdaw/engine';
 import { RACK, checkPlay, type Placement } from '../board';
 import type { Move, WordhoardAction, WordhoardPlayerView, WordhoardTableView } from '../rules';
+import { arrange, moveTo } from './arrange';
+import { MeaningPopup } from './define';
 import { BoardGrid, Tile } from './pieces';
 import './wordhoard.css';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-/** "Bran played HOARD for 24", in words. */
+/** "Rook played HOARD for 24", in words. */
 export function moveText(m: Move, name: (id: string) => string): string {
   const who = name(m.player);
   if (m.kind === 'pass') return m.late ? `${who} ran out of time.` : `${who} passed.`;
@@ -33,7 +36,7 @@ export function moveText(m: Move, name: (id: string) => string): string {
   return `${who} played ${words} for ${m.score}${m.bingo ? ', all seven tiles' : ''}.`;
 }
 
-/** A side's names: "Bran", or "Bran & Ana" (you first, as "You"). */
+/** A side's names: "Rook", or "Rook & Jay" (you first, as "You"). */
 export function sideName(
   t: WordhoardTableView,
   key: string,
@@ -132,6 +135,12 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const last = v.moves[v.moves.length - 1];
   const myTurn = v.turn === v.side && !v.over;
   const partner = v.sides.find((x) => x[0] === v.side)?.find((id) => id !== v.me);
+  // A word that goes down while you're watching says what it means (not again on a refresh).
+  const [fresh, dismiss] = useMoment(v.moves.length);
+  // Your order for the rack, as letters, so it lasts from turn to turn.
+  const [arranged, setArranged] = useState<string[]>([]);
+  const order = arrange(v.rack, arranged);
+  const meaning = fresh !== null && last?.kind === 'play' ? last : null;
 
   return (
     <div className="wh wh--phone">
@@ -146,14 +155,26 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         </p>
       </header>
       <Scores t={v} players={players} me={v.me} reactions={reactions} />
-      {/* Keyed by the move count, so a new turn starts with your tiles back on the rack. */}
+      {/* Keyed by the move count, so a new turn starts with your tiles back on the rack. Its key
+          differs from the meaning popup's below: siblings sharing a key left a stale rack on screen
+          after a bot played a word (2026-10-24: "letters appear on top of other letters"). */}
       <Turn
-        key={v.moves.length}
+        key={`turn-${v.moves.length}`}
         v={v}
         myTurn={myTurn}
         partner={partner ? name(partner) : undefined}
         send={sendAction}
+        order={order}
+        setOrder={(o) => setArranged(o.map((i) => v.rack[i]!))}
       />
+      {meaning && (
+        <MeaningPopup
+          key={`meaning-${v.moves.length}`}
+          move={meaning}
+          who={meaning.player === v.me ? 'You' : name(meaning.player)}
+          onDone={dismiss}
+        />
+      )}
     </div>
   );
 };
@@ -203,14 +224,16 @@ interface Pending extends Placement {
 
 /** Where a dragged tile came from: a rack slot, or a square it was placed on this turn. */
 type DragFrom = { rack: number } | { row: number; col: number };
+/** Where it was let go: a square on the board, a slot on the rack, or neither. */
+type DropAt = { square: [number, number] } | { slot: number } | null;
 
 /**
  * Dragging tiles with a finger or the mouse, alongside tapping: a tile follows the pointer once
- * it has moved a little, the square under it is outlined, and letting go calls `onDrop` with the
- * square (or null off the board). `justDragged` lets the tap handlers ignore the click a drag
+ * it has moved a little, the square or rack slot under it is outlined, and letting go calls
+ * `onDrop` with where it landed. `justDragged` lets the tap handlers ignore the click a drag
  * ends with.
  */
-function useTileDrag(onDrop: (from: DragFrom, square: [number, number] | null) => void) {
+function useTileDrag(onDrop: (from: DragFrom, at: DropAt) => void) {
   const [drag, setDrag] = useState<{ from: DragFrom; letter: string; x: number; y: number } | null>(
     null,
   );
@@ -230,7 +253,7 @@ function useTileDrag(onDrop: (from: DragFrom, square: [number, number] | null) =
   useEffect(() => {
     let hover: Element | null = null;
     const squareAt = (x: number, y: number) =>
-      document.elementFromPoint(x, y)?.closest('[data-square]') ?? null;
+      document.elementFromPoint(x, y)?.closest('[data-square], [data-slot]') ?? null;
     const mark = (el: Element | null) => {
       if (el === hover) return;
       hover?.classList.remove('is-drop');
@@ -254,8 +277,17 @@ function useTileDrag(onDrop: (from: DragFrom, square: [number, number] | null) =
       justDragged.current = true;
       setTimeout(() => (justDragged.current = false), 60);
       if (cancelled) return;
-      const at = squareAt(e.clientX, e.clientY)?.getAttribute('data-square');
-      dropRef.current(s.from, at ? (at.split(',').map(Number) as [number, number]) : null);
+      const el = squareAt(e.clientX, e.clientY);
+      const square = el?.getAttribute('data-square');
+      const slot = el?.getAttribute('data-slot');
+      dropRef.current(
+        s.from,
+        square
+          ? { square: square.split(',').map(Number) as [number, number] }
+          : slot
+            ? { slot: Number(slot) }
+            : null,
+      );
     };
     const up = (e: PointerEvent) => end(e, false);
     const cancel = (e: PointerEvent) => end(e, true);
@@ -281,18 +313,22 @@ function Turn({
   myTurn,
   partner,
   send,
+  order,
+  setOrder,
 }: {
   v: WordhoardPlayerView;
   myTurn: boolean;
   /** Your partner's name, playing in pairs. */
   partner?: string;
   send: (a: WordhoardAction) => Promise<boolean>;
+  /** Rack indexes in the order you've arranged them. */
+  order: number[];
+  setOrder: (order: number[]) => void;
 }) {
   const [pending, setPending] = useState<Pending[]>([]);
   const [picked, setPicked] = useState<number | null>(null);
   const [blankAt, setBlankAt] = useState<{ row: number; col: number; from: number } | null>(null);
   const [swapping, setSwapping] = useState<number[] | null>(null);
-  const [order, setOrder] = useState<number[]>(() => v.rack.map((_, i) => i));
   const [zoom, setZoom] = useState(false);
   const [busy, setBusy] = useState(false);
   const used = new Set(pending.map((p) => p.from));
@@ -316,21 +352,28 @@ function Turn({
   const free = (row: number, col: number) =>
     !v.board[row]![col] && !pending.some((p) => p.row === row && p.col === col);
 
-  /** A rack tile dropped on a square goes there; a placed tile moves, or off the board goes back. */
+  /**
+   * A rack tile dropped on another rack slot moves there (any time, to plan); dropped on a square
+   * it goes on the board (on your turn). A placed tile moves to another square, or back to the
+   * rack when it's dropped there or off the board.
+   */
   const { drag, begin, justDragged } = useTileDrag((from, at) => {
     if ('rack' in from) {
-      if (!at || !free(...at)) return;
+      if (at && 'slot' in at) return setOrder(moveTo(order, from.rack, at.slot));
+      if (!myTurn || !at || !free(...at.square)) return;
+      const [row, col] = at.square;
       const letter = v.rack[from.rack]!;
-      if (letter === '?') return setBlankAt({ row: at[0], col: at[1], from: from.rack });
-      setPending([...pending, { row: at[0], col: at[1], letter, from: from.rack }]);
+      if (letter === '?') return setBlankAt({ row, col, from: from.rack });
+      setPending([...pending, { row, col, letter, from: from.rack }]);
       setPicked(null);
       return;
     }
     const here = pending.find((p) => p.row === from.row && p.col === from.col);
     if (!here) return;
-    if (!at) return setPending(pending.filter((p) => p !== here));
-    if (!free(...at)) return;
-    setPending(pending.map((p) => (p === here ? { ...p, row: at[0], col: at[1] } : p)));
+    if (!at || 'slot' in at) return setPending(pending.filter((p) => p !== here));
+    if (!free(...at.square)) return;
+    const [row, col] = at.square;
+    setPending(pending.map((p) => (p === here ? { ...p, row, col } : p)));
   });
   const dragging = (p: { row: number; col: number }) =>
     Boolean(drag && 'row' in drag.from && drag.from.row === p.row && drag.from.col === p.col);
@@ -364,15 +407,15 @@ function Turn({
 
   function shuffle() {
     // A fixed reshuffle is enough to see the letters afresh; no randomness needed.
-    setOrder((o) =>
-      [...o.filter((_, i) => i % 2 === 1), ...o.filter((_, i) => i % 2 === 0)].reverse(),
+    setOrder(
+      [...order.filter((_, i) => i % 2 === 1), ...order.filter((_, i) => i % 2 === 0)].reverse(),
     );
   }
 
   const status = !myTurn
     ? v.over
       ? 'The game is over.'
-      : 'Plan your next word while you wait.'
+      : 'Plan your next word while you wait: drag tiles along the rack to rearrange them.'
     : swapping
       ? `Pick the tiles to swap (${swapping.length} chosen).`
       : check
@@ -387,7 +430,7 @@ function Turn({
           ? 'Now tap a square on the board.'
           : partner
             ? `Your rack, shared with ${partner}. Either of you can play.`
-            : 'Drag a tile onto the board, or tap it and then a square. Tap a placed tile to take it back.';
+            : 'Drag a tile onto the board, or tap it and then a square. Drag tiles along the rack to rearrange them.';
 
   return (
     <>
@@ -433,10 +476,13 @@ function Turn({
                     .join(' ')}
                   aria-pressed={chosen}
                   aria-label={t === '?' ? 'Blank tile' : t}
-                  disabled={(!myTurn && !swapping) || (used.has(i) && !swapping)}
+                  aria-disabled={!myTurn && !swapping}
+                  data-slot={i}
+                  disabled={used.has(i) && !swapping}
                   onClick={() => onRack(i)}
                   onPointerDown={(e) => {
-                    if (myTurn && !swapping && !used.has(i)) begin(e, { rack: i }, t);
+                    // Dragging along the rack rearranges it, even while you wait for your turn.
+                    if (!swapping && !used.has(i)) begin(e, { rack: i }, t);
                   }}
                 >
                   <Tile letter={t} />

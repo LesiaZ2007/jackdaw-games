@@ -2,7 +2,16 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Token, type ScreenPlayer } from '@jackdaw/ui';
-import { BOARD, GO_TO_JAIL, JAIL, SPACES, deedAt, type Group } from '../board';
+import {
+  BOARD,
+  GO_TO_JAIL,
+  JAIL,
+  SPACES,
+  deedAt,
+  spaceName,
+  type Group,
+  type Names,
+} from '../board';
 import type { Holding, MonopolyTableView, MoveEvent } from '../rules';
 
 /** Printed inks for the colour groups. The same by day and in the dark. */
@@ -25,7 +34,6 @@ const BREAKS: Record<string, string> = {
   Guildhall: 'Guild\u00adhall',
   Crowsfoot: 'Crows\u00adfoot',
   Kingsmead: 'Kings\u00admead',
-  Community: 'Com\u00admunity',
   Mudlark: 'Mud\u00adlark',
   Weavers: 'Weav\u00aders',
   Coopers: 'Coop\u00aders',
@@ -36,12 +44,45 @@ const BREAKS: Record<string, string> = {
   Parade: 'Par\u00adade',
   Bishops: 'Bish\u00adops',
   Jackdaw: 'Jack\u00addaw',
-  Falcon: 'Fal\u00adcon',
-  Market: 'Mar\u00adket',
   Conduit: 'Con\u00adduit',
+  Mediterranean: 'Medi\u00adter\u00adranean',
+  Connecticut: 'Con\u00adnecti\u00adcut',
+  Pennsylvania: 'Penn\u00adsyl\u00advania',
+  Community: 'Com\u00admunity',
+  Carolina: 'Caro\u00adlina',
+  Railroad: 'Rail\u00adroad',
+  Tennessee: 'Tennes\u00adsee',
+  Kentucky: 'Ken\u00adtucky',
+  Illinois: 'Illi\u00adnois',
+  Atlantic: 'Atlan\u00adtic',
+  Virginia: 'Vir\u00adginia',
+  Oriental: 'Orien\u00adtal',
+  Electric: 'Elec\u00adtric',
+  Company: 'Com\u00adpany',
+  Boardwalk: 'Board\u00adwalk',
+  Gardens: 'Gar\u00addens',
+  Vermont: 'Ver\u00admont',
+  Indiana: 'Indi\u00adana',
+  Ventnor: 'Vent\u00adnor',
+  Avenue: 'Ave\u00adnue',
+  Pacific: 'Paci\u00adfic',
+  Baltic: 'Bal\u00adtic',
 };
 export const printName = (name: string) =>
   name.replace(/[A-Za-z]+/g, (word) => BREAKS[word] ?? word);
+
+/** The longest names, as printed on their space, where room is tight. */
+const FACE: Record<string, string> = {
+  'Mediterranean Avenue': 'Mediterranean',
+  'Connecticut Avenue': 'Connecticut',
+  'North Carolina Avenue': 'North Carolina',
+  'Pennsylvania Avenue': 'Pennsylvania',
+  'Pennsylvania Railroad': 'Penn. R.R.',
+};
+
+/** A name as printed on its space: Avenue and Railroad shortened, the longest cut to fit. */
+export const faceName = (name: string) =>
+  printName(FACE[name] ?? name.replace(/ Avenue$/, ' Ave.').replace(/ Railroad$/, ' R.R.'));
 
 export const money = (n: number) => `$${n.toLocaleString('en-US')}`;
 
@@ -145,7 +186,7 @@ export function Board({ t, players, size, focus = null, onSpace, children }: Boa
           '--band': deed?.kind === 'street' ? GROUP_INK[deed.group] : undefined,
           '--owner': owner ? tintOf(owner) : undefined,
         } as CSSProperties;
-        const label = `${sp.name}${deed ? `, ${money(deed.price)}` : ''}${owner ? `, owned by ${owner.name}` : ''}${h?.mortgaged ? ', mortgaged' : ''}`;
+        const label = `${spaceName(i, t.names)}${deed ? `, ${money(deed.price)}` : ''}${owner ? `, owned by ${owner.name}` : ''}${h?.mortgaged ? ', mortgaged' : ''}`;
         const Tag = onSpace ? 'button' : 'div';
         return (
           <Tag
@@ -162,7 +203,7 @@ export function Board({ t, players, size, focus = null, onSpace, children }: Boa
                 <Buildings houses={h?.houses ?? 0} />
               </span>
             )}
-            {size !== 'phone' && <SpaceFace space={i} />}
+            {size !== 'phone' && <SpaceFace space={i} names={t.names} />}
             {size === 'phone' && <PhoneGlyph space={i} />}
             {owner && <span className="mnp-sp__owner" aria-hidden="true" />}
             {h?.mortgaged && <span className="mnp-sp__m">M</span>}
@@ -210,7 +251,7 @@ function Buildings({ houses }: { houses: number }) {
 }
 
 /** The printed face of a space on a laptop or TV board. */
-function SpaceFace({ space }: { space: number }) {
+function SpaceFace({ space, names }: { space: number; names: Names }) {
   const sp = BOARD[space]!;
   const deed = deedAt(space);
   if (sp.kind === 'go') {
@@ -244,11 +285,11 @@ function SpaceFace({ space }: { space: number }) {
   }
   return (
     <span className="mnp-face">
-      <span className="mnp-face__name">{printName(sp.name)}</span>
+      <span className="mnp-face__name">{faceName(spaceName(space, names))}</span>
       {(sp.kind === 'chance' ||
         sp.kind === 'chest' ||
-        sp.kind === 'inn' ||
-        sp.kind === 'guild') && (
+        sp.kind === 'railroad' ||
+        sp.kind === 'utility') && (
         <span className="mnp-face__glyph" aria-hidden="true">
           <KindGlyph kind={sp.kind} space={space} />
         </span>
@@ -282,8 +323,8 @@ function PhoneGlyph({ space }: { space: number }) {
 function KindGlyph({ kind, space }: { kind: string; space: number }) {
   if (kind === 'chance') return <span className="mnp-q">?</span>;
   if (kind === 'chest') return <Chest />;
-  if (kind === 'inn') return <Sign />;
-  return space === 12 ? <Lamp /> : <Tap />;
+  if (kind === 'railroad') return <Train />;
+  return space === 12 ? <Bulb /> : <Tap />;
 }
 
 /* Small engraved glyphs, drawn in ink on a 24 box. */
@@ -309,8 +350,14 @@ const Cart = () =>
   svg(<path d="M3 15h13l3-6H6M7 19a1.5 1.5 0 1 0 0 .1M16 19a1.5 1.5 0 1 0 0 .1M3 15 2 6" />);
 const Gavel = () => svg(<path d="m13 4 7 7m-9-5 7 7m-8.5-3.5L4 15l3 3 5.5-5.5M3 21h9" />);
 const Chest = () => svg(<path d="M3 10h18v10H3zM3 10a9 5 0 0 1 18 0M10 13h4v3h-4z" />);
-const Sign = () => svg(<path d="M5 3v18M5 5h12v8H5M9 9h4" />);
-const Lamp = () => svg(<path d="M9 3h6l2 5H7zM12 8v6M10 14h4v3h-4zM12 17v4M9 21h6" />);
+const Train = () =>
+  svg(
+    <path d="M7 3h10a2 2 0 0 1 2 2v9a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5a2 2 0 0 1 2-2zM5 10h14M9 14h.01M15 14h.01M8 17l-2 4M16 17l2 4" />,
+  );
+const Bulb = () =>
+  svg(
+    <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z" />,
+  );
 const Tap = () =>
   svg(
     <path d="M4 9h9a4 4 0 0 1 4 4v1M8 9V6h3v3M17 17v.5M15.5 20a1.5 1.5 0 0 0 3 0c0-1-1.5-2.5-1.5-2.5S15.5 19 15.5 20z" />,

@@ -600,6 +600,36 @@
   padding-bottom: 0;
   container: game / size;
 }
+/* A latecomer watching: the note, then the TV screen scaled whole into what's left (TvWindow). */
+.game-watch {
+  gap: var(--space-3);
+}
+.game-watch .tv-window {
+  border: 2px solid var(--ink);
+}
+.spectator__turn {
+  display: none;
+}
+@media (orientation: portrait) and (max-width: 700px) {
+  .spectator__turn {
+    display: inline;
+  }
+}
+/* With the game's own watch screen the note is one quiet line above it. */
+.game-watch--phone {
+  gap: var(--space-2);
+}
+.game-watch--phone .spectator {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--step--1);
+}
+/* A phone on its side keeps the note to a line, leaving the height to the table. */
+@media (max-height: 500px) {
+  .game-watch .spectator {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--step--1);
+  }
+}
 .spectator,
 .game-missing {
   margin: 0;

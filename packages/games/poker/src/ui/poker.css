@@ -662,6 +662,47 @@
   }
 }
 
+/* ── Watching on a phone: the table, then the last few bets in place of cards and dock ── */
+.pk--watch {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.pk--watch .pk-stage {
+  place-items: center;
+}
+.pk-watch {
+  align-content: start;
+  gap: var(--space-1);
+  min-height: 150px;
+  padding-top: var(--space-1);
+  border-top: 2px solid var(--rule);
+}
+.pk-watch .pk-dock__wait {
+  min-height: 32px;
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pk-watch__log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+.pk-watch__log li {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 2px 10px;
+  border-left: 3px solid var(--rule);
+  color: var(--ink-2);
+  font: 600 15px / 1.25 var(--font-body);
+}
+.pk-watch__log li.is-new {
+  border-left-color: var(--vert);
+  color: var(--ink);
+  font-weight: 800;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pk-seat--landing .pk-seat__tok {
     animation: none;

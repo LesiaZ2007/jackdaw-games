@@ -554,7 +554,7 @@ export function say(text: string, name: (id: string) => string): string {
   return text.replace(/\{([^}]+)\}/g, (_, id: string) => name(id));
 }
 
-function waitingLine(v: MonopolyTableView, name: (id: string) => string): string {
+export function waitingLine(v: MonopolyTableView, name: (id: string) => string): string {
   const who = name(v.turn);
   if (v.phase === 'roll') return v.seats[v.turn]?.jailed ? `${who} is in Jail.` : `${who} to roll.`;
   if (v.phase === 'buy' && v.pendingBuy !== null)

@@ -33,7 +33,7 @@ export function notesFor(amount: number): { note: number; count: number }[] {
 }
 
 /** A player's money as piles of notes, with the total beside them. */
-export function Wallet({ cash, size = 'phone' }: { cash: number; size?: 'phone' | 'tv' }) {
+export function Wallet({ cash, size = 'phone' }: { cash: number; size?: 'phone' | 'tv' | 'pot' }) {
   const piles = notesFor(cash);
   return (
     <div className={`mnp-wallet mnp-wallet--${size}`} aria-label={`${money(cash)} in hand`}>

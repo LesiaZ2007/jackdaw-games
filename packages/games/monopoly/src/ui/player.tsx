@@ -109,6 +109,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         </div>
 
         <aside className="mnp-side-col">
+          <People t={v} players={players} me={v.me} reactions={reactions} />
+          {wide && <Story t={v} name={name} count={6} />}
           <section className="mnp-purse" aria-label="Your money and deeds">
             <Wallet cash={v.seats[v.me]!.cash} />
             <DeedCards
@@ -118,8 +120,6 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               onDeed={(space) => setSheet({ kind: 'deed', space })}
             />
           </section>
-          <People t={v} players={players} me={v.me} reactions={reactions} />
-          {wide && <Story t={v} name={name} />}
           {wide && offers}
           {wide && dock}
         </aside>
@@ -390,14 +390,19 @@ export function Centre({
         <Pile deck="chance" />
       </span>
       <span className="mnp-centre__mark">Monopoly</span>
+      {t.parkingPot && (
+        <span className="mnp-centre__pot">
+          <Wallet cash={t.pot} size="pot" />
+          <span className="mnp-centre__potname">Free Parking</span>
+        </span>
+      )}
       <span className="mnp-centre__dice">
         <Dice dice={t.dice} rolls={t.rolls} size={die} />
       </span>
       <span className="mnp-centre__foot">
         {t.maxRounds ? `Round ${t.round} of ${t.maxRounds}` : `Round ${t.round}`}
-        {t.parkingPot && t.pot > 0 ? ` · Free Parking ${money(t.pot)}` : ''}
       </span>
-      {me && t.seats[me] && <MoneyBurst cash={t.seats[me]!.cash} />}
+      {me && t.seats[me] && <MoneyBurst cash={t.seats[me]!.cash} quiet={announced(t, me)} />}
       {t.card && (
         <span className="mnp-centre__drawn">
           <DrawnCard card={t.card} fresh={freshCard !== null} by={name(t.card.by)} />
@@ -407,16 +412,24 @@ export function Centre({
   );
 }
 
+/** True when the last thing that happened is a popup about your money (rent, tax, a card). */
+function announced(t: MonopolyTableView, me: string): boolean {
+  const last = t.log.at(-1);
+  if (!last) return false;
+  const mine = last.by === me || last.to === me || last.text.includes(`{${me}}`);
+  return mine && (last.kind === 'rent' || last.kind === 'tax' || last.kind === 'card');
+}
+
 /**
  * Your money changing, stamped big over the board: green and rising when you're paid, smaller
  * and red when you pay out.
  */
-function MoneyBurst({ cash }: { cash: number }) {
+function MoneyBurst({ cash, quiet }: { cash: number; quiet: boolean }) {
   const [seen, setSeen] = useState(cash);
   const [burst, setBurst] = useState<{ by: number; n: number } | null>(null);
   if (cash !== seen) {
     setSeen(cash);
-    setBurst((b) => ({ by: cash - seen, n: (b?.n ?? 0) + 1 }));
+    if (!quiet) setBurst((b) => ({ by: cash - seen, n: (b?.n ?? 0) + 1 }));
   }
   if (!burst) return null;
   return (

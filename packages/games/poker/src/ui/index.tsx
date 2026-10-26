@@ -4,6 +4,7 @@ import type { GameUi } from '@jackdaw/ui';
 import { LobbySeats } from './lobby';
 import { PlayerScreen } from './player';
 import { TvScreen } from './tv';
+import { WatchScreen } from './watch';
 
 /** Poker: catalog art, detail page and screens. It uses Jackdaw's own lobby. */
 export const pokerUi: GameUi = {
@@ -57,4 +58,5 @@ export const pokerUi: GameUi = {
   LobbySeats,
   PlayerScreen,
   TvScreen,
+  WatchScreen,
 };

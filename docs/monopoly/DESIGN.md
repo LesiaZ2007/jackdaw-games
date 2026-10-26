@@ -1,18 +1,18 @@
 # Monopoly: design
 
-2026-10-25. Classic property trading for two to six players, on a board of our own town.
-Monopoly is a trademark of Hasbro. The street names, inns, guilds and cards are the site's
-own. It uses Jackdaw's lobby.
+2026-10-25. Classic property trading for two to six players. Monopoly is a trademark of
+Hasbro. The classic board is the default; a board of our own (a market town, with coaching
+inns for railroads and guilds for utilities) is an option. It uses Jackdaw's lobby.
 
 ## How it plays
 
 Each player starts with $1,500 and a token on GO. The board has forty spaces in the classic
-order, with the town's names (`board.ts`). Turn order is drawn at random at the start. On
+order and names (`board.ts`; the town's names are `TOWN` there). Turn order is drawn at random at the start. On
 your turn you throw two dice and move forward by the total. Passing GO pays $200.
 
 What you land on decides the next step:
 
-- An unowned street, inn or guild is offered to you at its list price.
+- An unowned street, railroad or utility is offered to you at its list price.
 - A deed someone else owns, and has not mortgaged, charges rent.
 - Chance and Community Chest draw a card (sixteen of each, in `cards.ts`).
 - Income Tax ($200) and Luxury Tax ($100) are paid to the bank.
@@ -21,14 +21,14 @@ What you land on decides the next step:
 
 Throwing doubles gives you another roll, and three doubles in a row sends you to Jail.
 
-Example: Wren rolls 2 and 3 from GO and lands on The Swan, which nobody owns. She can buy it
+Example: Wren rolls 2 and 3 from GO and lands on Reading Railroad, which nobody owns. She can buy it
 for $200, or decline and let it go to auction.
 
 ## Players and options
 
 Two to six players. `validateOptions` refuses any other count.
 
-Jackdaw's options panel offers four settings:
+Jackdaw's options panel offers five settings:
 
 | Key         | Label            | Choices                                             | Default           |
 | ----------- | ---------------- | --------------------------------------------------- | ----------------- |
@@ -36,7 +36,11 @@ Jackdaw's options panel offers four settings:
 | `unbought`  | Land nobody buys | Goes to auction, Stays with the bank                | Goes to auction   |
 | `parking`   | Free Parking     | Nothing, Collects the taxes                         | Nothing           |
 | `turnTimer` | Turn timer       | Off, 60 seconds, 90 seconds                         | Off               |
+| `board`     | Board            | Classic, Market town                                | Classic           |
 
+- **Board.** Only the names change: the market town words every space and card its own way,
+  and its railroads and utilities are coaching inns and guilds. Prices, rents and rules are the
+  same.
 - **Game ends.** Either the last player standing wins, or the game stops once the round
   limit is reached and the richest player wins (see Ended early).
 - **Land nobody buys.** A declined deed goes to auction. With "Stays with the bank" there is
@@ -88,17 +92,17 @@ If they decline and the auction option is on, the deed goes to auction:
 
 - **Streets** charge the rent in the board's table for their house count (bare, one to four
   houses, then a hotel). A bare deed in a full colour group charges double.
-- **Inns** charge $25, doubled for each further inn the owner holds: $50, $100, $200.
-- **Guilds** charge the dice total times four, or times ten if the owner holds both guilds.
-- **Cards** change this. A Chance card that sends you to the nearest inn charges double rent
-  there. The card that sends you to the nearest guild has you throw again and pay ten times
+- **Railroads** charge $25, doubled for each further railroad the owner holds: $50, $100, $200.
+- **Utilities** charge the dice total times four, or times ten if the owner holds both.
+- **Cards** change this. A Chance card that sends you to the nearest railroad charges double rent
+  there. The card that sends you to the nearest utility has you throw again and pay ten times
   that roll.
 - A mortgaged deed charges no rent.
 
 ## Building
 
 A house can go on a street only when its owner holds the whole colour group, and no deed in
-the group is mortgaged. Inns and guilds cannot be built on.
+the group is mortgaged. Railroads and utilities cannot be built on.
 
 - Build evenly. A street may not get a house while another in its group has fewer.
 - A house costs the price shown for its street, and sells back at half.
@@ -189,7 +193,7 @@ These differ from the printed rules:
 ## Testing
 
 - Rules (`rules.test.ts`): moving, GO, doubles, Jail, every card kind, buying, auctions and
-  their clock, rent for streets, inns and guilds, building and selling evenly with the bank's
+  their clock, rent for streets, railroads and utilities, building and selling evenly with the bank's
   limits, mortgages, debts and bankruptcy, trades, both endings, the turn timer, and a leak
   test that the deck order never reaches any view.
 - End to end (`apps/web/e2e/monopoly.spec.ts`): a host plays turns against two bots on a phone

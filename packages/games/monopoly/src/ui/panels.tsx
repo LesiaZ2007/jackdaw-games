@@ -6,10 +6,13 @@ import {
   BOARD,
   DEEDS,
   GROUPS,
-  INNS,
+  RAILROADS,
   deedAt,
   mortgageValue,
   setOf,
+  spaceName,
+  kindWord,
+  type Names,
   streetAt,
   unmortgageCost,
 } from '../board';
@@ -60,9 +63,17 @@ export function DeedCard({
     <div className="mnp-deed" style={{ '--band': band } as CSSProperties}>
       <header className="mnp-deed__head">
         <span className="mnp-deed__kind">
-          {deed.kind === 'street' ? 'Title deed' : deed.kind === 'inn' ? 'Coaching inn' : 'Guild'}
+          {deed.kind === 'street'
+            ? 'Title deed'
+            : t.names === 'town'
+              ? deed.kind === 'railroad'
+                ? 'Coaching inn'
+                : 'Guild'
+              : deed.kind === 'railroad'
+                ? 'Railroad'
+                : 'Utility'}
         </span>
-        <h3 className="mnp-deed__name">{sp.name}</h3>
+        <h3 className="mnp-deed__name">{spaceName(space, t.names)}</h3>
       </header>
       <table className="mnp-deed__rents">
         <tbody>
@@ -80,21 +91,25 @@ export function DeedCard({
                 <td>{money(deed.rent[k]!)}</td>
               </tr>
             ))}
-          {deed.kind === 'inn' &&
+          {deed.kind === 'railroad' &&
             [1, 2, 3, 4].map((n) => (
               <tr key={n}>
-                <th>{n === 1 ? 'One inn' : `${['', '', 'Two', 'Three', 'Four'][n]} inns`}</th>
+                <th>
+                  {n === 1
+                    ? `One ${kindWord('railroad', t.names)}`
+                    : `${['', '', 'Two', 'Three', 'Four'][n]} ${kindWord('railroad', t.names)}s`}
+                </th>
                 <td>{money(25 * 2 ** (n - 1))}</td>
               </tr>
             ))}
-          {deed.kind === 'guild' && (
+          {deed.kind === 'utility' && (
             <>
               <tr>
-                <th>One guild</th>
+                <th>One {kindWord('utility', t.names)}</th>
                 <td>4 × dice</td>
               </tr>
               <tr>
-                <th>Both guilds</th>
+                <th>Both {t.names === 'town' ? 'guilds' : 'utilities'}</th>
                 <td>10 × dice</td>
               </tr>
             </>
@@ -155,7 +170,7 @@ export function Estate({ t, me, send }: { t: MonopolyPlayerView; me: string; sen
     return <p className="mnp-empty">You don't own anything yet. Land on a deed and buy it.</p>;
   const sets = [
     ...GROUPS.map((g) => setOf(DEEDS.find((d) => streetAt(d)?.group === g)!)),
-    INNS,
+    RAILROADS,
     setOf(12),
   ];
   const go = async (action: MonopolyAction) => {
@@ -185,11 +200,11 @@ export function Estate({ t, me, send }: { t: MonopolyPlayerView; me: string; sen
                   style={{ '--band': band } as CSSProperties}
                 >
                   <span className="mnp-row__name">
-                    <b>{BOARD[d]!.name}</b>
+                    <b>{spaceName(d, t.names)}</b>
                     <span>
                       {h.mortgaged
                         ? 'Mortgaged'
-                        : `Rent ${money(rentFor(t, d, dice))}${deedAt(d)!.kind === 'guild' ? ` on a ${dice}` : ''}`}
+                        : `Rent ${money(rentFor(t, d, dice))}${deedAt(d)!.kind === 'utility' ? ` on a ${dice}` : ''}`}
                       {h.houses
                         ? ` · ${h.houses === 5 ? 'hotel' : `${h.houses} ${h.houses === 1 ? 'house' : 'houses'}`}`
                         : ''}
@@ -326,6 +341,7 @@ export function TradeDesk({
             set={setGive}
             cash={t.seats[me]!.cash}
             cards={t.seats[me]!.cards}
+            names={t.names}
           />
           <Side
             title={`${byId.get(to)?.name ?? 'They'} gives`}
@@ -334,6 +350,7 @@ export function TradeDesk({
             set={setGet}
             cash={t.seats[to]!.cash}
             cards={t.seats[to]!.cards}
+            names={t.names}
           />
         </div>
       )}
@@ -343,8 +360,8 @@ export function TradeDesk({
       {mine.map((o) => (
         <p key={o.id} className="mnp-trade__open">
           <span>
-            Waiting on {byId.get(o.to)?.name ?? 'them'}: {describeSide(o.give)} for{' '}
-            {describeSide(o.get)}.
+            Waiting on {byId.get(o.to)?.name ?? 'them'}: {describeSide(o.give, t.names)} for{' '}
+            {describeSide(o.get, t.names)}.
           </span>
           <button type="button" onClick={() => void send({ type: 'cancel', id: o.id })}>
             Withdraw
@@ -362,6 +379,7 @@ function Side({
   set,
   cash,
   cards,
+  names,
 }: {
   title: string;
   deeds: number[];
@@ -369,6 +387,7 @@ function Side({
   set: (s: TradeSide) => void;
   cash: number;
   cards: number;
+  names: Names;
 }) {
   const toggle = (d: number) =>
     set({
@@ -389,7 +408,7 @@ function Side({
               style={{ '--band': st ? GROUP_INK[st.group] : 'var(--mnp-ink)' } as CSSProperties}
             >
               <input type="checkbox" checked={side.deeds.includes(d)} onChange={() => toggle(d)} />
-              <span>{printName(BOARD[d]!.name)}</span>
+              <span>{printName(spaceName(d, names))}</span>
             </label>
           );
         })}
@@ -434,7 +453,17 @@ function Side({
 }
 
 /** An offer made to you, with the answer buttons. */
-export function OfferSlip({ o, players, send }: { o: Offer; players: ScreenPlayer[]; send: Send }) {
+export function OfferSlip({
+  o,
+  players,
+  send,
+  names,
+}: {
+  o: Offer;
+  players: ScreenPlayer[];
+  send: Send;
+  names: Names;
+}) {
   const [busy, setBusy] = useState(false);
   const from = players.find((p) => p.id === o.from);
   const answer = async (type: 'accept' | 'reject') => {
@@ -445,7 +474,8 @@ export function OfferSlip({ o, players, send }: { o: Offer; players: ScreenPlaye
   return (
     <div className="mnp-offer" role="alert" style={{ '--tint': tintOf(from) } as CSSProperties}>
       <p>
-        <b>{from?.name ?? 'Someone'}</b> offers {describeSide(o.give)} for {describeSide(o.get)}.
+        <b>{from?.name ?? 'Someone'}</b> offers {describeSide(o.give, names)} for{' '}
+        {describeSide(o.get, names)}.
       </p>
       <span className="mnp-offer__acts">
         <button type="button" disabled={busy} onClick={() => void answer('reject')}>

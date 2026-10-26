@@ -15,7 +15,7 @@ import {
   type Outcome,
   type ScreenPlayer,
 } from '@jackdaw/ui';
-import { BAIL, BOARD, deedAt } from '../board';
+import { BAIL, BOARD, deedAt, spaceName } from '../board';
 import type { LogEntry, MonopolyAction, MonopolyPlayerView, MonopolyTableView } from '../rules';
 import { Board, Dice, DrawnCard, money, tintOf } from './board';
 import { DeedCard, Estate, OfferSlip, TradeDesk } from './panels';
@@ -59,7 +59,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const offers = (
     <>
       {incoming.slice(0, 1).map((o) => (
-        <OfferSlip key={o.id} o={o} players={players} send={send} />
+        <OfferSlip key={o.id} o={o} players={players} send={send} names={v.names} />
       ))}
     </>
   );
@@ -229,7 +229,7 @@ function Moves({
     if (au.out.includes(v.me)) {
       return (
         <p className="mnp-dock__line">
-          {BOARD[au.space]!.name}: {line}. You've dropped out.
+          {spaceName(au.space, v.names)}: {line}. You've dropped out.
         </p>
       );
     }
@@ -240,7 +240,7 @@ function Moves({
     return (
       <div className="mnp-dock__row">
         <p className="mnp-dock__line">
-          Auction for <b>{BOARD[au.space]!.name}</b> ({money(deed.price)}): {line}.
+          Auction for <b>{spaceName(au.space, v.names)}</b> ({money(deed.price)}): {line}.
         </p>
         {au.by !== v.me && (
           <button
@@ -332,7 +332,7 @@ function Moves({
           disabled={busy || me.cash < deed.price}
           onClick={() => void send({ type: 'buy' })}
         >
-          Buy {BOARD[v.pendingBuy]!.name} · {money(deed.price)}
+          Buy {spaceName(v.pendingBuy, v.names)} · {money(deed.price)}
         </Plaque>
       </div>
     );
@@ -489,7 +489,7 @@ function waitingLine(v: MonopolyTableView, name: (id: string) => string): string
   const who = name(v.turn);
   if (v.phase === 'roll') return v.seats[v.turn]?.jailed ? `${who} is in Jail.` : `${who} to roll.`;
   if (v.phase === 'buy' && v.pendingBuy !== null)
-    return `${who} is deciding on ${BOARD[v.pendingBuy]!.name}.`;
+    return `${who} is deciding on ${spaceName(v.pendingBuy, v.names)}.`;
   return `${who} is finishing their turn.`;
 }
 

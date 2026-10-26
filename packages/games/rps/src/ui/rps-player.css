@@ -225,3 +225,51 @@
     transform: translateY(1px);
   }
 }
+
+/* ── Watching on a phone: the table fills the space under the note and never scrolls the page ── */
+.rps-watch {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rps-watch .rps {
+  flex: 1;
+  min-height: 0;
+  max-width: none;
+  gap: var(--space-3);
+}
+/* A long table scrolls inside the scores; the last reveal keeps to the bottom. */
+.rps-watch .rps__board {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.rps-watch .rps__reveal {
+  margin-top: auto;
+}
+.rps-watch .rps__reveal ul {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+/* Before the first reveal: where the throws will land, in dashed print */
+.rps-watch__empty {
+  margin: 0;
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--ink-2);
+  border: 2px dashed var(--rule);
+  background: var(--paper);
+}
+/* two throws to a row, set tighter so names keep their room */
+.rps-watch .rps__card {
+  gap: var(--space-1);
+  min-height: 48px;
+  padding: var(--space-1) var(--space-2);
+}
+.rps-watch .rps__throw svg {
+  width: 28px;
+  height: 28px;
+}
+.rps-watch .rps__card-name {
+  font-size: 15px;
+}

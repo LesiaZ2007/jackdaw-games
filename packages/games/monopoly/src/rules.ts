@@ -12,21 +12,24 @@ import {
   BOARD,
   DEEDS,
   GO_SALARY,
-  GUILDS,
+  UTILITIES,
   HOTELS,
   HOUSES,
-  INNS,
+  RAILROADS,
   JAIL,
   SPACES,
   START_CASH,
   deedAt,
+  kindWord,
+  spaceName,
+  type Names,
   mortgageValue,
   nearest,
   setOf,
   streetAt,
   unmortgageCost,
 } from './board';
-import { CHANCE, CHEST, cardById, type Deck } from './cards';
+import { CHANCE, CHEST, cardById, cardText, type Deck } from './cards';
 import { meta } from './meta';
 import { monopolyBot } from './bot';
 
@@ -47,6 +50,7 @@ import { monopolyBot } from './bot';
 const ENDS = ['Last one standing', 'After 30 rounds', 'After 20 rounds'] as const;
 const LAND = ['Goes to auction', 'Stays with the bank'] as const;
 const PARKING = ['Nothing', 'Collects the taxes'] as const;
+const BOARDS = ['Classic', 'Market town'] as const;
 const CLOCKS = ['Off', '60 seconds', '90 seconds'] as const;
 
 /** How long an auction waits after the last bid before it closes. */
@@ -60,6 +64,7 @@ export const optionsSchema = z.object({
   unbought: z.enum(LAND).describe('Land nobody buys'),
   parking: z.enum(PARKING).describe('Free Parking'),
   turnTimer: z.enum(CLOCKS).describe('Turn timer'),
+  board: z.enum(BOARDS).describe('Board'),
 });
 export type MonopolyOptions = z.infer<typeof optionsSchema>;
 
@@ -202,6 +207,7 @@ export interface MonopolyState {
   bankHotels: number;
   auctions: boolean;
   parkingPot: boolean;
+  names: Names;
   maxRounds: number;
   turnSecs: number;
   round: number;
@@ -251,6 +257,7 @@ export interface MonopolyTableView {
   bankHotels: number;
   auctions: boolean;
   parkingPot: boolean;
+  names: Names;
   maxRounds: number;
   round: number;
   actBy: number | null;
@@ -280,7 +287,7 @@ export interface MonopolyReveal {
 /* ------------------------------------------------------------------ helpers */
 
 const money = (n: number) => `$${n.toLocaleString('en-US')}`;
-const nameOf = (space: number) => BOARD[space]!.name;
+const nameOf = (s: Pick<MonopolyState, 'names'>, space: number) => spaceName(space, s.names);
 
 function seat(s: MonopolyState, id: string): Seat {
   const found = s.seats[id];
@@ -351,7 +358,7 @@ export function netWorth(s: Pick<MonopolyState, 'seats' | 'deeds'>, id: string):
   return total;
 }
 
-/** The rent owed for landing on an owned deed. `roll` is the dice total for a guild. */
+/** The rent owed for landing on an owned deed. `roll` is the dice total for a utility. */
 export function rentFor(
   s: Pick<MonopolyState, 'deeds'>,
   space: number,
@@ -368,11 +375,11 @@ export function rentFor(
     const full = setOf(space).every((d) => s.deeds[String(d)]?.owner === h.owner);
     return full ? deed.rent[0] * 2 : deed.rent[0];
   }
-  if (deed.kind === 'inn') {
-    const rent = 25 * 2 ** (owns(INNS) - 1);
+  if (deed.kind === 'railroad') {
+    const rent = 25 * 2 ** (owns(RAILROADS) - 1);
     return card === 'double' ? rent * 2 : rent;
   }
-  const times = card === 'ten' || owns(GUILDS) === 2 ? 10 : 4;
+  const times = card === 'ten' || owns(UTILITIES) === 2 ? 10 : 4;
   return roll * times;
 }
 
@@ -487,8 +494,8 @@ function land(s: MonopolyState, id: string, rng: Rng, card: 'double' | 'ten' | n
       playCard(s, id, draw(s, sp.kind), rng);
       return;
     case 'street':
-    case 'inn':
-    case 'guild': {
+    case 'railroad':
+    case 'utility': {
       const h = holding(s, p.pos);
       if (!h) {
         s.pendingBuy = p.pos;
@@ -501,10 +508,15 @@ function land(s: MonopolyState, id: string, rng: Rng, card: 'double' | 'ten' | n
         s.dice = d;
         s.rolls += 1;
         roll = d[0] + d[1];
-        note(s, 'roll', `{${id}} rolled ${d[0]} and ${d[1]} for the guild.`, { by: id });
+        note(
+          s,
+          'roll',
+          `{${id}} rolled ${d[0]} and ${d[1]} for the ${kindWord('utility', s.names)}.`,
+          { by: id },
+        );
       }
       const rent = rentFor(s, p.pos, roll, card);
-      note(s, 'rent', `{${id}} paid {${h.owner}} ${money(rent)} rent for ${sp.name}.`, {
+      note(s, 'rent', `{${id}} paid {${h.owner}} ${money(rent)} rent for ${nameOf(s, p.pos)}.`, {
         by: id,
         space: p.pos,
       });
@@ -519,9 +531,14 @@ function land(s: MonopolyState, id: string, rng: Rng, card: 'double' | 'ten' | n
 function playCard(s: MonopolyState, id: string, cardId: string, rng: Rng) {
   const c = cardById(cardId);
   const p = s.seats[id]!;
-  note(s, 'card', `{${id}} drew ${c.deck === 'chance' ? 'Chance' : 'Community Chest'}: ${c.text}`, {
-    by: id,
-  });
+  note(
+    s,
+    'card',
+    `{${id}} drew ${c.deck === 'chance' ? 'Chance' : 'Community Chest'}: ${cardText(cardId, s.names)}`,
+    {
+      by: id,
+    },
+  );
   s.card = { id: cardId, by: id, seq: s.seq };
   const e = c.effect;
   switch (e.t) {
@@ -529,12 +546,12 @@ function playCard(s: MonopolyState, id: string, cardId: string, rng: Rng) {
       walk(s, id, e.to, true, true);
       land(s, id, rng);
       return;
-    case 'nearestInn':
-      walk(s, id, nearest(p.pos, INNS), true, true);
+    case 'nearestRailroad':
+      walk(s, id, nearest(p.pos, RAILROADS), true, true);
       land(s, id, rng, 'double');
       return;
-    case 'nearestGuild':
-      walk(s, id, nearest(p.pos, GUILDS), true, true);
+    case 'nearestUtility':
+      walk(s, id, nearest(p.pos, UTILITIES), true, true);
       land(s, id, rng, 'ten');
       return;
     case 'back':
@@ -731,7 +748,7 @@ function buy(s: MonopolyState, id: string, at: number, price: number, how: strin
   const p = s.seats[id]!;
   p.cash -= price;
   s.deeds[String(at)] = { owner: id, mortgaged: false, houses: 0 };
-  const text = `{${id}} ${how} ${nameOf(at)} for ${money(price)}.`;
+  const text = `{${id}} ${how} ${nameOf(s, at)} for ${money(price)}.`;
   note(s, 'buy', text, { by: id, space: at });
   recap(s, id, text);
 }
@@ -746,7 +763,7 @@ function closeAuction(s: MonopolyState) {
       return;
     }
   }
-  note(s, 'auction', `Nobody bought ${nameOf(a.space)}.`, { space: a.space });
+  note(s, 'auction', `Nobody bought ${nameOf(s, a.space)}.`, { space: a.space });
 }
 
 function auctionDone(s: MonopolyState): boolean {
@@ -759,7 +776,7 @@ function auctionDone(s: MonopolyState): boolean {
 
 function mustOwn(s: MonopolyState, id: string, at: number): Holding {
   const h = holding(s, at);
-  if (!h || h.owner !== id) throw new GameError('NOT_YOURS', `You don't own ${nameOf(at)}.`);
+  if (!h || h.owner !== id) throw new GameError('NOT_YOURS', `You don't own ${nameOf(s, at)}.`);
   return h;
 }
 
@@ -808,7 +825,7 @@ function build(s: MonopolyState, id: string, at: number) {
     s.bankHouses += 4;
   } else s.bankHouses -= 1;
   h.houses += 1;
-  note(s, 'build', `{${id}} built ${h.houses === 5 ? 'a hotel' : 'a house'} on ${st.name}.`, {
+  note(s, 'build', `{${id}} built ${h.houses === 5 ? 'a hotel' : 'a house'} on ${nameOf(s, at)}.`, {
     by: id,
     space: at,
   });
@@ -831,7 +848,7 @@ function sell(s: MonopolyState, id: string, at: number) {
     s.seats[id]!.cash += st.house / 2;
     h.houses -= 1;
   }
-  note(s, 'build', `{${id}} sold a building on ${st.name}.`, { by: id, space: at });
+  note(s, 'build', `{${id}} sold a building on ${nameOf(s, at)}.`, { by: id, space: at });
 }
 
 function mortgage(s: MonopolyState, id: string, at: number) {
@@ -839,7 +856,7 @@ function mortgage(s: MonopolyState, id: string, at: number) {
   if (block) throw new GameError('CANT_MORTGAGE', block);
   holding(s, at)!.mortgaged = true;
   s.seats[id]!.cash += mortgageValue(at);
-  note(s, 'bank', `{${id}} mortgaged ${nameOf(at)} for ${money(mortgageValue(at))}.`, {
+  note(s, 'bank', `{${id}} mortgaged ${nameOf(s, at)} for ${money(mortgageValue(at))}.`, {
     by: id,
     space: at,
   });
@@ -847,12 +864,12 @@ function mortgage(s: MonopolyState, id: string, at: number) {
 
 function unmortgage(s: MonopolyState, id: string, at: number) {
   const h = mustOwn(s, id, at);
-  if (!h.mortgaged) throw new GameError('NOT_MORTGAGED', `${nameOf(at)} isn't mortgaged.`);
+  if (!h.mortgaged) throw new GameError('NOT_MORTGAGED', `${nameOf(s, at)} isn't mortgaged.`);
   const cost = unmortgageCost(at);
   if (s.seats[id]!.cash < cost) throw new GameError('NO_CASH', `Lifting it costs ${money(cost)}.`);
   s.seats[id]!.cash -= cost;
   h.mortgaged = false;
-  note(s, 'bank', `{${id}} lifted the mortgage on ${nameOf(at)}.`, { by: id, space: at });
+  note(s, 'bank', `{${id}} lifted the mortgage on ${nameOf(s, at)}.`, { by: id, space: at });
 }
 
 /**
@@ -892,12 +909,12 @@ function checkSide(s: MonopolyState, id: string, t: TradeSide, cash: boolean) {
   for (const d of t.deeds) {
     const h = holding(s, d);
     if (!h || h.owner !== id) {
-      throw new GameError('BAD_TRADE', `${nameOf(d)} doesn't belong to {${id}}.`);
+      throw new GameError('BAD_TRADE', `${nameOf(s, d)} doesn't belong to {${id}}.`);
     }
     if (setHasBuildings(s, d)) {
       throw new GameError(
         'BAD_TRADE',
-        `Sell the buildings in ${nameOf(d)}'s group before trading it.`,
+        `Sell the buildings in ${nameOf(s, d)}'s group before trading it.`,
       );
     }
   }
@@ -919,8 +936,8 @@ function hand(s: MonopolyState, from: string, to: string, t: TradeSide) {
 }
 
 /** "Mudlark Row, $50 and a Jail card" */
-export function describeSide(t: TradeSide): string {
-  const bits = t.deeds.map(nameOf);
+export function describeSide(t: TradeSide, names: Names = 'classic'): string {
+  const bits = t.deeds.map((d) => spaceName(d, names));
   if (t.cash) bits.push(money(t.cash));
   if (t.cards) bits.push(t.cards === 1 ? 'a Jail card' : `${t.cards} Jail cards`);
   if (!bits.length) return 'nothing';
@@ -931,7 +948,7 @@ export function describeSide(t: TradeSide): string {
 
 function table(s: MonopolyState): MonopolyTableView {
   const card = s.card
-    ? { ...s.card, deck: cardById(s.card.id).deck, text: cardById(s.card.id).text }
+    ? { ...s.card, deck: cardById(s.card.id).deck, text: cardText(s.card.id, s.names) }
     : null;
   return {
     players: s.players.slice(),
@@ -969,6 +986,7 @@ function table(s: MonopolyState): MonopolyTableView {
     bankHotels: s.bankHotels,
     auctions: s.auctions,
     parkingPot: s.parkingPot,
+    names: s.names,
     maxRounds: s.maxRounds,
     round: s.round,
     actBy: s.actBy,
@@ -1064,7 +1082,7 @@ function act(s: MonopolyState, id: string, a: MonopolyAction, rng: Rng, now: num
       onTurn(s, id, 'buy');
       const at = s.pendingBuy!;
       const price = deedAt(at)!.price;
-      if (p.cash < price) throw new GameError('NO_CASH', `${nameOf(at)} costs ${money(price)}.`);
+      if (p.cash < price) throw new GameError('NO_CASH', `${nameOf(s, at)} costs ${money(price)}.`);
       s.pendingBuy = null;
       buy(s, id, at, price, 'bought');
       break;
@@ -1075,7 +1093,7 @@ function act(s: MonopolyState, id: string, a: MonopolyAction, rng: Rng, now: num
       s.pendingBuy = null;
       if (s.auctions) {
         s.auction = { space: at, high: 0, by: null, out: [], until: now + AUCTION_MS };
-        note(s, 'auction', `${nameOf(at)} goes to auction.`, { space: at });
+        note(s, 'auction', `${nameOf(s, at)} goes to auction.`, { space: at });
       }
       break;
     }
@@ -1151,7 +1169,7 @@ function act(s: MonopolyState, id: string, a: MonopolyAction, rng: Rng, now: num
       note(
         s,
         'trade',
-        `{${id}} offered {${a.to}} ${describeSide(a.give)} for ${describeSide(a.get)}.`,
+        `{${id}} offered {${a.to}} ${describeSide(a.give, s.names)} for ${describeSide(a.get, s.names)}.`,
         {
           by: id,
         },
@@ -1179,7 +1197,7 @@ function act(s: MonopolyState, id: string, a: MonopolyAction, rng: Rng, now: num
         s.offers = s.offers.filter(
           (x) => ![...x.give.deeds, ...x.get.deeds].some((d) => moved.has(d)),
         );
-        const text = `{${o.to}} took {${o.from}}'s trade: ${describeSide(o.give)} for ${describeSide(o.get)}.`;
+        const text = `{${o.to}} took {${o.from}}'s trade: ${describeSide(o.give, s.names)} for ${describeSide(o.get, s.names)}.`;
         note(s, 'trade', text, { by: o.to });
         recap(s, o.to, text);
         break;
@@ -1244,6 +1262,7 @@ export const monopoly: GameModule<
 
   defaultOptions() {
     return {
+      board: 'Classic',
       ends: 'Last one standing',
       unbought: 'Goes to auction',
       parking: 'Nothing',
@@ -1291,6 +1310,7 @@ export const monopoly: GameModule<
       parkingPot: options.parking === 'Collects the taxes',
       maxRounds,
       turnSecs,
+      names: options.board === 'Market town' ? 'town' : 'classic',
       round: 1,
       actBy: null,
       showBy: null,

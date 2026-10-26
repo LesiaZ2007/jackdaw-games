@@ -1,10 +1,11 @@
 import { createRng, GameError, type Rng } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
-import { CHANCE, CHEST } from './cards';
-import { GUILDS, INNS } from './board';
+import { CHANCE, CHEST, cardText } from './cards';
+import { UTILITIES, RAILROADS, spaceName } from './board';
 import {
   AUCTION_MS,
   SHOW_MS,
+  describeSide,
   liquidValue,
   monopoly as game,
   netWorth,
@@ -382,7 +383,7 @@ describe('rolling and moving', () => {
 /* ------------------------------------------------------------------ cards */
 
 describe('Chance and Community Chest', () => {
-  it('Chance: advance to the nearest inn passes GO from the last Chance space', () => {
+  it('Chance: advance to the nearest railroad passes GO from the last Chance space', () => {
     const s = edit(base(), (d) => topCard(d, 'chance', 'chance5'));
     const after = landOn(s, 'rook', 36, 3, 4);
     expect(seat(after, 'rook').pos).toBe(5);
@@ -464,13 +465,13 @@ describe('Chance and Community Chest', () => {
     expect(after.turn).toBe('wren');
   });
 
-  it('Chance: nearest guild is paid ten times a fresh throw, whoever owns it', () => {
+  it('Chance: nearest utility is paid ten times a fresh throw, whoever owns it', () => {
     const s = edit(base(), (d) => {
       topCard(d, 'chance', 'chance4');
       own(d, 'wren', [12]);
     });
     const before = seat(s, 'wren').cash;
-    // Throw 3 and 4 for the move, then 2 and 3 for the guild.
+    // Throw 3 and 4 for the move, then 2 and 3 for the utility.
     const t = edit(s, (d) => {
       d.turn = 'rook';
       seat(d, 'rook').pos = 0;
@@ -746,15 +747,15 @@ describe('rent', () => {
     [2, 50],
     [3, 100],
     [4, 200],
-  ])('owning %i inns pays %i at an inn', (count, rent) => {
-    const s = edit(base(), (d) => own(d, 'wren', INNS.slice(0, count)));
+  ])('owning %i inns pays %i at a railroad', (count, rent) => {
+    const s = edit(base(), (d) => own(d, 'wren', RAILROADS.slice(0, count)));
     expect(rentCollected(s, 5, 2, 3)).toBe(rent);
   });
 
-  it('a guild pays 4 times the dice, or 10 times with both guilds', () => {
+  it('a utility pays 4 times the dice, or 10 times with both utilities', () => {
     const one = edit(base(), (d) => own(d, 'wren', [12]));
     expect(rentCollected(one, 12, 3, 4)).toBe(28);
-    const both = edit(base(), (d) => own(d, 'wren', [...GUILDS]));
+    const both = edit(base(), (d) => own(d, 'wren', [...UTILITIES]));
     expect(rentCollected(both, 12, 3, 4)).toBe(70);
     expect(rentCollected(both, 28, 2, 5)).toBe(70);
   });
@@ -784,7 +785,7 @@ describe('rent', () => {
     expect(after.phase).toBe('done');
   });
 
-  it('Chance: nearest inn pays double rent', () => {
+  it('Chance: nearest railroad pays double rent', () => {
     const s = edit(base(), (d) => {
       topCard(d, 'chance', 'chance5');
       own(d, 'wren', [15]);
@@ -794,7 +795,7 @@ describe('rent', () => {
     expect(rentCollected(two, 7, 3, 4)).toBe(100);
   });
 
-  it('Chance: nearest guild pays ten times a fresh throw even with one guild', () => {
+  it('Chance: nearest utility pays ten times a fresh throw even with one utility', () => {
     const s = edit(base(), (d) => {
       topCard(d, 'chance', 'chance4');
       own(d, 'wren', [12]);
@@ -858,7 +859,7 @@ describe('building', () => {
   });
 
   it('only streets can be built on, and only your own', () => {
-    const s = edit(brown(), (d) => own(d, 'wren', INNS));
+    const s = edit(brown(), (d) => own(d, 'wren', RAILROADS));
     expect(codeOf(() => act(s, 'wren', { type: 'build', space: 5 }))).toBe('CANT_BUILD');
     expect(codeOf(() => act(s, 'rook', { type: 'build', space: 1 }))).toBe('CANT_BUILD');
   });
@@ -979,7 +980,7 @@ describe('mortgages', () => {
     expect(seat(c, 'wren').cash).toBe(1500 - 220);
   });
 
-  it('works on inns and guilds too', () => {
+  it('works on railroads and utilities too', () => {
     const s = act(
       edit(base(), (d) => own(d, 'wren', [5, 12])),
       'wren',
@@ -1650,5 +1651,37 @@ describe('waitingOn', () => {
     });
     expect(game.waitingOn!(s)).toEqual([]);
     expect(game.waitingOn!(edit(s, (d) => void (d.phase = 'over')))).toEqual([]);
+  });
+});
+
+describe('the market-town board', () => {
+  const town = () =>
+    game.setup({
+      playerIds: ['wren', 'rook'],
+      options: { ...game.defaultOptions(2), board: 'Market town' },
+      rng: createRng(1),
+      now: 0,
+    });
+
+  it('defaults to the classic names', () => {
+    expect(game.defaultOptions(2).board).toBe('Classic');
+    expect(spaceName(39)).toBe('Boardwalk');
+    expect(cardText('chance14')).toBe('Advance to Boardwalk.');
+  });
+
+  it('wears the town names in views, cards and the log', () => {
+    const s = town();
+    expect(s.names).toBe('town');
+    expect(game.getTableView(s).names).toBe('town');
+    expect(spaceName(39, 'town')).toBe('Crown Terrace');
+    expect(cardText('chance14', 'town')).toBe('Stroll up to Crown Terrace.');
+    const d = structuredClone(s);
+    d.phase = 'buy';
+    d.turn = 'wren';
+    d.seats.wren!.pos = 1;
+    d.pendingBuy = 1;
+    const after = game.applyAction(d, 'wren', { type: 'buy' }, createRng(2), 10);
+    expect(after.log.at(-1)!.text).toContain('Mudlark Row');
+    expect(describeSide({ cash: 0, deeds: [5], cards: 0 }, 'town')).toBe('The Swan');
   });
 });

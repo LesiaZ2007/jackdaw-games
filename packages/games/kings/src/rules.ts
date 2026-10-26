@@ -38,20 +38,30 @@ export const optionsSchema = z.object({
 });
 export type KingsOptions = z.infer<typeof optionsSchema>;
 
-export const actionSchema = z.object({
-  type: z.literal('solve'),
-  /** Which puzzle (0-based), so a late resend can't count against the next one. */
-  puzzle: z.number().int().min(0).max(MAX_PUZZLES),
-  kings: z
-    .array(
-      z
-        .number()
-        .int()
-        .min(0)
-        .max(MAX_SIZE * MAX_SIZE - 1),
-    )
-    .max(MAX_SIZE),
-});
+const kingsList = z
+  .array(
+    z
+      .number()
+      .int()
+      .min(0)
+      .max(MAX_SIZE * MAX_SIZE - 1),
+  )
+  .max(MAX_SIZE * 2);
+
+export const actionSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('solve'),
+    /** Which puzzle (0-based), so a late resend can't count against the next one. */
+    puzzle: z.number().int().min(0).max(MAX_PUZZLES),
+    kings: kingsList,
+  }),
+  /** Where this player's kings are on the puzzle they're on, sent as they play. */
+  z.object({
+    type: z.literal('progress'),
+    puzzle: z.number().int().min(0).max(MAX_PUZZLES),
+    kings: kingsList,
+  }),
+]);
 export type KingsAction = z.infer<typeof actionSchema>;
 
 export interface KingsState {
@@ -65,6 +75,11 @@ export interface KingsState {
   times: Record<string, number[]>;
   /** Secret until the end: where each player put their kings. */
   boards: Record<string, number[][]>;
+  /**
+   * Where each player's kings are right now, on the puzzle they're on. Seen only by players who
+   * have finished (they watch the rest), and on the TV when someone plays alone.
+   */
+  live: Record<string, number[]>;
   /** Set once someone has solved them all and others are still going. */
   closesAt: number | null;
   over: boolean;
@@ -79,12 +94,20 @@ export interface KingsTableView {
   startedAt: number;
   puzzles: Puzzle[];
   times: Record<string, number[]>;
+  /** How many kings each player has on the board they're on (not where). */
+  placed: Record<string, number>;
+  /** Where they are: only when one person plays alone, so the room can watch. */
+  live?: Record<string, number[]>;
   closesAt: number | null;
   over: boolean;
 }
 
 export interface KingsPlayerView extends KingsTableView {
   me: string;
+  /** Your own kings, as the server last heard them. */
+  mine: number[];
+  /** Everyone's kings, once you've solved them all and are watching. */
+  watching?: Record<string, number[]>;
   /** The puzzle this player is on (0-based), or `count` once they're done. */
   index: number;
   /** When they started it. */
@@ -117,6 +140,8 @@ function tableView(s: KingsState): KingsTableView {
     startedAt: s.startedAt,
     puzzles: s.puzzles,
     times: s.times,
+    placed: Object.fromEntries(s.players.map((id) => [id, s.live?.[id]?.length ?? 0])),
+    ...(s.players.length === 1 ? { live: s.live ?? {} } : {}),
     closesAt: s.closesAt,
     over: s.over,
   };
@@ -138,7 +163,7 @@ function resultFrom(s: KingsState, early: boolean): GameResult | null {
   const all = solved === s.count;
   const summary = solo
     ? `${all ? 'Solved' : 'Got through'} ${plural(solved, 'puzzle')} in ${clock(took(best))}`
-    : `${winners.length > 1 ? 'Tied' : 'Won'} with ${solved} of ${s.count} in ${clock(took(best))}`;
+    : `${solved} of ${s.count} solved in ${clock(took(best))}${winners.length > 1 ? ', a tie' : ''}`;
   const reveal: KingsReveal = {
     size: s.size,
     count: s.count,
@@ -204,13 +229,45 @@ function answerCells(p: Puzzle): number[] {
 }
 
 /**
- * How long a bot takes on a puzzle, in ms: about a second a square at Normal, longer at Easy,
- * quicker at Hard, and different each puzzle so a race against bots stays close.
+ * How long a bot takes on a puzzle, in ms: about half a second a square at Normal (an 8×8 in
+ * half a minute), longer at Easy, quicker at Hard, and different each puzzle so a race stays close.
  */
 export function botSolveMs(size: number, level: BotLevel, key: string): number {
-  const perSquare: Record<BotLevel, number> = { easy: 1_900, normal: 1_150, hard: 650 };
-  const swing = 0.65 + botFate(key).next() * 0.8;
+  const perSquare: Record<BotLevel, number> = { easy: 900, normal: 520, hard: 300 };
+  const swing = 0.75 + botFate(key).next() * 0.5;
   return Math.round(size * size * perSquare[level] * swing);
+}
+
+/** How often a bot puts a king in the wrong square for a moment, by level. */
+const BOT_SLIP: Record<BotLevel, number> = { easy: 0.3, normal: 0.14, hard: 0.03 };
+
+/**
+ * The kings a bot has on the board `elapsed` ms into a puzzle it takes `total` to solve. It works
+ * the way people do: the smallest colours first, slowly at the start and faster as the board
+ * closes in. Now and then it puts one in the wrong square of that colour, and moves it next step.
+ */
+export function botKings(
+  p: Puzzle,
+  elapsed: number,
+  total: number,
+  level: BotLevel,
+  key: string,
+): number[] {
+  const answer = (solve(p, 1)[0] ?? []).map((c, r) => r * p.size + c);
+  const area = (k: number) => p.regions.filter((g) => g === p.regions[k]).length;
+  const order = [...answer].sort((a, b) => area(a) - area(b) || a - b);
+  const f = Math.min(1, Math.max(0, elapsed / total));
+  const n = Math.min(p.size - 1, Math.floor(p.size * f ** 1.35));
+  const kings = order.slice(0, n);
+  const fate = botFate(`${key}:${n}`);
+  if (n > 0 && fate.next() < BOT_SLIP[level]) {
+    const right = kings[n - 1]!;
+    const wrong = p.regions.flatMap((g, i) =>
+      g === p.regions[right] && i !== right && !kings.includes(i) ? [i] : [],
+    );
+    if (wrong.length) kings[n - 1] = wrong[Math.floor(fate.next() * wrong.length)]!;
+  }
+  return kings;
 }
 
 export const kings: GameModule<
@@ -235,6 +292,7 @@ export const kings: GameModule<
       puzzles: [makePuzzle(size, rng)],
       times: Object.fromEntries(playerIds.map((id) => [id, []])),
       boards: Object.fromEntries(playerIds.map((id) => [id, []])),
+      live: Object.fromEntries(playerIds.map((id) => [id, []])),
       closesAt: null,
       over: false,
       recap: [],
@@ -250,6 +308,8 @@ export const kings: GameModule<
       index,
       since: since(t, me),
       puzzle: index < s.count ? (s.puzzles[index] ?? null) : null,
+      mine: s.live?.[me] ?? [],
+      ...(index >= s.count ? { watching: s.live ?? {} } : {}),
     };
   },
   getTableView: tableView,
@@ -262,6 +322,12 @@ export const kings: GameModule<
     if (index >= s.count) throw new GameError('DONE', "You've solved them all.");
     if (action.puzzle !== index) throw new GameError('STALE', 'That board was already counted.');
     const puzzle = s.puzzles[index]!;
+    if (action.type === 'progress') {
+      const cells = [...new Set(action.kings)].filter((k) => k < puzzle.size * puzzle.size);
+      const was = s.live?.[playerId] ?? [];
+      if (cells.length === was.length && cells.every((k, i) => k === was[i])) return s;
+      return { ...s, live: { ...s.live, [playerId]: cells } };
+    }
     const wrong = checkKings(puzzle, action.kings);
     if (wrong) throw new GameError('NOT_SOLVED', wrong);
 
@@ -279,6 +345,7 @@ export const kings: GameModule<
       ...s,
       times,
       boards,
+      live: { ...s.live, [playerId]: [] },
       puzzles,
       over,
       closesAt: over ? null : (s.closesAt ?? (done.length > 0 ? now + CLOSE_MS : null)),
@@ -322,18 +389,19 @@ export const kings: GameModule<
   getResult: (s) => (s.over ? resultFrom(s, false) : null),
   partialResult: (s) => (s.over ? resultFrom(s, false) : resultFrom(s, true)),
 
-  botDelayMs: 1_000,
+  // Short, so a bot's kings keep appearing while people are busy sending theirs.
+  botDelayMs: 300,
   bot({ view, playerId, now, level }) {
     if (view.over || !view.puzzle) return null;
-    const due =
-      view.since + botSolveMs(view.size, level, `${playerId}:${view.index}:${view.startedAt}`);
-    if (now < due) return null;
-    const answer = solve(view.puzzle, 1)[0];
-    if (!answer) return null;
-    return {
-      type: 'solve',
-      puzzle: view.index,
-      kings: answer.map((c, r) => r * view.size + c),
-    };
+    const key = `${playerId}:${view.index}:${view.startedAt}`;
+    const total = botSolveMs(view.size, level, key);
+    if (now >= view.since + total) {
+      const answer = solve(view.puzzle, 1)[0];
+      if (!answer) return null;
+      return { type: 'solve', puzzle: view.index, kings: answer.map((c, r) => r * view.size + c) };
+    }
+    const kings = botKings(view.puzzle, now - view.since, total, level, key);
+    const same = kings.length === view.mine.length && kings.every((k, i) => k === view.mine[i]);
+    return same ? null : { type: 'progress', puzzle: view.index, kings };
   },
 };

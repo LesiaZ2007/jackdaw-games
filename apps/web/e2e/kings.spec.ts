@@ -101,7 +101,8 @@ test('a race: the slider sets the puzzles, a bot races, everyone gets the same b
   await solveBoard(host, 1);
   await expect(host.getByText('Puzzle 2 of 2')).toBeVisible();
   await solveBoard(host, 2);
-  await expect(host.getByText('Finished')).toBeVisible();
+  await expect(host.getByText('Watching the race')).toBeVisible();
+  await expect(host.getByRole('article', { name: /^Rook: / })).toBeVisible();
   await expect(rook.getByText(/The race ends in/)).toBeVisible();
   if (SHOTS) await rook.screenshot({ path: `${SHOTS}/kings-closing-375.png` });
 
@@ -115,5 +116,5 @@ test('a race: the slider sets the puzzles, a bot races, everyone gets the same b
   }
   const stats = await (await host.request.get(`/api/lobby/${code}/stats`)).json();
   expect(stats.history).toHaveLength(1);
-  expect(stats.history[0].summary).toMatch(/with 2 of 2/);
+  expect(stats.history[0].summary).toMatch(/2 of 2 solved in/);
 });

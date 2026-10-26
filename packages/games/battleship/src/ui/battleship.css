@@ -848,6 +848,13 @@ button.bs-cell:focus-visible {
   border-width: 3px;
   outline-offset: -8px;
 }
+/* The end charts are the small pair beside the standings, so a peg stays inside its square
+   and the sunk hull can still be read around it. */
+.bs-tv-end .bs-peg,
+.bs-tv-end .bs-pegover .bs-peg {
+  width: 46%;
+  height: 46%;
+}
 .bs-stamp {
   position: absolute;
   left: 50%;

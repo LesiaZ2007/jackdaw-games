@@ -9,12 +9,11 @@ import {
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import type { CSSProperties } from 'react';
-import { territoriesOf } from '../board';
 import { getMap } from '../maps';
 import { battleMoment } from '../moments';
 import type { RiskTableView } from '../rules';
 import { armyColour } from './armies';
-import { Continents, DiceStrip, PHASE_LABEL, TurnClock, namer } from './common';
+import { Continents, DiceStrip, PHASE_LABEL, TurnClock, namer, strength } from './common';
 import { RiskMap } from './map';
 import './risk.css';
 
@@ -60,10 +59,7 @@ export const TvScreen: GameUi['TvScreen'] = ({
         <ol className="rk-seats">
           {t.seats.map((id) => {
             const p = players.find((x) => x.id === id);
-            // In the fog only how many territories each holds is public.
-            const lands = territoriesOf(t.owner, id);
-            const count = t.held[id] ?? lands.length;
-            const armies = lands.reduce((sum, l) => sum + (t.armies[l] ?? 0), 0);
+            const { lands, armies, cards } = strength(t, id);
             const out = t.eliminated.includes(id);
             return (
               <li
@@ -81,8 +77,8 @@ export const TvScreen: GameUi['TvScreen'] = ({
                     'Out'
                   ) : (
                     <>
-                      {count} lands · {t.fog ? '' : `${armies} armies · `}
-                      {t.handCounts[id] ?? 0} cards
+                      {lands} lands · {armies === null ? '' : `${armies} armies · `}
+                      {cards} cards
                     </>
                   )}
                 </span>

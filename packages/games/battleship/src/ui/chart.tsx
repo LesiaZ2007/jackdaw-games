@@ -84,11 +84,6 @@ interface ChartProps {
   settling: ShipId | null;
   /** How many of this chart's fleet are still up, and how many have gone down. */
   tally?: ChartTally | null;
-  /**
-   * `own`: a hit part of a drawn ship smokes. `sea`: smoke sits on the hit cell until that
-   * ship sinks, and only then may the hull smoke. Never an unsunk enemy hull.
-   */
-  smoke?: 'own' | 'sea';
   selected?: readonly number[];
   /** Faded preview while placing. Local to this screen. Never an enemy hull. */
   ghost?: { id: ShipId; dir: Dir; cells: number[]; illegal: boolean } | null;
@@ -166,7 +161,6 @@ export function Chart({
   sinking,
   settling,
   tally,
-  smoke = 'sea',
   selected,
   ghost,
   onAim,
@@ -281,7 +275,6 @@ export function Chart({
                 style={{ ...place(hull.cells, hull.dir), '--hull': HULL[hull.id] } as CSSProperties}
               >
                 <HullGlyph id={hull.id} dir={hull.dir} />
-                {hull.sunk && <HullSmoke />}
                 <span className="bs-hull__name">{LETTER[hull.id]}</span>
               </span>
             ))}
@@ -302,18 +295,6 @@ export function Chart({
               return (
                 <span key={`over-${cell}`} className="bs-pegover" style={atCell(cell, lagOf(cell))}>
                   <span className={`bs-peg bs-peg--hit${flying ? ' is-fresh' : ''}`} />
-                </span>
-              );
-            })}
-            {cells.map((mark, cell) => {
-              const show =
-                smoke === 'own'
-                  ? covered.has(cell) && (mark === 'hit' || mark === 'sunk')
-                  : mark === 'hit';
-              if (!show) return null;
-              return (
-                <span key={`smoke-${cell}`} className="bs-smoke" style={atCell(cell, 0)}>
-                  <Wisp />
                 </span>
               );
             })}
@@ -366,28 +347,6 @@ function Plane() {
     <svg viewBox="0 0 80 36">
       <path d="M4 18 C8 14 14 12 22 12 H44 L56 5 H64 L52 12 H70 C75 12 78 15 78 18 C78 21 75 24 70 24 H52 L64 31 H56 L44 24 H22 C14 24 8 22 4 18 Z" />
       <path className="bs-plane__line" d="M30 13 V23 M46 9 V27 M58 18 H70" />
-    </svg>
-  );
-}
-
-/** Wisps along a sunk hull. The ship is already drawn, so the smoke may follow it. */
-function HullSmoke() {
-  return (
-    <span className="bs-hull__smoke" aria-hidden="true">
-      <Wisp />
-      <Wisp />
-      <Wisp />
-    </span>
-  );
-}
-
-/** A few ink wisps. Stroke only, no blur. */
-function Wisp() {
-  return (
-    <svg viewBox="0 0 20 28" aria-hidden="true">
-      <path d="M6 26C6 18 10 16 10 10C10 6 8 4 8 2" />
-      <path d="M13 26C13 20 16 18 16 12C16 8 14 6 14 3" />
-      <path d="M9 24C9 19 11 17 11 13" />
     </svg>
   );
 }

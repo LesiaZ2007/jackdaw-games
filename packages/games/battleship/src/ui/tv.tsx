@@ -125,13 +125,9 @@ function Seat({
       </span>
       <span className="bs-tv__id">
         <span className="bs-tv__name">{name(id)}</span>
-        <span className="bs-tv__afloat">
-          {t.phase === 'place'
-            ? t.boards[id]?.ready
-              ? 'Fleet placed'
-              : 'Placing'
-            : `${t.boards[id]?.afloat ?? 0} afloat · ${t.boards[id]?.wrecks.length ?? 0} sunk`}
-        </span>
+        {t.phase === 'place' && (
+          <span className="bs-tv__afloat">{t.boards[id]?.ready ? 'Fleet placed' : 'Placing'}</span>
+        )}
       </span>
     </h3>
   );

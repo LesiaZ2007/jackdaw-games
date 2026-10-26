@@ -14,7 +14,7 @@ import { checkKings } from '../puzzle';
 import { ranking, type KingsAction, type KingsPlayerView } from '../rules';
 import { clock } from '../time';
 import { Board, KingMark, type Mark } from './board';
-import { PlayerCard } from './card';
+import { PlayerCard, Spectate } from './card';
 import { place, Race, useTick } from './race';
 import './kings.css';
 
@@ -175,7 +175,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
             ? `The race ends in ${clock(closing * 1000)}.`
             : 'Here’s how everyone else is doing.'}
         </p>
-        <div className="kg-spectate">
+        <Spectate count={order.length - 1}>
           {order
             .filter((id) => id !== v.me)
             .map((id) => (
@@ -190,7 +190,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
                 reactions={reactions}
               />
             ))}
-        </div>
+        </Spectate>
         {moment && (
           <VerdictMoment
             key={fresh}

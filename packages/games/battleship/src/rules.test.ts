@@ -157,35 +157,35 @@ describe('placing', () => {
 });
 
 describe('firing', () => {
-  it('passes the turn after a hit, and keeps the rest of that ship hidden', () => {
+  it('keeps the turn after a hit, and keeps the rest of that ship hidden', () => {
     let s = placed(2);
     const attacker = s.toAct!;
     const defender = other(s, attacker);
     const destroyer = squares(FLEET[defender]!.find((ship) => ship.id === 'destroyer')!);
     const before = s;
     s = act(s, attacker, { type: 'fire', cells: [destroyer[0]!] }, 1, 8_000);
-    expect(s.toAct).toBe(defender);
+    expect(s.toAct).toBe(attacker);
     expect(s.volleys[0]!.shots[0]).toEqual({ cell: destroyer[0], result: 'hit' });
     expect(s.wrecks[defender]).toEqual([]);
     expect(game.getTableView(s).boards[defender]!.cells[destroyer[0]!]).toBe('hit');
     expect(game.getTableView(s).boards[defender]!.cells[destroyer[1]!]).toBe('blank');
     expect(game.announce!(before, s).join(' ')).not.toMatch(/destroyer/i);
     expect(s.recap.at(-1)?.secret).toMatch(/destroyer/);
+    expectNoLeak(s);
 
-    const missAt = waterOn(attacker)[0]!;
-    s = act(s, defender, { type: 'fire', cells: [missAt] }, 1, 9_000);
+    const missAt = waterOn(defender)[0]!;
+    s = act(s, attacker, { type: 'fire', cells: [missAt] }, 1, 9_000);
     expect(s.volleys[1]!.shots[0]).toEqual({ cell: missAt, result: 'miss' });
-    expect(s.toAct).toBe(attacker);
+    expect(s.toAct).toBe(defender);
   });
 
-  it('reveals a ship on the shot that sinks it, and still passes the turn', () => {
+  it('reveals a ship on the shot that sinks it, and the turn continues', () => {
     let s = placed(3);
     const attacker = s.toAct!;
     const defender = other(s, attacker);
     const destroyer = squares(FLEET[defender]!.find((ship) => ship.id === 'destroyer')!);
     s = act(s, attacker, { type: 'fire', cells: [destroyer[0]!] });
-    const reply = waterOn(attacker)[0]!;
-    s = act(s, defender, { type: 'fire', cells: [reply] });
+    expect(s.toAct).toBe(attacker);
     const before = s;
     s = act(s, attacker, { type: 'fire', cells: [destroyer[1]!] });
     const wreck = s.wrecks[defender]!.find((row) => row.id === 'destroyer');
@@ -194,9 +194,28 @@ describe('firing', () => {
     );
     expect(s.volleys.at(-1)!.shots[0]).toMatchObject({ result: 'sunk', ship: 'destroyer' });
     expect(game.getTableView(s).boards[defender]!.cells[destroyer[0]!]).toBe('sunk');
-    expect(s.toAct).toBe(defender);
+    expect(s.toAct).toBe(attacker);
     expect(s.phase).toBe('fire');
     expect(game.announce!(before, s).join(' ')).toMatch(/destroyer/);
+    expectNoLeak(s);
+  });
+
+  it('ends on the shot that sinks the last ship, without another shot', () => {
+    let s = placed(5);
+    const attacker = s.toAct!;
+    const defender = other(s, attacker);
+    const cells = FLEET[defender]!.flatMap(squares);
+    for (let i = 0; i < cells.length - 1; i++) {
+      s = act(s, attacker, { type: 'fire', cells: [cells[i]!] }, i, 10_000 + i);
+      expect(s.phase).toBe('fire');
+      expect(s.toAct).toBe(attacker);
+    }
+    expectNoLeak(s);
+    s = act(s, attacker, { type: 'fire', cells: [cells.at(-1)!] }, 80, 40_000);
+    expect(s.phase).toBe('show');
+    expect(s.toAct).toBeNull();
+    expect(s.winner).toBe(attacker);
+    expect(game.waitingOn!(s)).toEqual([]);
     expectNoLeak(s);
   });
 
@@ -265,6 +284,21 @@ describe('salvo', () => {
     expect(game.getTableView(s).salvo).toBe(4);
     expectNoLeak(s);
   });
+
+  it('passes the turn after a salvo even when every shot hits', () => {
+    let s = placed(8, { firing: 'Salvo' });
+    const first = s.toAct!;
+    const second = other(s, first);
+    const ships = FLEET[second]!;
+    const destroyer = squares(ships.find((ship) => ship.id === 'destroyer')!);
+    const extra = squares(ships.find((ship) => ship.id === 'carrier')!).slice(0, 3);
+    s = act(s, first, { type: 'fire', cells: [...destroyer, ...extra] });
+    expect(s.volleys[0]!.shots.every((shot) => shot.result !== 'miss')).toBe(true);
+    expect(s.wrecks[second]!.map((w) => w.id)).toEqual(['destroyer']);
+    expect(s.phase).toBe('fire');
+    expect(s.toAct).toBe(second);
+    expectNoLeak(s);
+  });
 });
 
 describe('turn timer', () => {
@@ -284,8 +318,17 @@ describe('turn timer', () => {
     const fired = game.onTimer!(begun, 'fire', createRng(3), due);
     expect(fired.volleys[0]!.late).toBe(true);
     expect(fired.volleys[0]!.shots).toHaveLength(1);
-    expect(fired.toAct).not.toBe(begun.toAct);
-    expect(fired.actBy).toBe(due + 30_000);
+    const shot = fired.volleys[0]!.shots[0]!;
+    if (fired.phase === 'show') {
+      expect(fired.toAct).toBeNull();
+      expect(fired.actBy).toBeNull();
+    } else if (shot.result === 'miss') {
+      expect(fired.toAct).not.toBe(begun.toAct);
+      expect(fired.actBy).toBe(due + 30_000);
+    } else {
+      expect(fired.toAct).toBe(begun.toAct);
+      expect(fired.actBy).toBe(due + 30_000);
+    }
   });
 
   it('fires a whole salvo when salvo time runs out', () => {

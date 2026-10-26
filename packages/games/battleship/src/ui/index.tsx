@@ -14,7 +14,7 @@ export const battleshipUi: GameUi = {
     steps: [
       'Lay the carrier, battleship, cruiser, submarine and destroyer. Horizontal or vertical, and ships may touch. On a computer, a faded copy of the ship follows the mouse.',
       'When both fleets are placed, one of you is drawn to fire first.',
-      'Call one square. A miss is an ink cross, a hit is a red peg, and the turn passes either way.',
+      'Call one square. A hit, red on the ship, lets you fire again. A miss ends the turn. Sink the last ship and the battle ends.',
       'Sink a ship and it is drawn on the chart. Until then, the squares you have not fired at stay blank.',
       'Salvo, if you turn it on, lets you fire once for each ship you still have afloat.',
     ],
@@ -23,7 +23,7 @@ export const battleshipUi: GameUi = {
     pictures: [
       {
         src: '/games/battleship/game-phone.png',
-        alt: 'Battleship on a phone: Wren’s fleet of broad pointed hulls on a pale printed sea, the carrier, battleship, cruiser, submarine and destroyer in heraldic colours.',
+        alt: 'Battleship on a phone: Wren’s fleet on a pale printed sea, each ship its own silhouette, carrier, battleship, cruiser, submarine and destroyer in heraldic colours.',
       },
       {
         src: '/games/battleship/tv.png',
@@ -34,7 +34,8 @@ export const battleshipUi: GameUi = {
   },
   optionHelp: {
     firing: {
-      'One shot': 'You fire one square, then your opponent does, hit or miss. The classic game.',
+      'One shot':
+        'You fire one square. A hit lets you fire again. A miss ends your turn. The last ship ends the battle.',
       Salvo: 'You fire once for each ship you still have afloat, all in one turn.',
     },
     turnTimer:

@@ -3,6 +3,7 @@
 import type { GameUi } from '@jackdaw/ui';
 import { PlayerScreen } from './player';
 import { TvScreen } from './tv';
+import { WatchScreen } from './watch';
 
 /** Rock Paper Scissors: catalog art, detail page and screens. */
 export const rpsUi: GameUi = {
@@ -34,4 +35,5 @@ export const rpsUi: GameUi = {
   },
   PlayerScreen,
   TvScreen,
+  WatchScreen,
 };

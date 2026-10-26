@@ -1,28 +1,64 @@
 /*
- * Monopoly: the classic board, printed. Cream card stock, charcoal ink, the eight group
- * inks on the colour bands and a pale green centre. The board is printed, so it looks the same
- * by day and in the dark; the panels round it follow the shell through data-look. No gradients,
- * no glows. Jackdaw's bar is not restyled here.
+ * Monopoly: the classic board, printed. Cream card stock, charcoal ink, the eight group inks on
+ * the colour bands, spot-colour drawings on the specials, and a pale green centre with the two
+ * card piles. The board is printed, so it looks the same by day and in the dark; the panels round
+ * it follow the shell through data-look. Flat fills only: no gradients, no glows. Jackdaw's bar
+ * is not restyled here.
  */
 
 .mnp {
   --mnp-ease: var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
   --mnp-card: #efeadc;
-  --mnp-centre: #d6e2d1;
+  --mnp-centre: #cfe3cd;
+  --mnp-centre-line: #b5cfb2;
   --mnp-ink: #26241f;
   --mnp-ink-2: #5b574d;
-  --mnp-brown: #6e4a2c;
-  --mnp-sky: #7ea7c2;
-  --mnp-pink: #a5527c;
-  --mnp-orange: #c2702b;
-  --mnp-red: #a63a30;
-  --mnp-yellow: #c9a03a;
-  --mnp-green: #30634a;
-  --mnp-navy: #2b5683;
-  --mnp-house: #3f7a4f;
-  --mnp-hotel: #a63a30;
-  --mnp-chance: #c2702b;
-  --mnp-chest: #2b5683;
+  --mnp-brown: #7a4a28;
+  --mnp-sky: #8cc4e6;
+  --mnp-pink: #c2477f;
+  --mnp-orange: #e07a26;
+  --mnp-red: #c8322b;
+  --mnp-yellow: #f0c534;
+  --mnp-green: #2f8a4e;
+  --mnp-navy: #1f5aa6;
+  --mnp-util: #8a949a;
+  --mnp-house: #2f8a4e;
+  --mnp-hotel: #c8322b;
+  --mnp-chance: #e07a26;
+  --mnp-chest: #1f5aa6;
+  /* Drawings */
+  --mnp-wood: #b5703a;
+  --mnp-wood-2: #8f5228;
+  --mnp-gold: #d9a63a;
+  --mnp-gold-2: #e8c35a;
+  --mnp-iron: #2c2f33;
+  --mnp-lamp: #f2d27a;
+  --mnp-steam: #9aa3a8;
+  --mnp-bulb: #f4d34d;
+  --mnp-steel: #a9b1b6;
+  --mnp-steel-2: #7d878d;
+  --mnp-brass: #c9a03a;
+  --mnp-water: #3f86c4;
+  --mnp-bag: #5c9e62;
+  --mnp-bag-2: #4d8a53;
+  --mnp-cream: #f6f0e1;
+  --mnp-gem: #8fd0ea;
+  --mnp-car: #c43a30;
+  --mnp-glass: #bfe0ee;
+  --mnp-hub: #d6d9db;
+  --mnp-cop: #2b4f86;
+  --mnp-cop-2: #1f3a63;
+  --mnp-badge: #e3b84a;
+  --mnp-skin: #f0c9a5;
+  --mnp-cell: #e78a2c;
+  /* The bank's notes */
+  --mnp-n1: #f7f4ec;
+  --mnp-n5: #f2bfd0;
+  --mnp-n10: #f6e27a;
+  --mnp-n20: #a8d58e;
+  --mnp-n50: #9fcdf0;
+  --mnp-n100: #e6d2a0;
+  --mnp-n500: #f3a35a;
   color: var(--ink);
 }
 
@@ -33,7 +69,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 6px;
   overflow: hidden;
 }
 
@@ -49,8 +85,8 @@
   min-width: 0;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: var(--step-1);
-  line-height: 1.05;
+  font-size: 19px;
+  line-height: 1.1;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -58,7 +94,7 @@
 }
 .mnp-clock {
   flex: none;
-  font: 800 18px var(--font-plaque);
+  font: 800 16px var(--font-plaque);
   letter-spacing: 0.08em;
   color: var(--ink-2);
 }
@@ -71,7 +107,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 6px;
 }
 .mnp-stage {
   flex: 1;
@@ -89,7 +125,8 @@
 /* ── The board ─────────────────────────────────────────────────────────── */
 .mnp-board {
   --edge: 1.55fr;
-  width: min(100cqw, 100cqh);
+  position: relative;
+  width: min(calc(100cqw - 8px), calc(100cqh - 8px));
   aspect-ratio: 1;
   display: grid;
   grid-template-columns: var(--edge) repeat(9, 1fr) var(--edge);
@@ -101,12 +138,10 @@
   outline-offset: 3px;
   box-sizing: border-box;
   color: var(--mnp-ink);
-  margin: 4px;
 }
 .mnp-board--tv {
   border-width: 3px;
   outline-offset: 6px;
-  margin: 8px;
 }
 
 .mnp-sp {
@@ -134,9 +169,42 @@ button.mnp-sp {
 .mnp-sp.is-focus {
   box-shadow: inset 0 0 0 3px var(--or);
   z-index: 1;
+  animation: mnp-focus 1.2s var(--mnp-ease) infinite alternate;
 }
 .mnp-board--tv .mnp-sp.is-focus {
   box-shadow: inset 0 0 0 6px var(--or);
+}
+@keyframes mnp-focus {
+  to {
+    background: color-mix(in srgb, var(--mnp-yellow) 30%, var(--mnp-card));
+  }
+}
+
+/* The specials are printed on tinted stock so the board has colour all round. */
+.mnp-sp--chance {
+  background: color-mix(in srgb, var(--mnp-chance) 14%, var(--mnp-card));
+}
+.mnp-sp--chest {
+  background: color-mix(in srgb, var(--mnp-chest) 12%, var(--mnp-card));
+}
+.mnp-sp--tax {
+  background: color-mix(in srgb, var(--mnp-red) 10%, var(--mnp-card));
+}
+.mnp-sp--railroad,
+.mnp-sp--utility {
+  background: color-mix(in srgb, var(--mnp-util) 14%, var(--mnp-card));
+}
+.mnp-sp--go {
+  background: color-mix(in srgb, var(--mnp-red) 12%, var(--mnp-card));
+}
+.mnp-sp--parking {
+  background: color-mix(in srgb, var(--mnp-yellow) 22%, var(--mnp-card));
+}
+.mnp-sp--gotojail {
+  background: color-mix(in srgb, var(--mnp-navy) 14%, var(--mnp-card));
+}
+.mnp-sp--jail {
+  background: color-mix(in srgb, var(--mnp-orange) 14%, var(--mnp-card));
 }
 
 /* The colour band sits on the inner edge, facing the centre. */
@@ -162,7 +230,7 @@ button.mnp-sp {
 }
 .mnp-sp--b .mnp-sp__band,
 .mnp-sp--t .mnp-sp__band {
-  height: 24%;
+  height: 22%;
 }
 .mnp-sp--b .mnp-sp__band {
   border-bottom-width: 1px;
@@ -172,7 +240,7 @@ button.mnp-sp {
 }
 .mnp-sp--l .mnp-sp__band,
 .mnp-sp--r .mnp-sp__band {
-  width: 24%;
+  width: 22%;
   flex-direction: column;
 }
 .mnp-sp--l .mnp-sp__band {
@@ -190,19 +258,19 @@ button.mnp-sp {
 }
 .mnp-sp--b .mnp-sp__owner {
   inset: auto 0 0 0;
-  height: 12%;
+  height: 10%;
 }
 .mnp-sp--t .mnp-sp__owner {
   inset: 0 0 auto 0;
-  height: 12%;
+  height: 10%;
 }
 .mnp-sp--l .mnp-sp__owner {
   inset: 0 auto 0 0;
-  width: 12%;
+  width: 10%;
 }
 .mnp-sp--r .mnp-sp__owner {
   inset: 0 0 0 auto;
-  width: 12%;
+  width: 10%;
 }
 
 .mnp-sp.is-mortgaged .mnp-face,
@@ -218,7 +286,7 @@ button.mnp-sp {
   padding: 0 0.2em;
   border: 2px solid var(--mnp-red);
   color: var(--mnp-red);
-  font: 900 max(10px, 3.2cqmin) / 1 var(--font-plaque);
+  font: 900 max(9px, 2.6cqmin) / 1 var(--font-plaque);
   background: var(--mnp-card);
   pointer-events: none;
 }
@@ -237,21 +305,30 @@ button.mnp-sp {
 }
 .mnp-house {
   flex: none;
-  width: max(4px, 1.2cqmin);
+  width: max(4px, 1.1cqmin);
   aspect-ratio: 1;
   background: var(--mnp-house);
   border: 1px solid var(--mnp-ink);
 }
 .mnp-hotel {
-  width: max(9px, 3cqmin);
-  height: max(5px, 1.4cqmin);
+  display: inline-block;
+  width: max(9px, 2.8cqmin);
+  height: max(5px, 1.3cqmin);
   background: var(--mnp-hotel);
   border: 1px solid var(--mnp-ink);
 }
 .mnp-sp--l .mnp-hotel,
 .mnp-sp--r .mnp-hotel {
-  width: max(5px, 1.4cqmin);
-  height: max(9px, 3cqmin);
+  width: max(5px, 1.3cqmin);
+  height: max(9px, 2.8cqmin);
+}
+
+/* Drawings take the space they're given. */
+.mnp-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 /* Faces: what's printed on a space on a laptop or TV board. */
@@ -263,18 +340,18 @@ button.mnp-sp {
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  gap: 2px;
-  padding: 6% 4% 14%;
-  font: 700 max(9px, 1.45cqmin) / 1.05 var(--font-plaque);
-  letter-spacing: 0.02em;
+  gap: 1px;
+  padding: 5% 3% 12%;
+  font: 700 max(8px, 1.25cqmin) / 1.02 var(--font-plaque);
+  letter-spacing: 0.01em;
   text-transform: uppercase;
 }
 .mnp-sp--t .mnp-face {
-  padding: 14% 4% 6%;
+  padding: 12% 3% 5%;
 }
 .mnp-sp--l .mnp-face,
 .mnp-sp--r .mnp-face {
-  padding: 4% 6%;
+  padding: 3% 5%;
 }
 .mnp-face__name {
   hyphens: manual;
@@ -285,121 +362,206 @@ button.mnp-sp {
   color: var(--mnp-ink-2);
 }
 .mnp-face__glyph {
-  width: 46%;
-  max-height: 46%;
+  flex: 1;
+  min-height: 0;
+  width: 70%;
+  max-width: 7cqmin;
   display: grid;
   place-items: center;
 }
-.mnp-face__glyph svg {
-  width: 100%;
-  height: 100%;
+.mnp-face--drawn .mnp-face__glyph {
+  max-height: 58%;
 }
+
+/* Chance prints a big question mark, each in its own colour. */
 .mnp-q {
-  font: 800 max(14px, 4.2cqmin) / 1 var(--font-display);
-  color: var(--mnp-chance);
+  display: inline-block;
+  font: 800 max(14px, 5.4cqmin) / 1 var(--font-display);
+  color: var(--q, var(--mnp-chance));
+  text-shadow:
+    0.06em 0.06em 0 var(--mnp-ink),
+    -0.02em -0.02em 0 var(--mnp-ink),
+    0.02em -0.02em 0 var(--mnp-ink),
+    -0.02em 0.02em 0 var(--mnp-ink);
+  rotate: -12deg;
 }
-.mnp-sp--chest .mnp-face__glyph {
-  color: var(--mnp-chest);
+.mnp-q--pink {
+  --q: var(--mnp-pink);
 }
+.mnp-q--navy {
+  --q: var(--mnp-sky);
+}
+.mnp-q--orange {
+  --q: var(--mnp-orange);
+}
+.mnp-q--cream {
+  --q: var(--mnp-cream);
+}
+.mnp-sp--chance .mnp-face {
+  justify-content: center;
+  gap: 4%;
+}
+.mnp-sp--chance .mnp-face__glyph {
+  max-width: none;
+  width: auto;
+}
+
 .mnp-sp--corner .mnp-face {
   justify-content: center;
-  padding: 8%;
-  font-size: max(9px, 1.6cqmin);
+  align-items: center;
+  padding: 7%;
+  font-size: max(8px, 1.4cqmin);
+}
+.mnp-sp--corner .mnp-face__glyph {
+  width: 62%;
+  max-width: none;
+}
+.mnp-face--go {
+  position: relative;
+}
+.mnp-face__small {
+  font-size: 0.8em;
+  color: var(--mnp-ink-2);
 }
 .mnp-face__big {
-  font: 800 max(18px, 5.4cqmin) / 0.9 var(--font-display);
+  font: 800 max(16px, 5cqmin) / 0.9 var(--font-display);
   color: var(--mnp-red);
   text-transform: none;
 }
 .mnp-face__arrow {
-  width: 60%;
-  color: var(--mnp-red);
+  width: 66%;
 }
-.mnp-face__bars {
-  width: 50%;
+.mnp-face--jail {
+  position: absolute;
+  inset: 0;
+  padding: 0;
 }
-.mnp-sp--jail .mnp-face {
-  justify-content: flex-end;
-}
-.mnp-sp--corner .mnp-face__glyph {
-  width: 52%;
-}
-
-/* Jail's own cell, in the corner nearest the centre. */
-.mnp-sp__cell {
+.mnp-face__cell {
   position: absolute;
   top: 0;
   right: 0;
-  width: 58%;
-  height: 58%;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  justify-content: center;
-  background: var(--mnp-orange);
-  border: 0 solid var(--mnp-ink);
-  border-width: 0 0 1px 1px;
-  z-index: 2;
-}
-
-/* Phone glyphs. */
-.mnp-glyph {
-  flex: 1;
+  width: 64%;
+  height: 64%;
   display: grid;
   place-items: center;
-  font: 800 max(9px, 3cqmin) / 1 var(--font-plaque);
-  color: var(--mnp-ink-2);
+  border: 0 solid var(--mnp-ink);
+  border-width: 0 0 2px 2px;
+  background: var(--mnp-cell);
 }
-.mnp-glyph svg {
-  width: 62%;
-  max-height: 62%;
+.mnp-face__cell .mnp-art {
+  position: absolute;
+  inset: 0;
+}
+.mnp-face__in {
+  position: relative;
+  padding: 0 0.25em;
+  background: var(--mnp-card);
+  border: 1px solid var(--mnp-ink);
+  rotate: -45deg;
+}
+.mnp-face__just,
+.mnp-face__visiting {
+  position: absolute;
+  font-size: 0.9em;
+}
+.mnp-face__just {
+  left: 4%;
+  top: 30%;
+  writing-mode: vertical-rl;
+  rotate: 180deg;
+}
+.mnp-face__visiting {
+  bottom: 4%;
+  right: 6%;
+}
+
+/* Phone glyphs: the drawings alone. */
+.mnp-glyph {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 14%;
+}
+.mnp-sp--corner .mnp-glyph {
+  padding: 18%;
+}
+.mnp-glyph .mnp-q {
+  font-size: max(13px, 4.4cqmin);
 }
 .mnp-glyph--go {
   color: var(--mnp-red);
   font: 800 max(12px, 4.4cqmin) / 1 var(--font-display);
 }
-.mnp-glyph .mnp-q {
-  font-size: max(12px, 4cqmin);
-}
 
-/* Tokens stand on their space and hop as they walk. */
-.mnp-sp__tokens {
+/* ── Tokens glide over the board ───────────────────────────────────────── */
+.mnp-tokens {
   position: absolute;
-  inset: 8%;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
-  justify-content: center;
-  z-index: 3;
+  inset: 0;
   pointer-events: none;
+  z-index: 4;
 }
-.mnp-piece {
-  display: inline-flex;
-  margin: -2px;
+.mnp-token {
+  position: absolute;
+  width: var(--tok);
+  height: var(--tok);
+  translate: -50% -50%;
+  transition:
+    left 200ms cubic-bezier(0.45, 0, 0.3, 1),
+    top 200ms cubic-bezier(0.45, 0, 0.3, 1);
+}
+.mnp-token.is-jump {
+  transition:
+    left 600ms var(--mnp-ease),
+    top 600ms var(--mnp-ease);
+}
+.mnp-token__hop {
+  display: block;
   border-radius: 50%;
-  animation: mnp-hop 220ms var(--mnp-ease);
+  animation: mnp-hop 200ms ease-out;
+  filter: drop-shadow(0 2px 0 var(--mnp-ink));
 }
-.mnp-piece.is-turn {
+.mnp-token.is-jump .mnp-token__hop {
+  animation: mnp-fly 600ms var(--mnp-ease);
+}
+.mnp-token.is-turn {
+  z-index: 2;
+}
+.mnp-token.is-turn .mnp-token__hop {
   outline: 2px solid var(--mnp-ink);
   outline-offset: 1px;
-  z-index: 1;
 }
-.mnp-board--tv .mnp-piece {
-  margin: -4px;
-}
-.mnp-board--tv .mnp-piece.is-turn {
+.mnp-board--tv .mnp-token.is-turn .mnp-token__hop {
   outline-width: 4px;
   outline-offset: 2px;
 }
 @keyframes mnp-hop {
   0% {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
-  45% {
-    transform: translateY(-35%);
+  40% {
+    transform: translateY(-55%) scale(1.12);
+  }
+  80% {
+    transform: translateY(0) scale(1, 0.92);
   }
   100% {
-    transform: translateY(0);
+    transform: none;
+  }
+}
+@keyframes mnp-fly {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: translateY(-80%) scale(1.5) rotate(-12deg);
+  }
+  85% {
+    transform: translateY(0) scale(0.95, 0.88);
+  }
+  100% {
+    transform: none;
   }
 }
 
@@ -409,51 +571,127 @@ button.mnp-sp {
   grid-column: 2 / 11;
   min-width: 0;
   min-height: 0;
-  background: var(--mnp-centre);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4%;
-  padding: 5%;
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
+  container-type: size;
+  background-color: var(--mnp-centre);
+  /* A fine printed lattice, as on a banknote. */
+  background-image:
+    repeating-linear-gradient(45deg, transparent 0 14px, var(--mnp-centre-line) 14px 15px),
+    repeating-linear-gradient(-45deg, transparent 0 14px, var(--mnp-centre-line) 14px 15px);
+}
+.mnp-centre::before {
+  content: '';
+  position: absolute;
+  inset: 3.5%;
+  border: 2px solid var(--mnp-ink);
+  outline: 1px solid var(--mnp-ink);
+  outline-offset: -6px;
+  pointer-events: none;
 }
 .mnp-centre__mark {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  translate: -50% -50%;
+  rotate: -40deg;
   padding: 0.12em 0.5em 0.2em;
   background: var(--mnp-red);
   color: var(--on-fill);
   border: 2px solid var(--mnp-ink);
   outline: 1px solid var(--on-fill);
   outline-offset: -5px;
-  font: 800 max(15px, 6.4cqmin) / 1 var(--font-display);
+  box-shadow: 0.08em 0.08em 0 var(--mnp-ink);
+  font: 800 13cqmin / 1 var(--font-display);
   letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.mnp-centre__pile {
+  position: absolute;
+  width: 30cqmin;
+  height: 21cqmin;
+  rotate: -45deg;
+}
+.mnp-centre__pile--chest {
+  left: 9cqmin;
+  top: 14cqmin;
+  rotate: 135deg;
+}
+.mnp-centre__pile--chance {
+  right: 9cqmin;
+  bottom: 14cqmin;
+}
+.mnp-centre__dice {
+  position: absolute;
+  left: 50%;
+  top: 70%;
+  translate: -50% -50%;
 }
 .mnp-centre__foot {
-  font: 700 max(11px, 1.9cqmin) / 1.1 var(--font-plaque);
-  letter-spacing: 0.1em;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6%;
+  text-align: center;
+  font: 800 max(9px, 3.4cqmin) / 1.1 var(--font-plaque);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--mnp-ink-2);
+  color: var(--mnp-ink);
 }
-.mnp-centre__card {
-  padding: 2px 8px;
-  color: var(--on-fill);
-  font: 800 12px / 1.2 var(--font-plaque);
+.mnp-centre__drawn {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.mnp-pile {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.mnp-pile__card,
+.mnp-pile__face {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--mnp-ink);
+  background: var(--deck);
+  border-radius: 6%;
+}
+.mnp-pile--chance {
+  --deck: var(--mnp-chance);
+}
+.mnp-pile--chest {
+  --deck: var(--mnp-chest);
+}
+.mnp-pile__face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6%;
+  translate: 9% -9%;
+  outline: 1px solid var(--mnp-cream);
+  outline-offset: -5px;
+  color: var(--mnp-cream);
+}
+.mnp-pile__art {
+  width: 34%;
+  height: 70%;
+  display: grid;
+  place-items: center;
+}
+.mnp-pile__art .mnp-q {
+  font-size: 15cqmin;
+}
+.mnp-pile__name {
+  max-width: 50%;
+  font: 800 4.2cqmin / 1 var(--font-plaque);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-.mnp-centre__card.mnp-card--chance {
-  background: var(--mnp-chance);
-}
-.mnp-centre__card.mnp-card--chest {
-  background: var(--mnp-chest);
-}
-.mnp-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
+  text-align: left;
 }
 
 .mnp-dice {
@@ -467,11 +705,12 @@ button.mnp-sp {
   background: var(--mnp-card);
   border: max(2px, calc(var(--die) * 0.05)) solid var(--mnp-ink);
   border-radius: 18%;
-  box-shadow: 0 calc(var(--die) * 0.06) 0 var(--mnp-ink);
-  animation: mnp-tumble 520ms var(--mnp-ease);
+  box-shadow: 0 calc(var(--die) * 0.07) 0 var(--mnp-ink);
+  animation: mnp-tumble 620ms var(--mnp-ease);
 }
 .mnp-die--1 {
-  animation-delay: 60ms;
+  animation-delay: 70ms;
+  animation-fill-mode: backwards;
 }
 .mnp-pip {
   position: absolute;
@@ -512,12 +751,15 @@ button.mnp-sp {
 }
 @keyframes mnp-tumble {
   0% {
-    transform: translate(-60%, -40%) rotate(-200deg) scale(0.7);
+    transform: translate(-120%, -90%) rotate(-280deg) scale(0.6);
     opacity: 0;
   }
-  60% {
-    transform: translate(6%, 4%) rotate(14deg) scale(1.04);
+  55% {
+    transform: translate(8%, 6%) rotate(18deg) scale(1.08);
     opacity: 1;
+  }
+  75% {
+    transform: translate(-3%, -2%) rotate(-6deg);
   }
   100% {
     transform: none;
@@ -525,23 +767,35 @@ button.mnp-sp {
 }
 
 .mnp-card {
-  width: min(78%, 34em);
+  width: 74cqmin;
   display: flex;
   flex-direction: column;
   background: var(--mnp-card);
   border: 2px solid var(--mnp-ink);
   outline: 1px solid var(--mnp-ink);
   outline-offset: -6px;
-  box-shadow: 0 0.3em 0 var(--mnp-ink);
-  font-size: max(13px, 2.3cqmin);
+  box-shadow: 0.25em 0.3em 0 var(--mnp-ink);
+  font-size: max(10px, 4.6cqmin);
 }
 .mnp-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
   padding: 0.35em 0.8em 0.3em;
-  color: var(--on-fill);
+  color: var(--mnp-cream);
   font: 800 1em / 1 var(--font-plaque);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   border-bottom: 2px solid var(--mnp-ink);
+}
+.mnp-card__emblem {
+  width: 1.6em;
+  height: 1.6em;
+  display: grid;
+  place-items: center;
+}
+.mnp-card__emblem .mnp-q {
+  font-size: 1.6em;
 }
 .mnp-card--chance .mnp-card__head {
   background: var(--mnp-chance);
@@ -550,39 +804,231 @@ button.mnp-sp {
   background: var(--mnp-chest);
 }
 .mnp-card__text {
-  padding: 0.6em 0.9em 0.8em;
-  font: 500 1.08em / 1.25 var(--font-body);
+  padding: 0.6em 0.9em 0.4em;
+  font: 500 1.05em / 1.25 var(--font-body);
   text-align: center;
 }
-.mnp-card.is-fresh {
-  animation: mnp-flip 640ms var(--mnp-ease);
+.mnp-card__by {
+  padding: 0 0.9em 0.6em;
+  text-align: center;
+  font: 700 0.72em / 1 var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mnp-ink-2);
 }
-@keyframes mnp-flip {
+.mnp-card--chance.is-fresh {
+  animation: mnp-draw-chance 760ms var(--mnp-ease);
+}
+.mnp-card--chest.is-fresh {
+  animation: mnp-draw-chest 760ms var(--mnp-ease);
+}
+/* A drawn card comes off its pile, turns over and settles in the middle. */
+@keyframes mnp-draw-chance {
   0% {
-    transform: perspective(800px) rotateX(80deg) translateY(-30%);
-    opacity: 0;
+    transform: translate(32cqmin, 26cqmin) rotate(-45deg) scale(0.4) rotateY(180deg);
   }
   100% {
     transform: none;
-    opacity: 1;
+  }
+}
+@keyframes mnp-draw-chest {
+  0% {
+    transform: translate(-32cqmin, -26cqmin) rotate(135deg) scale(0.4) rotateY(180deg);
+  }
+  100% {
+    transform: none;
   }
 }
 
-/* ── Players ───────────────────────────────────────────────────────────── */
+/* ── Your money and deeds ──────────────────────────────────────────────── */
 .mnp-side-col {
   flex: none;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 6px;
 }
+.mnp-purse {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mnp-wallet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.mnp-wallet__piles {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 34px;
+}
+.mnp-wallet__empty {
+  font: 700 13px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.mnp-wallet__sum {
+  flex: none;
+  font: 800 24px / 1 var(--font-plaque);
+  letter-spacing: 0.02em;
+}
+.mnp-pilenote {
+  position: relative;
+  flex: 0 1 46px;
+  min-width: 30px;
+  height: 26px;
+}
+.mnp-note {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--k) * 2px);
+  width: 100%;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  background: var(--note);
+  border: 1px solid var(--mnp-ink);
+  outline: 1px solid color-mix(in srgb, var(--mnp-ink) 40%, transparent);
+  outline-offset: -4px;
+  translate: calc(var(--k) * 1px) 0;
+  rotate: calc((var(--k) - 1.5) * 1.5deg);
+}
+.mnp-note__oval {
+  padding: 0 4px;
+  border: 1px solid var(--mnp-ink);
+  border-radius: 50%;
+  background: var(--mnp-cream);
+  color: var(--mnp-ink);
+  font: 800 10px / 1.2 var(--font-plaque);
+}
+.mnp-pilenote__n {
+  position: absolute;
+  right: -3px;
+  top: -10px;
+  padding: 0 3px;
+  background: var(--mnp-ink);
+  color: var(--mnp-cream);
+  font: 800 10px / 1.3 var(--font-plaque);
+}
+.mnp-note--1 {
+  --note: var(--mnp-n1);
+}
+.mnp-note--5 {
+  --note: var(--mnp-n5);
+}
+.mnp-note--10 {
+  --note: var(--mnp-n10);
+}
+.mnp-note--20 {
+  --note: var(--mnp-n20);
+}
+.mnp-note--50 {
+  --note: var(--mnp-n50);
+}
+.mnp-note--100 {
+  --note: var(--mnp-n100);
+}
+.mnp-note--500 {
+  --note: var(--mnp-n500);
+}
+
+.mnp-deeds {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 2px 4px;
+}
+.mnp-deeds__none {
+  margin: 0;
+  font: 400 14px / 1.3 var(--font-body);
+  color: var(--ink-2);
+}
+.mnp-hand {
+  flex: none;
+  display: flex;
+}
+.mnp-mini {
+  --band: var(--mnp-ink);
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 58px;
+  display: flex;
+  flex-direction: column;
+  padding: 3px;
+  background: var(--mnp-card);
+  color: var(--mnp-ink);
+  border: 1.5px solid var(--mnp-ink);
+  box-shadow: 1px 2px 0 var(--mnp-ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+.mnp-mini + .mnp-mini {
+  margin-left: -20px;
+}
+.mnp-mini.is-full {
+  outline: 2px solid var(--or);
+  outline-offset: 1px;
+}
+.mnp-mini.is-mortgaged {
+  opacity: 0.55;
+}
+.mnp-mini__band {
+  height: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--band);
+  border: 1px solid var(--mnp-ink);
+  padding: 1px;
+}
+.mnp-mini__band .mnp-art {
+  height: 100%;
+  width: auto;
+}
+.mnp-mini__name {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font: 700 8px / 1.05 var(--font-plaque);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+.mnp-mini__built {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+}
+.mnp-mini__built .mnp-house {
+  width: 5px;
+}
+.mnp-mini__built .mnp-hotel {
+  width: 12px;
+  height: 6px;
+}
+.mnp-mini__m {
+  position: absolute;
+  inset: auto 2px 2px auto;
+  color: var(--mnp-red);
+  font: 900 10px var(--font-plaque);
+}
+
+/* ── Players ───────────────────────────────────────────────────────────── */
 .mnp-people {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 5px;
 }
 .mnp-person {
   position: relative;
@@ -592,8 +1038,8 @@ button.mnp-sp {
   grid-template-rows: auto auto;
   column-gap: 6px;
   align-items: center;
-  padding: 4px 6px;
-  background: var(--paper);
+  padding: 3px 6px;
+  background: color-mix(in srgb, var(--tint) 14%, var(--paper));
   border: 2px solid var(--rule);
   border-left: 6px solid var(--tint);
 }
@@ -602,6 +1048,7 @@ button.mnp-sp {
   border-left-color: var(--tint);
   outline: 1px solid var(--ink);
   outline-offset: -5px;
+  background: color-mix(in srgb, var(--tint) 24%, var(--paper));
 }
 .mnp-person.is-out {
   opacity: 0.5;
@@ -615,7 +1062,7 @@ button.mnp-sp {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  font: 700 14px / 1.1 var(--font-plaque);
+  font: 700 12px / 1.1 var(--font-plaque);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -629,15 +1076,19 @@ button.mnp-sp {
   color: var(--ink-2);
 }
 .mnp-person__cash {
-  font: 800 18px / 1 var(--font-plaque);
+  font: 800 16px / 1 var(--font-plaque);
   letter-spacing: 0.03em;
+}
+.mnp-person__deeds {
+  grid-column: 1 / -1;
+  min-width: 0;
 }
 .mnp-delta {
   position: absolute;
   right: 6px;
-  top: -6px;
+  top: -8px;
   padding: 1px 6px;
-  font: 800 14px / 1.2 var(--font-plaque);
+  font: 800 13px / 1.2 var(--font-plaque);
   color: var(--on-fill);
   pointer-events: none;
   animation: mnp-rise 1800ms var(--mnp-ease) forwards;
@@ -674,22 +1125,31 @@ button.mnp-sp {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font: 400 16px / 1.3 var(--font-body);
+  gap: 4px;
+  font: 400 14px / 1.3 var(--font-body);
 }
 .mnp-story__line {
-  padding-left: 10px;
+  padding-left: 8px;
   border-left: 3px solid var(--rule);
 }
 .mnp-story__line:first-child {
   border-left-color: var(--ink);
   font-weight: 700;
 }
-.mnp-story__line.is-out {
+.mnp-story__line.is-out,
+.mnp-story__line.is-rent,
+.mnp-story__line.is-tax {
   border-left-color: var(--gules);
 }
-.mnp-story__line.is-buy {
+.mnp-story__line.is-buy,
+.mnp-story__line.is-cash {
   border-left-color: var(--vert);
+}
+.mnp-story__line.is-card {
+  border-left-color: var(--mnp-chance);
+}
+.mnp-story__line.is-jail {
+  border-left-color: var(--mnp-orange);
 }
 
 /* ── Dock ──────────────────────────────────────────────────────────────── */
@@ -713,7 +1173,7 @@ button.mnp-sp {
 .mnp-dock__line {
   flex: 1 1 100%;
   margin: 0;
-  font: 500 var(--step-0) / 1.25 var(--font-body);
+  font: 500 16px / 1.25 var(--font-body);
 }
 .mnp-dock__more {
   display: flex;
@@ -723,11 +1183,11 @@ button.mnp-sp {
 .mnp-quiet,
 .mnp-bid {
   min-height: 44px;
-  padding: 0 14px;
+  padding: 0 12px;
   border: 2px solid var(--ink);
   background: var(--paper);
   color: var(--ink);
-  font: 800 15px var(--font-plaque);
+  font: 800 14px var(--font-plaque);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
@@ -750,7 +1210,7 @@ button.mnp-sp {
   background: var(--vert);
   border-color: var(--vert);
   color: var(--on-fill);
-  font-size: 17px;
+  font-size: 16px;
 }
 .mnp-dock button:disabled,
 .mnp-row__acts button:disabled {
@@ -765,15 +1225,15 @@ button.mnp-sp {
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: var(--paper);
+  background: color-mix(in srgb, var(--tint) 12%, var(--paper));
   border: 2px solid var(--ink);
   border-left: 8px solid var(--tint);
-  animation: mnp-flip 420ms var(--mnp-ease);
+  animation: mnp-pop-in 420ms var(--mnp-ease);
 }
 .mnp-offer p {
   flex: 1 1 14em;
   margin: 0;
-  font: 400 var(--step-0) / 1.3 var(--font-body);
+  font: 400 15px / 1.3 var(--font-body);
 }
 .mnp-offer__acts {
   display: flex;
@@ -786,18 +1246,261 @@ button.mnp-sp {
   border: 2px solid var(--ink);
   background: transparent;
   color: var(--ink);
-  font: 800 15px var(--font-plaque);
+  font: 800 14px var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   cursor: pointer;
 }
 
-/* ── Laptop: board beside the players and the story ─────────────────────── */
+/* ── Popups: what just happened ────────────────────────────────────────── */
+.mnp-pop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--mnp-ink) 38%, transparent);
+  animation: mnp-fade 220ms ease-out;
+}
+.mnp-pop--tv {
+  position: absolute;
+  background: color-mix(in srgb, var(--mnp-ink) 24%, transparent);
+}
+.mnp-pop__card {
+  --band: var(--mnp-ink);
+  position: relative;
+  width: min(340px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 0 0 14px;
+  overflow: hidden;
+  background: var(--mnp-card);
+  color: var(--mnp-ink);
+  border: 2px solid var(--mnp-ink);
+  outline: 1px solid var(--mnp-ink);
+  outline-offset: -7px;
+  box-shadow: 6px 8px 0 var(--mnp-ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  animation: mnp-pop-in 480ms var(--mnp-ease);
+}
+.mnp-pop__band {
+  align-self: stretch;
+  padding: 10px 12px 8px;
+  background: var(--band);
+  color: var(--mnp-cream);
+  border-bottom: 2px solid var(--mnp-ink);
+  font: 800 15px / 1 var(--font-plaque);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.mnp-pop--chest .mnp-pop__band,
+.mnp-pop--chance .mnp-pop__band {
+  font-size: 18px;
+}
+.mnp-pop__art {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  animation: mnp-wobble 900ms var(--mnp-ease);
+}
+.mnp-pop__art .mnp-q {
+  font-size: 84px;
+}
+.mnp-pop__deed {
+  width: 60px;
+  height: 78px;
+  background: var(--mnp-card);
+  border: 2px solid var(--mnp-ink);
+  box-shadow: 3px 4px 0 var(--mnp-ink);
+  background-image: linear-gradient(var(--band), var(--band));
+  background-size: 100% 26%;
+  background-repeat: no-repeat;
+}
+.mnp-pop__title {
+  padding: 0 16px;
+  font: 800 26px / 1.05 var(--font-display);
+}
+.mnp-pop__flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mnp-pop__who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font: 800 12px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mnp-pop__bank {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  background: var(--mnp-green);
+  color: var(--mnp-cream);
+  border: 2px solid var(--mnp-ink);
+  font: 800 11px var(--font-plaque);
+  text-transform: uppercase;
+}
+.mnp-pop__notes {
+  position: relative;
+  width: 76px;
+  height: 30px;
+}
+.mnp-flynote {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 26px;
+  height: 15px;
+  background: var(--mnp-n20);
+  border: 1px solid var(--mnp-ink);
+  animation: mnp-flynote 1.2s var(--mnp-ease) infinite;
+}
+.mnp-flynote:nth-child(2) {
+  background: var(--mnp-n50);
+  animation-delay: 0.2s;
+}
+.mnp-flynote:nth-child(3) {
+  background: var(--mnp-n100);
+  animation-delay: 0.4s;
+}
+.mnp-pop__amount {
+  font: 900 44px / 1 var(--font-plaque);
+  letter-spacing: 0.02em;
+  animation: mnp-stamp 520ms var(--mnp-ease) 200ms backwards;
+}
+.mnp-pop__amount.is-up {
+  color: var(--mnp-green);
+}
+.mnp-pop__amount.is-down {
+  color: var(--mnp-red);
+}
+.mnp-pop__body {
+  max-width: 28ch;
+  padding: 0 16px;
+  font: 500 16px / 1.3 var(--font-body);
+}
+.mnp-pop--chance .mnp-pop__body,
+.mnp-pop--chest .mnp-pop__body {
+  margin: 0 16px;
+  padding: 10px 12px;
+  border: 1px dashed var(--mnp-ink);
+  font-size: 18px;
+}
+.mnp-pop__tap {
+  font: 700 12px var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mnp-ink-2);
+}
+.mnp-pop__card:not(.is-auto) .mnp-pop__tap {
+  animation: mnp-blink 1.6s ease-in-out infinite;
+}
+.mnp-pop__timer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: 100%;
+  background: var(--band);
+  transform-origin: left;
+  animation: mnp-shrink var(--auto) linear forwards;
+}
+.mnp-pop--good .mnp-pop__card,
+.mnp-pop__card.mnp-pop--good {
+  box-shadow: 6px 8px 0 var(--mnp-green);
+}
+.mnp-pop__card.mnp-pop--bad {
+  box-shadow: 6px 8px 0 var(--mnp-red);
+}
+@keyframes mnp-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes mnp-pop-in {
+  0% {
+    transform: translateY(30px) scale(0.85) rotate(-3deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-4px) scale(1.03) rotate(0.5deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes mnp-wobble {
+  0% {
+    transform: scale(0.4) rotate(-20deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(8deg);
+  }
+  75% {
+    transform: scale(0.96) rotate(-3deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes mnp-stamp {
+  0% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(0.94);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes mnp-flynote {
+  0% {
+    transform: translateX(0) rotate(-8deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(50px) translateY(-6px) rotate(10deg);
+    opacity: 0;
+  }
+}
+@keyframes mnp-blink {
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes mnp-shrink {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* ── Laptop: board beside your money, the players and the story ─────────── */
 .mnp--wide .mnp-main {
   flex-direction: row;
 }
 .mnp--wide .mnp-side-col {
-  width: clamp(280px, 22vw, 380px);
+  width: clamp(280px, 22vw, 360px);
   min-height: 0;
 }
 .mnp--wide .mnp-people {
@@ -806,25 +1509,22 @@ button.mnp-sp {
 .mnp--wide .mnp-person {
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-rows: auto;
-  padding: 6px 10px;
+  padding: 4px 8px;
 }
 .mnp--wide .mnp-person__tok {
   grid-row: auto;
 }
 .mnp--wide .mnp-person__cash {
-  font-size: 22px;
+  font-size: 18px;
 }
 .mnp--wide .mnp-story {
   flex: 1;
 }
-.mnp--wide .mnp-dock__line {
-  font-size: 18px;
-}
 .mnp--wide .mnp-face {
-  font-size: max(11px, 1.75cqmin);
+  font-size: max(9px, 1.4cqmin);
 }
 .mnp--wide .mnp-sp--corner .mnp-face {
-  font-size: max(11px, 1.9cqmin);
+  font-size: max(9px, 1.55cqmin);
 }
 
 /* ── Sheets: deeds, the estate, trading ─────────────────────────────────── */
@@ -1093,13 +1793,20 @@ button.mnp-sp {
 }
 
 /* ── TV ────────────────────────────────────────────────────────────────── */
+/*
+ * Two sizes on the TV stage (2026-10-25: "make it small on laptop-sized tv display but keep it
+ * big for actual TV"). A real TV has no mouse, so it gets the big sofa sizes below; a laptop
+ * showing the TV page (a fine pointer that can hover) gets the compact sizes after them, so the
+ * whole board's print fits.
+ */
 .mnp-tv {
+  position: relative;
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 640px;
-  gap: 36px;
-  padding: 16px 40px 24px;
+  grid-template-columns: minmax(0, 1fr) 620px;
+  gap: 32px;
+  padding: 16px 36px 24px;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -1108,19 +1815,16 @@ button.mnp-sp {
   min-width: 0;
 }
 .mnp-tv .mnp-face {
-  font-size: 24px;
+  font-size: 22px;
   letter-spacing: 0;
-  line-height: 0.95;
+  line-height: 0.92;
 }
-/* The top and bottom rows are narrow; they take the board's one smaller size. */
 .mnp-tv .mnp-sp--b:not(.mnp-sp--corner) .mnp-face,
 .mnp-tv .mnp-sp--t:not(.mnp-sp--corner) .mnp-face {
-  font-size: 22px;
-  line-height: 0.92;
-  padding: 4px 2px 12px;
+  padding: 4px 2px 10px;
 }
 .mnp-tv .mnp-sp--t:not(.mnp-sp--corner) .mnp-face {
-  padding: 12px 2px 4px;
+  padding: 10px 2px 4px;
 }
 .mnp-tv .mnp-sp--b .mnp-sp__band,
 .mnp-tv .mnp-sp--t .mnp-sp__band {
@@ -1134,42 +1838,47 @@ button.mnp-sp {
   font-size: 24px;
 }
 .mnp-tv .mnp-face__big {
-  font-size: 72px;
+  font-size: 64px;
+}
+.mnp-tv .mnp-face__glyph {
+  max-width: 56px;
+}
+.mnp-tv .mnp-q {
+  font-size: 60px;
 }
 .mnp-tv .mnp-sp__m {
-  font-size: 28px;
+  font-size: 26px;
 }
 .mnp-tv .mnp-house {
-  width: 16px;
+  width: 15px;
   border-width: 2px;
 }
 .mnp-tv .mnp-hotel {
-  width: 40px;
-  height: 20px;
+  width: 38px;
+  height: 18px;
   border-width: 2px;
 }
 .mnp-tv .mnp-sp--l .mnp-hotel,
 .mnp-tv .mnp-sp--r .mnp-hotel {
-  width: 20px;
-  height: 40px;
+  width: 18px;
+  height: 38px;
 }
 .mnp-tv .mnp-centre__mark {
-  font-size: 96px;
-  outline-offset: -9px;
   border-width: 3px;
+  outline-offset: -9px;
 }
 .mnp-tv .mnp-centre__foot {
-  font-size: 28px;
+  font-size: 26px;
 }
 .mnp-tv .mnp-card {
-  font-size: 30px;
   border-width: 3px;
+  font-size: 28px;
 }
 .mnp-tv__side {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 .mnp-tv__head {
   display: flex;
@@ -1179,21 +1888,21 @@ button.mnp-sp {
 }
 .mnp-tv__line {
   margin: 0;
-  font: 800 52px / 1.05 var(--font-display);
+  font: 800 46px / 1.05 var(--font-display);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 .mnp-tv .mnp-clock {
-  font-size: 40px;
+  font-size: 38px;
 }
 .mnp-tv__auction {
   margin: 0;
   padding: 10px 16px;
   background: var(--vert);
   color: var(--on-fill);
-  font: 800 32px / 1.1 var(--font-plaque);
+  font: 800 30px / 1.1 var(--font-plaque);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1203,37 +1912,172 @@ button.mnp-sp {
 }
 .mnp-people--tv .mnp-person {
   grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-rows: auto;
-  column-gap: 16px;
-  padding: 8px 16px 8px 10px;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 6px;
+  padding: 8px 14px 8px 10px;
   border-width: 3px;
   border-left-width: 12px;
 }
 .mnp-people--tv .mnp-person__tok {
-  grid-row: auto;
+  grid-row: 1;
 }
 .mnp-people--tv .mnp-person__text {
-  font-size: 26px;
+  font-size: 24px;
 }
 .mnp-people--tv .mnp-person__text b {
-  font-size: 34px;
+  font-size: 32px;
 }
 .mnp-people--tv .mnp-person__cash {
-  font-size: 44px;
+  font-size: 42px;
 }
 .mnp-people--tv .mnp-delta {
-  font-size: 28px;
+  font-size: 26px;
   top: -14px;
   padding: 2px 10px;
 }
+.mnp-deeds--tv {
+  overflow: visible;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+}
+.mnp-deeds--tv .mnp-mini {
+  width: 30px;
+  height: 40px;
+  padding: 2px;
+  border-width: 2px;
+  cursor: default;
+}
+.mnp-deeds--tv .mnp-mini + .mnp-mini {
+  margin-left: -12px;
+}
+.mnp-deeds--tv .mnp-mini__band {
+  height: 14px;
+}
 .mnp-tv .mnp-story {
   flex: 1;
-  font-size: 26px;
-  gap: 10px;
+  font-size: 24px;
+  gap: 8px;
 }
 .mnp-tv .mnp-story__line {
   border-left-width: 5px;
-  padding-left: 14px;
+  padding-left: 12px;
+}
+.mnp-pop--tv .mnp-pop__card {
+  width: 640px;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-width: 3px;
+  box-shadow: 10px 12px 0 var(--mnp-ink);
+}
+.mnp-pop--tv .mnp-pop__band {
+  padding: 16px 20px 12px;
+  font-size: 30px;
+}
+.mnp-pop--tv .mnp-pop__art {
+  width: 150px;
+  height: 150px;
+}
+.mnp-pop--tv .mnp-pop__art .mnp-q {
+  font-size: 150px;
+}
+.mnp-pop--tv .mnp-pop__deed {
+  width: 108px;
+  height: 140px;
+}
+.mnp-pop--tv .mnp-pop__title {
+  font-size: 52px;
+}
+.mnp-pop--tv .mnp-pop__who {
+  font-size: 24px;
+}
+.mnp-pop--tv .mnp-pop__bank {
+  width: 64px;
+  height: 64px;
+  font-size: 18px;
+}
+.mnp-pop--tv .mnp-pop__notes {
+  width: 140px;
+  height: 50px;
+}
+.mnp-pop--tv .mnp-flynote {
+  width: 46px;
+  height: 26px;
+}
+.mnp-pop--tv .mnp-pop__amount {
+  font-size: 88px;
+}
+.mnp-pop--tv .mnp-pop__body {
+  font-size: 32px;
+}
+.mnp-pop--tv .mnp-pop__tap {
+  display: none;
+}
+.mnp-pop--tv .mnp-pop__timer {
+  height: 8px;
+}
+
+/* A laptop showing the TV page: compact print so everything fits. */
+@media (hover: hover) and (pointer: fine) {
+  .mnp-tv {
+    grid-template-columns: minmax(0, 1fr) 540px;
+  }
+  .mnp-tv .mnp-face {
+    font-size: 16px;
+    line-height: 1;
+  }
+  .mnp-tv .mnp-sp--corner .mnp-face {
+    font-size: 18px;
+  }
+  .mnp-tv .mnp-face__big {
+    font-size: 54px;
+  }
+  .mnp-tv .mnp-q {
+    font-size: 50px;
+  }
+  .mnp-tv .mnp-centre__foot {
+    font-size: 22px;
+  }
+  .mnp-tv .mnp-card {
+    font-size: 22px;
+  }
+  .mnp-tv__line {
+    font-size: 36px;
+  }
+  .mnp-tv .mnp-clock {
+    font-size: 30px;
+  }
+  .mnp-tv__auction {
+    font-size: 24px;
+  }
+  .mnp-people--tv .mnp-person__text {
+    font-size: 18px;
+  }
+  .mnp-people--tv .mnp-person__text b {
+    font-size: 24px;
+  }
+  .mnp-people--tv .mnp-person__cash {
+    font-size: 32px;
+  }
+  .mnp-tv .mnp-story {
+    font-size: 19px;
+  }
+  .mnp-pop--tv .mnp-pop__card {
+    width: 520px;
+  }
+  .mnp-pop--tv .mnp-pop__title {
+    font-size: 40px;
+  }
+  .mnp-pop--tv .mnp-pop__amount {
+    font-size: 68px;
+  }
+  .mnp-pop--tv .mnp-pop__body {
+    font-size: 24px;
+  }
+  .mnp-pop--tv .mnp-pop__band {
+    font-size: 22px;
+  }
 }
 
 /* ── Results ───────────────────────────────────────────────────────────── */
@@ -1292,33 +2136,410 @@ button.mnp-sp {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mnp-piece,
+  .mnp-token,
+  .mnp-token.is-jump {
+    transition: none;
+  }
+  .mnp-token__hop,
   .mnp-die,
   .mnp-card.is-fresh,
   .mnp-offer,
-  .mnp-delta {
+  .mnp-delta,
+  .mnp-pop,
+  .mnp-pop__card,
+  .mnp-pop__art,
+  .mnp-pop__amount,
+  .mnp-flynote,
+  .mnp-pop__tap,
+  .mnp-sp.is-focus {
     animation: none;
   }
 }
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   button.mnp-sp:hover {
-    background: color-mix(in srgb, var(--mnp-card) 80%, var(--mnp-yellow));
+    background: color-mix(in srgb, var(--mnp-card) 70%, var(--mnp-yellow));
   }
   .mnp-bid,
   .mnp-quiet,
-  .mnp-row__acts button {
+  .mnp-row__acts button,
+  .mnp-mini {
     transition: transform 120ms var(--mnp-ease);
   }
   .mnp-bid:hover:not(:disabled),
   .mnp-quiet:hover:not(:disabled),
-  .mnp-row__acts button:hover:not(:disabled) {
-    transform: translateY(-2px);
+  .mnp-row__acts button:hover:not(:disabled),
+  button.mnp-mini:hover {
+    transform: translateY(-3px);
   }
 }
-.mnp-tv .mnp-face__arrow {
-  width: 34%;
+
+/* Going to Jail: iron bars drop over the screen and bounce to a stop. */
+.mnp-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: space-evenly;
+  pointer-events: none;
+  animation:
+    mnp-bars-drop 700ms cubic-bezier(0.5, 0, 0.75, 0) backwards,
+    mnp-bars-bounce 500ms 700ms var(--mnp-ease);
 }
-.mnp-tv .mnp-face--go {
-  gap: 0;
+.mnp-bars__bar {
+  width: 4.5%;
+  height: 100%;
+  background: var(--mnp-iron);
+  border-left: 3px solid var(--mnp-steel-2);
+  box-shadow: 4px 0 0 var(--mnp-ink);
+  animation: mnp-bars-shake 400ms 700ms ease-out;
+  animation-delay: calc(700ms + var(--k) * 20ms);
+}
+.mnp-bars__rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4%;
+  background: var(--mnp-iron);
+  border-top: 3px solid var(--mnp-steel-2);
+  box-shadow: 0 4px 0 var(--mnp-ink);
+}
+.mnp-bars__rail--top {
+  top: 12%;
+}
+.mnp-bars__rail--low {
+  bottom: 12%;
+}
+@keyframes mnp-bars-drop {
+  from {
+    transform: translateY(-105%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes mnp-bars-bounce {
+  0% {
+    transform: none;
+  }
+  35% {
+    transform: translateY(-4%);
+  }
+  70% {
+    transform: translateY(1%);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes mnp-bars-shake {
+  50% {
+    transform: rotate(0.6deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mnp-bars,
+  .mnp-bars__bar {
+    animation: none;
+  }
+}
+
+/* A popup about someone else on a phone: a smaller card up top that doesn't stop your play. */
+.mnp-pop--aside {
+  align-items: start;
+  background: transparent;
+  pointer-events: none;
+  animation: none;
+}
+.mnp-pop--aside .mnp-pop__card {
+  pointer-events: auto;
+  width: min(300px, 100%);
+  gap: 6px;
+  padding-bottom: 10px;
+  margin-top: 56px;
+}
+.mnp-pop--aside .mnp-pop__art {
+  width: 52px;
+  height: 52px;
+}
+.mnp-pop--aside .mnp-pop__art .mnp-q {
+  font-size: 52px;
+}
+.mnp-pop--aside .mnp-pop__title {
+  font-size: 20px;
+}
+.mnp-pop--aside .mnp-pop__amount {
+  font-size: 30px;
+}
+.mnp-pop--aside .mnp-pop__body {
+  font-size: 14px;
+}
+
+.mnp-pop--aside .mnp-pop__deed {
+  width: 34px;
+  height: 44px;
+  box-shadow: 2px 3px 0 var(--mnp-ink);
+}
+@media (hover: hover) and (pointer: fine) {
+  .mnp-pop--tv .mnp-pop__art {
+    width: 100px;
+    height: 100px;
+  }
+  .mnp-pop--tv .mnp-pop__art .mnp-q {
+    font-size: 100px;
+  }
+  .mnp-pop--tv .mnp-pop__deed {
+    width: 72px;
+    height: 94px;
+  }
+}
+
+/* ── Round two: buildings, sets, sideways sides, the money burst ───────── */
+.mnp {
+  --mnp-house-roof: #1f6a3a;
+  --mnp-hotel-roof: #8e231d;
+}
+
+/* Houses and hotels drawn as buildings on the colour band. */
+.mnp-built {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4%;
+  width: 92%;
+  height: 92%;
+}
+.mnp-built .mnp-art--house {
+  width: auto;
+  height: 100%;
+  max-width: 24%;
+}
+.mnp-built--hotel .mnp-art--hotel {
+  width: auto;
+  height: 100%;
+}
+.mnp-sp--l .mnp-built,
+.mnp-sp--r .mnp-built {
+  flex-direction: column;
+}
+.mnp-sp--l .mnp-built .mnp-art--house,
+.mnp-sp--r .mnp-built .mnp-art--house {
+  height: auto;
+  width: 100%;
+  max-width: none;
+  max-height: 24%;
+}
+.mnp-sp--l .mnp-built--hotel .mnp-art--hotel,
+.mnp-sp--r .mnp-built--hotel .mnp-art--hotel {
+  width: 100%;
+  height: auto;
+  rotate: 90deg;
+}
+.mnp-mini__built .mnp-art--house {
+  width: 8px;
+  height: 8px;
+}
+.mnp-mini__built .mnp-art--hotel {
+  width: 18px;
+  height: 11px;
+}
+
+/* A whole colour set in one player's hands wears a gold border. */
+.mnp-sp.is-set {
+  box-shadow: inset 0 0 0 3px var(--mnp-gold);
+}
+.mnp-sp.is-set::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid var(--mnp-ink);
+  pointer-events: none;
+}
+.mnp-board--tv .mnp-sp.is-set {
+  box-shadow: inset 0 0 0 6px var(--mnp-gold);
+}
+.mnp-board--tv .mnp-sp.is-set::after {
+  inset: 6px;
+}
+.mnp-sp.is-set.is-focus {
+  box-shadow:
+    inset 0 0 0 3px var(--mnp-gold),
+    inset 0 0 0 6px var(--or);
+}
+
+/* The side columns print sideways, as on the real board: the name by the colour band, the
+   price at the outer edge, reading toward the centre on the left and the other way on the right. */
+.mnp-sp--l:not(.mnp-sp--corner) .mnp-face,
+.mnp-sp--r:not(.mnp-sp--corner) .mnp-face {
+  writing-mode: vertical-rl;
+  padding: 3% 5%;
+}
+.mnp-sp--l:not(.mnp-sp--corner) .mnp-face {
+  padding-left: 12%;
+}
+.mnp-sp--r:not(.mnp-sp--corner) .mnp-face {
+  rotate: 180deg;
+  padding-left: 12%;
+}
+.mnp-sp--l .mnp-face--drawn .mnp-face__glyph,
+.mnp-sp--r .mnp-face--drawn .mnp-face__glyph {
+  width: auto;
+  height: 70%;
+  max-height: 7cqmin;
+  max-width: 58%;
+  rotate: -90deg;
+}
+.mnp-tv .mnp-sp--l:not(.mnp-sp--corner) .mnp-face,
+.mnp-tv .mnp-sp--r:not(.mnp-sp--corner) .mnp-face {
+  padding: 2px 4px 2px 10px;
+}
+
+/* The trade, set against set. */
+.mnp-tt {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 10px;
+}
+.mnp-tt__head {
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--ink);
+}
+.mnp-tt__wide {
+  grid-column: 1 / -1;
+}
+.mnp-tt__row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  padding: 4px 0 4px 8px;
+  border-left: 8px solid var(--band);
+  background: color-mix(in srgb, var(--band) 8%, transparent);
+}
+.mnp-tt__cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+.mnp-tt__cell .mnp-chip {
+  --band: inherit;
+  min-height: 40px;
+  font-size: 12px;
+}
+.mnp-tt__money {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--rule);
+}
+.mnp-tt__money .mnp-side__cash input {
+  width: 6.5em;
+}
+
+/* Popup pictures for buildings and a full set. */
+.mnp-pop__built {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  height: 70%;
+}
+.mnp-pop__built .mnp-art--house {
+  width: auto;
+  height: 100%;
+}
+.mnp-pop__built .mnp-art--hotel {
+  width: 100%;
+  height: auto;
+}
+.mnp-pop__set {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.mnp-pop__set .mnp-pop__deed {
+  width: 44px;
+  height: 58px;
+}
+.mnp-pop__set .mnp-pop__deed:nth-child(1) {
+  rotate: -14deg;
+  translate: 14px 4px;
+}
+.mnp-pop__set .mnp-pop__deed:nth-child(3) {
+  rotate: 14deg;
+  translate: -14px 4px;
+}
+.mnp-pop--aside .mnp-pop__set .mnp-pop__deed {
+  width: 26px;
+  height: 34px;
+}
+.mnp-pop__art .mnp-dice {
+  animation: none;
+}
+
+/* Your money, stamped over the board when it changes. */
+.mnp-burst {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  z-index: 5;
+  padding: 0.05em 0.3em;
+  translate: -50% -50%;
+  border: 3px solid var(--mnp-ink);
+  box-shadow: 0.06em 0.08em 0 var(--mnp-ink);
+  color: var(--mnp-cream);
+  font: 900 15cqmin / 1 var(--font-plaque);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: mnp-burst 1.9s var(--mnp-ease) forwards;
+}
+.mnp-burst.is-up {
+  background: var(--mnp-green);
+}
+.mnp-burst.is-down {
+  background: var(--mnp-red);
+  font-size: 10cqmin;
+}
+@keyframes mnp-burst {
+  0% {
+    transform: scale(0.3) rotate(-10deg);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(1.15) rotate(3deg);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1) rotate(-2deg);
+  }
+  75% {
+    transform: translateY(-10%) rotate(-2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-40%) rotate(-2deg);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mnp-burst {
+    animation: mnp-fade 1.6s linear reverse forwards;
+  }
+}
+
+.mnp-mini__name {
+  align-items: start;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  padding-top: 2px;
+  hyphens: manual;
+}
+.mnp-deeds--tv .mnp-mini__built {
+  display: none;
 }

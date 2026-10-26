@@ -15,6 +15,7 @@
     "@jackdaw/engine": "workspace:*",
     "@jackdaw/game-avalon": "workspace:*",
     "@jackdaw/game-battleship": "workspace:*",
+    "@jackdaw/game-kings": "workspace:*",
     "@jackdaw/game-monopoly": "workspace:*",
     "@jackdaw/game-catan": "workspace:*",
     "@jackdaw/game-codenames": "workspace:*",

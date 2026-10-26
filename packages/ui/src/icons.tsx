@@ -214,6 +214,14 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 56h48" />
     </g>
   ),
+  /** A king's crown on a strip of board squares (Kings). */
+  crown: (
+    <g {...stroke(3.4)}>
+      <path d="M32 6v8M28 10h8" />
+      <path d="M12 22l9 9 11-13 11 13 9-9-4 20H16z" />
+      <path d="M8 50h48M8 58h48M20 50v8M32 50v8M44 50v8" />
+    </g>
+  ),
   /** A townhouse with a pitched roof, a chimney and a door (Monopoly). */
   house: (
     <g {...stroke(3.4)}>

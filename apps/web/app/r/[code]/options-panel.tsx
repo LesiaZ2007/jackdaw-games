@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, type CSSProperties } from 'react';
 import type { ZodType } from 'zod';
 import { useOptionsDraft } from '@/lib/use-options-draft';
 
@@ -21,8 +22,69 @@ function label(key: string) {
 }
 
 /**
- * A game's options, drawn from its Zod schema: numbers become steppers, booleans toggles,
- * enums a row of choices. Hosts change them; everyone else sees them read-only.
+ * A number with a wide range (Kings' 1 to 20 puzzles): a slider with − and + beside it for one
+ * step at a time. Dragging moves the number at once; it's saved when the slider is let go.
+ */
+function SliderOption({
+  label: name,
+  value,
+  min,
+  max,
+  onCommit,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onCommit: (v: number) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  const [seen, setSeen] = useState(value);
+  if (seen !== value) {
+    setSeen(value);
+    setDraft(value);
+  }
+  const commit = (v: number) => v !== value && onCommit(v);
+  return (
+    <span className="options__slider">
+      <button
+        type="button"
+        aria-label={`Fewer ${name.toLowerCase()}`}
+        disabled={draft <= min}
+        onClick={() => commit(draft - 1)}
+      >
+        −
+      </button>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={1}
+        value={draft}
+        aria-label={name}
+        style={{ '--fill': `${((draft - min) / (max - min)) * 100}%` } as CSSProperties}
+        onChange={(e) => setDraft(Number(e.target.value))}
+        onPointerUp={() => commit(draft)}
+        onKeyUp={() => commit(draft)}
+        onBlur={() => commit(draft)}
+      />
+      <button
+        type="button"
+        aria-label={`More ${name.toLowerCase()}`}
+        disabled={draft >= max}
+        onClick={() => commit(draft + 1)}
+      >
+        +
+      </button>
+      <b aria-live="polite">{draft}</b>
+    </span>
+  );
+}
+
+/**
+ * A game's options, drawn from its Zod schema: numbers become steppers (sliders when the range
+ * is wide), booleans toggles, enums a row of choices. Hosts change them; everyone else sees them
+ * read-only.
  */
 export function OptionsPanel({
   schema,
@@ -62,7 +124,18 @@ export function OptionsPanel({
             <dt>{f.description ?? label(key)}</dt>
             <dd>
               {type === 'number' && typeof value === 'number' ? (
-                editable ? (
+                editable &&
+                f.minValue != null &&
+                f.maxValue != null &&
+                f.maxValue - f.minValue >= 10 ? (
+                  <SliderOption
+                    label={f.description ?? label(key)}
+                    value={value}
+                    min={f.minValue}
+                    max={f.maxValue}
+                    onCommit={set}
+                  />
+                ) : editable ? (
                   <span className="options__stepper">
                     <button
                       type="button"

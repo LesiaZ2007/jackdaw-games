@@ -710,6 +710,79 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+/* Watching on a phone: the continents open from the map's other corner, and everyone's strength
+   is a printed ledger where the dock would be. */
+.rk--watch > .rk-stage {
+  position: relative;
+}
+.rk-watch__continents {
+  right: auto;
+  left: var(--space-2);
+}
+.rk-ledger {
+  width: 100%;
+  border-collapse: collapse;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-variant-numeric: tabular-nums;
+}
+.rk-ledger thead th {
+  padding: 4px 8px 2px;
+  border-bottom: 1.5px solid var(--ink);
+  font: 700 12px / 1.2 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-align: right;
+}
+.rk-ledger thead th:first-child {
+  padding-left: 18px;
+  text-align: left;
+}
+.rk-ledger tbody tr + tr {
+  border-top: 1px solid var(--rule);
+}
+.rk-ledger tbody th {
+  padding: 3px 6px 3px 0;
+  /* each general's army colour down the edge, matching their land on the map */
+  border-left: 10px solid var(--rk-own);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  text-align: left;
+}
+.rk-ledger__tok {
+  position: relative;
+  display: inline-grid;
+  margin-left: 6px;
+  flex: none;
+}
+.rk-ledger__name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 9.5em;
+  font: 700 15px / 1.2 var(--font-body);
+}
+.rk-ledger td {
+  width: 4.2em;
+  padding: 3px 8px;
+  text-align: right;
+  font: 800 17px / 1 var(--font-code);
+}
+.rk-ledger tr.is-turn {
+  background: color-mix(in srgb, var(--rk-own) 16%, transparent);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.rk-ledger tr.is-out {
+  opacity: 0.5;
+}
+td.rk-ledger__out {
+  font: 600 13px / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
 /* On the TV the last battle is a card of its own, dice big enough to read from the sofa. */
 .rk--tv .rk-dice {
   padding: 0.6em 0.8em;

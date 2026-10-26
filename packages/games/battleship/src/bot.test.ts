@@ -1,5 +1,6 @@
 import { createRng } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
+import { fleetError } from './fleet';
 import {
   battleship as game,
   unhitCells,
@@ -91,6 +92,7 @@ describe('Battleship bots', () => {
     const place = ask(s, 'wren', 2, 0);
     expect(place?.type).toBe('place');
     if (place?.type !== 'place') return;
+    expect(fleetError(place.ships)).toBeNull();
     s = game.applyAction(s, 'wren', place, createRng(3), 1_000);
     const rook = ask(s, 'rook', 4, 1_000);
     expect(rook?.type).toBe('place');
@@ -122,9 +124,9 @@ describe('Battleship bots', () => {
         type: 'place',
         ships: [
           { id: 'carrier', dir: 'h', at: 0 },
-          { id: 'battleship', dir: 'h', at: 10 },
+          { id: 'battleship', dir: 'h', at: 20 },
           { id: 'cruiser', dir: 'v', at: 7 },
-          { id: 'submarine', dir: 'h', at: 33 },
+          { id: 'submarine', dir: 'h', at: 43 },
           { id: 'destroyer', dir: 'h', at: 98 },
         ],
       },

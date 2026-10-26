@@ -9,7 +9,7 @@ async function createLobby(page: Page, name: string) {
   await page.getByRole('button', { name: 'Create a lobby' }).click();
   await page.waitForURL(/\/r\/[A-Z]{4}$/);
   await page
-    .getByRole('button', { name: /^(Board )?Kings 1/ })
+    .getByRole('button', { name: /^(Mini game )?Kings 1/ })
     .first()
     .click();
   await page.getByRole('button', { name: 'Show options and rules' }).click();

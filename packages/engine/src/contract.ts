@@ -7,7 +7,7 @@ import type { BotLevel } from './protocol';
  * special cases. Changing this file affects every game: ask the repo owner first.
  */
 
-export type GameCategory = 'social-deduction' | 'card' | 'board' | 'word';
+export type GameCategory = 'social-deduction' | 'card' | 'board' | 'word' | 'mini';
 
 export interface GameMeta {
   /** Stable id used in URLs and storage, e.g. "avalon". */

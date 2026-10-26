@@ -6,7 +6,7 @@ export const meta: GameMeta = {
   tagline: 'Rock, paper, scissors with the whole table at once.',
   minPlayers: 2,
   maxPlayers: 10,
-  category: 'board',
+  category: 'mini',
   minutes: [2, 5],
   complexity: 1,
 };

@@ -182,7 +182,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 };
 
 /** "12s" while a turn timer runs, for the dock. */
-function TurnClock({ t, now }: { t: PokerTableView; now: () => number }) {
+export function TurnClock({ t, now }: { t: PokerTableView; now: () => number }) {
   const left = useCountdown(t.actBy, now);
   if (left === null) return null;
   return (

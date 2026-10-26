@@ -2,7 +2,7 @@
 
 import { OutcomeChip, Token, useCountdown, type ScreenPlayer } from '@jackdaw/ui';
 import { useEffect, useState } from 'react';
-import { NEUTRAL, continentsHeld } from '../board';
+import { NEUTRAL, continentsHeld, territoriesOf } from '../board';
 import type { MapDef } from '../maps';
 import { beaten } from '../moments';
 import type { Battle, Phase, RiskTableView } from '../rules';
@@ -22,6 +22,17 @@ export function namer(players: ScreenPlayer[]) {
   const byId = new Map(players.map((p) => [p.id, p]));
   return (pid: string) =>
     pid === NEUTRAL ? 'the neutral army' : (byId.get(pid)?.name ?? 'Someone');
+}
+
+/** A seat's public strength: territories held, armies (unknown in the fog) and cards in hand. */
+export function strength(t: RiskTableView, id: string) {
+  // In the fog only how many territories each holds is public.
+  const lands = territoriesOf(t.owner, id);
+  return {
+    lands: t.held[id] ?? lands.length,
+    armies: t.fog ? null : lands.reduce((sum, l) => sum + (t.armies[l] ?? 0), 0),
+    cards: t.handCounts[id] ?? 0,
+  };
 }
 
 export const territoryName = (map: MapDef, t: string) =>

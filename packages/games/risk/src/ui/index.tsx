@@ -5,6 +5,7 @@ import { LobbySeats, RiskTvLobby } from './lobby';
 import { PlayerScreen } from './player';
 import { Reveal, TvReveal } from './reveal';
 import { TvScreen } from './tv';
+import { WatchScreen } from './watch';
 
 /** What happens when the turn clock runs out (rules.ts `timeUp`). */
 const LATE = 'When time runs out, any armies left are placed for you and your turn ends.';
@@ -75,6 +76,7 @@ export const riskUi: GameUi = {
   TvLobby: RiskTvLobby,
   PlayerScreen,
   TvScreen,
+  WatchScreen,
   Reveal,
   TvReveal,
 };

@@ -1284,7 +1284,7 @@ export const monopoly: GameModule<
       board: 'Classic',
       ends: 'Last one standing',
       unbought: 'Goes to auction',
-      parking: 'Nothing',
+      parking: 'Collects the taxes',
       turnTimer: 'Off',
     };
   },

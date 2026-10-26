@@ -293,7 +293,7 @@ export function Board({ t, players, size, focus = null, onSpace, children }: Boa
                 } as CSSProperties
               }
             >
-              <span key={`${pos}-${walk.step}`} className="mnp-token__hop">
+              <span key={pos} className="mnp-token__hop">
                 {p && <Token avatar={p.avatar} size={tokenSize} title={p.name} />}
               </span>
             </span>

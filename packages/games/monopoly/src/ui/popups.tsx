@@ -66,10 +66,10 @@ function quick(e: PopEntry): boolean {
 }
 
 /** Turn new log lines into popups: doubles picked out of rolls, a run of builds in one, a full set. */
-function collect(t: MonopolyTableView, after: number): PopEntry[] {
+function collect(t: MonopolyTableView, after: number, me: string | null): PopEntry[] {
   const out: PopEntry[] = [];
   for (const e of t.log) {
-    if (e.seq <= after || !SHOWN.has(e.kind) || !worthIt(e)) continue;
+    if (e.seq <= after || !SHOWN.has(e.kind) || !worthIt(e) || !wanted(e, me)) continue;
     if (e.kind === 'roll') {
       out.push({ ...e, kind: 'doubles' });
       continue;
@@ -79,7 +79,7 @@ function collect(t: MonopolyTableView, after: number): PopEntry[] {
       out[out.length - 1] = { ...last, count: (last.count ?? 1) + 1, space: e.space, seq: e.seq };
       continue;
     }
-    out.push(e);
+    if (e.kind !== 'buy') out.push(e);
     const st = e.kind === 'buy' && e.space !== undefined ? streetAt(e.space) : null;
     if (st && setOf(e.space!).every((d) => t.deeds[String(d)]?.owner === e.by)) {
       out.push({ ...e, kind: 'set', group: st.group, seq: e.seq + 0.5 });
@@ -115,7 +115,7 @@ export function Popups({
   const [seen, setSeen] = useState(t.seq);
   const [queue, setQueue] = useState<PopEntry[]>([]);
   if (t.seq !== seen) {
-    const fresh = collect(t, seen);
+    const fresh = collect(t, seen, me);
     setSeen(t.seq);
     if (fresh.length) setQueue((q) => trim([...q, ...fresh], me));
   }
@@ -219,6 +219,35 @@ function worthIt(e: LogEntry): boolean {
   if (e.kind === 'auction')
     return e.text.startsWith('Nobody') || e.text.includes('goes to auction');
   return true;
+}
+
+/**
+ * Keep the popups to what matters (2026-10-25: "tone it down just a tad"): rent between anyone,
+ * cards, going to Jail, trades and full sets for everyone; your own taxes, doubles and getting out
+ * of Jail; a Free Parking win. Your own purchases, building and mortgages you just did, and passing
+ * GO shows as the money stamp. The TV is the shared table, so it keeps taxes for everyone too.
+ */
+function wanted(e: LogEntry, me: string | null): boolean {
+  const mine = me !== null && involves(e, me);
+  switch (e.kind) {
+    case 'rent':
+    case 'card':
+    case 'trade':
+      return true;
+    case 'tax':
+      return mine || me === null;
+    case 'jail':
+      return e.text.includes('went to Jail') || mine;
+    case 'roll':
+      return mine;
+    case 'cash':
+      return e.text.includes('Free Parking');
+    case 'buy':
+      // Kept only so a full set can follow it; the purchase itself isn't shown.
+      return true;
+    default:
+      return false;
+  }
 }
 
 function involves(e: PopEntry, me: string): boolean {

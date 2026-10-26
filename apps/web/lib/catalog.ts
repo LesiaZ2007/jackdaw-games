@@ -49,7 +49,7 @@ export const gameUis: Record<string, GameUi> = {
 };
 
 /** The order games are listed in: grouped loosely by kind. */
-const KIND_ORDER: GameCategory[] = ['social-deduction', 'word', 'card', 'board'];
+const KIND_ORDER: GameCategory[] = ['social-deduction', 'word', 'card', 'board', 'mini'];
 
 /** Every game, playable ones first, each group by kind and then by name. */
 export const catalog: CatalogEntry[] = [
@@ -74,6 +74,7 @@ export const CATEGORY_LABEL: Record<GameCategory, string> = {
   word: 'Word and party',
   card: 'Card',
   board: 'Board',
+  mini: 'Mini game',
 };
 
 export const COMPLEXITY_LABEL: Record<1 | 2 | 3, string> = { 1: 'Light', 2: 'Medium', 3: 'Heavy' };

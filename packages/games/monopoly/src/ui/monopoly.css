@@ -938,11 +938,11 @@ button.mnp-sp {
   --note: var(--mnp-n500);
 }
 
+/* Every deed shows: the hands wrap onto more rows rather than scroll away. */
 .mnp-deeds {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  flex-wrap: wrap;
+  gap: 8px 10px;
   padding: 2px 2px 4px;
 }
 .mnp-deeds__none {
@@ -2728,4 +2728,28 @@ button.mnp-sp {
 }
 .mnp--wide .mnp-mini__name {
   font-size: 9px;
+}
+
+/* A pile's face: the picture on top and the name under it, both inside the card. */
+.mnp-pile__face {
+  flex-direction: column;
+  gap: 4%;
+  padding: 6% 4%;
+  overflow: hidden;
+}
+.mnp-pile__art {
+  width: auto;
+  height: 52%;
+  aspect-ratio: 1;
+}
+.mnp-pile__art .mnp-q {
+  font-size: 6.5cqmin;
+}
+.mnp-pile__name {
+  max-width: 94%;
+  align-items: center;
+  text-align: center;
+  font-size: 2.6cqmin;
+  letter-spacing: 0.04em;
+  line-height: 1;
 }

@@ -1,7 +1,7 @@
 import { createRng, GameError } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
 import { checkKings, makePuzzle, MAX_SIZE, MIN_SIZE, solve, type Puzzle } from './puzzle';
-import { botSolveMs, CLOSE_MS, kings, ranking, type KingsState } from './rules';
+import { botKings, botSolveMs, CLOSE_MS, kings, ranking, type KingsState } from './rules';
 import { clock } from './time';
 
 const answer = (p: Puzzle) => solve(p, 1)[0]!.map((c, r) => r * p.size + c);
@@ -162,13 +162,63 @@ describe('Kings', () => {
     }
   });
 
+  it('keeps live kings off the table in a race, and shows them to those who have finished', () => {
+    let s = start(['wren', 'rook'], '5×5', 1);
+    const p = s.puzzles[0]!;
+    s = kings.applyAction(
+      s,
+      'rook',
+      { type: 'progress', puzzle: 0, kings: [3, 11] },
+      createRng(1),
+      2_000,
+    );
+    expect(kings.getTableView(s).placed).toEqual({ wren: 0, rook: 2 });
+    expect(kings.getTableView(s).live).toBeUndefined();
+    expect(kings.getPlayerView(s, 'wren').watching).toBeUndefined();
+    expect(kings.getPlayerView(s, 'rook').mine).toEqual([3, 11]);
+    expect(JSON.stringify(kings.getPlayerView(s, 'wren'))).not.toContain('[3,11]');
+    s = kings.applyAction(
+      s,
+      'wren',
+      { type: 'solve', puzzle: 0, kings: answer(p) },
+      createRng(1),
+      3_000,
+    );
+    expect(kings.getPlayerView(s, 'wren').watching?.rook).toEqual([3, 11]);
+    expect(kings.getTableView(s).placed.wren).toBe(0);
+  });
+
+  it('shows the live board on the table when someone plays alone', () => {
+    let s = start(['wren'], '5×5', 1);
+    s = kings.applyAction(
+      s,
+      'wren',
+      { type: 'progress', puzzle: 0, kings: [7] },
+      createRng(1),
+      2_000,
+    );
+    expect(kings.getTableView(s).live).toEqual({ wren: [7] });
+  });
+
+  it('has bots fill the board a king at a time, smallest colours first', () => {
+    const p = makePuzzle(8, createRng(12));
+    const right = new Set(answer(p));
+    const counts = [0, 0.3, 0.6, 0.9, 0.99].map((f) => botKings(p, f * 1000, 1000, 'hard', 'k'));
+    expect(counts.map((k) => k.length)).toEqual(
+      [...counts.map((k) => k.length)].sort((a, b) => a - b),
+    );
+    expect(counts[0]).toEqual([]);
+    expect(counts.at(-1)!.length).toBe(7);
+    for (const k of counts) for (const cell of k.slice(0, -1)) expect(right.has(cell)).toBe(true);
+  });
+
   it('saves the race so far when ended early, and nothing before a puzzle is solved', () => {
     let s = start(['wren', 'rook'], '5×5', 4);
     expect(kings.partialResult!(s)).toBeNull();
     s = solveFor(s, 'rook', 9_000);
     const r = kings.partialResult!(s)!;
     expect(r.winners).toEqual(['rook']);
-    expect(r.summary).toBe('Won with 1 of 4 in 0:08');
+    expect(r.summary).toBe('1 of 4 solved in 0:08');
   });
 
   it('lets bots race each other to the end', () => {

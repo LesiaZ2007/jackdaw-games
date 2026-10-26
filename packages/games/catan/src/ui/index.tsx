@@ -5,6 +5,7 @@ import { CatanTvLobby, LobbySeats } from './lobby';
 import { PlayerScreen } from './player';
 import { Reveal, TvReveal } from './reveal';
 import { TvScreen } from './tv';
+import { WatchScreen } from './watch';
 
 const LATE =
   'When time runs out, the step finishes for you: a roll, a discard, or the end of your turn.';
@@ -68,6 +69,7 @@ export const catanUi: GameUi = {
   TvLobby: CatanTvLobby,
   PlayerScreen,
   TvScreen,
+  WatchScreen,
   Reveal,
   TvReveal,
 };

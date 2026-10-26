@@ -4,6 +4,7 @@ import type { GameUi } from '@jackdaw/ui';
 import { LobbySeats } from './lobby';
 import { PlayerScreen } from './player';
 import { TvScreen } from './tv';
+import { WatchScreen } from './watch';
 
 /** UNO: catalog art, detail page and screens. It uses Jackdaw's lobby, seated round the mat. */
 export const unoUi: GameUi = {
@@ -54,4 +55,5 @@ export const unoUi: GameUi = {
   LobbySeats,
   PlayerScreen,
   TvScreen,
+  WatchScreen,
 };

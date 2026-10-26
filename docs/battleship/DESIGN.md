@@ -102,13 +102,12 @@ is `1000` minus the winner's shots, so fewer shots rank higher.
 A printed chart on pale water. The sea, its ink, and a few engraved wave lines are tokens
 on `.bs` (`--bs-sea`, `--bs-ink`, `--bs-wave`), with a darker sea when `useTheme()` is dark.
 Each ship has its own broad silhouette, bow to the left or the top, still wide enough to
-cover its squares. Ink lines inside the hull keep them distinct at chart size: the
-carrier's flight deck and small island, the battleship's stepped deck and three gun
-houses, the cruiser's lighter deck line and one gun house, the submarine's hull line and
-conning tower, the destroyer's short deck line and small gun. The forms stay pointed and
-rounded. Heraldic fills stay (gules, azure, vert, purpure, tenné). The battleship stays
-azure, and it is not the carrier. Your own fleet, the placement ghost, and a sunk ship
-use these drawings.
+cover its squares: the carrier's flight deck and island, the battleship's long hull with
+a stepped deck and three gun houses, the cruiser's clipper bow and spoon stern, the
+submarine's round nose and sail, the destroyer's sharp bow and cut stern. Only the
+battleship carries interior ink, for the stepped deck and the gun houses. Heraldic fills
+stay (gules, azure, vert, purpure, tenné). The battleship stays azure, and it is not the
+carrier. Your own fleet, the placement ghost, and a sunk ship use these shapes.
 A sunk hull tilts a little and turns transparent so the squares show through, still on
 the cells it occupies. An unsunk enemy ship is never drawn. The frame, compass, and miss
 marks use the sea ink. Jackdaw's bar is left alone. No gradients as decoration, no glows,

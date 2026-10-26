@@ -208,7 +208,6 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               sinking={sinking}
               settling={settling}
               tally={tallyOf(v.boards[v.me])}
-              smoke="own"
               ghost={ghost}
               onAim={placing ? setAim : undefined}
               interactive={placing}
@@ -225,7 +224,6 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               sinking={theirSinking}
               settling={null}
               tally={tallyOf(v.boards[foe])}
-              smoke="sea"
               selected={salvo}
               interactive={firing}
               onCell={firing ? (cell) => void fire(cell) : undefined}

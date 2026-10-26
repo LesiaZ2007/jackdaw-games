@@ -122,11 +122,9 @@ player plaques. The chart has no scale bar.
 Letters A–J and numbers 1–10 sit on the same tracks as the columns and rows. A miss or a
 hit is inside the cell. The labels are not buttons, so tapping one does not fire.
 
-A hit part of your own ship smokes, and the red peg sits on that square of the hull with
-a parchment outline taken from `--on-fill`. A red peg in open water keeps the ink edge
-only. On their sea, smoke marks the hit cell only, until that ship sinks. After it
-sinks, the hull can smoke, and the pegs on it take the same parchment outline. Smoke is
-ink, with no blur.
+A red peg on a drawn hull takes a parchment outline from `--on-fill`. A red peg in open
+water keeps the ink edge only. On their sea the hit is that peg on the cell. After the
+ship sinks, the pegs on the hull take the same parchment outline.
 
 On a computer, while you are placing, a faded copy of the ship you have picked follows
 the mouse and snaps to the squares it would occupy. Same shape, length, and fill. A spot

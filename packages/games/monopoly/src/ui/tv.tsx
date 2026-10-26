@@ -3,6 +3,7 @@
 import { useMoment, useTheme, VerdictMoment, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { MonopolyTableView } from '../rules';
 import { Board } from './board';
+import { Popups } from './popups';
 import { Centre, Clock, People, say, statusLine, Story } from './player';
 import './monopoly.css';
 
@@ -43,6 +44,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
         <People t={t} players={players} me={null} reactions={reactions} tv />
         <Story t={t} name={name} count={7} />
       </aside>
+      <Popups t={t} me={null} players={players} tv />
       {moment !== null && lastOut && (
         <VerdictMoment
           key={lastOut.seq}

@@ -2759,3 +2759,36 @@ button.mnp-sp {
 .mnp-pile--chance .mnp-pile__name {
   width: 52%;
 }
+
+/* ── Watching on a phone ─────────────────────────────────────────────────
+ * The board takes the width it needs and the story fills what is left, newest first; its top line
+ * is already the status above the board. */
+.mnp--watch .mnp-main {
+  flex: 0 1 auto;
+}
+.mnp--watch .mnp-stage {
+  flex: 0 1 auto;
+  height: 100cqw;
+}
+.mnp-watch {
+  flex: 1 1 0;
+  min-height: 0;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 2px solid var(--rule);
+}
+.mnp-watch__now {
+  margin: 0;
+  font: 800 15px / 1.2 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.mnp-watch .mnp-story {
+  flex: 1;
+}
+.mnp-watch .mnp-story__line:first-child {
+  display: none;
+}
+.mnp-watch .mnp-story__line:nth-child(2) {
+  border-left-color: var(--ink);
+}

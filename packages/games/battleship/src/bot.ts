@@ -4,9 +4,10 @@ import type { BattleshipAction, BattleshipPlayerView, BattleshipTableView, Mark 
 
 /**
  * A computer opponent that only sees its own chart (2026-10-24: a bot plays from that seat's
- * view). It lays a random legal fleet, then hunts: squares next to a hit that has not sunk a
- * ship come first, especially the ends of a line of hits, and otherwise it searches a
- * checkerboard, since every ship is at least two squares. Below Hard it sometimes just guesses.
+ * view). It lays a random legal fleet, with water between the ships, then hunts: squares
+ * next to a hit that has not sunk a ship come first, especially the ends of a line of hits,
+ * and otherwise it searches a checkerboard, since every ship is at least two squares.
+ * Below Hard it sometimes just guesses.
  */
 
 export function battleshipBot(

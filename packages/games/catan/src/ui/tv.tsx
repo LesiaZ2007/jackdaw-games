@@ -8,7 +8,7 @@ import {
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import type { CSSProperties } from 'react';
-import { awardMoment, robberyMoment } from '../moments';
+import { awardMoment, robberyMoment, type Moment } from '../moments';
 import type { CatanTableView } from '../rules';
 import { RESOURCES } from '../types';
 import { CatanBoard } from './board';
@@ -19,6 +19,16 @@ import { CardRow } from './sheets';
 import { seatColour } from './palette';
 import './catan.css';
 import './tv.css';
+
+/** A robbery or an award changing hands, in words for someone who wasn't in it. */
+export function revealWords(m: Moment, name: (id: string | null) => string) {
+  return m.kind === 'robbery'
+    ? { title: `${name(m.who)} robbed ${name(m.other)}`, detail: 'One card taken' }
+    : {
+        title: `${name(m.who)} takes ${m.kind === 'road' ? 'Longest Road' : 'Largest Army'}`,
+        detail: 'Two more points',
+      };
+}
 
 /**
  * The TV: the island large, cards flying from each paying tile to its buildings; whose turn it is
@@ -183,12 +193,7 @@ export const TvScreen: GameUi['TvScreen'] = ({
           key={rob ? `r${rob.key}` : `a${award!.key}`}
           size="tv"
           outcome="reveal"
-          title={
-            rob
-              ? `${name(rob.who)} robbed ${name(rob.other)}`
-              : `${name(award!.who)} takes ${award!.kind === 'road' ? 'Longest Road' : 'Largest Army'}`
-          }
-          detail={rob ? 'One card taken' : 'Two more points'}
+          {...revealWords((rob ?? award)!, name)}
           onDone={rob ? dropRob : dropAward}
         />
       )}

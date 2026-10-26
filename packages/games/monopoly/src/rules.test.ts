@@ -205,7 +205,7 @@ describe('setup', () => {
     const s = base();
     expect(s.maxRounds).toBe(0);
     expect(s.auctions).toBe(true);
-    expect(s.parkingPot).toBe(false);
+    expect(s.parkingPot).toBe(true);
     expect(s.turnSecs).toBe(0);
     expect(s.actBy).toBeNull();
     expect(game.nextTimer!(s)).toBeNull();
@@ -370,7 +370,7 @@ describe('rolling and moving', () => {
   });
 
   it('without the pot rule taxes vanish and Free Parking pays nothing', () => {
-    let s = edit(base(), (d) => {
+    let s = edit(base(TWO, { parking: 'Nothing' }), (d) => {
       seat(d, 'wren').pos = 1;
     });
     s = act(s, 'wren', { type: 'roll' }, dice(1, 2));

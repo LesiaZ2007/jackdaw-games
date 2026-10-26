@@ -5,10 +5,13 @@ import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
 import type { LobbyChat, ScreenPlayer } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 import { serverClock as clock } from '@/lib/clock';
+import { TvWindow } from '../../tv/[code]/tv-stage';
 
 /**
  * Runs the chosen game's own screen. Seated players get their private view plus the public
- * table; latecomers watch the table and are seated next game.
+ * table; latecomers watch the table and are seated next game. The table is the game's TV screen,
+ * laid out in TV pixels, so it's scaled whole into the space under the note (unless the game is
+ * drawn edge to edge, whose TV screen fills a phone as it is).
  */
 export function GameShell({
   snapshot: s,
@@ -42,19 +45,26 @@ export function GameShell({
 
   if (!seated || s.view === undefined) {
     const Tv = ui.TvScreen;
+    const table = (
+      <Tv
+        tableView={s.tableView}
+        players={players}
+        now={clock}
+        reactions={s.reactions}
+        chat={ui.fullBleed ? chat : undefined}
+      />
+    );
     return (
-      <div className={ui.fullBleed ? 'game-shell game-shell--bleed' : 'game-shell'}>
+      <div
+        className={
+          ui.fullBleed ? 'game-shell game-shell--bleed' : 'game-shell game-shell--fit game-watch'
+        }
+      >
         <p className="spectator" role="status">
           You&rsquo;re watching this round of {entry.meta.name}. You&rsquo;ll be seated in the next
-          game.
+          game.<span className="spectator__turn"> Turn your phone sideways to see more.</span>
         </p>
-        <Tv
-          tableView={s.tableView}
-          players={players}
-          now={clock}
-          reactions={s.reactions}
-          chat={ui.fullBleed ? chat : undefined}
-        />
+        {ui.fullBleed ? table : <TvWindow>{table}</TvWindow>}
       </div>
     );
   }

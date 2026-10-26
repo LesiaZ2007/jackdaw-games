@@ -2243,41 +2243,14 @@ button.mnp-sp {
   }
 }
 
-/* A popup about someone else on a phone: a smaller card up top that doesn't stop your play. */
+/* A popup that moves on by itself sits in the same place, without a backdrop or a hold on taps. */
 .mnp-pop--aside {
-  align-items: start;
   background: transparent;
   pointer-events: none;
   animation: none;
 }
 .mnp-pop--aside .mnp-pop__card {
   pointer-events: auto;
-  width: min(300px, 100%);
-  gap: 6px;
-  padding-bottom: 10px;
-  margin-top: 56px;
-}
-.mnp-pop--aside .mnp-pop__art {
-  width: 52px;
-  height: 52px;
-}
-.mnp-pop--aside .mnp-pop__art .mnp-q {
-  font-size: 52px;
-}
-.mnp-pop--aside .mnp-pop__title {
-  font-size: 20px;
-}
-.mnp-pop--aside .mnp-pop__amount {
-  font-size: 30px;
-}
-.mnp-pop--aside .mnp-pop__body {
-  font-size: 14px;
-}
-
-.mnp-pop--aside .mnp-pop__deed {
-  width: 34px;
-  height: 44px;
-  box-shadow: 2px 3px 0 var(--mnp-ink);
 }
 @media (hover: hover) and (pointer: fine) {
   .mnp-pop--tv .mnp-pop__art {
@@ -2386,7 +2359,7 @@ button.mnp-sp {
   height: 70%;
   max-height: 7cqmin;
   max-width: 58%;
-  rotate: -90deg;
+  rotate: 90deg;
 }
 .mnp-tv .mnp-sp--l:not(.mnp-sp--corner) .mnp-face,
 .mnp-tv .mnp-sp--r:not(.mnp-sp--corner) .mnp-face {
@@ -2473,10 +2446,6 @@ button.mnp-sp {
   rotate: 14deg;
   translate: -14px 4px;
 }
-.mnp-pop--aside .mnp-pop__set .mnp-pop__deed {
-  width: 26px;
-  height: 34px;
-}
 .mnp-pop__art .mnp-dice {
   animation: none;
 }
@@ -2542,4 +2511,221 @@ button.mnp-sp {
 }
 .mnp-deeds--tv .mnp-mini__built {
   display: none;
+}
+
+/* ── Round three: calmer, bigger money, things that fit ────────────────── */
+
+/* Buildings on the side bands face the same way as the side's print. */
+.mnp-sp--l .mnp-built .mnp-art {
+  rotate: 90deg;
+}
+.mnp-sp--r .mnp-built .mnp-art {
+  rotate: -90deg;
+}
+.mnp-sp--l .mnp-built--hotel .mnp-art--hotel,
+.mnp-sp--r .mnp-built--hotel .mnp-art--hotel {
+  width: 160%;
+  height: auto;
+}
+
+/* GO's lines stay inside the corner. */
+.mnp-face--go {
+  justify-content: space-evenly;
+  gap: 0;
+  padding: 6% 5%;
+  overflow: hidden;
+}
+.mnp-face--go .mnp-face__small {
+  font-size: 0.72em;
+  line-height: 1;
+  max-width: 100%;
+}
+.mnp-face--go .mnp-face__big {
+  font-size: max(14px, 4.2cqmin);
+}
+.mnp-face--go .mnp-face__arrow {
+  width: 52%;
+}
+.mnp-tv .mnp-face--go .mnp-face__big {
+  font-size: 54px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .mnp-tv .mnp-face--go .mnp-face__big {
+    font-size: 46px;
+  }
+}
+
+/* The pile labels stay on their cards. */
+.mnp-pile__name {
+  max-width: 52%;
+  font-size: 3.1cqmin;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+.mnp-pile__art {
+  width: 30%;
+}
+.mnp-centre__mark {
+  font-size: 11.5cqmin;
+}
+
+/* The taxes, piled in the middle for whoever lands on Free Parking. */
+.mnp-centre__pot {
+  position: absolute;
+  left: 50%;
+  top: 82%;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6cqmin;
+}
+.mnp-centre__potname {
+  font: 800 2.6cqmin / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.mnp-centre__dice {
+  top: 64%;
+}
+.mnp-centre__foot {
+  bottom: auto;
+  top: 6.5%;
+}
+.mnp-wallet--pot {
+  gap: 1.4cqmin;
+}
+.mnp-wallet--pot .mnp-wallet__piles {
+  flex: none;
+  height: 7cqmin;
+  gap: 0.8cqmin;
+}
+.mnp-wallet--pot .mnp-pilenote {
+  flex: none;
+  width: 9cqmin;
+  min-width: 0;
+  height: 5.5cqmin;
+}
+.mnp-wallet--pot .mnp-note {
+  height: 4.6cqmin;
+}
+.mnp-wallet--pot .mnp-note__oval {
+  font-size: 2.1cqmin;
+  padding: 0 0.6cqmin;
+}
+.mnp-wallet--pot .mnp-pilenote__n {
+  font-size: 2cqmin;
+  top: -2cqmin;
+}
+.mnp-wallet--pot .mnp-wallet__sum {
+  font-size: 4.4cqmin;
+}
+.mnp-wallet--pot .mnp-wallet__empty {
+  font-size: 2.4cqmin;
+}
+
+/* Your money, bigger. */
+.mnp-wallet__piles {
+  height: 44px;
+  gap: 6px;
+}
+.mnp-pilenote {
+  flex: 0 1 58px;
+  min-width: 36px;
+  height: 34px;
+}
+.mnp-note {
+  height: 28px;
+}
+.mnp-note__oval {
+  font-size: 12px;
+  padding: 0 5px;
+}
+.mnp-pilenote__n {
+  font-size: 11px;
+}
+.mnp-wallet__sum {
+  font-size: 30px;
+}
+.mnp--wide .mnp-purse {
+  padding: 8px 0;
+  border-top: 2px solid var(--rule);
+}
+.mnp--wide .mnp-wallet__piles {
+  height: 52px;
+}
+.mnp--wide .mnp-pilenote {
+  flex-basis: 66px;
+  height: 40px;
+}
+.mnp--wide .mnp-note {
+  height: 33px;
+}
+.mnp--wide .mnp-wallet__sum {
+  font-size: 34px;
+}
+.mnp--wide .mnp-story {
+  flex: 0 1 auto;
+}
+.mnp--wide .mnp-side-col {
+  justify-content: flex-start;
+}
+.mnp--wide .mnp-dock {
+  margin-top: auto;
+}
+
+/* The middle laid out like the board: piles in opposite corners, the name across the other
+   diagonal, the pot along it on the chest side and the dice on the Chance side. */
+.mnp-centre__pile {
+  width: 25cqmin;
+  height: 17cqmin;
+}
+.mnp-centre__pile--chest {
+  left: 5cqmin;
+  top: 10cqmin;
+}
+.mnp-centre__pile--chance {
+  right: 5cqmin;
+  bottom: 10cqmin;
+}
+.mnp-centre__mark {
+  top: 50%;
+  font-size: 10.5cqmin;
+}
+.mnp-centre__pot {
+  left: 38%;
+  top: 36%;
+  rotate: -40deg;
+}
+.mnp-centre__dice {
+  left: 62%;
+  top: 64%;
+}
+.mnp-centre__foot {
+  top: auto;
+  left: 7%;
+  right: auto;
+  bottom: 6%;
+  text-align: left;
+  font-size: max(8px, 2.6cqmin);
+}
+.mnp-pile__name {
+  display: flex;
+  flex-direction: column;
+  max-width: 58%;
+  font-size: 2.9cqmin;
+  overflow-wrap: normal;
+}
+.mnp--wide .mnp-mini {
+  width: 56px;
+  height: 72px;
+}
+.mnp--wide .mnp-mini + .mnp-mini {
+  margin-left: -24px;
+}
+.mnp--wide .mnp-mini__band {
+  height: 20px;
+}
+.mnp--wide .mnp-mini__name {
+  font-size: 9px;
 }

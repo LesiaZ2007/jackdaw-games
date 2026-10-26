@@ -217,7 +217,16 @@ export function Pile({ deck, count = 3 }: { deck: 'chance' | 'chest'; count?: nu
         <span className="mnp-pile__art">
           {deck === 'chance' ? <span className="mnp-q mnp-q--cream">?</span> : <ArtChest />}
         </span>
-        <span className="mnp-pile__name">{deck === 'chance' ? 'Chance' : 'Community Chest'}</span>
+        <span className="mnp-pile__name">
+          {deck === 'chance' ? (
+            'Chance'
+          ) : (
+            <>
+              <span>Community</span>
+              <span>Chest</span>
+            </>
+          )}
+        </span>
       </span>
     </span>
   );

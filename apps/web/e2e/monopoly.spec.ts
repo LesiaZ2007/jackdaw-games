@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+﻿import { expect, test, type Page } from '@playwright/test';
 
 const SHOTS = process.env.E2E_SHOTS;
 
@@ -64,7 +64,7 @@ test('Monopoly: the host plays a few turns against two bots, and the TV shows th
 
   // A space opens its deed.
   await host.locator('.mnp-sp').nth(1).click();
-  await expect(host.getByRole('dialog', { name: 'Deed' })).toContainText('Mudlark Row');
+  await expect(host.getByRole('dialog', { name: 'Deed' })).toContainText('Mediterranean Avenue');
   if (SHOTS) {
     await host.waitForTimeout(700);
     await host.screenshot({ path: `${SHOTS}/monopoly-deed-375.png` });

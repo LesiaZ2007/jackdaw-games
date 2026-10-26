@@ -63,7 +63,6 @@ function EndedChart({
       sinking={[]}
       settling={null}
       tally={{ afloat: fleet.length - wrecks.length, sunk: wrecks.length }}
-      smoke="own"
       interactive={false}
     />
   );

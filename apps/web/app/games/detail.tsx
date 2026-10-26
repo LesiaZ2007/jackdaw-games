@@ -14,6 +14,7 @@ const KIND_SPEC: Record<GameCategory, [string, string]> = {
   word: ['Words', 'and party'],
   card: ['Cards', 'in hand'],
   board: ['Board', 'game'],
+  mini: ['Mini', 'game'],
 };
 
 const range = ([a, b]: [number, number]) => (a === b ? `${a}` : `${a}–${b}`);

@@ -27,16 +27,15 @@ const COLS = 'ABCDEFGHIJ'.split('');
  * Plan-view silhouettes in a 100×32 box, bow at the left. Each one is broad enough to cover
  * its squares. The vertical drawing is the same path with the axes swapped.
  *
- * Carrier: flight deck with the island on one side of the stern.
+ * Carrier: flight deck with the island blister on one side of the stern.
  * Battleship: a long hull, a stepped deck, and three gun houses.
  * Cruiser: a clipper bow, one turret, and a spoon stern.
  * Submarine: a round nose and a sail.
  * Destroyer: a sharp bow and a cut transom.
- * Ink lines sit inside each hull so the deck and the guns still read at chart size.
  */
 const HULL_H: Record<ShipId, string> = {
   carrier:
-    'M2 15 C12 8 20 4 32 4 H93 C97 4 99 8 99 12 V20 C99 24 97 26 93 26 H88 V32 H62 V26 H32 C20 26 12 22 2 15 Z',
+    'M2 15 C12 8 20 4 32 4 H93 C97 4 99 8 99 12 V20 C99 24 97 26 93 26 H84 V31 H66 V26 H32 C20 26 12 22 2 15 Z',
   battleship:
     'M0 16 C3 11 8 7 14 6 H20 V1 H34 V6 H42 V1 H58 V6 H68 V1 H82 V7 H92 C97 8 100 12 100 16 C100 20 97 24 92 25 H82 V31 H68 V26 H58 V31 H42 V26 H34 V31 H20 V26 H14 C8 25 3 21 0 16 Z',
   cruiser:
@@ -46,12 +45,8 @@ const HULL_H: Record<ShipId, string> = {
   destroyer: 'M0 16 C3 11 8 5 18 3 H68 L76 8 H99 V24 H76 L68 29 H18 C8 27 3 21 0 16 Z',
 };
 
-/**
- * Ink inside the silhouette. The battleship carries three gun houses. The others stay
- * themselves: a flight deck and one island, one lighter gun, a conning tower, a short gun.
- */
+/** Ink on the battleship so the gun houses and the stepped deck still read when the hull is small. */
 const HULL_LINES: Partial<Record<ShipId, readonly string[]>> = {
-  carrier: ['M22 9 H86', 'M22 15 H60', 'M66 18 H82 V31 H66 Z', 'M72 22 V28'],
   battleship: [
     'M22 4 H32 V28 H22 Z',
     'M44 4 H56 V28 H44 Z',
@@ -64,9 +59,6 @@ const HULL_LINES: Partial<Record<ShipId, readonly string[]>> = {
     'M80 10 H88',
     'M80 22 H88',
   ],
-  cruiser: ['M48 4 H60 V28 H48 Z', 'M16 16 H88', 'M48 13 H40', 'M48 19 H40'],
-  submarine: ['M18 16 H90', 'M40 2 H54 V20 H40 Z', 'M43 8 H51'],
-  destroyer: ['M22 16 H64', 'M28 8 H40 V24 H28 Z', 'M28 13 H20', 'M28 19 H20'],
 };
 
 export interface HullDraw {

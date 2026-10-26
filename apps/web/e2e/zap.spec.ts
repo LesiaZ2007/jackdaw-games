@@ -72,6 +72,20 @@ test('alone: draw by dragging, back up, then solve by taps', async ({ browser })
   await expect(cells.nth(answer[1]!)).toHaveAccessibleName(/end of the line/);
   await expect(cells.nth(answer[3]!)).toHaveAccessibleName(/empty/);
 
+  // Running into older line while dragging stops there; it only cuts back when pressed on purpose.
+  await page.mouse.move(...(await centre(answer[1]!)));
+  await page.mouse.down();
+  for (const i of [2, 3, 4, 5]) await page.mouse.move(...(await centre(answer[i]!)), { steps: 4 });
+  await page.mouse.move(...(await centre(answer[1]!)));
+  await expect(cells.nth(answer[5]!)).toHaveAccessibleName(/end of the line/);
+  await page.mouse.move(...(await centre(answer[5]!)));
+  await page.mouse.move(...(await centre(answer[6]!)), { steps: 4 });
+  await page.mouse.up();
+  await expect(cells.nth(answer[6]!)).toHaveAccessibleName(/end of the line/);
+  await cells.nth(answer[2]!).click();
+  await expect(cells.nth(answer[2]!)).toHaveAccessibleName(/end of the line/);
+  await expect(cells.nth(answer[3]!)).toHaveAccessibleName(/empty/);
+
   await page.getByRole('button', { name: 'Clear' }).click();
   await solveBoard(page, 1);
   await expect(page.getByText(/Solved 1 puzzle in/).first()).toBeVisible();

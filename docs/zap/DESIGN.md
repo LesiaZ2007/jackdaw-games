@@ -45,7 +45,9 @@ rarer with the level.
 
 Kings' printed puzzle book with an orange line: ink numbers in circles, heavy walls, a double-ruled
 frame. Press on 1 and drag; dragging back over the line takes it back, and a tap next to the end of
-the line extends it (a tap on the line cuts it there). The line stops at the last number
+the line extends it (a tap on the line cuts it there). Dragging into older line only stops the
+finger; nothing is lost unless you press on the line on purpose (2026-10-26: "it should only set
+back progress if I set my finger at that point on purpose"). The line stops at the last number
 (2026-10-26: "the last point should be the last number"). While drawing, its tip leans from the
 end square toward the finger, up to the edge of a square it could go to, and a quick or diagonal
 drag fills in the squares between. The squares behind the line are tinted. A

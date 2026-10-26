@@ -42,7 +42,7 @@ test('a latecomer watches the game on a phone, and the whole TV table sideways o
 
   // Upright, the game's own watch screen: one sea at a time, a tab for each.
   await expect(rook.getByText('Watching Battleship. You’ll play next game.')).toBeVisible();
-  await expect(rook.getByRole('tab', { name: 'Heron’s sea' })).toBeVisible();
+  await expect(rook.getByRole('tab', { name: 'Heron’s sea', exact: true })).toBeVisible();
   await rook.getByRole('tab', { name: /^Bot \w+’s sea$/ }).click();
   await expect(rook.getByRole('tab', { name: /^Bot \w+’s sea$/ })).toHaveAttribute(
     'aria-selected',

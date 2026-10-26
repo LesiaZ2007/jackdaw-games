@@ -67,8 +67,8 @@ export function Race({
               {done
                 ? `${place(i)} · ${clock(times.at(-1)! - t.startedAt)}`
                 : running
-                  ? `${times.length + 1}/${t.count} · ${clock(now() - since(t, id))}`
-                  : `${times.length}/${t.count}`}
+                  ? `On ${times.length + 1} of ${t.count} · ${clock(now() - since(t, id))}`
+                  : `${times.length} of ${t.count}`}
             </span>
           </li>
         );

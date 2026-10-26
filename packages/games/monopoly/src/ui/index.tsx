@@ -5,12 +5,12 @@ import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
 import { TvScreen } from './tv';
 
-/** Monopoly: a printed board of a market town. It uses Jackdaw's lobby. */
+/** Monopoly: the classic board, printed. It uses Jackdaw's lobby. */
 export const monopolyUi: GameUi = {
   art: { band: 'vert', field: 'fretty', glyph: 'house' },
   about: {
     description:
-      'Go round the town buying streets, coaching inns and guilds. Own a whole colour group and you can build houses and hotels, and the rent climbs fast. Trade to finish your sets, mortgage when money runs short, and keep going until everyone else is bankrupt.',
+      'Go round the board buying streets, railroads and utilities. Own a whole colour group and you can build houses and hotels, and the rent climbs fast. Trade to finish your sets, mortgage when money runs short, and keep going until everyone else is bankrupt.',
     steps: [
       'Roll the dice and move. Pass GO and collect $200.',
       'Land on a deed nobody owns and buy it, or let it go to auction, where anyone can bid.',
@@ -20,7 +20,7 @@ export const monopolyUi: GameUi = {
       'Can’t pay? Sell buildings and mortgage until you can, or go bankrupt. The last one standing wins, or the richest when the rounds run out.',
     ],
     credit:
-      'Monopoly is a trademark of Hasbro. Played here by the classic rules, on a board of our own: the streets, inns and guilds of a market town.',
+      'Monopoly is a trademark of Hasbro. Played here by the classic rules on the classic board.',
     pictures: [
       {
         src: '/games/monopoly/game-phone.png',
@@ -34,6 +34,12 @@ export const monopolyUi: GameUi = {
     ],
   },
   optionHelp: {
+    board: {
+      Classic:
+        'The classic board: Mediterranean Avenue to Boardwalk, the four railroads and the utilities.',
+      'Market town':
+        'The same game on a board of our own: the streets of a market town, coaching inns for railroads and guilds for utilities.',
+    },
     ends: {
       'Last one standing':
         'Play until everyone but one is bankrupt. The classic game, and a long one.',

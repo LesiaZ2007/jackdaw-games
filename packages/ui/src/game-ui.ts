@@ -66,6 +66,16 @@ export interface GameUi {
   PlayerScreen: ComponentType<PlayerScreenProps<any, any, any> & ScreenExtras>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TvScreen: ComponentType<TvScreenProps<any> & ScreenExtras>;
+  /**
+   * Optional: what someone who joined mid-game watches on an upright phone (they're seated next
+   * game). It
+   * gets exactly what the TV gets, the public table only, drawn the way the game's phone screen is,
+   * so it's readable in the hand. It fits the height under Jackdaw's bar like a `fit` screen (its
+   * root fills a size container named `game`) and never scrolls. Without it, and on a phone on
+   * its side or a laptop, the TV screen is scaled whole into the same space.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  WatchScreen?: ComponentType<TvScreenProps<any> & ScreenExtras>;
   /** Optional game-specific end-of-game reveal; the shell shows the recap timeline otherwise. */
   Reveal?: ComponentType<{ result: GameResult; players: ScreenPlayer[]; me: string | null }>;
   /**

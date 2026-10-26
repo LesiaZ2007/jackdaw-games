@@ -7,6 +7,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
+import './stage.css';
 
 const W = 1920;
 const H = 1080;
@@ -67,12 +68,7 @@ export function TvStage({ children, below }: { children: ReactNode; below?: Reac
     );
   }
 
-  // A game or results screen stretches to the window up to 4:3 or 21:9 (a TV, a laptop, an
-  // ultrawide), and sits centred beyond that, so a portrait phone doesn't get a sliver.
-  const fw = Math.min(sw, (H * 21) / 9);
-  const fh = Math.min(sh, (W * 3) / 4);
-  const x = ((sw - fw) / 2) * scale;
-  const y = ((sh - fh) / 2) * scale;
+  const { fw, fh, x, y } = fitStage(sw, sh, scale);
   return (
     <div className="tv-viewport">
       <div
@@ -86,6 +82,60 @@ export function TvStage({ children, below }: { children: ReactNode; below?: Reac
       >
         {children}
       </div>
+    </div>
+  );
+}
+
+/**
+ * A game or results screen stretches to the window up to 4:3 or 21:9 (a TV, a laptop, an
+ * ultrawide), and sits centred beyond that, so a portrait phone doesn't get a sliver. Takes the
+ * stage in TV pixels and its scale, and gives the screen's size and its offset in window pixels.
+ */
+function fitStage(sw: number, sh: number, scale: number) {
+  const fw = Math.min(sw, (H * 21) / 9);
+  const fh = Math.min(sh, (W * 3) / 4);
+  return { fw, fh, x: ((sw - fw) / 2) * scale, y: ((sh - fh) / 2) * scale };
+}
+
+/**
+ * The TV screen in a box on someone's own screen (a latecomer watching on a phone or laptop): the
+ * same TV-pixel stage, fitted to the box instead of the window and centred in it, so the whole
+ * table shows however small, never its top corner. The box sizes itself (`.tv-window`).
+ */
+export function TvWindow({ children }: { children: ReactNode }) {
+  const [box, setBox] = useState<HTMLDivElement | null>(null);
+  const [size, setSize] = useState<readonly [number, number] | null>(null);
+  useEffect(() => {
+    if (!box) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setSize([entry.contentRect.width, entry.contentRect.height]);
+    });
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [box]);
+
+  let stage: ReactNode = null;
+  if (size && size[0] > 0 && size[1] > 0) {
+    const [bw, bh] = size;
+    const scale = Math.min(bw / W, bh / H);
+    const { fw, fh, x, y } = fitStage(bw / scale, bh / scale, scale);
+    stage = (
+      <div
+        className="tv-stage"
+        style={{
+          width: fw,
+          height: fh,
+          transform: `translate(${x}px, ${y}px) scale(${scale})`,
+          ...stageUnits(fw, fh),
+        }}
+      >
+        {children}
+      </div>
+    );
+  }
+  return (
+    <div ref={setBox} className="tv-window">
+      {stage}
     </div>
   );
 }

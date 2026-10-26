@@ -217,17 +217,32 @@ export function Pile({ deck, count = 3 }: { deck: 'chance' | 'chest'; count?: nu
         <span className="mnp-pile__art">
           {deck === 'chance' ? <span className="mnp-q mnp-q--cream">?</span> : <ArtChest />}
         </span>
-        <span className="mnp-pile__name">
-          {deck === 'chance' ? (
-            'Chance'
-          ) : (
-            <>
-              <span>Community</span>
-              <span>Chest</span>
-            </>
-          )}
-        </span>
+        <PileName lines={deck === 'chance' ? ['CHANCE'] : ['COMMUNITY', 'CHEST']} />
       </span>
     </span>
+  );
+}
+
+/**
+ * A deck's name, drawn rather than set as text, so it scales with the card and is pressed to
+ * its width: a browser's minimum font size or text zoom can't push it off the card.
+ */
+function PileName({ lines }: { lines: string[] }) {
+  const h = 38 * lines.length;
+  return (
+    <svg className="mnp-pile__name" viewBox={`0 0 200 ${h}`} aria-hidden="true">
+      {lines.map((line, k) => (
+        <text
+          key={line}
+          x="100"
+          y={38 * k + 31}
+          textAnchor="middle"
+          textLength={Math.min(196, line.length * 20)}
+          lengthAdjust="spacingAndGlyphs"
+        >
+          {line}
+        </text>
+      ))}
+    </svg>
   );
 }

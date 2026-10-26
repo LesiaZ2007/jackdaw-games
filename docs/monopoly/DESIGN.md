@@ -17,7 +17,8 @@ What you land on decides the next step:
 - Chance and Community Chest draw a card (sixteen of each, in `cards.ts`).
 - Income Tax ($200) and Luxury Tax ($100) are paid to the bank.
 - Go to Jail sends you to the jail, space 10.
-- Free Parking does nothing, unless the taxes option is on (see Options).
+- Free Parking takes the pot of taxes and fines piled in the middle of the board, unless that
+  option is turned off (see Options).
 
 Throwing doubles gives you another roll, and three doubles in a row sends you to Jail.
 
@@ -30,13 +31,13 @@ Two to six players. `validateOptions` refuses any other count.
 
 Jackdaw's options panel offers five settings:
 
-| Key         | Label            | Choices                                             | Default           |
-| ----------- | ---------------- | --------------------------------------------------- | ----------------- |
-| `ends`      | Game ends        | Last one standing, After 30 rounds, After 20 rounds | Last one standing |
-| `unbought`  | Land nobody buys | Goes to auction, Stays with the bank                | Goes to auction   |
-| `parking`   | Free Parking     | Nothing, Collects the taxes                         | Nothing           |
-| `turnTimer` | Turn timer       | Off, 60 seconds, 90 seconds                         | Off               |
-| `board`     | Board            | Classic, Market town                                | Classic           |
+| Key         | Label            | Choices                                             | Default            |
+| ----------- | ---------------- | --------------------------------------------------- | ------------------ |
+| `ends`      | Game ends        | Last one standing, After 30 rounds, After 20 rounds | Last one standing  |
+| `unbought`  | Land nobody buys | Goes to auction, Stays with the bank                | Goes to auction    |
+| `parking`   | Free Parking     | Nothing, Collects the taxes                         | Collects the taxes |
+| `turnTimer` | Turn timer       | Off, 60 seconds, 90 seconds                         | Off                |
+| `board`     | Board            | Classic, Market town                                | Classic            |
 
 - **Board.** Only the names change: the market town words every space and card its own way,
   and its railroads and utilities are coaching inns and guilds. Prices, rents and rules are the
@@ -46,7 +47,9 @@ Jackdaw's options panel offers five settings:
 - **Land nobody buys.** A declined deed goes to auction. With "Stays with the bank" there is
   no auction, and the deed stays unowned until someone lands on it and buys it.
 - **Free Parking.** With "Collects the taxes" the bail, the taxes, and the card payments
-  that go to the bank are put in a pot. Landing on Free Parking takes the whole pot.
+  that go to the bank are put in a pot. Landing on Free Parking takes the whole pot. This
+  house rule is the default (2026-10-25: "stack the tax money in the middle"); "Nothing" is the
+  printed rule.
 - **Turn timer.** One shared clock for the table. See Timers.
 
 ## Turn flow

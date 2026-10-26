@@ -73,6 +73,26 @@ export function outOfOrder(p: Puzzle, path: readonly number[]): Set<number> {
   return bad;
 }
 
+/** Line and trail inks; red is left out so it can't be mistaken for a number out of order. */
+const INKS: [line: string, trail: string][] = [
+  ['#e0612a', '#f5d8c4'],
+  ['#2f6fd6', '#d7e3f7'],
+  ['#2e9a5b', '#d4ecdd'],
+  ['#8a4fd1', '#e7dbf5'],
+  ['#1b95a3', '#cfeaee'],
+  ['#d6457f', '#f6d7e4'],
+  ['#c98a12', '#f4e5c3'],
+];
+
+/** Each puzzle's ink, the same for everyone who sees it. */
+export function inkOf(p: Puzzle): { line: string; trail: string } {
+  let h = p.size;
+  for (const c of p.dots) h = (h * 31 + c) >>> 0;
+  for (const [a, b] of p.walls) h = (h * 31 + a * 97 + b) >>> 0;
+  const [line, trail] = INKS[h % INKS.length]!;
+  return { line, trail };
+}
+
 function wallLine(size: number, a: number, b: number) {
   const ra = Math.floor(a / size);
   const ca = a % size;
@@ -92,9 +112,9 @@ function name(p: Puzzle, i: number, walls: string[]) {
 }
 
 /**
- * The board. Press on 1 and drag to draw the line; drag back over it to take steps back. Taps
- * work too: tap a square next to the line's end to add it, or a square on the line to cut back to
- * it. Read-only without `onPath` (the TV, the results, anyone watching).
+ * The board. Press on 1 and drag to draw the line; drag back along it to take steps back. Taps
+ * work too: tap a square next to the line's end to add it, or press on a square of the line to cut
+ * back to it. Read-only without `onPath` (the TV, the results, anyone watching).
  */
 export function Board({
   puzzle,
@@ -115,6 +135,7 @@ export function Board({
   const adj = links(puzzle);
   const on = new Set(path);
   const bad = outOfOrder(puzzle, path);
+  const ink = inkOf(puzzle);
   const drag = useRef<{ path: number[]; last: number } | null>(null);
   const [pen, setPen] = useState<{ x: number; y: number } | null>(null);
   const wallsOf = (i: number) => {
@@ -158,11 +179,22 @@ export function Board({
     setPen(p);
     const at = cellOf(p);
     if (at === null || at === d.last) return;
+    const from = d.last;
     d.last = at;
     if (!d.path.length) return;
-    const next = d.path.includes(at)
-      ? (stepTo(puzzle, adj, d.path, at) ?? d.path)
-      : walkTo(puzzle, adj, d.path, at);
+    const end = d.path[d.path.length - 1]!;
+    const back = d.path.indexOf(at);
+    let next = d.path;
+    // Dragging onto the line only retraces its last step or two (two for a drag that skips a
+    // square); running into older line just stops the finger, and nothing is lost.
+    if (back >= 0) {
+      const steps = d.path.length - 1 - back;
+      if (steps > 0 && steps <= 2) next = d.path.slice(0, back + 1);
+    } else if (from === end) {
+      next = walkTo(puzzle, adj, d.path, at);
+    } else {
+      next = stepTo(puzzle, adj, d.path, at) ?? d.path;
+    }
     if (next !== d.path) {
       d.path = next;
       onPath(next);
@@ -198,7 +230,7 @@ export function Board({
       className={`zp-board${solved ? ' is-solved' : ''}${onPath ? ' is-live' : ''}${className ? ` ${className}` : ''}`}
       role="grid"
       aria-label={label}
-      style={vars({ '--n': size })}
+      style={vars({ '--n': size, '--zp-line': ink.line, '--zp-trail': ink.trail })}
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}

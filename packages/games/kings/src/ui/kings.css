@@ -498,8 +498,8 @@
   text-align: center;
 }
 .kg-card__done .kg-king {
-  max-width: 64px;
-  max-height: 64px;
+  width: 48px;
+  height: 48px;
 }
 .kg-card__done b {
   font-family: var(--font-display);
@@ -792,8 +792,8 @@
   border-width: 3px;
 }
 .kg-card--tv .kg-card__done .kg-king {
-  max-width: 120px;
-  max-height: 120px;
+  width: 90px;
+  height: 90px;
 }
 .kg-card--tv .kg-card__done b {
   font-size: 56px;
@@ -870,8 +870,8 @@
   font-size: 40px;
 }
 .kg-tv__cards.is-crowded .kg-card__done .kg-king {
-  max-width: 64px;
-  max-height: 64px;
+  width: 48px;
+  height: 48px;
 }
 .kg-tv__cards.is-crowded .kg-stamp {
   padding: 6px 14px;

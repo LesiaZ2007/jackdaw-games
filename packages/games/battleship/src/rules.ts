@@ -29,8 +29,9 @@ import { battleshipBot } from './bot';
  * but not overlap. Both fleets are placed in secret. Then the players take turns firing until
  * one fleet is sunk.
  *
- * One shot is the classic game: one square, then the turn passes, hit or miss. Salvo is the
- * old variant where you fire once for each ship you still have afloat, all together.
+ * One shot: a hit, including one that sinks a ship while others remain, earns another shot.
+ * A miss ends the turn. The shot that sinks the last ship ends the battle. Salvo is one
+ * volley for each ship you still have afloat, then the turn passes even if every shot hit.
  *
  * A hit or a miss is public. A ship is named and drawn only once every square of it has been
  * hit. Any square of a ship that has not been fired at stays off the table view, the opponent's
@@ -403,6 +404,8 @@ function fireAt(
     ...(late ? { late: true } : {}),
   };
   const lost = wrecks.length === SHIPS.length;
+  // One shot keeps the attacker on a clean hit. A miss, a salvo, or the last ship does not.
+  const keep = s.firing === 'one' && !lost && volleyShots.every((shot) => shot.result !== 'miss');
   const next: BattleshipState = {
     ...s,
     shots: { ...s.shots, [defender]: [...(s.shots[defender] ?? []), ...added] },
@@ -412,7 +415,7 @@ function fireAt(
     recap: [...s.recap, recapWithSecrets(s, volley)],
     winner: lost ? shooter : s.winner,
     phase: lost ? 'show' : 'fire',
-    toAct: lost ? null : defender,
+    toAct: lost ? null : keep ? shooter : defender,
     showBy: lost ? now + SHOW_MS : null,
   };
   return lost ? { ...next, placeBy: null, actBy: null } : withClock(next, now);

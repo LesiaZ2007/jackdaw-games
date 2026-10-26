@@ -1215,6 +1215,59 @@ button.uno-card:focus-visible {
   }
 }
 
+/* ── Watching on a phone: the table, then the last three moves in place of a hand ── */
+.uno--watch {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.uno-watch__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-2);
+}
+.uno-watch__head p {
+  grid-column: 1 / -1;
+}
+.uno-watch {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  min-height: 168px;
+  padding-top: var(--space-1);
+  border-top: 2px solid var(--rule);
+}
+.uno-watch ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+}
+.uno-watch li {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 52px;
+  padding: 3px 8px;
+  color: var(--ink-2);
+  font: 600 15px / 1.25 var(--font-body);
+  border-bottom: 1px solid var(--rule);
+}
+.uno-watch li.is-new {
+  color: var(--ink);
+  font-weight: 800;
+  background: color-mix(in srgb, var(--uno-now) 16%, transparent);
+  animation: uno-tv-in 500ms var(--ease-out) both;
+}
+.uno-watch__mini .uno-card {
+  --w: 30px;
+}
+.uno-watch__quiet {
+  margin: 0;
+  color: var(--ink-2);
+  font-weight: 700;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .uno-arrows,
   .uno-land,
@@ -1230,7 +1283,8 @@ button.uno-card:focus-visible {
   .uno-tv__seat.is-turn .uno-tv__tok,
   .uno-tv__call,
   .uno-tv__tag,
-  .uno-tv__feed li.is-new {
+  .uno-tv__feed li.is-new,
+  .uno-watch li.is-new {
     animation: none;
   }
   .uno-tv__flash {

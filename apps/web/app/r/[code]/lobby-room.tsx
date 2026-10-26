@@ -200,8 +200,13 @@ export function LobbyRoom({ code }: { code: string }) {
   const bleed =
     (status === 'in_game' && Boolean(catalogEntry(snapshot?.session?.gameId)?.ui?.fullBleed)) ||
     (status === 'results' && Boolean(catalogEntry(snapshot?.results?.gameId)?.ui?.Results));
-  // A game that fits the screen (Letterhoard's board, rack and buttons) never scrolls.
-  const fit = status === 'in_game' && Boolean(catalogEntry(snapshot?.session?.gameId)?.ui?.fit);
+  // A game that fits the screen (Letterhoard's board, rack and buttons) never scrolls, and nor
+  // does a latecomer's view of any game: the TV screen, fitted under the bar.
+  const watching =
+    status === 'in_game' &&
+    (snapshot?.view === undefined || !snapshot.players.find((p) => p.id === snapshot.me)?.seated);
+  const fit =
+    status === 'in_game' && (watching || Boolean(catalogEntry(snapshot?.session?.gameId)?.ui?.fit));
   const wide = useMedia(WIDE);
   const wideOwn = useMedia(WIDE_OWN);
   // A game's own lobby, or a game drawn edge to edge, draws table talk in its own style.

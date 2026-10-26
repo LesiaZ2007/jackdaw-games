@@ -6,7 +6,7 @@ export const meta: GameMeta = {
   tagline: 'One king in every row, column and colour. Alone, or race the table.',
   minPlayers: 1,
   maxPlayers: 15,
-  category: 'board',
+  category: 'mini',
   minutes: [2, 30],
   complexity: 1,
 };

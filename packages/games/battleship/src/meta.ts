@@ -6,7 +6,7 @@ export const meta: GameMeta = {
   tagline: 'Hide your fleet, then find theirs and sink it.',
   minPlayers: 2,
   maxPlayers: 2,
-  category: 'board',
+  category: 'mini',
   minutes: [15, 30],
   complexity: 1,
 };

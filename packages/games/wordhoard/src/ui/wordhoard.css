@@ -491,6 +491,49 @@ button.wh-sq:focus-visible {
 .wh-tv__moves li:first-child {
   font-weight: 800;
 }
+/* Watching on a phone: the latest plays where the rack would be, newest first and in bold. */
+.wh-watch__moves {
+  margin: 0;
+  padding: 8px 12px;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.wh-watch__moves li {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.wh-watch__moves li:first-child {
+  font-weight: 800;
+  color: var(--ink);
+}
+/* A watcher has no rack, so the height it frees lets three or more sides sit two to a row with
+   their names whole and their tiles left (or who is playing) under them. */
+.wh--watch .wh-scores:has(> li:nth-child(3)) {
+  grid-auto-flow: row;
+  grid-template-columns: 1fr 1fr;
+}
+.wh--watch .wh-scores:has(> li:nth-child(3)) li {
+  border-left: 0;
+}
+.wh--watch .wh-scores:has(> li:nth-child(3)) li:nth-child(even) {
+  border-left: 1px solid var(--rule);
+}
+.wh--watch .wh-scores:has(> li:nth-child(3)) li:nth-child(n + 3) {
+  border-top: 1px solid var(--rule);
+}
+.wh--watch .wh-scores__name {
+  font-size: 14px;
+}
+.wh--watch .wh-scores__name small {
+  display: block;
+}
 /* Square labels and tile values would be too small to read across the room: the fills say which
    bonus a square is, and the phones show the values. */
 .wh--tv .wh-sq__label,

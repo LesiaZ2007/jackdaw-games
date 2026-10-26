@@ -1,9 +1,21 @@
 ﻿import { expect, test, type Page } from '@playwright/test';
 
 const SHOTS = process.env.E2E_SHOTS;
+let shotPopup = false;
 
 /** Make whatever move the dock offers: roll, buy, bid, or end the turn. */
 async function move(page: Page): Promise<string | null> {
+  // A popup about what just happened waits for a tap.
+  const pop = page.locator('.mnp-pop__card');
+  if (await pop.count()) {
+    if (SHOTS && !shotPopup) {
+      shotPopup = true;
+      await page.waitForTimeout(700);
+      await page.screenshot({ path: `${SHOTS}/monopoly-popup-375.png` });
+    }
+    await pop.first().click();
+    return 'popup';
+  }
   const choices = [
     /^Roll the dice$/,
     /^Roll for doubles$/,
@@ -20,6 +32,16 @@ async function move(page: Page): Promise<string | null> {
     }
   }
   return null;
+}
+
+/** Tap away any popups still waiting. */
+async function clearPops(page: Page) {
+  for (let k = 0; k < 12; k++) {
+    const pop = page.locator('.mnp-pop__card');
+    if (!(await pop.count())) return;
+    await pop.first().click();
+    await page.waitForTimeout(250);
+  }
 }
 
 test('Monopoly: the host plays a few turns against two bots, and the TV shows the board', async ({
@@ -45,6 +67,9 @@ test('Monopoly: the host plays a few turns against two bots, and the TV shows th
   await host.getByRole('button', { name: 'Start Monopoly' }).click();
   await expect(host.locator('.mnp-board')).toBeVisible();
 
+  if (SHOTS) {
+    await host.waitForTimeout(300);
+  }
   const tv = await (
     await browser.newContext({ viewport: { width: 1920, height: 1080 } })
   ).newPage();
@@ -62,6 +87,7 @@ test('Monopoly: the host plays a few turns against two bots, and the TV shows th
   expect(made).toBeGreaterThan(3);
   await expect(host.locator('.mnp-person')).toHaveCount(3);
 
+  await clearPops(host);
   // A space opens its deed.
   await host.locator('.mnp-sp').nth(1).click();
   await expect(host.getByRole('dialog', { name: 'Deed' })).toContainText('Mediterranean Avenue');
@@ -71,6 +97,7 @@ test('Monopoly: the host plays a few turns against two bots, and the TV shows th
   }
   await host.keyboard.press('Escape');
 
+  await clearPops(host);
   await host.getByRole('button', { name: 'Your deeds' }).click();
   await expect(host.getByRole('dialog', { name: 'Your deeds' })).toBeVisible();
   if (SHOTS) {
@@ -79,6 +106,7 @@ test('Monopoly: the host plays a few turns against two bots, and the TV shows th
   }
   await host.keyboard.press('Escape');
 
+  await clearPops(host);
   await host.getByRole('button', { name: /^Trade/ }).click();
   await expect(host.getByRole('dialog', { name: 'Trade' })).toBeVisible();
   if (SHOTS) {

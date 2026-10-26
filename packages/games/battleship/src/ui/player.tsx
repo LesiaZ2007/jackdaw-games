@@ -21,8 +21,8 @@ import {
   type Placement,
   type ShipId,
 } from '../fleet';
-import type { BattleshipAction, BattleshipPlayerView, OwnShip } from '../rules';
-import { Chart, hullsFromShips, hullsFromWrecks, HULL } from './chart';
+import type { BattleshipAction, BattleshipPlayerView, Mark, OwnShip } from '../rules';
+import { Chart, hullsFromShips, hullsFromWrecks, HULL, ShipArt } from './chart';
 import { feltMoment, useArrival, useDelayedFelt } from './motion';
 import './battleship.css';
 
@@ -273,8 +273,11 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
                       if (laidShip) setDir(laidShip.dir);
                     }}
                   >
-                    <span>{CODE[spec.id]}</span>
-                    <span className="bs-shipbtn__len">{spec.len}</span>
+                    <ShipArt id={spec.id} />
+                    <span className="bs-shipbtn__code">
+                      {CODE[spec.id]}
+                      {laid && ' ✓'}
+                    </span>
                   </button>
                 );
               })}
@@ -303,7 +306,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
             </Plaque>
           </div>
         ) : (
-          <FleetStrip ships={v.ships} />
+          <FleetStrip ships={v.ships} marks={v.boards[v.me]?.cells ?? []} />
         )}
       </footer>
 
@@ -375,7 +378,8 @@ function Clock({ at, now }: { at: number | null; now: () => number }) {
 
 export { Clock };
 
-function FleetStrip({ ships }: { ships: OwnShip[] }) {
+/** Each ship drawn to scale, with a square for each of its squares, red where it was hit. */
+function FleetStrip({ ships, marks }: { ships: OwnShip[]; marks: readonly Mark[] }) {
   if (ships.length === 0) return null;
   return (
     <ul className="bs-strip" aria-label="Your ships">
@@ -384,9 +388,17 @@ function FleetStrip({ ships }: { ships: OwnShip[] }) {
           key={ship.id}
           className={ship.sunk ? 'is-sunk' : ''}
           style={{ '--hull': HULL[ship.id] } as CSSProperties}
+          aria-label={`${ship.name}, ${ship.sunk ? 'sunk' : ship.hits ? `${ship.hits} hit` : 'afloat'}`}
         >
-          <span>{ship.name}</span>
-          <span>{ship.sunk ? 'sunk' : ship.hits ? `${ship.hits} hit` : 'afloat'}</span>
+          <ShipArt id={ship.id} />
+          <span className="bs-strip__pips" aria-hidden="true">
+            {ship.cells.map((cell) => (
+              <span
+                key={cell}
+                className={marks[cell] === 'hit' || marks[cell] === 'sunk' ? 'is-hit' : ''}
+              />
+            ))}
+          </span>
         </li>
       ))}
     </ul>

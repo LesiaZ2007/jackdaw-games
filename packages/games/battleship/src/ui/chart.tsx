@@ -354,6 +354,19 @@ function HullGlyph({ id, dir }: { id: ShipId; dir: Dir }) {
   );
 }
 
+/** The same plan view, unstretched, for the dock and the fleet strip. */
+export function ShipArt({ id }: { id: ShipId }) {
+  return (
+    <svg
+      className="bs-hull__shape bs-shipart"
+      viewBox={`0 0 ${shipOf(id).len * 20} 20`}
+      aria-hidden="true"
+    >
+      {SHIP_ART[id]}
+    </svg>
+  );
+}
+
 /** Wings, tailplane, canopy, and the blur of the propeller, seen from above, nose to the right. */
 const PLANE =
   'M63 32 C63 29.6 61 28.6 57 28.4 H47 L43.5 5.5 C43.2 4.4 42.4 4 41.3 4 H36.4 C35.4 4 34.8 4.6 34.8 5.6 L33 28.6 L17 29.4 L13.5 17.5 C13.3 16.8 12.8 16.5 12 16.5 H8.6 C7.9 16.5 7.5 17 7.6 17.7 L8.5 30 C6 30.5 4.5 31.2 4.5 32 C4.5 32.8 6 33.5 8.5 34 L7.6 46.3 C7.5 47 7.9 47.5 8.6 47.5 H12 C12.8 47.5 13.3 47.2 13.5 46.5 L17 34.6 L33 35.4 L34.8 58.4 C34.8 59.4 35.4 60 36.4 60 H41.3 C42.4 60 43.2 59.6 43.5 58.5 L47 35.6 H57 C61 35.4 63 34.4 63 32 Z';

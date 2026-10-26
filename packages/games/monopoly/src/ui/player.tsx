@@ -15,10 +15,13 @@ import {
   type Outcome,
   type ScreenPlayer,
 } from '@jackdaw/ui';
-import { BAIL, BOARD, deedAt, spaceName } from '../board';
+import { BAIL, deedAt, spaceName } from '../board';
 import type { LogEntry, MonopolyAction, MonopolyPlayerView, MonopolyTableView } from '../rules';
 import { Board, Dice, DrawnCard, money, tintOf } from './board';
+import { Pile } from './art';
 import { DeedCard, Estate, OfferSlip, TradeDesk } from './panels';
+import { Popups } from './popups';
+import { DeedCards, Wallet } from './wallet';
 import './monopoly.css';
 
 type Sheet = { kind: 'deed'; space: number } | { kind: 'estate' } | { kind: 'trade' } | null;
@@ -100,12 +103,21 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               focus={focus}
               onSpace={(space) => setSheet({ kind: 'deed', space })}
             >
-              <Centre t={v} size={wide ? 'wide' : 'phone'} name={name} />
+              <Centre t={v} size={wide ? 'wide' : 'phone'} name={name} me={v.me} />
             </Board>
           </div>
         </div>
 
         <aside className="mnp-side-col">
+          <section className="mnp-purse" aria-label="Your money and deeds">
+            <Wallet cash={v.seats[v.me]!.cash} />
+            <DeedCards
+              t={v}
+              owner={v.me}
+              names={v.names}
+              onDeed={(space) => setSheet({ kind: 'deed', space })}
+            />
+          </section>
           <People t={v} players={players} me={v.me} reactions={reactions} />
           {wide && <Story t={v} name={name} />}
           {wide && offers}
@@ -144,6 +156,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           <TradeDesk t={v} me={v.me} players={players} send={send} onSent={() => setSheet(null)} />
         </div>
       </Sheet>
+
+      <Popups t={v} me={v.me} players={players} />
 
       {moment !== null && felt && (
         <VerdictMoment
@@ -348,36 +362,73 @@ function Moves({
   );
 }
 
-/** The middle of the board: the dice, the card just drawn, the pot and the round. */
+/**
+ * The middle of the board, laid out like the printed one: the Community Chest pile top left and
+ * Chance bottom right on the diagonal, the name across the middle, the dice below it. A drawn
+ * card flies out of its pile and lies face up over the middle until the turn ends.
+ */
 export function Centre({
   t,
   size,
   name,
+  me,
 }: {
   t: MonopolyTableView;
   size: 'phone' | 'wide' | 'tv';
   name: (id: string) => string;
+  /** Whose money pops up over the board when it changes. */
+  me?: string;
 }) {
   const [freshCard] = useMoment(t.card?.seq ?? 0);
-  const die = size === 'tv' ? 92 : size === 'wide' ? 56 : 30;
+  const die = size === 'tv' ? 76 : size === 'wide' ? 46 : 26;
   return (
     <>
+      <span className="mnp-centre__pile mnp-centre__pile--chest">
+        <Pile deck="chest" />
+      </span>
+      <span className="mnp-centre__pile mnp-centre__pile--chance">
+        <Pile deck="chance" />
+      </span>
       <span className="mnp-centre__mark">Monopoly</span>
-      <Dice dice={t.dice} rolls={t.rolls} size={die} />
-      {t.card && size !== 'phone' && <DrawnCard card={t.card} fresh={freshCard !== null} />}
-      {t.card && size === 'phone' && (
-        <span className={`mnp-centre__card mnp-card--${t.card.deck}`}>
-          {t.card.deck === 'chance' ? 'Chance' : 'Chest'}
-        </span>
-      )}
+      <span className="mnp-centre__dice">
+        <Dice dice={t.dice} rolls={t.rolls} size={die} />
+      </span>
       <span className="mnp-centre__foot">
         {t.maxRounds ? `Round ${t.round} of ${t.maxRounds}` : `Round ${t.round}`}
         {t.parkingPot && t.pot > 0 ? ` · Free Parking ${money(t.pot)}` : ''}
       </span>
-      {size === 'phone' && t.card && (
-        <span className="mnp-sr">{`${name(t.card.by)} drew: ${t.card.text}`}</span>
+      {me && t.seats[me] && <MoneyBurst cash={t.seats[me]!.cash} />}
+      {t.card && (
+        <span className="mnp-centre__drawn">
+          <DrawnCard card={t.card} fresh={freshCard !== null} by={name(t.card.by)} />
+        </span>
       )}
     </>
+  );
+}
+
+/**
+ * Your money changing, stamped big over the board: green and rising when you're paid, smaller
+ * and red when you pay out.
+ */
+function MoneyBurst({ cash }: { cash: number }) {
+  const [seen, setSeen] = useState(cash);
+  const [burst, setBurst] = useState<{ by: number; n: number } | null>(null);
+  if (cash !== seen) {
+    setSeen(cash);
+    setBurst((b) => ({ by: cash - seen, n: (b?.n ?? 0) + 1 }));
+  }
+  if (!burst) return null;
+  return (
+    <span
+      key={burst.n}
+      className={`mnp-burst ${burst.by > 0 ? 'is-up' : 'is-down'}`}
+      aria-hidden="true"
+      onAnimationEnd={() => setBurst(null)}
+    >
+      {burst.by > 0 ? '+' : '\u2212'}
+      {money(Math.abs(burst.by))}
+    </span>
   );
 }
 
@@ -438,6 +489,11 @@ export function People({
               </span>
             </span>
             <span className="mnp-person__cash">{s.out ? '–' : money(s.cash)}</span>
+            {tv && !s.out && (
+              <span className="mnp-person__deeds">
+                <DeedCards t={t} owner={id} names={t.names} size="tv" />
+              </span>
+            )}
             {d && (
               <span
                 key={d.at}
@@ -521,28 +577,11 @@ function feltFor(
         ? { seq: e.seq, outcome: 'loss', title: "You're bankrupt" }
         : { seq: e.seq, outcome: 'reveal', title: `${name(e.by!)} is bankrupt` };
     }
-    if (e.kind === 'buy' && e.by === me && e.text.includes('auction')) {
-      return { seq: e.seq, outcome: 'win', title: 'Yours at auction', detail: say(e.text, name) };
-    }
     if (e.kind === 'trade' && e.text.includes('took') && e.text.includes(`{${me}}`)) {
       return { seq: e.seq, outcome: 'reveal', title: 'Trade done', detail: say(e.text, name) };
     }
-    if (e.kind === 'buy' && e.by === me && fullSetBought(t, e.space)) {
-      return { seq: e.seq, outcome: 'win', title: 'A full set', detail: 'Now you can build.' };
-    }
   }
   return null;
-}
-
-function fullSetBought(t: MonopolyTableView, space: number | undefined): boolean {
-  if (space === undefined) return false;
-  const deed = deedAt(space);
-  if (deed?.kind !== 'street') return false;
-  const owner = t.deeds[String(space)]?.owner;
-  return BOARD.every(
-    (sp, i) =>
-      sp.kind !== 'street' || sp.group !== deed.group || t.deeds[String(i)]?.owner === owner,
-  );
 }
 
 export function Clock({ at, now }: { at: number | null; now: () => number }) {

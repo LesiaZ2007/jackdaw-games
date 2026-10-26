@@ -445,7 +445,9 @@ button.bs-cell:focus-visible {
   height: 16%;
   pointer-events: none;
   color: var(--bs-ink);
-  animation: bs-plane 840ms var(--bs-ease) both;
+  animation:
+    bs-plane 840ms linear both,
+    bs-plane-fade 840ms linear both;
   animation-delay: var(--lag, 0ms);
 }
 .bs-plane svg {
@@ -635,26 +637,23 @@ button.bs-cell:focus-visible {
     opacity: 1;
   }
 }
+/* One straight pass at an even speed, over the target square halfway, as the peg drops. */
 @keyframes bs-plane {
-  0% {
-    transform: translate(calc((var(--col) + 1.6) * -10cqw), -0.6cqh);
-    opacity: 0;
+  from {
+    transform: translateX(-50cqw);
   }
-  16% {
-    transform: translate(calc((var(--col) + 0.45) * -8cqw), -1.1cqh);
-    opacity: 1;
+  to {
+    transform: translateX(50cqw);
   }
-  52% {
-    transform: translate(-1.5cqw, -1.7cqh);
-    opacity: 1;
-  }
-  70% {
-    transform: translate(2cqw, -1cqh);
-    opacity: 1;
-  }
+}
+@keyframes bs-plane-fade {
+  0%,
   100% {
-    transform: translate(calc((9.2 - var(--col)) * 8cqw), -1.3cqh);
     opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 1;
   }
 }
 @keyframes bs-press {

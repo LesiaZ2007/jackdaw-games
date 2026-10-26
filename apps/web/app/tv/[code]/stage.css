@@ -1,0 +1,35 @@
+/*
+ * The TV stage: a canvas in TV pixels (at least 1920×1080) that TvStage scales to the window and
+ * TvWindow to a box on a phone or laptop. Shared by the TV page and the room, where a latecomer
+ * watches the TV screen.
+ */
+.tv-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: 0 0;
+  overflow: hidden;
+}
+/* The type scale in TV pixels, read from across the room: the smallest step is 24px (18px on a
+   1440px laptop), and nothing follows the window, which on a TV's browser is often tiny. */
+.tv-stage {
+  --step--1: 24px;
+  --step-0: 28px;
+  --step-1: 32px;
+  --step-2: 40px;
+  --step-3: 50px;
+  --step-4: 68px;
+  --step-5: 96px;
+}
+.tv-stage .jd-label {
+  font-size: 26px;
+}
+/* A box that fits the stage inside it (TvWindow); whatever holds it gives it a size. */
+.tv-window {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}

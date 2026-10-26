@@ -178,6 +178,12 @@ export interface LogEntry {
     | 'cash';
   by?: string;
   space?: number;
+  /** Who was paid, for a payment between players. */
+  to?: string;
+  /** Money that changed hands. */
+  amount?: number;
+  /** The card drawn. */
+  card?: string;
 }
 
 export interface MonopolyState {
@@ -447,7 +453,10 @@ function walk(s: MonopolyState, id: string, to: number, jump: boolean, passGo: b
   const from = p.pos;
   if (passGo && to < from) {
     p.cash += GO_SALARY;
-    note(s, 'cash', `{${id}} passed GO and collected ${money(GO_SALARY)}.`, { by: id });
+    note(s, 'cash', `{${id}} passed GO and collected ${money(GO_SALARY)}.`, {
+      by: id,
+      amount: GO_SALARY,
+    });
   }
   p.pos = to;
   s.moves.push({ by: id, from, to, jump });
@@ -479,12 +488,19 @@ function land(s: MonopolyState, id: string, rng: Rng, card: 'double' | 'ten' | n
       toJail(s, id);
       return;
     case 'tax':
-      note(s, 'tax', `{${id}} paid ${money(sp.amount)} ${sp.name}.`, { by: id, space: p.pos });
+      note(s, 'tax', `{${id}} paid ${money(sp.amount)} ${sp.name}.`, {
+        by: id,
+        space: p.pos,
+        amount: sp.amount,
+      });
       charge(s, { from: id, to: null, amount: sp.amount, why: sp.name, tax: true });
       return;
     case 'parking':
       if (s.parkingPot && s.pot > 0) {
-        note(s, 'cash', `{${id}} took ${money(s.pot)} from Free Parking.`, { by: id });
+        note(s, 'cash', `{${id}} took ${money(s.pot)} from Free Parking.`, {
+          by: id,
+          amount: s.pot,
+        });
         p.cash += s.pot;
         s.pot = 0;
       }
@@ -518,6 +534,8 @@ function land(s: MonopolyState, id: string, rng: Rng, card: 'double' | 'ten' | n
       const rent = rentFor(s, p.pos, roll, card);
       note(s, 'rent', `{${id}} paid {${h.owner}} ${money(rent)} rent for ${nameOf(s, p.pos)}.`, {
         by: id,
+        to: h.owner,
+        amount: rent,
         space: p.pos,
       });
       charge(s, { from: id, to: h.owner, amount: rent, why: 'rent' });
@@ -537,6 +555,7 @@ function playCard(s: MonopolyState, id: string, cardId: string, rng: Rng) {
     `{${id}} drew ${c.deck === 'chance' ? 'Chance' : 'Community Chest'}: ${cardText(cardId, s.names)}`,
     {
       by: id,
+      card: cardId,
     },
   );
   s.card = { id: cardId, by: id, seq: s.seq };
@@ -749,7 +768,7 @@ function buy(s: MonopolyState, id: string, at: number, price: number, how: strin
   p.cash -= price;
   s.deeds[String(at)] = { owner: id, mortgaged: false, houses: 0 };
   const text = `{${id}} ${how} ${nameOf(s, at)} for ${money(price)}.`;
-  note(s, 'buy', text, { by: id, space: at });
+  note(s, 'buy', text, { by: id, space: at, amount: price });
   recap(s, id, text);
 }
 
@@ -1065,7 +1084,7 @@ function act(s: MonopolyState, id: string, a: MonopolyAction, rng: Rng, now: num
       credit(s, null, BAIL, true);
       p.jailed = false;
       p.tries = 0;
-      note(s, 'jail', `{${id}} paid ${money(BAIL)} bail.`, { by: id });
+      note(s, 'jail', `{${id}} paid ${money(BAIL)} bail.`, { by: id, amount: BAIL });
       return;
     case 'useCard': {
       onTurn(s, id, 'roll');

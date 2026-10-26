@@ -56,7 +56,6 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
                   sinking={shotHere ? shotHere.sunk.map((w) => w.id) : []}
                   settling={null}
                   tally={{ afloat: board?.afloat ?? 0, sunk: board?.wrecks.length ?? 0 }}
-                  smoke="sea"
                   interactive={false}
                 />
                 {t.last?.at === id && <Stamp volley={t.last} fresh={fresh?.seq === t.last.seq} />}

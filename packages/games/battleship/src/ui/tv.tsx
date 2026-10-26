@@ -132,7 +132,7 @@ function Seat({
   );
 }
 
-function tvStatus(t: BattleshipTableView, name: (id: string) => string): string {
+export function tvStatus(t: BattleshipTableView, name: (id: string) => string): string {
   if (t.phase === 'show' || t.phase === 'over') {
     return t.winner ? `${name(t.winner)} sunk the fleet` : 'The battle is over';
   }

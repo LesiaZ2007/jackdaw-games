@@ -3,7 +3,7 @@
 import { useCountdown, useTheme, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import { ranking, type KingsTableView } from '../rules';
 import { clock } from '../time';
-import { PlayerCard } from './card';
+import { PlayerCard, Spectate } from './card';
 import { useTick } from './race';
 import './kings.css';
 
@@ -30,7 +30,7 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
           The race ends in {clock(closing * 1000)}.
         </p>
       )}
-      <div className="kg-spectate">
+      <Spectate count={t.players.length}>
         {ranking(t).map((id, i) => (
           <PlayerCard
             key={id}
@@ -43,7 +43,7 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
             reactions={reactions}
           />
         ))}
-      </div>
+      </Spectate>
       <p className="kg-rules">You&rsquo;ll get a seat in the next game.</p>
     </div>
   );

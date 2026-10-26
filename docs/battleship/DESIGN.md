@@ -102,26 +102,30 @@ is `1000` minus the winner's shots, so fewer shots rank higher.
 A printed chart on pale water. The sea, its ink, and a few engraved wave lines are tokens
 on `.bs` (`--bs-sea`, `--bs-ink`, `--bs-wave`), with a darker sea when `useTheme()` is dark.
 Each ship has its own broad silhouette, bow to the left or the top, still wide enough to
-cover its squares: the carrier's flight deck and island, the battleship's three turret
-knuckles, the cruiser's clipper bow and spoon stern, the submarine's round nose and sail,
-the destroyer's sharp bow and cut stern. Heraldic fills stay (gules, azure, vert,
-purpure, tenné). Your own fleet, the placement ghost, and a sunk ship use these shapes.
+cover its squares: the carrier's flight deck and island, the battleship's long hull with
+a stepped deck and three gun houses, the cruiser's clipper bow and spoon stern, the
+submarine's round nose and sail, the destroyer's sharp bow and cut stern. Heraldic fills
+stay (gules, azure, vert, purpure, tenné). The battleship stays azure, and it is not the
+carrier. Your own fleet, the placement ghost, and a sunk ship use these shapes.
 A sunk hull tilts a little and turns transparent so the squares show through, still on
 the cells it occupies. An unsunk enemy ship is never drawn. The frame, compass, and miss
 marks use the sea ink. Jackdaw's bar is left alone. No gradients as decoration, no glows,
 no spinning rings, no stained glass.
 
-The tally belongs to the chart on screen. Your fleet says how many of your ships are
-still afloat and how many are sunk. Their sea says the same for their fleet. On a laptop
-or the TV, each chart carries its own tally. On a phone, switching charts switches the
-tally.
+The tally sits under the chart, and it is that chart's fleet. Your fleet says how many
+of your ships are still afloat and how many are sunk. Their sea says the same for their
+fleet. On a laptop or the TV, each chart has its own line underneath. On a phone, the
+line under the chart you are looking at is that chart's fleet. It is not repeated on the
+player plaques. The chart has no scale bar.
 
 Letters A–J and numbers 1–10 sit on the same tracks as the columns and rows. A miss or a
 hit is inside the cell. The labels are not buttons, so tapping one does not fire.
 
-A hit part of your own ship smokes, and the red peg sits on that square of the hull. On
-their sea, smoke marks the hit cell only, until that ship sinks. After it sinks, the
-hull can smoke. Smoke is ink, with no blur.
+A hit part of your own ship smokes, and the red peg sits on that square of the hull with
+a parchment outline taken from `--on-fill`. A red peg in open water keeps the ink edge
+only. On their sea, smoke marks the hit cell only, until that ship sinks. After it
+sinks, the hull can smoke, and the pegs on it take the same parchment outline. Smoke is
+ink, with no blur.
 
 On a computer, while you are placing, a faded copy of the ship you have picked follows
 the mouse and snaps to the squares it would occupy. Same shape, length, and fill. A spot
@@ -135,11 +139,14 @@ part of either player's view, the table view, or the TV.
   selected ship, which drops onto its squares. Fleet ready locks it. One shot fires on
   the tap. Salvo selects squares, then Fire salvo. Grid squares shrink so the 10×10
   chart fits under the bar at 375px; the dock and the chart switch stay at least 44px.
-- **A shot:** the peg travels across the chart, then lands in the square. Printed, with
-  no glow. A miss lands as an ink cross. A hit lands as a red peg. On your fleet that peg
-  is drawn on the ship. A ship that just sank is drawn across its squares, then tilts and
-  turns transparent, still on those squares. A salvo staggers the pegs. The flight is only
-  the mark, never an unsunk enemy hull. `prefers-reduced-motion` snaps to the landed mark.
+- **A shot:** a small printed plane, original line art in ink on the sea colour, flies
+  across the chart and drops the shot. Then the peg lands. A miss lands as an ink cross.
+  A hit lands as a red peg. On your fleet that peg is drawn on the ship. A ship that just
+  sank is drawn across its squares, then tilts and turns transparent, still on those
+  squares. A salvo staggers the planes and the pegs. The plane is not a hull, and it
+  never shows an unsunk enemy ship. No glow and no gradient. `prefers-reduced-motion`
+  skips the flight and shows the landed mark. The hit and sunk line is unchanged: it
+  still clears itself on a tap, Escape, or its own short timer.
 - **VerdictMoment** still fires for a result the player can feel: you hit (reveal),
   you sank a ship (win), they hit you or sank one of yours (loss), and the final
   result. A miss does not raise one. The seal waits until the peg has landed.
@@ -147,7 +154,11 @@ part of either player's view, the table view, or the TV.
   stamped large over the chart it landed on (Miss in ink, Hit in gules, Sunk in vert),
   and a ship that went down tilts on its squares and lets the chart show through. Nothing on the stage is under
   24px. No bare `vh` or `vw`. `VerdictMoment` at TV size for a hit or a sink.
-- **Results:** both fleets, now public, under the verdict.
+- **Results:** both fleets, now public, under the verdict. On the TV, `TvReveal` draws
+  both final charts beside the standings. Every ship is on its sea, with the hits, the
+  misses, the sunk hulls, and that fleet's tally underneath. Nothing on that screen is
+  under 24px, and it uses no bare viewport units. During the game, the TV still shows
+  only shots and ships that have sunk.
 
 Entrances use `--ease-out` (`cubic-bezier(.22, 1, .36, 1)`), between 640ms and 900ms.
 `prefers-reduced-motion: reduce` drops every animation for the settled state.

@@ -333,26 +333,25 @@ export function TradeDesk({
         ))}
       </div>
       {to && (
-        <div className="mnp-trade__sides">
-          <Side
-            title="You give"
-            deeds={tradeable(me)}
-            side={give}
-            set={setGive}
-            cash={t.seats[me]!.cash}
-            cards={t.seats[me]!.cards}
-            names={t.names}
-          />
-          <Side
-            title={`${byId.get(to)?.name ?? 'They'} gives`}
-            deeds={tradeable(to)}
-            side={get}
-            set={setGet}
-            cash={t.seats[to]!.cash}
-            cards={t.seats[to]!.cards}
-            names={t.names}
-          />
-        </div>
+        <TradeTable
+          left={{
+            title: 'You give',
+            deeds: tradeable(me),
+            side: give,
+            set: setGive,
+            cash: t.seats[me]!.cash,
+            cards: t.seats[me]!.cards,
+          }}
+          right={{
+            title: `${byId.get(to)?.name ?? 'They'} gives`,
+            deeds: tradeable(to),
+            side: get,
+            set: setGet,
+            cash: t.seats[to]!.cash,
+            cards: t.seats[to]!.cards,
+          }}
+          names={t.names}
+        />
       )}
       <Plaque go disabled={busy || empty || !to} onClick={() => void offer()}>
         Send the offer
@@ -372,83 +371,115 @@ export function TradeDesk({
   );
 }
 
-function Side({
-  title,
-  deeds,
-  side,
-  set,
-  cash,
-  cards,
-  names,
-}: {
+interface Column {
   title: string;
   deeds: number[];
   side: TradeSide;
   set: (s: TradeSide) => void;
   cash: number;
   cards: number;
-  names: Names;
-}) {
-  const toggle = (d: number) =>
-    set({
-      ...side,
-      deeds: side.deeds.includes(d) ? side.deeds.filter((x) => x !== d) : [...side.deeds, d],
-    });
+}
+
+/** The sets in board order: the eight colours, the railroads, the utilities. */
+const SET_ORDER: number[][] = [
+  ...GROUPS.map((g) => setOf(DEEDS.find((d) => streetAt(d)?.group === g)!)),
+  RAILROADS.slice(),
+  setOf(12),
+];
+
+/**
+ * Both sides of a trade in one table: a row for each set either of you can trade, your deeds of
+ * it on the left and theirs on the right, so matching sets line up. Cash and Jail cards below.
+ */
+function TradeTable({ left, right, names }: { left: Column; right: Column; names: Names }) {
+  const rows = SET_ORDER.filter((set) =>
+    set.some((d) => left.deeds.includes(d) || right.deeds.includes(d)),
+  );
   return (
-    <fieldset className="mnp-side">
-      <legend>{title}</legend>
-      {deeds.length === 0 && <p className="mnp-empty">No deeds to trade.</p>}
-      <div className="mnp-side__deeds">
-        {deeds.map((d) => {
-          const st = streetAt(d);
-          return (
-            <label
-              key={d}
-              className="mnp-chip"
-              style={{ '--band': st ? GROUP_INK[st.group] : 'var(--mnp-ink)' } as CSSProperties}
-            >
-              <input type="checkbox" checked={side.deeds.includes(d)} onChange={() => toggle(d)} />
-              <span>{printName(spaceName(d, names))}</span>
-            </label>
-          );
-        })}
-      </div>
-      <label className="mnp-side__cash">
-        <span>Cash</span>
-        <input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={cash}
-          step={10}
-          value={side.cash || ''}
-          placeholder="$0"
-          onChange={(e) =>
-            set({
-              ...side,
-              cash: Math.max(0, Math.min(cash, Math.floor(Number(e.target.value) || 0))),
-            })
-          }
-        />
-      </label>
-      {cards > 0 && (
-        <label className="mnp-side__cash">
-          <span>Jail cards</span>
-          <input
-            type="number"
-            min={0}
-            max={cards}
-            value={side.cards}
-            onChange={(e) =>
-              set({
-                ...side,
-                cards: Math.max(0, Math.min(cards, Math.floor(Number(e.target.value) || 0))),
-              })
-            }
-          />
-        </label>
+    <div className="mnp-tt" role="group" aria-label="The trade">
+      <span className="mnp-tt__head">{left.title}</span>
+      <span className="mnp-tt__head">{right.title}</span>
+      {rows.length === 0 && (
+        <p className="mnp-empty mnp-tt__wide">Neither of you has a deed to trade.</p>
       )}
-    </fieldset>
+      {rows.map((set) => {
+        const st = streetAt(set[0]!);
+        const band = st
+          ? GROUP_INK[st.group]
+          : deedAt(set[0]!)!.kind === 'railroad'
+            ? 'var(--mnp-ink)'
+            : 'var(--mnp-util)';
+        return (
+          <div key={set[0]} className="mnp-tt__row" style={{ '--band': band } as CSSProperties}>
+            {[left, right].map((col, k) => (
+              <span key={k} className="mnp-tt__cell">
+                {set
+                  .filter((d) => col.deeds.includes(d))
+                  .map((d) => (
+                    <label key={d} className="mnp-chip">
+                      <input
+                        type="checkbox"
+                        checked={col.side.deeds.includes(d)}
+                        onChange={() =>
+                          col.set({
+                            ...col.side,
+                            deeds: col.side.deeds.includes(d)
+                              ? col.side.deeds.filter((x) => x !== d)
+                              : [...col.side.deeds, d],
+                          })
+                        }
+                      />
+                      <span>{printName(spaceName(d, names))}</span>
+                    </label>
+                  ))}
+              </span>
+            ))}
+          </div>
+        );
+      })}
+      {[left, right].map((col, k) => (
+        <span key={`cash${k}`} className="mnp-tt__money">
+          <label className="mnp-side__cash">
+            <span>Cash</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={col.cash}
+              step={10}
+              value={col.side.cash || ''}
+              placeholder="$0"
+              onChange={(e) =>
+                col.set({
+                  ...col.side,
+                  cash: Math.max(0, Math.min(col.cash, Math.floor(Number(e.target.value) || 0))),
+                })
+              }
+            />
+          </label>
+          {col.cards > 0 && (
+            <label className="mnp-side__cash">
+              <span>Jail cards</span>
+              <input
+                type="number"
+                min={0}
+                max={col.cards}
+                value={col.side.cards}
+                onChange={(e) =>
+                  col.set({
+                    ...col.side,
+                    cards: Math.max(
+                      0,
+                      Math.min(col.cards, Math.floor(Number(e.target.value) || 0)),
+                    ),
+                  })
+                }
+              />
+            </label>
+          )}
+        </span>
+      ))}
+    </div>
   );
 }
 

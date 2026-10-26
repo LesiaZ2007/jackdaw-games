@@ -29,6 +29,9 @@ const ENDED_EARLY = 'The host ended the game early.';
 /** Jackdaw's chat docks beside the lobby from here; a game's own lobby docks its chat from 1240px. */
 const WIDE = '(min-width: 1024px)';
 const WIDE_OWN = '(min-width: 1240px)';
+/** A latecomer watches the game's own phone screen here; a phone on its side or a laptop gets the
+ *  TV screen, fitted, which suits a wide window better. */
+const WATCH_PHONE = '(max-width: 1023px) and (min-height: 520px)';
 function useMedia(query: string): boolean {
   return useSyncExternalStore(
     (onChange) => {
@@ -209,6 +212,7 @@ export function LobbyRoom({ code }: { code: string }) {
     status === 'in_game' && (watching || Boolean(catalogEntry(snapshot?.session?.gameId)?.ui?.fit));
   const wide = useMedia(WIDE);
   const wideOwn = useMedia(WIDE_OWN);
+  const watchPhone = useMedia(WATCH_PHONE);
   // A game's own lobby, or a game drawn edge to edge, draws table talk in its own style.
   const ownChat = full || bleed;
   // True when the chat is on screen without opening it.
@@ -331,7 +335,13 @@ export function LobbyRoom({ code }: { code: string }) {
             />
           )}
           {snapshot.status === 'in_game' && (
-            <GameShell snapshot={snapshot} players={players} send={send} chat={lobbyChat} />
+            <GameShell
+              snapshot={snapshot}
+              players={players}
+              send={send}
+              chat={lobbyChat}
+              phone={watchPhone}
+            />
           )}
           {snapshot.status === 'results' && (
             <Results

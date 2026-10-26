@@ -177,14 +177,14 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players, reactions }) 
   );
 };
 
-function roundTitle(last: RoundResult, winners: string[], name: (id: string) => string) {
+export function roundTitle(last: RoundResult, winners: string[], name: (id: string) => string) {
   if (winners.length === 0) return `Round ${last.round} is a stand-off`;
   if (winners.length === 1) return `${name(winners[0]!)} takes round ${last.round}`;
   return `${listNames(winners, name)} share round ${last.round}`;
 }
 
 /** "Rock beat Lark and Magpie", from the public throws only. */
-function roundDetail(last: RoundResult, winners: string[], name: (id: string) => string) {
+export function roundDetail(last: RoundResult, winners: string[], name: (id: string) => string) {
   if (winners.length === 0) return 'Nobody got ahead this round.';
   const pick = last.picks[winners[0]!]!;
   const beaten = Object.keys(last.picks).filter((id) => beats(pick, last.picks[id]!));

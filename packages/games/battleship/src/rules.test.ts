@@ -21,9 +21,9 @@ import {
 
 const WREN: Placement[] = [
   { id: 'carrier', dir: 'h', at: 0 },
-  { id: 'battleship', dir: 'h', at: 10 },
+  { id: 'battleship', dir: 'h', at: 20 },
   { id: 'cruiser', dir: 'v', at: 7 },
-  { id: 'submarine', dir: 'h', at: 33 },
+  { id: 'submarine', dir: 'h', at: 43 },
   { id: 'destroyer', dir: 'h', at: 98 },
 ];
 
@@ -116,11 +116,35 @@ function expectNoLeak(s: BattleshipState) {
 }
 
 describe('placing', () => {
-  it('accepts ships that touch, and refuses overlap and a ship off the chart', () => {
+  it('refuses an edge touch', () => {
+    // Carrier on row 1, battleship on row 2: they share a side.
+    const edge = WREN.map((ship) => (ship.id === 'battleship' ? { ...ship, at: 10 } : ship));
+    expect(squares(edge[1]!).some((cell) => squares(edge[0]!).includes(cell - 10))).toBe(true);
+    expect(fleetError(edge)).toMatch(/water square/);
+    expect(() => act(setup(), 'wren', { type: 'place', ships: edge })).toThrow(GameError);
+  });
+
+  it('refuses a corner touch', () => {
+    // Destroyer at F2 meets the carrier's stern on the diagonal only.
+    const corner = WREN.map((ship) =>
+      ship.id === 'destroyer' ? { ...ship, dir: 'v' as const, at: 15 } : ship,
+    );
+    const bow = squares(corner.find((ship) => ship.id === 'destroyer')!)[0]!;
+    const stern = squares(corner.find((ship) => ship.id === 'carrier')!).at(-1)!;
+    expect(Math.abs(Math.floor(bow / 10) - Math.floor(stern / 10))).toBe(1);
+    expect(Math.abs((bow % 10) - (stern % 10))).toBe(1);
+    expect(fleetError(corner)).toMatch(/water square/);
+    expect(() => act(setup(), 'wren', { type: 'place', ships: corner })).toThrow(GameError);
+  });
+
+  it('allows a ship with a one-square gap, and still refuses overlap and a ship off the chart', () => {
     expect(fleetError(WREN)).toBeNull();
     expect(fleetError(ROOK)).toBeNull();
-    // Carrier on row 1 and battleship on row 2 share an edge. That is allowed.
-    expect(squares(WREN[1]!).some((cell) => squares(WREN[0]!).includes(cell - 10))).toBe(true);
+    // Carrier on row 1 and battleship on row 3 have row 2 as water.
+    const carrier = squares(WREN[0]!);
+    const battleship = squares(WREN[1]!);
+    expect(Math.floor(battleship[0]! / 10) - Math.floor(carrier[0]! / 10)).toBe(2);
+    expect(carrier[0]! % 10).toBe(battleship[0]! % 10);
     expect(
       fleetError(WREN.map((ship) => (ship.id === 'battleship' ? { ...ship, at: 0 } : ship))),
     ).toMatch(/share a square/);
@@ -441,6 +465,13 @@ describe('the chart', () => {
     const over = aimSquares(10, 'h', 4, taken);
     expect(over?.cells).toEqual([10, 11, 12, 13]);
     expect(over?.illegal).toBe(true);
+    const carrier = new Set([0, 1, 2, 3, 4]);
+    expect(aimSquares(10, 'h', 4, carrier)?.illegal).toBe(true);
+    expect(aimSquares(15, 'v', 2, carrier)?.illegal).toBe(true);
+    expect(aimSquares(20, 'h', 4, carrier)).toEqual({
+      cells: [20, 21, 22, 23],
+      illegal: false,
+    });
     expect(aimSquares(-1, 'h', 2, open)).toBeNull();
   });
 });

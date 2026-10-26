@@ -28,7 +28,7 @@ const COLS = 'ABCDEFGHIJ'.split('');
  * its squares. The vertical drawing is the same path with the axes swapped.
  *
  * Carrier: flight deck with the island blister on one side of the stern.
- * Battleship: three turret knuckles and a rounded stern.
+ * Battleship: a long hull, a stepped deck, and three gun houses.
  * Cruiser: a clipper bow, one turret, and a spoon stern.
  * Submarine: a round nose and a sail.
  * Destroyer: a sharp bow and a cut transom.
@@ -37,12 +37,28 @@ const HULL_H: Record<ShipId, string> = {
   carrier:
     'M2 15 C12 8 20 4 32 4 H93 C97 4 99 8 99 12 V20 C99 24 97 26 93 26 H84 V31 H66 V26 H32 C20 26 12 22 2 15 Z',
   battleship:
-    'M1 16 C6 11 10 7 16 6 C20 5 24 1 32 1 C40 1 42 6 48 6 C52 5 54 1 62 1 C70 1 72 6 78 6 C82 5 86 2 92 2 C98 2 99 8 99 16 C99 24 98 30 92 30 C86 30 82 27 78 26 C72 26 70 31 62 31 C54 31 52 27 48 26 C42 26 40 31 32 31 C24 31 20 27 16 26 C10 25 6 21 1 16 Z',
+    'M0 16 C3 11 8 7 14 6 H20 V1 H34 V6 H42 V1 H58 V6 H68 V1 H82 V7 H92 C97 8 100 12 100 16 C100 20 97 24 92 25 H82 V31 H68 V26 H58 V31 H42 V26 H34 V31 H20 V26 H14 C8 25 3 21 0 16 Z',
   cruiser:
     'M0 16 C16 7 28 3 40 3 C46 3 48 0 56 0 C64 0 66 3 74 4 H84 C92 6 99 11 99 16 C99 22 94 27 84 28 H74 C66 29 64 32 56 32 C48 32 46 29 40 29 C28 29 16 25 0 16 Z',
   submarine:
     'M8 16 C8 8 16 5 28 5 H36 V0 H58 V5 H78 C90 5 99 10 99 16 C99 22 90 27 78 27 H28 C16 27 8 24 8 16 Z',
   destroyer: 'M0 16 C3 11 8 5 18 3 H68 L76 8 H99 V24 H76 L68 29 H18 C8 27 3 21 0 16 Z',
+};
+
+/** Ink on the battleship so the gun houses and the stepped deck still read when the hull is small. */
+const HULL_LINES: Partial<Record<ShipId, readonly string[]>> = {
+  battleship: [
+    'M22 4 H32 V28 H22 Z',
+    'M44 4 H56 V28 H44 Z',
+    'M70 4 H80 V28 H70 Z',
+    'M14 16 H92',
+    'M22 10 H12',
+    'M22 22 H12',
+    'M44 10 H36',
+    'M44 22 H36',
+    'M80 10 H88',
+    'M80 22 H88',
+  ],
 };
 
 export interface HullDraw {
@@ -168,15 +184,7 @@ export function Chart({
     <section className={`bs-chart bs-chart--${size}`} aria-label={label}>
       <header className="bs-chart__head">
         <Compass />
-        <span className="bs-chart__id">
-          <h3 className="bs-chart__title">{label}</h3>
-          {tally && (
-            <p className="bs-chart__tally">
-              {tally.afloat} afloat · {tally.sunk} sunk
-            </p>
-          )}
-        </span>
-        <Scale />
+        <h3 className="bs-chart__title">{label}</h3>
       </header>
       <div className="bs-chart__plate">
         <div className="bs-chart__board">
@@ -309,15 +317,31 @@ export function Chart({
                 </span>
               );
             })}
+            {fresh?.shots.map((shot, index) => (
+              <span
+                key={`plane-${shot.cell}`}
+                className="bs-plane"
+                style={atCell(shot.cell, index)}
+                aria-hidden="true"
+              >
+                <Plane />
+              </span>
+            ))}
           </div>
         </div>
       </div>
+      {tally && (
+        <p className="bs-chart__tally">
+          {tally.afloat} afloat · {tally.sunk} sunk
+        </p>
+      )}
     </section>
   );
 }
 
 function HullGlyph({ id, dir }: { id: ShipId; dir: Dir }) {
   const horizontal = dir === 'h';
+  const draw = (d: string) => (horizontal ? d : upright(d));
   return (
     <svg
       className="bs-hull__shape"
@@ -325,7 +349,23 @@ function HullGlyph({ id, dir }: { id: ShipId; dir: Dir }) {
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      <path d={horizontal ? HULL_H[id] : upright(HULL_H[id])} />
+      <path d={draw(HULL_H[id])} />
+      {HULL_LINES[id]?.map((line) => (
+        <path key={line} className="bs-hull__line" d={draw(line)} />
+      ))}
+    </svg>
+  );
+}
+
+/**
+ * A printed plan of a small aircraft. It flies across the chart and the peg drops after it.
+ * Ink and the sea colour only. It is not a hull, so it never shows where a ship is hiding.
+ */
+function Plane() {
+  return (
+    <svg viewBox="0 0 80 36">
+      <path d="M4 18 C8 14 14 12 22 12 H44 L56 5 H64 L52 12 H70 C75 12 78 15 78 18 C78 21 75 24 70 24 H52 L64 31 H56 L44 24 H22 C14 24 8 22 4 18 Z" />
+      <path className="bs-plane__line" d="M30 13 V23 M46 9 V27 M58 18 H70" />
     </svg>
   );
 }
@@ -375,15 +415,6 @@ function Compass() {
       <path d="M32 52l-6-20 6-4 6 4z" fill="none" stroke="currentColor" strokeWidth="2" />
       <path d="M32 8v6M32 50v6M8 32h6M50 32h6" stroke="currentColor" strokeWidth="2" />
     </svg>
-  );
-}
-
-function Scale() {
-  return (
-    <span className="bs-scale" aria-hidden="true">
-      <span className="bs-scale__bar" />
-      <span>10 cables</span>
-    </span>
   );
 }
 

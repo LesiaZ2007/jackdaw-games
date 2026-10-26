@@ -2,7 +2,7 @@
 
 import type { GameUi } from '@jackdaw/ui';
 import { PlayerScreen } from './player';
-import { Reveal } from './reveal';
+import { Reveal, TvReveal } from './reveal';
 import { TvScreen } from './tv';
 
 /** Battleship: a printed naval chart. It uses Jackdaw's lobby. */
@@ -45,4 +45,5 @@ export const battleshipUi: GameUi = {
   PlayerScreen,
   TvScreen,
   Reveal,
+  TvReveal,
 };

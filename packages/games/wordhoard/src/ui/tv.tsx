@@ -8,7 +8,7 @@ import { Scores, TurnClock, moveText, sideName } from './player';
 import './wordhoard.css';
 
 /** Milliseconds between one new tile dropping onto the board and the next. */
-const DROP_GAP = 140;
+export const DROP_GAP = 140;
 
 /**
  * Letterhoard on the TV: the board large, the scores and the last few plays beside it. When a word

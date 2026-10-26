@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, type CSSProperties, type PointerEvent } from 'react';
+import { useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { links, type Puzzle } from '../puzzle';
 
 const vars = (v: Record<string, string | number>) => v as CSSProperties;
@@ -22,14 +22,41 @@ export function BoltMark({ size }: { size?: number | string }) {
 
 /**
  * The line after one tap or drag step onto `cell`, or null if it can't go there. The line starts
- * on 1; a square already on it cuts the line back to that square; a free square next to its end,
- * with no wall between, extends it.
+ * on 1 and stops at the last number; a square already on it cuts the line back to that square; a
+ * free square next to its end, with no wall between, extends it.
  */
 export function stepTo(p: Puzzle, adj: number[][], path: readonly number[], cell: number) {
   if (!path.length) return cell === p.dots[0] ? [cell] : null;
   const at = path.indexOf(cell);
   if (at >= 0) return at === path.length - 1 ? null : path.slice(0, at + 1);
-  return adj[path[path.length - 1]!]!.includes(cell) ? [...path, cell] : null;
+  const end = path[path.length - 1]!;
+  if (end === p.dots[p.dots.length - 1]) return null;
+  return adj[end]!.includes(cell) ? [...path, cell] : null;
+}
+
+/**
+ * The line walked from its end toward `cell` a square at a time, for drags quicker than one
+ * square per move. Goes along the longer way first and stops where it can't go on.
+ */
+function walkTo(p: Puzzle, adj: number[][], path: number[], cell: number) {
+  const { size } = p;
+  let next = path;
+  for (let guard = 0; guard < size * 2; guard++) {
+    const end = next[next.length - 1]!;
+    if (end === cell) break;
+    const dr = Math.floor(cell / size) - Math.floor(end / size);
+    const dc = (cell % size) - (end % size);
+    const down = dr ? end + Math.sign(dr) * size : null;
+    const across = dc ? end + Math.sign(dc) : null;
+    const tries = Math.abs(dr) >= Math.abs(dc) ? [down, across] : [across, down];
+    const grown = tries
+      .filter((c): c is number => c !== null && !next.includes(c))
+      .map((c) => stepTo(p, adj, next, c))
+      .find((g) => g !== null);
+    if (!grown) break;
+    next = grown;
+  }
+  return next;
 }
 
 /** Numbers the line has reached out of order. */
@@ -89,6 +116,7 @@ export function Board({
   const on = new Set(path);
   const bad = outOfOrder(puzzle, path);
   const drag = useRef<{ path: number[]; last: number } | null>(null);
+  const [pen, setPen] = useState<{ x: number; y: number } | null>(null);
   const wallsOf = (i: number) => {
     const out: string[] = [];
     const r = Math.floor(i / size);
@@ -100,54 +128,70 @@ export function Board({
     return out;
   };
 
-  const cellAt = (e: PointerEvent) => {
-    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-cell]');
-    return el && e.currentTarget.contains(el) ? Number(el.dataset.cell) : null;
+  /** The pointer in board squares, (0, 0) at the top-left corner. */
+  const spot = (e: PointerEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const box = el.getBoundingClientRect();
+    return {
+      x: ((e.clientX - box.left - el.clientLeft) / el.clientWidth) * size,
+      y: ((e.clientY - box.top - el.clientTop) / el.clientHeight) * size,
+    };
   };
+  const cellOf = ({ x, y }: { x: number; y: number }) =>
+    x < 0 || y < 0 || x >= size || y >= size ? null : Math.floor(y) * size + Math.floor(x);
 
   const down = (e: PointerEvent<HTMLDivElement>) => {
     if (!onPath || e.button > 0) return;
-    const at = cellAt(e);
+    const at = cellOf(spot(e));
     if (at === null) return;
     e.currentTarget.setPointerCapture?.(e.pointerId);
     const next = stepTo(puzzle, adj, path, at);
     drag.current = { path: next ?? [...path], last: at };
     if (next) onPath(next);
+    setPen(spot(e));
   };
 
   const move = (e: PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     if (!d || !onPath) return;
-    const at = cellAt(e);
+    const p = spot(e);
+    setPen(p);
+    const at = cellOf(p);
     if (at === null || at === d.last) return;
     d.last = at;
-    let next = d.path;
-    const end = next[next.length - 1];
-    if (end === undefined) return;
-    // A quick drag can skip squares: walk a straight run one square at a time.
-    const sameRow = Math.floor(at / size) === Math.floor(end / size);
-    const sameCol = at % size === end % size;
-    const stepBy = sameRow ? Math.sign(at - end) : sameCol ? Math.sign(at - end) * size : 0;
-    if (stepBy && !next.includes(at)) {
-      for (let cell = end + stepBy; ; cell += stepBy) {
-        const grown = stepTo(puzzle, adj, next, cell);
-        if (!grown || grown.length < next.length) break;
-        next = grown;
-        if (cell === at) break;
-      }
-    } else if (next.length > 1 && at === next[next.length - 2]) {
-      next = next.slice(0, -1);
-    } else {
-      next = stepTo(puzzle, adj, next, at) ?? next;
-    }
+    if (!d.path.length) return;
+    const next = d.path.includes(at)
+      ? (stepTo(puzzle, adj, d.path, at) ?? d.path)
+      : walkTo(puzzle, adj, d.path, at);
     if (next !== d.path) {
       d.path = next;
       onPath(next);
     }
   };
 
+  const up = () => {
+    drag.current = null;
+    setPen(null);
+  };
+
   const points = path.map((c) => `${(c % size) + 0.5},${Math.floor(c / size) + 0.5}`).join(' ');
   const end = path[path.length - 1];
+  const ex = end === undefined ? 0 : (end % size) + 0.5;
+  const ey = end === undefined ? 0 : Math.floor(end / size) + 0.5;
+  // While drawing, the tip leans from the end square toward the pointer, as far as the edge of a
+  // square the line could go to next, so the line moves with the finger rather than in jumps.
+  let tip = { x: ex, y: ey };
+  if (pen && end !== undefined) {
+    const dx = pen.x - ex;
+    const dy = pen.y - ey;
+    const across = Math.abs(dx) >= Math.abs(dy);
+    const d = across ? dx : dy;
+    const toward = end + Math.sign(d) * (across ? 1 : size);
+    if (d !== 0 && !on.has(toward) && stepTo(puzzle, adj, path, toward)) {
+      const reach = Math.max(-0.5, Math.min(0.5, d));
+      tip = across ? { x: ex + reach, y: ey } : { x: ex, y: ey + reach };
+    }
+  }
 
   return (
     <div
@@ -157,8 +201,8 @@ export function Board({
       style={vars({ '--n': size })}
       onPointerDown={down}
       onPointerMove={move}
-      onPointerUp={() => (drag.current = null)}
-      onPointerCancel={() => (drag.current = null)}
+      onPointerUp={up}
+      onPointerCancel={up}
     >
       {[...Array(size * size).keys()].map((i) => (
         <button
@@ -178,15 +222,10 @@ export function Board({
         />
       ))}
       <svg className="zp-ink" viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
-        {path.length > 1 && <polyline className="zp-line" points={points} />}
-        {end !== undefined && (
-          <circle
-            className="zp-head"
-            cx={(end % size) + 0.5}
-            cy={Math.floor(end / size) + 0.5}
-            r={0.22}
-          />
+        {(path.length > 1 || tip.x !== ex || tip.y !== ey) && (
+          <polyline className="zp-line" points={`${points} ${tip.x},${tip.y}`} />
         )}
+        {end !== undefined && <circle className="zp-pen" cx={tip.x} cy={tip.y} r={0.22} />}
         {puzzle.walls.map(([a, b]) => (
           <line key={`${a}-${b}`} className="zp-wall" {...wallLine(size, a, b)} />
         ))}

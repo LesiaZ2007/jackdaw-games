@@ -50,6 +50,9 @@
 .zp-cell:disabled {
   opacity: 1;
 }
+.zp-cell {
+  transition: background-color 120ms var(--ease-out);
+}
 .zp-cell.is-on {
   background: var(--zp-trail);
 }
@@ -76,7 +79,7 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.zp-head {
+.zp-pen {
   fill: var(--zp-line);
   stroke: var(--zp-paper);
   stroke-width: 0.07;

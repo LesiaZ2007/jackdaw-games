@@ -15,7 +15,7 @@ async function expectWholeTable(page: Page, minWidth: number) {
   expect(box.width).toBeGreaterThanOrEqual(minWidth);
 }
 
-test('a latecomer watches the whole TV table on a phone, upright or sideways, and a laptop', async ({
+test('a latecomer watches the game on a phone, and the whole TV table sideways or on a laptop', async ({
   browser,
 }) => {
   const host = await (
@@ -39,20 +39,28 @@ test('a latecomer watches the whole TV table on a phone, upright or sideways, an
   await rook.goto(`/r/${code}`);
   await rook.getByLabel('Your name').fill('Rook');
   await rook.getByRole('button', { name: 'Watch, and play next game' }).click();
-  await expect(rook.getByText(/You’re watching this round of Battleship/)).toBeVisible();
-  await expect(rook.getByText('Turn your phone sideways to see more.')).toBeVisible();
-  await expectWholeTable(rook, 330);
-  // The page itself doesn't scroll: the table is fitted under the bar.
+
+  // Upright, the game's own watch screen: one sea at a time, a tab for each.
+  await expect(rook.getByText('Watching Battleship. You’ll play next game.')).toBeVisible();
+  await expect(rook.getByRole('tab', { name: 'Heron’s sea' })).toBeVisible();
+  await rook.getByRole('tab', { name: /^Bot \w+’s sea$/ }).click();
+  await expect(rook.getByRole('tab', { name: /^Bot \w+’s sea$/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(rook.locator('.tv-window')).toHaveCount(0);
+  // The page itself doesn't scroll: the screen is fitted under the bar.
   expect(await rook.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(812);
   if (SHOTS) await rook.screenshot({ path: `${SHOTS}/watch-375.png` });
 
+  // On its side, the TV screen, scaled whole under the note.
   await rook.setViewportSize({ width: 812, height: 375 });
+  await expect(rook.getByText(/You’re watching this round of Battleship/)).toBeVisible();
   await expect(rook.getByText('Turn your phone sideways to see more.')).toBeHidden();
   await expectWholeTable(rook, 380);
   if (SHOTS) await rook.screenshot({ path: `${SHOTS}/watch-812x375.png` });
 
   await rook.setViewportSize({ width: 1280, height: 800 });
-  if (SHOTS) await rook.screenshot({ path: `${SHOTS}/watch-1280.png` });
   await expectWholeTable(rook, 800);
   if (SHOTS) await rook.screenshot({ path: `${SHOTS}/watch-1280.png` });
 });

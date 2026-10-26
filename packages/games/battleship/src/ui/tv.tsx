@@ -18,8 +18,8 @@ import './battleship.css';
 
 /**
  * Battleship on the TV, read from the sofa. Both charts show only what has been fired at, plus
- * a ship once it has sunk. The last shot is stamped large across the chart it landed on, and
- * that ship goes down if the volley finished it.
+ * a ship once it has sunk. The last shot is stamped beside the name over the chart it landed
+ * on, never across the chart itself, and that ship goes down if the volley finished it.
  */
 export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...props }) => {
   const t = tableView as BattleshipTableView;
@@ -45,7 +45,10 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
           const shotHere = fresh?.at === id ? fresh : null;
           return (
             <section key={id} className={`bs-tv__seat${t.last?.at === id ? ' is-target' : ''}`}>
-              <Seat id={id} t={t} players={byId} reactions={reactions} name={name} />
+              <div className="bs-tv__top">
+                <Seat id={id} t={t} players={byId} reactions={reactions} name={name} />
+                {t.last?.at === id && <Stamp volley={t.last} fresh={fresh?.seq === t.last.seq} />}
+              </div>
               <div className="bs-tv__board">
                 <Chart
                   label={`${name(id)}'s sea`}
@@ -58,7 +61,6 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
                   tally={{ afloat: board?.afloat ?? 0, sunk: board?.wrecks.length ?? 0 }}
                   interactive={false}
                 />
-                {t.last?.at === id && <Stamp volley={t.last} fresh={fresh?.seq === t.last.seq} />}
               </div>
             </section>
           );

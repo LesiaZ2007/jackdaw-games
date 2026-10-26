@@ -222,6 +222,13 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 50h48M8 58h48M20 50v8M32 50v8M44 50v8" />
     </g>
   ),
+  /** A lightning bolt over a line that turns through the squares (Zap). */
+  bolt: (
+    <g {...stroke(3.4)}>
+      <path d="M36 4L18 30h12l-4 20 20-28H34z" />
+      <path d="M8 58h10v-6h14v6h10v-6h14" />
+    </g>
+  ),
   /** A townhouse with a pitched roof, a chimney and a door (Monopoly). */
   house: (
     <g {...stroke(3.4)}>

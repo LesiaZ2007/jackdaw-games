@@ -4,6 +4,7 @@ import { battleship } from '@jackdaw/game-battleship';
 import { monopoly } from '@jackdaw/game-monopoly';
 import { catan } from '@jackdaw/game-catan';
 import { codenames } from '@jackdaw/game-codenames';
+import { kings } from '@jackdaw/game-kings';
 import { uno } from '@jackdaw/game-uno';
 import { poker } from '@jackdaw/game-poker';
 import { risk } from '@jackdaw/game-risk';
@@ -23,6 +24,7 @@ export const games: GameRegistry = {
   [monopoly.meta.id]: monopoly,
   [catan.meta.id]: catan,
   [codenames.meta.id]: codenames,
+  [kings.meta.id]: kings,
   [uno.meta.id]: uno,
   [poker.meta.id]: poker,
   [risk.meta.id]: risk,

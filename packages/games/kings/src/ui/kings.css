@@ -1,0 +1,522 @@
+/*
+ * Kings: a page from a printed puzzle book. The board's region inks are printed, so they stay
+ * the same by day and in the dark; the frame round them follows the shell. All of the game's
+ * colours are in this token block. No gradients, no glows.
+ */
+
+.kg {
+  --kg-ink: #1d1d1c;
+  --kg-rule: rgba(29, 29, 28, 0.28);
+  --kg-paper: #f7f3ea;
+  --kg-bad: #a63a30;
+  --kg-r0: #c7b3e0;
+  --kg-r1: #f4bf8f;
+  --kg-r2: #a9c8ec;
+  --kg-r3: #bcd99e;
+  --kg-r4: #dedbd3;
+  --kg-r5: #ef9f92;
+  --kg-r6: #f1dc86;
+  --kg-r7: #97d3c8;
+  --kg-r8: #e8bcd4;
+  --kg-r9: #cdb894;
+  --kg-heavy: 1.5px;
+  color: var(--ink);
+}
+
+/* ── The board ─────────────────────────────────────────────────────────── */
+.kg-board {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--n), minmax(0, 1fr));
+  aspect-ratio: 1;
+  width: 100%;
+  border: 3px solid var(--kg-ink);
+  outline: 1px solid var(--ink);
+  outline-offset: 3px;
+  background: var(--kg-paper);
+  box-shadow: 0 20px 50px -24px var(--shadow);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.kg-board.is-live {
+  touch-action: none;
+}
+.kg-cell {
+  --st: 0 0 0 0 transparent;
+  --sb: 0 0 0 0 transparent;
+  --sl: 0 0 0 0 transparent;
+  --sr: 0 0 0 0 transparent;
+  appearance: none;
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--fill);
+  color: var(--kg-ink);
+  box-shadow:
+    var(--st),
+    var(--sb),
+    var(--sl),
+    var(--sr),
+    inset 0 0 0 0.5px var(--kg-rule);
+  cursor: default;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.kg-cell:disabled {
+  opacity: 1;
+}
+.kg-board.is-live .kg-cell {
+  cursor: pointer;
+}
+.kg-t {
+  --st: inset 0 var(--kg-heavy) 0 0 var(--kg-ink);
+}
+.kg-b {
+  --sb: inset 0 calc(-1 * var(--kg-heavy)) 0 0 var(--kg-ink);
+}
+.kg-l {
+  --sl: inset var(--kg-heavy) 0 0 0 var(--kg-ink);
+}
+.kg-r {
+  --sr: inset calc(-1 * var(--kg-heavy)) 0 0 0 var(--kg-ink);
+}
+.kg-cell:focus-visible {
+  outline: 3px solid var(--kg-ink);
+  outline-offset: -5px;
+  z-index: 1;
+}
+.kg-king {
+  display: block;
+}
+.kg-cross {
+  position: relative;
+  width: 34%;
+  height: 34%;
+}
+.kg-cross::before,
+.kg-cross::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  margin-left: -1px;
+  background: var(--kg-ink);
+  opacity: 0.7;
+}
+.kg-cross::before {
+  transform: rotate(45deg);
+}
+.kg-cross::after {
+  transform: rotate(-45deg);
+}
+.kg-cell.is-faint .kg-cross {
+  opacity: 0.4;
+}
+.kg-cell.is-bad {
+  color: var(--kg-bad);
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 5px,
+      color-mix(in srgb, var(--kg-bad) 28%, transparent) 5px 7px
+    ),
+    var(--fill);
+}
+.kg-board.is-solved .kg-king {
+  animation: kg-crowned 700ms var(--ease-out) both;
+}
+@keyframes kg-crowned {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.25) translateY(-6%);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .kg-board.is-live .kg-cell:hover {
+    box-shadow:
+      var(--st),
+      var(--sb),
+      var(--sl),
+      var(--sr),
+      inset 0 0 0 2px var(--kg-ink);
+  }
+}
+
+/* ── Phone: fits under the bar ─────────────────────────────────────────── */
+.kg--phone {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow: hidden;
+}
+.kg-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.kg-head__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-2);
+  line-height: 1;
+}
+.kg-clock {
+  font: 800 26px var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+.kg-closing {
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border: 2px solid var(--danger);
+  color: var(--danger);
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.kg-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.kg-stage {
+  flex: 1;
+  min-height: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+.kg-stage > .kg-board {
+  width: calc(min(100cqw, 100cqh) - 10px);
+}
+.kg-side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+}
+.kg-tools {
+  display: flex;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+.kg-tools > * {
+  flex: 1;
+}
+.kg-switch {
+  appearance: none;
+  min-height: var(--tap);
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  outline: 1px solid var(--ink);
+  outline-offset: -6px;
+}
+.kg-switch[aria-checked='true'] {
+  background: var(--ink);
+  color: var(--paper);
+  outline-color: var(--paper);
+}
+.kg-rules {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--step--1);
+  line-height: 1.35;
+}
+.kg-done {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  text-align: center;
+  padding: var(--space-5);
+}
+.kg-done__line {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-3);
+  line-height: 1.05;
+}
+.kg-done__wait {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+/* ── The race ──────────────────────────────────────────────────────────── */
+.kg-race {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  max-height: 9.6em;
+  overflow-y: auto;
+  min-height: 0;
+}
+.kg-lane {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'tok name time' 'tok pips pips';
+  align-items: center;
+  column-gap: var(--space-2);
+  padding: 4px var(--space-2);
+  background: var(--paper);
+  border: 1px solid var(--rule);
+}
+.kg-lane.is-me {
+  border: 2px solid var(--ink);
+}
+.kg-lane__tok {
+  grid-area: tok;
+  position: relative;
+  display: inline-flex;
+}
+.kg-lane__name {
+  grid-area: name;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+.kg-lane__time {
+  grid-area: time;
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.kg-lane.is-done .kg-lane__time {
+  color: var(--win-ink);
+}
+.kg-pips {
+  grid-area: pips;
+  display: flex;
+  gap: 3px;
+  min-width: 0;
+}
+.kg-pip {
+  flex: 1;
+  max-width: 22px;
+  height: 7px;
+  border: 1px solid var(--ink-2);
+}
+.kg-pip.is-on {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+@container game (min-width: 760px) {
+  .kg-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+    align-items: stretch;
+  }
+  .kg-side {
+    justify-content: center;
+  }
+  .kg-tools {
+    flex-wrap: wrap;
+  }
+  .kg-race {
+    max-height: none;
+  }
+}
+@container game (max-height: 560px) {
+  .kg-race {
+    max-height: 6.4em;
+  }
+}
+
+/* ── Watching on a phone ───────────────────────────────────────────────── */
+.kg-watch .kg-race {
+  max-height: none;
+  flex: 1;
+  align-content: start;
+}
+
+/* ── TV ────────────────────────────────────────────────────────────────── */
+.kg-tv {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 20px;
+  padding: 16px 48px 32px;
+}
+.kg-tv__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+}
+.kg-tv__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 68px;
+  line-height: 1;
+}
+.kg-tv__clock,
+.kg-tv__closing {
+  font: 800 52px var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+.kg-tv__closing {
+  color: var(--danger);
+}
+.kg-tv__body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 56px;
+}
+.kg-tv__board {
+  margin: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+.kg-tv__fit {
+  min-height: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+.kg-tv__fit > .kg-board {
+  width: calc(min(100cqw, 100cqh) - 12px);
+  border-width: 4px;
+  outline-offset: 5px;
+}
+.kg-tv .kg-board,
+.kg-tv-end .kg-board {
+  --kg-heavy: 2.5px;
+}
+.kg-tv__board figcaption {
+  text-align: center;
+  color: var(--ink-2);
+  font: 800 26px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.kg-race--tv {
+  max-height: none;
+  align-content: center;
+  gap: 10px;
+  overflow: hidden;
+}
+.kg-race--tv .kg-lane {
+  column-gap: 18px;
+  row-gap: 8px;
+  padding: 10px 18px;
+  border-width: 2px;
+}
+.kg-race--tv .kg-lane__name {
+  font-size: 40px;
+}
+.kg-race--tv .kg-lane__time {
+  font-size: 36px;
+}
+.kg-race--tv .kg-pip {
+  height: 14px;
+  max-width: 40px;
+  border-width: 2px;
+}
+
+/* ── Results ───────────────────────────────────────────────────────────── */
+.kg-reveal {
+  display: grid;
+  gap: var(--space-4);
+}
+.kg-splits {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.kg-splits th,
+.kg-splits td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--rule);
+  text-align: right;
+  white-space: nowrap;
+}
+.kg-splits th[scope='row'],
+.kg-splits thead th:first-child {
+  text-align: left;
+}
+.kg-splits thead th {
+  font: 800 13px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.kg-splits-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.kg-answers {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: var(--space-4);
+}
+.kg-answer {
+  margin: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+.kg-answer .kg-board {
+  border-width: 2px;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.kg-answer figcaption {
+  text-align: center;
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.kg-tv-end {
+  height: 100%;
+  container-type: size;
+}
+.kg-tv-end .kg-answers {
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 30cqw), 1fr));
+  gap: 24px;
+}
+.kg-tv-end .kg-answer figcaption {
+  font-size: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kg-board.is-solved .kg-king {
+    animation: none;
+  }
+}

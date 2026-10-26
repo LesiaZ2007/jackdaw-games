@@ -3,11 +3,27 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Token, type ScreenPlayer } from '@jackdaw/ui';
 import {
+  ArtArrow,
+  ArtBag,
+  ArtBars,
+  ArtBulb,
+  ArtCar,
+  ArtChest,
+  ArtCop,
+  ArtHotel,
+  ArtHouse,
+  ArtRing,
+  ArtTap,
+  ArtTrain,
+  ChanceMark,
+} from './art';
+import {
   BOARD,
   GO_TO_JAIL,
   JAIL,
   SPACES,
   deedAt,
+  setOf,
   spaceName,
   type Group,
   type Names,
@@ -103,42 +119,55 @@ const reduced = () =>
  * Where each token is drawn. A token walks round the board one space at a time when it moves by
  * the dice, and jumps straight there when it's sent (to Jail, or by a card).
  */
-export function useWalk(t: MonopolyTableView): Record<string, number> {
+export interface Walk {
+  pos: Record<string, number>;
+  /** Tokens whose last move was a jump, which fly rather than step. */
+  jump: Record<string, boolean>;
+  step: number;
+}
+
+export function useWalk(t: MonopolyTableView): Walk {
   const target = Object.fromEntries(t.players.map((id) => [id, t.seats[id]!.pos]));
-  const [shown, setShown] = useState(target);
+  const [shown, setShown] = useState<Walk>({ pos: target, jump: {}, step: 0 });
   const plan = useRef<{ seq: number; moves: MoveEvent[] }>({ seq: t.seq, moves: [] });
   const key = t.players.map((id) => `${id}:${t.seats[id]!.pos}`).join(',');
 
   useEffect(() => {
+    const settle = (prev: Walk): Walk => ({
+      pos: { ...prev.pos, ...target },
+      jump: {},
+      step: prev.step + 1,
+    });
     if (reduced()) {
-      const now = window.setTimeout(() => setShown(target), 0);
+      const now = window.setTimeout(() => setShown(settle), 0);
       return () => window.clearTimeout(now);
     }
     if (plan.current.seq !== t.seq) plan.current = { seq: t.seq, moves: t.moves.slice() };
     const queue = plan.current.moves;
     let timer = 0;
-    // Play the moves of the last action in order, then settle anything left on its target.
+    // Play the moves of the last action in order, one space per beat, then settle the rest.
     const step = () => {
+      let pause = STEP_MS;
       setShown((prev) => {
         const move = queue[0];
-        if (!move) {
-          const done = { ...prev };
-          for (const id of Object.keys(target)) done[id] = target[id]!;
-          return done;
-        }
-        const at = prev[move.by] ?? move.from;
+        if (!move) return settle(prev);
+        const at = prev.pos[move.by] ?? move.from;
         if (move.jump || at === move.to) {
           queue.shift();
-          return { ...prev, [move.by]: move.to };
+          pause = JUMP_MS;
+          return {
+            pos: { ...prev.pos, [move.by]: move.to },
+            jump: { [move.by]: true },
+            step: prev.step + 1,
+          };
         }
         const next = (at + 1) % SPACES;
         if (next === move.to) queue.shift();
-        return { ...prev, [move.by]: next };
+        return { pos: { ...prev.pos, [move.by]: next }, jump: {}, step: prev.step + 1 };
       });
-      if (queue.length) timer = window.setTimeout(step, 150);
-      else timer = window.setTimeout(() => setShown(target), 150);
+      timer = window.setTimeout(queue.length ? step : () => setShown(settle), pause);
     };
-    timer = window.setTimeout(step, 60);
+    timer = window.setTimeout(step, 80);
     return () => window.clearTimeout(timer);
     // The key captures every position; target is rebuilt from it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,6 +175,10 @@ export function useWalk(t: MonopolyTableView): Record<string, number> {
 
   return shown;
 }
+
+/** How long a token takes over one space, and over a jump. */
+const STEP_MS = 210;
+const JUMP_MS = 620;
 
 interface BoardProps {
   t: MonopolyTableView;
@@ -157,17 +190,35 @@ interface BoardProps {
   children?: ReactNode;
 }
 
+/** The board's tracks: two corner widths of 1.55 and nine spaces of 1, 12.1 in all. */
+const EDGE = 1.55;
+const TRACK = EDGE * 2 + 9;
+const mid = (n: number) => {
+  const start = n === 1 ? 0 : n <= 10 ? EDGE + (n - 2) : EDGE + 9;
+  const width = n === 1 || n === 11 ? EDGE : 1;
+  return ((start + width / 2) / TRACK) * 100;
+};
+/** Where tokens sharing a space stand, in fractions of a space. */
+const HUDDLE: [number, number][] = [
+  [0, 0],
+  [-0.24, -0.2],
+  [0.24, 0.2],
+  [0.24, -0.2],
+  [-0.24, 0.2],
+  [0, 0.3],
+];
+const UNIT = 100 / TRACK;
+
 /**
  * The printed board: forty spaces round a pale green centre. Owned deeds carry a stripe in the
  * owner's tint on their outer edge, buildings sit on the colour band, a mortgaged deed is
- * hatched, and the tokens stand on their spaces. `children` fill the centre.
+ * stamped. The tokens stand on a layer above, so they glide from space to space with a hop.
+ * `children` fill the centre.
  */
 export function Board({ t, players, size, focus = null, onSpace, children }: BoardProps) {
-  const shown = useWalk(t);
+  const walk = useWalk(t);
   const byId = new Map(players.map((p) => [p.id, p]));
-  const tokenSize = size === 'tv' ? 44 : size === 'wide' ? 26 : 15;
-  const here = (space: number) =>
-    t.players.filter((id) => !t.seats[id]!.out && shown[id] === space);
+  const tokenSize = size === 'tv' ? 46 : size === 'wide' ? 28 : 16;
 
   return (
     <div className={`mnp-board mnp-board--${size}`}>
@@ -177,9 +228,10 @@ export function Board({ t, players, size, focus = null, onSpace, children }: Boa
         const h: Holding | undefined = t.deeds[String(i)];
         const owner = h ? byId.get(h.owner) : undefined;
         const corner = i % 10 === 0;
-        const tokens = here(i);
-        const jailed = i === JAIL ? tokens.filter((id) => t.seats[id]!.jailed) : [];
-        const visiting = i === JAIL ? tokens.filter((id) => !t.seats[id]!.jailed) : tokens;
+        const fullSet =
+          deed?.kind === 'street' &&
+          !!h &&
+          setOf(i).every((d) => t.deeds[String(d)]?.owner === h.owner);
         const style = {
           gridRow: row,
           gridColumn: col,
@@ -192,7 +244,7 @@ export function Board({ t, players, size, focus = null, onSpace, children }: Boa
           <Tag
             key={i}
             type={onSpace ? 'button' : undefined}
-            className={`mnp-sp mnp-sp--${side} mnp-sp--${sp.kind}${corner ? ' mnp-sp--corner' : ''}${focus === i ? ' is-focus' : ''}${h?.mortgaged ? ' is-mortgaged' : ''}${owner ? ' is-owned' : ''}`}
+            className={`mnp-sp mnp-sp--${side} mnp-sp--${sp.kind}${corner ? ' mnp-sp--corner' : ''}${focus === i ? ' is-focus' : ''}${h?.mortgaged ? ' is-mortgaged' : ''}${owner ? ' is-owned' : ''}${fullSet ? ' is-set' : ''}`}
             style={style}
             onClick={onSpace ? () => onSpace(i) : undefined}
             aria-label={onSpace ? label : undefined}
@@ -203,51 +255,98 @@ export function Board({ t, players, size, focus = null, onSpace, children }: Boa
                 <Buildings houses={h?.houses ?? 0} />
               </span>
             )}
-            {size !== 'phone' && <SpaceFace space={i} names={t.names} />}
-            {size === 'phone' && <PhoneGlyph space={i} />}
+            {size !== 'phone' ? <SpaceFace space={i} names={t.names} /> : <PhoneGlyph space={i} />}
             {owner && <span className="mnp-sp__owner" aria-hidden="true" />}
             {h?.mortgaged && <span className="mnp-sp__m">M</span>}
-            {jailed.length > 0 && (
-              <span className="mnp-sp__cell" aria-label="In jail">
-                {jailed.map((id) => (
-                  <Piece key={id} p={byId.get(id)} size={tokenSize} turn={t.turn === id} />
-                ))}
-              </span>
-            )}
-            {visiting.length > 0 && (
-              <span className="mnp-sp__tokens">
-                {visiting.map((id) => (
-                  <Piece key={id} p={byId.get(id)} size={tokenSize} turn={t.turn === id} />
-                ))}
-              </span>
-            )}
           </Tag>
         );
       })}
       <div className="mnp-centre">{children}</div>
+      <div className="mnp-tokens" aria-hidden="true">
+        {t.players.map((id) => {
+          const s = t.seats[id]!;
+          if (s.out) return null;
+          const pos = walk.pos[id] ?? s.pos;
+          const { row, col } = cellOf(pos);
+          const jailed = pos === JAIL && s.jailed;
+          const mates = t.players.filter(
+            (o) =>
+              !t.seats[o]!.out &&
+              (walk.pos[o] ?? t.seats[o]!.pos) === pos &&
+              (pos !== JAIL || t.seats[o]!.jailed === s.jailed),
+          );
+          const k = mates.indexOf(id);
+          const [hx, hy] = mates.length > 1 ? HUDDLE[k % HUDDLE.length]! : [0, 0];
+          // In Jail the cell is the inner corner; visitors stand on the outer edge.
+          const jx = pos === JAIL ? (jailed ? 0.3 : -0.35) : 0;
+          const jy = pos === JAIL ? (jailed ? -0.3 : 0.35) : 0;
+          const p = byId.get(id);
+          return (
+            <span
+              key={id}
+              className={`mnp-token${walk.jump[id] ? ' is-jump' : ''}${t.turn === id ? ' is-turn' : ''}`}
+              style={
+                {
+                  left: `${mid(col) + (hx + jx) * UNIT}%`,
+                  top: `${mid(row) + (hy + jy) * UNIT}%`,
+                  '--tok': `${tokenSize}px`,
+                } as CSSProperties
+              }
+            >
+              <span key={`${pos}-${walk.step}`} className="mnp-token__hop">
+                {p && <Token avatar={p.avatar} size={tokenSize} title={p.name} />}
+              </span>
+            </span>
+          );
+        })}
+      </div>
     </div>
-  );
-}
-
-function Piece({ p, size, turn }: { p: ScreenPlayer | undefined; size: number; turn: boolean }) {
-  if (!p) return null;
-  return (
-    <span className={`mnp-piece${turn ? ' is-turn' : ''}`}>
-      <Token avatar={p.avatar} size={size} title={p.name} />
-    </span>
   );
 }
 
 function Buildings({ houses }: { houses: number }) {
   if (!houses) return null;
-  if (houses === 5) return <span className="mnp-hotel" aria-label="Hotel" />;
+  if (houses === 5) {
+    return (
+      <span className="mnp-built mnp-built--hotel" aria-label="Hotel">
+        <ArtHotel />
+      </span>
+    );
+  }
   return (
-    <span className="mnp-houses" aria-label={`${houses} ${houses === 1 ? 'house' : 'houses'}`}>
+    <span className="mnp-built" aria-label={`${houses} ${houses === 1 ? 'house' : 'houses'}`}>
       {Array.from({ length: houses }, (_, k) => (
-        <span key={k} className="mnp-house" />
+        <ArtHouse key={k} />
       ))}
     </span>
   );
+}
+
+/** A special space's drawing. */
+function SpaceArt({ space }: { space: number }) {
+  const sp = BOARD[space]!;
+  switch (sp.kind) {
+    case 'chance':
+      return <ChanceMark space={space} />;
+    case 'chest':
+      return <ArtChest />;
+    case 'railroad':
+      return <ArtTrain />;
+    case 'utility':
+      return space === 12 ? <ArtBulb /> : <ArtTap />;
+    case 'tax':
+      return space === 4 ? <ArtBag /> : <ArtRing />;
+    case 'parking':
+      return <ArtCar />;
+    case 'gotojail':
+      return <ArtCop />;
+    case 'jail':
+      return <ArtBars />;
+    case 'go':
+      return <ArtArrow />;
+    default:
+      return null;
+  }
 }
 
 /** The printed face of a space on a laptop or TV board. */
@@ -259,39 +358,45 @@ function SpaceFace({ space, names }: { space: number; names: Names }) {
       <span className="mnp-face mnp-face--go">
         <span className="mnp-face__small">Collect $200</span>
         <span className="mnp-face__big">GO</span>
-        <Arrow />
+        <span className="mnp-face__arrow">
+          <ArtArrow />
+        </span>
       </span>
     );
   }
   if (sp.kind === 'jail') {
     return (
       <span className="mnp-face mnp-face--jail">
-        <span className="mnp-face__small">Just visiting</span>
-        <span className="mnp-face__bars" aria-hidden="true">
-          <Bars />
+        <span className="mnp-face__cell">
+          <ArtBars />
+          <span className="mnp-face__in">In jail</span>
         </span>
+        <span className="mnp-face__just">Just</span>
+        <span className="mnp-face__visiting">Visiting</span>
       </span>
     );
   }
   if (sp.kind === 'parking' || sp.kind === 'gotojail') {
+    const [a, b] = sp.kind === 'parking' ? ['Free', 'Parking'] : ['Go to', 'Jail'];
     return (
       <span className={`mnp-face mnp-face--${sp.kind}`}>
-        <span className="mnp-face__glyph" aria-hidden="true">
-          {sp.kind === 'parking' ? <Cart /> : <Gavel />}
+        <span className="mnp-face__name">{a}</span>
+        <span className="mnp-face__glyph">
+          <SpaceArt space={space} />
         </span>
-        <span className="mnp-face__name">{sp.name}</span>
+        <span className="mnp-face__name">{b}</span>
       </span>
     );
   }
+  const drawn = sp.kind !== 'street';
   return (
-    <span className="mnp-face">
-      <span className="mnp-face__name">{faceName(spaceName(space, names))}</span>
-      {(sp.kind === 'chance' ||
-        sp.kind === 'chest' ||
-        sp.kind === 'railroad' ||
-        sp.kind === 'utility') && (
-        <span className="mnp-face__glyph" aria-hidden="true">
-          <KindGlyph kind={sp.kind} space={space} />
+    <span className={`mnp-face${drawn ? ' mnp-face--drawn' : ''}`}>
+      <span className="mnp-face__name">
+        {sp.kind === 'chest' ? printName('Community Chest') : faceName(spaceName(space, names))}
+      </span>
+      {drawn && (
+        <span className="mnp-face__glyph">
+          <SpaceArt space={space} />
         </span>
       )}
       {deed && <span className="mnp-face__price">{money(deed.price)}</span>}
@@ -300,68 +405,17 @@ function SpaceFace({ space, names }: { space: number; names: Names }) {
   );
 }
 
-/** On a phone the spaces are too small for names; a glyph tells the specials apart. */
+/** On a phone the spaces are too small for names; the drawings tell the specials apart. */
 function PhoneGlyph({ space }: { space: number }) {
   const sp = BOARD[space]!;
   if (sp.kind === 'street') return null;
   if (sp.kind === 'go') return <span className="mnp-glyph mnp-glyph--go">GO</span>;
-  if (sp.kind === 'tax') return <span className="mnp-glyph">$</span>;
-  if (sp.kind === 'jail' || sp.kind === 'parking' || sp.kind === 'gotojail') {
-    return (
-      <span className="mnp-glyph" aria-hidden="true">
-        {sp.kind === 'jail' ? <Bars /> : sp.kind === 'parking' ? <Cart /> : <Gavel />}
-      </span>
-    );
-  }
   return (
-    <span className="mnp-glyph" aria-hidden="true">
-      <KindGlyph kind={sp.kind} space={space} />
+    <span className="mnp-glyph">
+      <SpaceArt space={space} />
     </span>
   );
 }
-
-function KindGlyph({ kind, space }: { kind: string; space: number }) {
-  if (kind === 'chance') return <span className="mnp-q">?</span>;
-  if (kind === 'chest') return <Chest />;
-  if (kind === 'railroad') return <Train />;
-  return space === 12 ? <Bulb /> : <Tap />;
-}
-
-/* Small engraved glyphs, drawn in ink on a 24 box. */
-const svg = (children: ReactNode) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinejoin="round"
-    strokeLinecap="round"
-  >
-    {children}
-  </svg>
-);
-const Arrow = () => (
-  <span className="mnp-face__arrow" aria-hidden="true">
-    {svg(<path d="M21 12H4m6-6-6 6 6 6" />)}
-  </span>
-);
-const Bars = () => svg(<path d="M4 4h16v16H4zM8 4v16M12 4v16M16 4v16" />);
-const Cart = () =>
-  svg(<path d="M3 15h13l3-6H6M7 19a1.5 1.5 0 1 0 0 .1M16 19a1.5 1.5 0 1 0 0 .1M3 15 2 6" />);
-const Gavel = () => svg(<path d="m13 4 7 7m-9-5 7 7m-8.5-3.5L4 15l3 3 5.5-5.5M3 21h9" />);
-const Chest = () => svg(<path d="M3 10h18v10H3zM3 10a9 5 0 0 1 18 0M10 13h4v3h-4z" />);
-const Train = () =>
-  svg(
-    <path d="M7 3h10a2 2 0 0 1 2 2v9a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V5a2 2 0 0 1 2-2zM5 10h14M9 14h.01M15 14h.01M8 17l-2 4M16 17l2 4" />,
-  );
-const Bulb = () =>
-  svg(
-    <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z" />,
-  );
-const Tap = () =>
-  svg(
-    <path d="M4 9h9a4 4 0 0 1 4 4v1M8 9V6h3v3M17 17v.5M15.5 20a1.5 1.5 0 0 0 3 0c0-1-1.5-2.5-1.5-2.5S15.5 19 15.5 20z" />,
-  );
 
 /** Two printed dice. They tumble whenever a new throw lands. */
 export function Dice({
@@ -400,20 +454,26 @@ const PIPS: Record<number, string[]> = {
   6: ['tl', 'tr', 'ml', 'mr', 'bl', 'br'],
 };
 
-/** A drawn Chance or Community Chest card. */
+/** A drawn Chance or Community Chest card, flying out of its pile when it's new. */
 export function DrawnCard({
   card,
   fresh,
+  by,
 }: {
   card: NonNullable<MonopolyTableView['card']>;
   fresh: boolean;
+  by?: string;
 }) {
   return (
     <div className={`mnp-card mnp-card--${card.deck}${fresh ? ' is-fresh' : ''}`} role="status">
       <span className="mnp-card__head">
+        <span className="mnp-card__emblem">
+          {card.deck === 'chance' ? <span className="mnp-q mnp-q--cream">?</span> : <ArtChest />}
+        </span>
         {card.deck === 'chance' ? 'Chance' : 'Community Chest'}
       </span>
       <span className="mnp-card__text">{card.text}</span>
+      {by && <span className="mnp-card__by">Drawn by {by}</span>}
     </div>
   );
 }

@@ -203,6 +203,16 @@
   text-transform: uppercase;
   cursor: pointer;
 }
+/* Watching: the last volley in a line under the chart. */
+.bs-watch__last {
+  margin: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 .bs-salvo {
   margin: 0;
   flex: 1;

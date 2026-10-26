@@ -276,14 +276,8 @@
   gap: 8px;
   min-width: 0;
 }
-.bs-chart__id {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
 .bs-chart__title {
+  flex: 1;
   margin: 0;
   min-width: 0;
   font: 800 16px/1 var(--font-plaque);
@@ -295,29 +289,15 @@
 }
 .bs-chart__tally {
   margin: 0;
-  font: 700 13px/1.1 var(--font-plaque);
-  letter-spacing: 0.05em;
+  text-align: center;
+  font: 700 14px/1.1 var(--font-plaque);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .bs-compass {
   width: 28px;
   height: 28px;
   flex: none;
-}
-.bs-scale {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font: 700 12px var(--font-plaque);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.bs-scale__bar {
-  width: 36px;
-  height: 6px;
-  border-top: 2px solid var(--bs-ink);
-  border-left: 2px solid var(--bs-ink);
-  border-right: 2px solid var(--bs-ink);
 }
 .bs-chart__plate {
   flex: 1;
@@ -408,7 +388,6 @@ button.bs-cell:focus-visible {
 
 .bs-peg {
   --cell: 10cqmin;
-  --from-x: calc((var(--col, 0) + 1.8) * -1 * var(--cell));
   --high: calc((var(--row, 0) + 1.35) * -1 * var(--cell));
   width: 46%;
   height: 46%;
@@ -416,8 +395,42 @@ button.bs-cell:focus-visible {
 }
 .bs-peg--hit.is-fresh,
 .bs-peg--miss.is-fresh {
-  animation: bs-fly 840ms var(--bs-ease) both;
+  animation: bs-drop 840ms var(--bs-ease) both;
   animation-delay: var(--lag, 0ms);
+}
+/* A red peg sitting on a drawn hull. The ring is the cream already used on filled pieces. */
+.bs-pegover .bs-peg--hit {
+  outline: 2px solid var(--on-fill);
+  outline-offset: 1px;
+}
+.bs-plane {
+  position: absolute;
+  z-index: 6;
+  left: calc((var(--col) + 0.5) * 10%);
+  top: calc(var(--row) * 10%);
+  width: 18%;
+  height: 8%;
+  pointer-events: none;
+  color: var(--bs-ink);
+  animation: bs-plane 840ms var(--bs-ease) both;
+  animation-delay: var(--lag, 0ms);
+}
+.bs-plane svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+.bs-plane path {
+  fill: var(--bs-sea);
+  stroke: currentColor;
+  stroke-width: 2.25;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.bs-plane__line {
+  fill: none;
 }
 .bs-pegover {
   position: absolute;
@@ -582,26 +595,45 @@ button.bs-cell:focus-visible {
     opacity: 1;
   }
 }
-@keyframes bs-fly {
-  0% {
-    transform: translate(var(--from-x), var(--high)) scale(0.72);
+@keyframes bs-drop {
+  0%,
+  46% {
+    transform: translate(0, var(--high)) scale(0.8);
     opacity: 0;
   }
-  14% {
-    transform: translate(var(--from-x), var(--high)) scale(1);
-    opacity: 1;
-  }
   58% {
-    transform: translate(0, var(--high)) scale(1);
+    transform: translate(0, calc(var(--high) * 0.45));
     opacity: 1;
   }
-  80% {
-    transform: translate(0, 0) scale(1.08);
+  84% {
+    transform: translate(0, 0) scale(1.06);
     opacity: 1;
   }
   100% {
     transform: none;
     opacity: 1;
+  }
+}
+@keyframes bs-plane {
+  0% {
+    transform: translate(calc((var(--col) + 1.6) * -10cqw), -0.6cqh);
+    opacity: 0;
+  }
+  16% {
+    transform: translate(calc((var(--col) + 0.45) * -8cqw), -1.1cqh);
+    opacity: 1;
+  }
+  52% {
+    transform: translate(-1.5cqw, -1.7cqh);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(2cqw, -1cqh);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc((9.2 - var(--col)) * 8cqw), -1.3cqh);
+    opacity: 0;
   }
 }
 @keyframes bs-press {
@@ -744,50 +776,84 @@ button.bs-cell:focus-visible {
   border-width: 3px;
   outline-offset: -8px;
 }
-.bs-tv .bs-chart__title {
+.bs-tv .bs-chart__title,
+.bs-tv-end .bs-chart__title {
   font-size: 28px;
 }
-.bs-tv .bs-chart__tally {
+.bs-tv .bs-chart__tally,
+.bs-tv-end .bs-chart__tally {
   font-size: 24px;
 }
-.bs-tv .bs-compass {
+.bs-tv .bs-compass,
+.bs-tv-end .bs-compass {
   width: 48px;
   height: 48px;
 }
-.bs-tv .bs-scale {
-  font-size: 24px;
+.bs-tv .bs-pegover .bs-peg--hit,
+.bs-tv-end .bs-pegover .bs-peg--hit {
+  outline-width: 3px;
 }
-.bs-tv .bs-scale__bar {
-  width: 72px;
-  height: 10px;
-  border-width: 3px;
-}
-.bs-tv .bs-chart__board {
+.bs-tv .bs-chart__board,
+.bs-tv-end .bs-chart__board {
   --lab: 36px;
 }
-.bs-tv .bs-chart__lab {
+.bs-tv .bs-chart__lab,
+.bs-tv-end .bs-chart__lab {
   font-size: 24px;
 }
 .bs-tv .bs-peg,
-.bs-tv .bs-pegover .bs-peg {
+.bs-tv .bs-pegover .bs-peg,
+.bs-tv-end .bs-peg,
+.bs-tv-end .bs-pegover .bs-peg {
   width: 28px;
   height: 28px;
 }
 .bs-tv .bs-peg--miss::before,
-.bs-tv .bs-peg--miss::after {
+.bs-tv .bs-peg--miss::after,
+.bs-tv-end .bs-peg--miss::before,
+.bs-tv-end .bs-peg--miss::after {
   height: 3px;
 }
-.bs-tv .bs-hull {
+.bs-tv .bs-hull,
+.bs-tv-end .bs-hull {
   --hull-gap: 6px;
 }
-.bs-tv .bs-hull__shape path {
+.bs-tv .bs-hull__shape path,
+.bs-tv-end .bs-hull__shape path {
   stroke-width: 2.5;
 }
-.bs-tv .bs-sea path {
+.bs-tv .bs-sea path,
+.bs-tv-end .bs-sea path {
   stroke-width: 0.7;
 }
-.bs-tv .bs-hull__name {
-  font-size: 28px;
+.bs-tv .bs-hull__name,
+.bs-tv-end .bs-hull__name {
+  font-size: 24px;
+}
+
+/* The TV's results: both fleets, now public, beside the standings. */
+.bs-tv-end {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  color: var(--ink);
+}
+.bs-tv-end .bs-chart {
+  height: 100%;
+  min-height: 0;
+  padding: 12px 12px 14px;
+  gap: 8px;
+  border-width: 3px;
+  outline-offset: -8px;
+}
+/* The end charts are the small pair beside the standings, so a peg stays inside its square
+   and the sunk hull can still be read around it. */
+.bs-tv-end .bs-peg,
+.bs-tv-end .bs-pegover .bs-peg {
+  width: 46%;
+  height: 46%;
 }
 .bs-stamp {
   position: absolute;
@@ -852,8 +918,12 @@ button.bs-cell:focus-visible {
   .bs-cell.is-fresh,
   .bs-hull.is-settling,
   .bs-hull.is-sinking,
-  .bs-stamp.is-fresh {
+  .bs-stamp.is-fresh,
+  .bs-plane {
     animation: none;
+  }
+  .bs-plane {
+    display: none;
   }
 }
 

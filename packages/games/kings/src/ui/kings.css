@@ -626,9 +626,66 @@
 }
 @container game (min-width: 760px) {
   .kg-spectate {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: var(--space-3);
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
   }
+  .kg-spectate .kg-card {
+    gap: 10px;
+    padding: 10px;
+  }
+  .kg-spectate .kg-card__place {
+    min-width: 30px;
+    height: 30px;
+    font-size: 18px;
+  }
+  .kg-spectate .kg-card__name {
+    font-size: var(--step-1);
+  }
+  .kg-spectate .kg-card__time {
+    font-size: 19px;
+  }
+  .kg-spectate .kg-card__count {
+    font-size: 14px;
+  }
+  .kg-spectate .kg-meter {
+    gap: 2px;
+  }
+  .kg-spectate .kg-meter__crown {
+    flex-basis: 20px;
+  }
+  .kg-spectate .kg-board--mini {
+    --kg-heavy: 1.5px;
+  }
+  .kg-spectate .kg-stamp {
+    padding: 8px 20px;
+    border-width: 4px;
+    font-size: 18px;
+  }
+  .kg-spectate .kg-stamp b {
+    font-size: 34px;
+  }
+}
+/* Sized to fill the space: every card on screen at once, boards as big as will fit. */
+.kg-spectate.is-fit {
+  overflow: hidden;
+  grid-template-columns: repeat(var(--cols), var(--card-w));
+  grid-template-rows: repeat(var(--rows), var(--card-h));
+  grid-auto-rows: unset;
+  justify-content: center;
+  align-content: start;
+}
+.kg-spectate.is-fit .kg-card--phone {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.kg-spectate.is-fit .kg-card--phone .kg-card__board {
+  container-type: size;
+}
+.kg-spectate.is-fit .kg-card--phone .kg-board--mini {
+  width: calc(min(100cqw, 100cqh) - 2px);
+}
+.kg-spectate.is-fit .kg-card--phone .kg-card__done {
+  aspect-ratio: auto;
+  height: 100%;
 }
 
 /* ── TV ────────────────────────────────────────────────────────────────── */

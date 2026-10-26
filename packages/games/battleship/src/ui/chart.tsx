@@ -23,17 +23,38 @@ const LETTER: Record<ShipId, string> = {
 
 const COLS = 'ABCDEFGHIJ'.split('');
 
-/** Broad hull: pointed bow at the start (left, or the top), then a rounded rectangle. */
-const HULL_H =
-  'M1 16 C18 5 28 2 38 2 H84 C96 2 99 8 99 16 C99 24 96 30 84 30 H38 C28 30 18 27 1 16 Z';
-const HULL_V =
-  'M16 1 C5 18 2 28 2 38 V84 C2 96 8 99 16 99 C24 99 30 96 30 84 V38 C30 28 27 18 16 1 Z';
+/**
+ * Plan-view silhouettes in a 100×32 box, bow at the left. Each one is broad enough to cover
+ * its squares. The vertical drawing is the same path with the axes swapped.
+ *
+ * Carrier: flight deck with the island blister on one side of the stern.
+ * Battleship: three turret knuckles and a rounded stern.
+ * Cruiser: a clipper bow, one turret, and a spoon stern.
+ * Submarine: a round nose and a sail.
+ * Destroyer: a sharp bow and a cut transom.
+ */
+const HULL_H: Record<ShipId, string> = {
+  carrier:
+    'M2 15 C12 8 20 4 32 4 H93 C97 4 99 8 99 12 V20 C99 24 97 26 93 26 H84 V31 H66 V26 H32 C20 26 12 22 2 15 Z',
+  battleship:
+    'M1 16 C6 11 10 7 16 6 C20 5 24 1 32 1 C40 1 42 6 48 6 C52 5 54 1 62 1 C70 1 72 6 78 6 C82 5 86 2 92 2 C98 2 99 8 99 16 C99 24 98 30 92 30 C86 30 82 27 78 26 C72 26 70 31 62 31 C54 31 52 27 48 26 C42 26 40 31 32 31 C24 31 20 27 16 26 C10 25 6 21 1 16 Z',
+  cruiser:
+    'M0 16 C16 7 28 3 40 3 C46 3 48 0 56 0 C64 0 66 3 74 4 H84 C92 6 99 11 99 16 C99 22 94 27 84 28 H74 C66 29 64 32 56 32 C48 32 46 29 40 29 C28 29 16 25 0 16 Z',
+  submarine:
+    'M8 16 C8 8 16 5 28 5 H36 V0 H58 V5 H78 C90 5 99 10 99 16 C99 22 90 27 78 27 H28 C16 27 8 24 8 16 Z',
+  destroyer: 'M0 16 C3 11 8 5 18 3 H68 L76 8 H99 V24 H76 L68 29 H18 C8 27 3 21 0 16 Z',
+};
 
 export interface HullDraw {
   id: ShipId;
   dir: Dir;
   cells: number[];
   sunk: boolean;
+}
+
+export interface ChartTally {
+  afloat: number;
+  sunk: number;
 }
 
 interface ChartProps {
@@ -45,6 +66,13 @@ interface ChartProps {
   fresh: Volley | null;
   sinking: readonly ShipId[];
   settling: ShipId | null;
+  /** How many of this chart's fleet are still up, and how many have gone down. */
+  tally?: ChartTally | null;
+  /**
+   * `own`: a hit part of a drawn ship smokes. `sea`: smoke sits on the hit cell until that
+   * ship sinks, and only then may the hull smoke. Never an unsunk enemy hull.
+   */
+  smoke?: 'own' | 'sea';
   selected?: readonly number[];
   /** Faded preview while placing. Local to this screen. Never an enemy hull. */
   ghost?: { id: ShipId; dir: Dir; cells: number[]; illegal: boolean } | null;
@@ -69,10 +97,50 @@ function place(cells: number[], dir: Dir): CSSProperties {
   } as CSSProperties;
 }
 
+function atCell(cell: number, lag: number): CSSProperties {
+  return {
+    '--col': String(cell % GRID),
+    '--row': String(Math.floor(cell / GRID)),
+    '--lag': `${lag * 70}ms`,
+  } as CSSProperties;
+}
+
+/** Swap the axes of a 100×32 path so the bow points up in a 32×100 box. */
+function upright(d: string): string {
+  const tokens = d.match(/[a-zA-Z]|-?\d*\.?\d+/g);
+  if (!tokens) return d;
+  let i = 0;
+  let out = '';
+  const num = () => tokens[i++]!;
+  while (i < tokens.length) {
+    const cmd = tokens[i++]!;
+    if (cmd === 'Z' || cmd === 'z') {
+      out += 'Z';
+      continue;
+    }
+    if (cmd === 'H') {
+      out += `V${num()}`;
+      continue;
+    }
+    if (cmd === 'V') {
+      out += `H${num()}`;
+      continue;
+    }
+    const pairs = cmd === 'C' ? 3 : 1;
+    out += cmd;
+    for (let p = 0; p < pairs; p++) {
+      const x = num();
+      const y = num();
+      out += ` ${y} ${x}`;
+    }
+  }
+  return out;
+}
+
 /**
  * One fleet chart. `hulls` is the only place a ship is drawn: your own fleet while you place
  * and fight, or a wreck once it has sunk. A chart built from the table view never receives an
- * unsunk hull.
+ * unsunk hull. Letters and numbers share the square's tracks, and they do not fire.
  */
 export function Chart({
   label,
@@ -81,6 +149,8 @@ export function Chart({
   fresh,
   sinking,
   settling,
+  tally,
+  smoke = 'sea',
   selected,
   ghost,
   onAim,
@@ -89,26 +159,48 @@ export function Chart({
   size,
 }: ChartProps) {
   const freshCells = new Set(fresh?.shots.map((shot) => shot.cell) ?? []);
+  const covered = new Set(hulls.flatMap((hull) => hull.cells));
+  const lagOf = (cell: number) =>
+    freshCells.has(cell)
+      ? Math.max(0, fresh?.shots.findIndex((shot) => shot.cell === cell) ?? 0)
+      : 0;
   return (
     <section className={`bs-chart bs-chart--${size}`} aria-label={label}>
       <header className="bs-chart__head">
         <Compass />
-        <h3 className="bs-chart__title">{label}</h3>
+        <span className="bs-chart__id">
+          <h3 className="bs-chart__title">{label}</h3>
+          {tally && (
+            <p className="bs-chart__tally">
+              {tally.afloat} afloat · {tally.sunk} sunk
+            </p>
+          )}
+        </span>
         <Scale />
       </header>
-      <div className="bs-chart__map">
-        <span className="bs-chart__corner" aria-hidden="true" />
-        <div className="bs-chart__cols" aria-hidden="true">
-          {COLS.map((letter) => (
-            <span key={letter}>{letter}</span>
+      <div className="bs-chart__plate">
+        <div className="bs-chart__board">
+          <span className="bs-chart__corner" aria-hidden="true" />
+          {COLS.map((letter, index) => (
+            <span
+              key={letter}
+              className="bs-chart__lab bs-chart__lab--col"
+              style={{ gridColumn: index + 2, gridRow: 1 }}
+              aria-hidden="true"
+            >
+              {letter}
+            </span>
           ))}
-        </div>
-        <div className="bs-chart__rows" aria-hidden="true">
           {Array.from({ length: GRID }, (_, row) => (
-            <span key={row}>{row + 1}</span>
+            <span
+              key={row}
+              className="bs-chart__lab bs-chart__lab--row"
+              style={{ gridColumn: 1, gridRow: row + 2 }}
+              aria-hidden="true"
+            >
+              {row + 1}
+            </span>
           ))}
-        </div>
-        <div className="bs-chart__fit">
           <div
             className="bs-chart__grid"
             onPointerLeave={
@@ -124,9 +216,7 @@ export function Chart({
             {cells.map((mark, cell) => {
               const picked = selected?.includes(cell) ?? false;
               const flying = freshCells.has(cell);
-              const lag = flying
-                ? Math.max(0, fresh?.shots.findIndex((shot) => shot.cell === cell) ?? 0)
-                : 0;
+              const lag = lagOf(cell);
               const name = cellName(cell);
               const described =
                 mark === 'blank'
@@ -136,17 +226,12 @@ export function Chart({
                     : mark === 'sunk'
                       ? `${name}, sunk`
                       : `${name}, hit`;
+              const onHull = covered.has(cell) && mark !== 'miss';
               const peg =
-                mark === 'blank' ? null : (
+                mark === 'blank' || onHull ? null : (
                   <span
                     className={`bs-peg bs-peg--${mark === 'miss' ? 'miss' : 'hit'}${flying ? ' is-fresh' : ''}`}
-                    style={
-                      {
-                        '--col': String(cell % GRID),
-                        '--row': String(Math.floor(cell / GRID)),
-                        '--lag': `${lag * 70}ms`,
-                      } as CSSProperties
-                    }
+                    style={atCell(cell, lag)}
                   />
                 );
               const cellClass = `bs-cell${mark === 'blank' ? '' : ` is-${mark}`}${flying ? ' is-fresh' : ''}${picked ? ' is-picked' : ''}`;
@@ -187,7 +272,8 @@ export function Chart({
                 className={`bs-hull bs-hull--${hull.dir}${hull.sunk ? ' is-sunk' : ''}${sinking.includes(hull.id) ? ' is-sinking' : ''}${settling === hull.id ? ' is-settling' : ''}`}
                 style={{ ...place(hull.cells, hull.dir), '--hull': HULL[hull.id] } as CSSProperties}
               >
-                <HullGlyph dir={hull.dir} />
+                <HullGlyph id={hull.id} dir={hull.dir} />
+                {hull.sunk && <HullSmoke />}
                 <span className="bs-hull__name">{LETTER[hull.id]}</span>
               </span>
             ))}
@@ -199,9 +285,30 @@ export function Chart({
                 }
                 aria-hidden="true"
               >
-                <HullGlyph dir={ghost.dir} />
+                <HullGlyph id={ghost.id} dir={ghost.dir} />
               </span>
             )}
+            {cells.map((mark, cell) => {
+              if (!covered.has(cell) || (mark !== 'hit' && mark !== 'sunk')) return null;
+              const flying = freshCells.has(cell);
+              return (
+                <span key={`over-${cell}`} className="bs-pegover" style={atCell(cell, lagOf(cell))}>
+                  <span className={`bs-peg bs-peg--hit${flying ? ' is-fresh' : ''}`} />
+                </span>
+              );
+            })}
+            {cells.map((mark, cell) => {
+              const show =
+                smoke === 'own'
+                  ? covered.has(cell) && (mark === 'hit' || mark === 'sunk')
+                  : mark === 'hit';
+              if (!show) return null;
+              return (
+                <span key={`smoke-${cell}`} className="bs-smoke" style={atCell(cell, 0)}>
+                  <Wisp />
+                </span>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -209,7 +316,7 @@ export function Chart({
   );
 }
 
-function HullGlyph({ dir }: { dir: Dir }) {
+function HullGlyph({ id, dir }: { id: ShipId; dir: Dir }) {
   const horizontal = dir === 'h';
   return (
     <svg
@@ -218,7 +325,29 @@ function HullGlyph({ dir }: { dir: Dir }) {
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      <path d={horizontal ? HULL_H : HULL_V} />
+      <path d={horizontal ? HULL_H[id] : upright(HULL_H[id])} />
+    </svg>
+  );
+}
+
+/** Wisps along a sunk hull. The ship is already drawn, so the smoke may follow it. */
+function HullSmoke() {
+  return (
+    <span className="bs-hull__smoke" aria-hidden="true">
+      <Wisp />
+      <Wisp />
+      <Wisp />
+    </span>
+  );
+}
+
+/** A few ink wisps. Stroke only, no blur. */
+function Wisp() {
+  return (
+    <svg viewBox="0 0 20 28" aria-hidden="true">
+      <path d="M6 26C6 18 10 16 10 10C10 6 8 4 8 2" />
+      <path d="M13 26C13 20 16 18 16 12C16 8 14 6 14 3" />
+      <path d="M9 24C9 19 11 17 11 13" />
     </svg>
   );
 }

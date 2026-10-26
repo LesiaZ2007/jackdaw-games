@@ -52,29 +52,7 @@
   inset: 0;
   overflow: hidden;
 }
-.tv-stage {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 1920px;
-  height: 1080px;
-  transform-origin: 0 0;
-  overflow: hidden;
-}
-/* The type scale in TV pixels, read from across the room: the smallest step is 24px (18px on a
-   1440px laptop), and nothing follows the window, which on a TV's browser is often tiny. */
-.tv-stage {
-  --step--1: 24px;
-  --step-0: 28px;
-  --step-1: 32px;
-  --step-2: 40px;
-  --step-3: 50px;
-  --step-4: 68px;
-  --step-5: 96px;
-}
-.tv-stage .jd-label {
-  font-size: 26px;
-}
+/* .tv-stage and its type scale live in [code]/stage.css, shared with the room's TvWindow. */
 /* The lobby: the first screen fills the window, the night so far follows at the same scale. */
 .tv-viewport--scroll {
   position: relative;
@@ -98,7 +76,7 @@ html:has(.tv-viewport--scroll) {
 html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   display: none;
 }
-.tv-stage--scroll {
+.tv-stage.tv-stage--scroll {
   height: auto;
 }
 .tv-screen {

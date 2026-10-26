@@ -4,6 +4,7 @@ import type { GameUi } from '@jackdaw/ui';
 import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
 import { TvScreen } from './tv';
+import { WatchScreen } from './watch';
 
 /** Monopoly: the classic board, printed. It uses Jackdaw's lobby. */
 export const monopolyUi: GameUi = {
@@ -61,5 +62,6 @@ export const monopolyUi: GameUi = {
   fit: true,
   PlayerScreen,
   TvScreen,
+  WatchScreen,
   Reveal,
 };

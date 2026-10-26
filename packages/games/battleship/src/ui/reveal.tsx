@@ -24,6 +24,11 @@ export const Reveal: NonNullable<GameUi['Reveal']> = ({ result, players }) => {
             fresh={null}
             sinking={[]}
             settling={null}
+            tally={{
+              afloat: (rv.fleets[id]?.length ?? 0) - (rv.wrecks[id]?.length ?? 0),
+              sunk: rv.wrecks[id]?.length ?? 0,
+            }}
+            smoke="own"
             interactive={false}
           />
         ))}

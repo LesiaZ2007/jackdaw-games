@@ -138,6 +138,11 @@
   min-height: 0;
   min-width: 0;
   display: flex;
+  align-items: center;
+}
+.bs--phone .bs-chart {
+  height: 100%;
+  max-height: calc(100cqw + 64px);
 }
 
 .bs-note {
@@ -152,37 +157,45 @@
   flex-direction: column;
   gap: 8px;
 }
-.bs-ships {
+.bs-ships,
+.bs-strip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: 5fr 4fr 3fr 3fr 2fr;
   gap: 6px;
 }
 .bs-shipbtn {
-  min-height: 44px;
-  padding: 4px 2px;
-  border: 2px solid var(--print-ink);
-  background: var(--hull);
-  color: var(--on-fill);
-  font: 800 15px/1 var(--font-plaque);
+  min-height: 52px;
+  min-width: 0;
+  padding: 6px 4px 4px;
+  border: 2px solid var(--ink);
+  background: var(--bs-sea);
+  color: var(--bs-ink);
+  font: 800 13px/1 var(--font-plaque);
   letter-spacing: 0.04em;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
+  justify-content: space-between;
+  gap: 4px;
 }
-.bs-shipbtn.is-laid {
-  outline: 1px solid var(--on-fill);
-  outline-offset: -5px;
+.bs-hull__shape.bs-shipart {
+  pointer-events: none;
+  position: static;
+  display: block;
+  flex: none;
+  width: 100%;
+  height: 22px;
+}
+.bs-shipbtn.is-laid .bs-shipart {
+  opacity: 0.4;
 }
 .bs-shipbtn.is-on {
-  outline: 2px solid var(--ink);
+  outline: 3px solid var(--ink);
   outline-offset: 2px;
 }
-.bs-shipbtn__len {
-  font-size: 13px;
-  opacity: 0.9;
+.bs-shipbtn__code {
+  white-space: nowrap;
 }
 .bs-actions {
   display: flex;
@@ -222,32 +235,37 @@
   text-transform: uppercase;
 }
 
+/* Your fleet's damage: each ship to scale over a square for each of its squares. */
 .bs-strip {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .bs-strip li {
-  min-height: 44px;
-  padding: 4px;
+  min-width: 0;
+  padding: 6px 4px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  background: var(--hull);
-  color: var(--on-fill);
-  border: 2px solid var(--print-ink);
-  font: 800 12px/1.1 var(--font-plaque);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  text-align: center;
+  gap: 5px;
+  background: var(--bs-sea);
+  border: 2px solid var(--bs-ink);
 }
-.bs-strip li.is-sunk {
-  background: var(--sable);
-  text-decoration: line-through;
+.bs-strip li.is-sunk .bs-shipart {
+  opacity: 0.35;
+}
+.bs-strip__pips {
+  display: flex;
+  gap: 3px;
+}
+.bs-strip__pips span {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--bs-ink);
+  background: var(--paper);
+}
+.bs-strip__pips span.is-hit {
+  background: var(--gules);
 }
 
 /* Laptop: both charts, the switch steps aside. */
@@ -261,6 +279,9 @@
   }
   .bs-boards > .is-back {
     display: flex;
+  }
+  .bs--phone .bs-chart {
+    max-height: calc(50cqw + 56px);
   }
 }
 
@@ -410,8 +431,10 @@ button.bs-cell:focus-visible {
 }
 /* A red peg sitting on a drawn hull. The ring is the cream already used on filled pieces. */
 .bs-pegover .bs-peg--hit {
-  outline: 2px solid var(--on-fill);
-  outline-offset: 1px;
+  width: 32%;
+  height: 32%;
+  outline: 1.5px solid var(--on-fill);
+  outline-offset: 0;
 }
 .bs-plane {
   position: absolute;
@@ -676,7 +699,7 @@ button.bs-cell:focus-visible {
 }
 @keyframes bs-stamp {
   from {
-    transform: translateY(-28%) scale(1.7);
+    transform: scale(1.6) rotate(-4deg);
     opacity: 0;
   }
   to {
@@ -724,7 +747,15 @@ button.bs-cell:focus-visible {
   grid-template-rows: auto minmax(0, 1fr);
   gap: 12px;
 }
+.bs-tv__top {
+  min-width: 0;
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
 .bs-tv__who {
+  min-width: 0;
   margin: 0;
   display: flex;
   align-items: center;
@@ -791,6 +822,11 @@ button.bs-cell:focus-visible {
 .bs-tv-end .bs-pegover .bs-peg--hit {
   outline-width: 3px;
 }
+.bs-tv .bs-pegover .bs-peg,
+.bs-tv-end .bs-pegover .bs-peg {
+  width: 34%;
+  height: 34%;
+}
 .bs-tv .bs-chart__board,
 .bs-tv-end .bs-chart__board {
   --lab: 36px;
@@ -799,10 +835,7 @@ button.bs-cell:focus-visible {
 .bs-tv-end .bs-chart__lab {
   font-size: 24px;
 }
-.bs-tv .bs-peg,
-.bs-tv .bs-pegover .bs-peg,
-.bs-tv-end .bs-peg,
-.bs-tv-end .bs-pegover .bs-peg {
+.bs-tv .bs-peg {
   width: 28px;
   height: 28px;
 }
@@ -865,32 +898,26 @@ button.bs-cell:focus-visible {
 }
 /* The end charts are the small pair beside the standings, so a peg stays inside its square
    and the sunk hull can still be read around it. */
-.bs-tv-end .bs-peg,
-.bs-tv-end .bs-pegover .bs-peg {
+.bs-tv-end .bs-peg {
   width: 46%;
   height: 46%;
 }
 .bs-stamp {
-  position: absolute;
-  left: 50%;
-  top: 8%;
-  z-index: 4;
-  translate: -50% 0;
+  flex: none;
   margin: 0;
-  display: grid;
-  justify-items: center;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   pointer-events: none;
-  text-align: center;
 }
 .bs-stamp__word {
-  padding: 4px 28px 8px;
+  padding: 6px 22px 8px;
   border: 4px solid var(--bs-ink);
   outline: 2px solid var(--bs-ink);
-  outline-offset: -10px;
+  outline-offset: -9px;
   background: var(--bs-sea);
   color: var(--bs-ink);
-  font: 900 112px/0.9 var(--font-plaque);
+  font: 900 56px/0.9 var(--font-plaque);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }

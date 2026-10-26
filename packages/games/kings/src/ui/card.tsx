@@ -85,7 +85,7 @@ export function PlayerCard({
       <div className="kg-card__board">
         {done ? (
           <div className="kg-card__done">
-            <KingMark size="38%" />
+            <KingMark />
             <b>{place(rank)}</b>
             <span>All {t.count} solved</span>
           </div>

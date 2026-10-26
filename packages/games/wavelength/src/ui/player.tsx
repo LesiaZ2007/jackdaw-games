@@ -216,10 +216,8 @@ function Dock({
 
   if (v.phase === 'guess') {
     const guessers = v.guessers;
-    const locked = r.locks.filter((id) => guessers.includes(id)).length;
+    const { locked, tally } = lockTally(v);
     const shared = v.guessing === 'shared';
-    const need = shared ? Math.floor(guessers.length / 2) + 1 : guessers.length;
-    const tally = `${locked} of ${need} locked in`;
     if (guessers.includes(v.me)) {
       const mine = r.locks.includes(v.me);
       return (
@@ -303,8 +301,15 @@ function Dock({
   return <NextRound v={v} send={send} now={now} />;
 }
 
+/** How many guessers have locked in, and how many the dial needs: "2 of 3 locked in". */
+export function lockTally(t: WavelengthTableView): { locked: number; tally: string } {
+  const locked = t.round.locks.filter((id) => t.guessers.includes(id)).length;
+  const need = t.guessing === 'shared' ? Math.floor(t.guessers.length / 2) + 1 : t.guessers.length;
+  return { locked, tally: `${locked} of ${need} locked in` };
+}
+
 /** The two cards on offer, for everyone waiting on the psychic. */
-function Offer({ v }: { v: WavelengthTableView }) {
+export function Offer({ v }: { v: WavelengthTableView }) {
   return (
     <ul className="wl-offer" aria-label="The cards on offer">
       {v.round.spectrums.map(([l, r], i) => (

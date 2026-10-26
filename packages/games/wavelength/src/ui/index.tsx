@@ -5,6 +5,7 @@ import { LobbySeats } from './lobby';
 import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
 import { TvScreen } from './tv';
+import { WatchScreen } from './watch';
 
 /** Wavelength: catalog art, detail page and screens. It uses Jackdaw's lobby. */
 export const wavelengthUi: GameUi = {
@@ -59,5 +60,6 @@ export const wavelengthUi: GameUi = {
   LobbySeats,
   PlayerScreen,
   TvScreen,
+  WatchScreen,
   Reveal,
 };

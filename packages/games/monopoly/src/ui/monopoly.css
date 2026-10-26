@@ -1,0 +1,1324 @@
+/*
+ * Monopoly: the classic board, printed. Cream card stock, charcoal ink, the eight group
+ * inks on the colour bands and a pale green centre. The board is printed, so it looks the same
+ * by day and in the dark; the panels round it follow the shell through data-look. No gradients,
+ * no glows. Jackdaw's bar is not restyled here.
+ */
+
+.mnp {
+  --mnp-ease: var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+  --mnp-card: #efeadc;
+  --mnp-centre: #d6e2d1;
+  --mnp-ink: #26241f;
+  --mnp-ink-2: #5b574d;
+  --mnp-brown: #6e4a2c;
+  --mnp-sky: #7ea7c2;
+  --mnp-pink: #a5527c;
+  --mnp-orange: #c2702b;
+  --mnp-red: #a63a30;
+  --mnp-yellow: #c9a03a;
+  --mnp-green: #30634a;
+  --mnp-navy: #2b5683;
+  --mnp-house: #3f7a4f;
+  --mnp-hotel: #a63a30;
+  --mnp-chance: #c2702b;
+  --mnp-chest: #2b5683;
+  color: var(--ink);
+}
+
+/* ── Phone: fits under the bar ─────────────────────────────────────────── */
+.mnp--phone {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow: hidden;
+}
+
+.mnp-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.mnp-bar__status {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-1);
+  line-height: 1.05;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mnp-clock {
+  flex: none;
+  font: 800 18px var(--font-plaque);
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+.mnp-clock.is-low {
+  color: var(--danger);
+}
+
+.mnp-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.mnp-stage {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+.mnp-fit {
+  height: 100%;
+  width: 100%;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+
+/* ── The board ─────────────────────────────────────────────────────────── */
+.mnp-board {
+  --edge: 1.55fr;
+  width: min(100cqw, 100cqh);
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: var(--edge) repeat(9, 1fr) var(--edge);
+  grid-template-rows: var(--edge) repeat(9, 1fr) var(--edge);
+  gap: 1px;
+  background: var(--mnp-ink);
+  border: 2px solid var(--mnp-ink);
+  outline: 1px solid var(--mnp-ink);
+  outline-offset: 3px;
+  box-sizing: border-box;
+  color: var(--mnp-ink);
+  margin: 4px;
+}
+.mnp-board--tv {
+  border-width: 3px;
+  outline-offset: 6px;
+  margin: 8px;
+}
+
+.mnp-sp {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  background: var(--mnp-card);
+  border: 0;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+button.mnp-sp {
+  cursor: pointer;
+}
+.mnp-sp:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: -3px;
+  z-index: 2;
+}
+.mnp-sp.is-focus {
+  box-shadow: inset 0 0 0 3px var(--or);
+  z-index: 1;
+}
+.mnp-board--tv .mnp-sp.is-focus {
+  box-shadow: inset 0 0 0 6px var(--or);
+}
+
+/* The colour band sits on the inner edge, facing the centre. */
+.mnp-sp--b {
+  flex-direction: column;
+}
+.mnp-sp--t {
+  flex-direction: column-reverse;
+}
+.mnp-sp--l {
+  flex-direction: row-reverse;
+}
+.mnp-sp--r {
+  flex-direction: row;
+}
+.mnp-sp__band {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--band);
+  border: 0 solid var(--mnp-ink);
+}
+.mnp-sp--b .mnp-sp__band,
+.mnp-sp--t .mnp-sp__band {
+  height: 24%;
+}
+.mnp-sp--b .mnp-sp__band {
+  border-bottom-width: 1px;
+}
+.mnp-sp--t .mnp-sp__band {
+  border-top-width: 1px;
+}
+.mnp-sp--l .mnp-sp__band,
+.mnp-sp--r .mnp-sp__band {
+  width: 24%;
+  flex-direction: column;
+}
+.mnp-sp--l .mnp-sp__band {
+  border-left-width: 1px;
+}
+.mnp-sp--r .mnp-sp__band {
+  border-right-width: 1px;
+}
+
+/* The owner's tint runs along the outer edge. */
+.mnp-sp__owner {
+  position: absolute;
+  background: var(--owner);
+  pointer-events: none;
+}
+.mnp-sp--b .mnp-sp__owner {
+  inset: auto 0 0 0;
+  height: 12%;
+}
+.mnp-sp--t .mnp-sp__owner {
+  inset: 0 0 auto 0;
+  height: 12%;
+}
+.mnp-sp--l .mnp-sp__owner {
+  inset: 0 auto 0 0;
+  width: 12%;
+}
+.mnp-sp--r .mnp-sp__owner {
+  inset: 0 0 0 auto;
+  width: 12%;
+}
+
+.mnp-sp.is-mortgaged .mnp-face,
+.mnp-sp.is-mortgaged .mnp-sp__band {
+  opacity: 0.45;
+}
+.mnp-sp__m {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  rotate: -18deg;
+  padding: 0 0.2em;
+  border: 2px solid var(--mnp-red);
+  color: var(--mnp-red);
+  font: 900 max(10px, 3.2cqmin) / 1 var(--font-plaque);
+  background: var(--mnp-card);
+  pointer-events: none;
+}
+
+.mnp-houses {
+  display: flex;
+  gap: 8%;
+  width: 86%;
+  justify-content: center;
+}
+.mnp-sp--l .mnp-houses,
+.mnp-sp--r .mnp-houses {
+  flex-direction: column;
+  width: auto;
+  height: 86%;
+}
+.mnp-house {
+  flex: none;
+  width: max(4px, 1.2cqmin);
+  aspect-ratio: 1;
+  background: var(--mnp-house);
+  border: 1px solid var(--mnp-ink);
+}
+.mnp-hotel {
+  width: max(9px, 3cqmin);
+  height: max(5px, 1.4cqmin);
+  background: var(--mnp-hotel);
+  border: 1px solid var(--mnp-ink);
+}
+.mnp-sp--l .mnp-hotel,
+.mnp-sp--r .mnp-hotel {
+  width: max(5px, 1.4cqmin);
+  height: max(9px, 3cqmin);
+}
+
+/* Faces: what's printed on a space on a laptop or TV board. */
+.mnp-face {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 6% 4% 14%;
+  font: 700 max(9px, 1.45cqmin) / 1.05 var(--font-plaque);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.mnp-sp--t .mnp-face {
+  padding: 14% 4% 6%;
+}
+.mnp-sp--l .mnp-face,
+.mnp-sp--r .mnp-face {
+  padding: 4% 6%;
+}
+.mnp-face__name {
+  hyphens: manual;
+  overflow-wrap: break-word;
+}
+.mnp-face__price {
+  font-weight: 800;
+  color: var(--mnp-ink-2);
+}
+.mnp-face__glyph {
+  width: 46%;
+  max-height: 46%;
+  display: grid;
+  place-items: center;
+}
+.mnp-face__glyph svg {
+  width: 100%;
+  height: 100%;
+}
+.mnp-q {
+  font: 800 max(14px, 4.2cqmin) / 1 var(--font-display);
+  color: var(--mnp-chance);
+}
+.mnp-sp--chest .mnp-face__glyph {
+  color: var(--mnp-chest);
+}
+.mnp-sp--corner .mnp-face {
+  justify-content: center;
+  padding: 8%;
+  font-size: max(9px, 1.6cqmin);
+}
+.mnp-face__big {
+  font: 800 max(18px, 5.4cqmin) / 0.9 var(--font-display);
+  color: var(--mnp-red);
+  text-transform: none;
+}
+.mnp-face__arrow {
+  width: 60%;
+  color: var(--mnp-red);
+}
+.mnp-face__bars {
+  width: 50%;
+}
+.mnp-sp--jail .mnp-face {
+  justify-content: flex-end;
+}
+.mnp-sp--corner .mnp-face__glyph {
+  width: 52%;
+}
+
+/* Jail's own cell, in the corner nearest the centre. */
+.mnp-sp__cell {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 58%;
+  height: 58%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  background: var(--mnp-orange);
+  border: 0 solid var(--mnp-ink);
+  border-width: 0 0 1px 1px;
+  z-index: 2;
+}
+
+/* Phone glyphs. */
+.mnp-glyph {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font: 800 max(9px, 3cqmin) / 1 var(--font-plaque);
+  color: var(--mnp-ink-2);
+}
+.mnp-glyph svg {
+  width: 62%;
+  max-height: 62%;
+}
+.mnp-glyph--go {
+  color: var(--mnp-red);
+  font: 800 max(12px, 4.4cqmin) / 1 var(--font-display);
+}
+.mnp-glyph .mnp-q {
+  font-size: max(12px, 4cqmin);
+}
+
+/* Tokens stand on their space and hop as they walk. */
+.mnp-sp__tokens {
+  position: absolute;
+  inset: 8%;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  z-index: 3;
+  pointer-events: none;
+}
+.mnp-piece {
+  display: inline-flex;
+  margin: -2px;
+  border-radius: 50%;
+  animation: mnp-hop 220ms var(--mnp-ease);
+}
+.mnp-piece.is-turn {
+  outline: 2px solid var(--mnp-ink);
+  outline-offset: 1px;
+  z-index: 1;
+}
+.mnp-board--tv .mnp-piece {
+  margin: -4px;
+}
+.mnp-board--tv .mnp-piece.is-turn {
+  outline-width: 4px;
+  outline-offset: 2px;
+}
+@keyframes mnp-hop {
+  0% {
+    transform: translateY(0);
+  }
+  45% {
+    transform: translateY(-35%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* ── The centre ─────────────────────────────────────────────────────────── */
+.mnp-centre {
+  grid-row: 2 / 11;
+  grid-column: 2 / 11;
+  min-width: 0;
+  min-height: 0;
+  background: var(--mnp-centre);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4%;
+  padding: 5%;
+  overflow: hidden;
+  position: relative;
+}
+.mnp-centre__mark {
+  padding: 0.12em 0.5em 0.2em;
+  background: var(--mnp-red);
+  color: var(--on-fill);
+  border: 2px solid var(--mnp-ink);
+  outline: 1px solid var(--on-fill);
+  outline-offset: -5px;
+  font: 800 max(15px, 6.4cqmin) / 1 var(--font-display);
+  letter-spacing: 0.02em;
+}
+.mnp-centre__foot {
+  font: 700 max(11px, 1.9cqmin) / 1.1 var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mnp-ink-2);
+}
+.mnp-centre__card {
+  padding: 2px 8px;
+  color: var(--on-fill);
+  font: 800 12px / 1.2 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mnp-centre__card.mnp-card--chance {
+  background: var(--mnp-chance);
+}
+.mnp-centre__card.mnp-card--chest {
+  background: var(--mnp-chest);
+}
+.mnp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.mnp-dice {
+  display: flex;
+  gap: calc(var(--die) * 0.3);
+}
+.mnp-die {
+  position: relative;
+  width: var(--die);
+  height: var(--die);
+  background: var(--mnp-card);
+  border: max(2px, calc(var(--die) * 0.05)) solid var(--mnp-ink);
+  border-radius: 18%;
+  box-shadow: 0 calc(var(--die) * 0.06) 0 var(--mnp-ink);
+  animation: mnp-tumble 520ms var(--mnp-ease);
+}
+.mnp-die--1 {
+  animation-delay: 60ms;
+}
+.mnp-pip {
+  position: absolute;
+  width: 20%;
+  height: 20%;
+  border-radius: 50%;
+  background: var(--mnp-ink);
+  translate: -50% -50%;
+}
+.mnp-pip--c {
+  left: 50%;
+  top: 50%;
+  background: var(--mnp-red);
+}
+.mnp-pip--tl {
+  left: 26%;
+  top: 26%;
+}
+.mnp-pip--tr {
+  left: 74%;
+  top: 26%;
+}
+.mnp-pip--ml {
+  left: 26%;
+  top: 50%;
+}
+.mnp-pip--mr {
+  left: 74%;
+  top: 50%;
+}
+.mnp-pip--bl {
+  left: 26%;
+  top: 74%;
+}
+.mnp-pip--br {
+  left: 74%;
+  top: 74%;
+}
+@keyframes mnp-tumble {
+  0% {
+    transform: translate(-60%, -40%) rotate(-200deg) scale(0.7);
+    opacity: 0;
+  }
+  60% {
+    transform: translate(6%, 4%) rotate(14deg) scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.mnp-card {
+  width: min(78%, 34em);
+  display: flex;
+  flex-direction: column;
+  background: var(--mnp-card);
+  border: 2px solid var(--mnp-ink);
+  outline: 1px solid var(--mnp-ink);
+  outline-offset: -6px;
+  box-shadow: 0 0.3em 0 var(--mnp-ink);
+  font-size: max(13px, 2.3cqmin);
+}
+.mnp-card__head {
+  padding: 0.35em 0.8em 0.3em;
+  color: var(--on-fill);
+  font: 800 1em / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--mnp-ink);
+}
+.mnp-card--chance .mnp-card__head {
+  background: var(--mnp-chance);
+}
+.mnp-card--chest .mnp-card__head {
+  background: var(--mnp-chest);
+}
+.mnp-card__text {
+  padding: 0.6em 0.9em 0.8em;
+  font: 500 1.08em / 1.25 var(--font-body);
+  text-align: center;
+}
+.mnp-card.is-fresh {
+  animation: mnp-flip 640ms var(--mnp-ease);
+}
+@keyframes mnp-flip {
+  0% {
+    transform: perspective(800px) rotateX(80deg) translateY(-30%);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ── Players ───────────────────────────────────────────────────────────── */
+.mnp-side-col {
+  flex: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.mnp-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 6px;
+}
+.mnp-person {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  align-items: center;
+  padding: 4px 6px;
+  background: var(--paper);
+  border: 2px solid var(--rule);
+  border-left: 6px solid var(--tint);
+}
+.mnp-person.is-turn {
+  border-color: var(--ink);
+  border-left-color: var(--tint);
+  outline: 1px solid var(--ink);
+  outline-offset: -5px;
+}
+.mnp-person.is-out {
+  opacity: 0.5;
+}
+.mnp-person__tok {
+  position: relative;
+  grid-row: 1 / 3;
+  display: inline-flex;
+}
+.mnp-person__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font: 700 14px / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mnp-person__text b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+.mnp-person__text span {
+  color: var(--ink-2);
+}
+.mnp-person__cash {
+  font: 800 18px / 1 var(--font-plaque);
+  letter-spacing: 0.03em;
+}
+.mnp-delta {
+  position: absolute;
+  right: 6px;
+  top: -6px;
+  padding: 1px 6px;
+  font: 800 14px / 1.2 var(--font-plaque);
+  color: var(--on-fill);
+  pointer-events: none;
+  animation: mnp-rise 1800ms var(--mnp-ease) forwards;
+}
+.mnp-delta.is-up {
+  background: var(--vert);
+}
+.mnp-delta.is-down {
+  background: var(--gules);
+}
+@keyframes mnp-rise {
+  0% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  15% {
+    transform: none;
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+}
+
+.mnp-story {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font: 400 16px / 1.3 var(--font-body);
+}
+.mnp-story__line {
+  padding-left: 10px;
+  border-left: 3px solid var(--rule);
+}
+.mnp-story__line:first-child {
+  border-left-color: var(--ink);
+  font-weight: 700;
+}
+.mnp-story__line.is-out {
+  border-left-color: var(--gules);
+}
+.mnp-story__line.is-buy {
+  border-left-color: var(--vert);
+}
+
+/* ── Dock ──────────────────────────────────────────────────────────────── */
+.mnp-dock {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.mnp-dock__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.mnp-dock__row > .jd-plaque {
+  flex: 1 1 auto;
+}
+.mnp-dock__line {
+  flex: 1 1 100%;
+  margin: 0;
+  font: 500 var(--step-0) / 1.25 var(--font-body);
+}
+.mnp-dock__more {
+  display: flex;
+  gap: 8px;
+}
+.mnp-dock__more button,
+.mnp-quiet,
+.mnp-bid {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mnp-dock__more button {
+  flex: 1;
+  border-color: var(--rule);
+}
+.mnp-quiet.is-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.mnp-bids {
+  display: flex;
+  gap: 6px;
+  flex: 1 1 auto;
+}
+.mnp-bid {
+  flex: 1;
+  background: var(--vert);
+  border-color: var(--vert);
+  color: var(--on-fill);
+  font-size: 17px;
+}
+.mnp-dock button:disabled,
+.mnp-row__acts button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mnp-offer {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-left: 8px solid var(--tint);
+  animation: mnp-flip 420ms var(--mnp-ease);
+}
+.mnp-offer p {
+  flex: 1 1 14em;
+  margin: 0;
+  font: 400 var(--step-0) / 1.3 var(--font-body);
+}
+.mnp-offer__acts {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.mnp-offer__acts > button:first-child {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font: 800 15px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+/* ── Laptop: board beside the players and the story ─────────────────────── */
+.mnp--wide .mnp-main {
+  flex-direction: row;
+}
+.mnp--wide .mnp-side-col {
+  width: clamp(280px, 22vw, 380px);
+  min-height: 0;
+}
+.mnp--wide .mnp-people {
+  grid-template-columns: 1fr;
+}
+.mnp--wide .mnp-person {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto;
+  padding: 6px 10px;
+}
+.mnp--wide .mnp-person__tok {
+  grid-row: auto;
+}
+.mnp--wide .mnp-person__cash {
+  font-size: 22px;
+}
+.mnp--wide .mnp-story {
+  flex: 1;
+}
+.mnp--wide .mnp-dock__line {
+  font-size: 18px;
+}
+.mnp--wide .mnp-face {
+  font-size: max(11px, 1.75cqmin);
+}
+.mnp--wide .mnp-sp--corner .mnp-face {
+  font-size: max(11px, 1.9cqmin);
+}
+
+/* ── Sheets: deeds, the estate, trading ─────────────────────────────────── */
+.mnp-deed {
+  --band: var(--mnp-ink);
+  max-width: 340px;
+  margin: 0 auto;
+  padding: 10px;
+  background: var(--mnp-card);
+  color: var(--mnp-ink);
+  border: 2px solid var(--mnp-ink);
+}
+.mnp-deed__head {
+  padding: 8px;
+  text-align: center;
+  background: var(--band);
+  color: var(--on-fill);
+  border: 2px solid var(--mnp-ink);
+}
+.mnp-deed__kind {
+  font: 700 13px var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.mnp-deed__name {
+  margin: 2px 0 0;
+  font: 800 26px / 1.05 var(--font-display);
+}
+.mnp-deed--plain .mnp-deed__name {
+  color: var(--mnp-ink);
+}
+.mnp-deed__rents {
+  width: 100%;
+  margin: 10px 0 4px;
+  border-collapse: collapse;
+  font: 400 17px / 1.3 var(--font-body);
+}
+.mnp-deed__rents th {
+  text-align: left;
+  font-weight: 400;
+}
+.mnp-deed__rents td {
+  text-align: right;
+  font-weight: 700;
+}
+.mnp-deed__rents tr.is-now {
+  outline: 2px solid var(--mnp-ink);
+}
+.mnp-deed__note {
+  margin: 6px 0;
+  font: 400 15px / 1.3 var(--font-body);
+  color: var(--mnp-ink-2);
+  text-align: center;
+}
+.mnp-deed__costs {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--mnp-ink);
+  display: grid;
+  gap: 2px;
+  font: 400 16px / 1.3 var(--font-body);
+}
+.mnp-deed__costs div {
+  display: flex;
+  justify-content: space-between;
+}
+.mnp-deed__costs dd {
+  margin: 0;
+  font-weight: 700;
+}
+.mnp-deed__owner {
+  margin: 10px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mnp-empty {
+  margin: 0;
+  color: var(--ink-2);
+  font: 400 var(--step-0) / 1.35 var(--font-body);
+}
+.mnp-estate {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mnp-estate__set {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mnp-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-left: 10px solid var(--band);
+}
+.mnp-row.is-mortgaged {
+  border-style: dashed;
+  border-left-style: solid;
+}
+.mnp-row__name {
+  flex: 1 1 10em;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font: 400 15px / 1.25 var(--font-body);
+}
+.mnp-row__name b {
+  font: 800 17px / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mnp-row__name span {
+  color: var(--ink-2);
+}
+.mnp-row__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mnp-row__acts button {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mnp-estate__bank {
+  margin: 0;
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.mnp-trade {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mnp-trade__who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mnp-trade__pick {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  border: 2px solid var(--rule);
+  border-left: 6px solid var(--tint);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mnp-trade__pick[aria-checked='true'] {
+  border-color: var(--ink);
+  border-left-color: var(--tint);
+  outline: 1px solid var(--ink);
+  outline-offset: -5px;
+}
+.mnp-trade__sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.mnp-side {
+  margin: 0;
+  padding: 8px 10px 10px;
+  border: 2px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mnp-side legend {
+  padding: 0 6px;
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.mnp-side__deeds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mnp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px 0 8px;
+  border: 2px solid var(--rule);
+  border-left: 8px solid var(--band);
+  background: var(--paper);
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mnp-chip:has(input:checked) {
+  border-color: var(--ink);
+  border-left-color: var(--band);
+  background: color-mix(in srgb, var(--band) 16%, var(--paper));
+}
+.mnp-chip input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ink);
+}
+.mnp-side__cash {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mnp-side__cash input {
+  width: 8em;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 700 18px var(--font-body);
+}
+.mnp-trade__open {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font: 400 15px / 1.3 var(--font-body);
+}
+.mnp-trade__open span {
+  flex: 1;
+}
+.mnp-trade__open button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font: 800 14px var(--font-plaque);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* ── TV ────────────────────────────────────────────────────────────────── */
+.mnp-tv {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 640px;
+  gap: 36px;
+  padding: 16px 40px 24px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.mnp-tv__board {
+  min-height: 0;
+  min-width: 0;
+}
+.mnp-tv .mnp-face {
+  font-size: 24px;
+  letter-spacing: 0;
+  line-height: 0.95;
+}
+/* The top and bottom rows are narrow; they take the board's one smaller size. */
+.mnp-tv .mnp-sp--b:not(.mnp-sp--corner) .mnp-face,
+.mnp-tv .mnp-sp--t:not(.mnp-sp--corner) .mnp-face {
+  font-size: 22px;
+  line-height: 0.92;
+  padding: 4px 2px 12px;
+}
+.mnp-tv .mnp-sp--t:not(.mnp-sp--corner) .mnp-face {
+  padding: 12px 2px 4px;
+}
+.mnp-tv .mnp-sp--b .mnp-sp__band,
+.mnp-tv .mnp-sp--t .mnp-sp__band {
+  height: 17%;
+}
+.mnp-tv .mnp-sp--l .mnp-sp__band,
+.mnp-tv .mnp-sp--r .mnp-sp__band {
+  width: 17%;
+}
+.mnp-tv .mnp-sp--corner .mnp-face {
+  font-size: 24px;
+}
+.mnp-tv .mnp-face__big {
+  font-size: 72px;
+}
+.mnp-tv .mnp-sp__m {
+  font-size: 28px;
+}
+.mnp-tv .mnp-house {
+  width: 16px;
+  border-width: 2px;
+}
+.mnp-tv .mnp-hotel {
+  width: 40px;
+  height: 20px;
+  border-width: 2px;
+}
+.mnp-tv .mnp-sp--l .mnp-hotel,
+.mnp-tv .mnp-sp--r .mnp-hotel {
+  width: 20px;
+  height: 40px;
+}
+.mnp-tv .mnp-centre__mark {
+  font-size: 96px;
+  outline-offset: -9px;
+  border-width: 3px;
+}
+.mnp-tv .mnp-centre__foot {
+  font-size: 28px;
+}
+.mnp-tv .mnp-card {
+  font-size: 30px;
+  border-width: 3px;
+}
+.mnp-tv__side {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.mnp-tv__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.mnp-tv__line {
+  margin: 0;
+  font: 800 52px / 1.05 var(--font-display);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mnp-tv .mnp-clock {
+  font-size: 40px;
+}
+.mnp-tv__auction {
+  margin: 0;
+  padding: 10px 16px;
+  background: var(--vert);
+  color: var(--on-fill);
+  font: 800 32px / 1.1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mnp-people--tv {
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.mnp-people--tv .mnp-person {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto;
+  column-gap: 16px;
+  padding: 8px 16px 8px 10px;
+  border-width: 3px;
+  border-left-width: 12px;
+}
+.mnp-people--tv .mnp-person__tok {
+  grid-row: auto;
+}
+.mnp-people--tv .mnp-person__text {
+  font-size: 26px;
+}
+.mnp-people--tv .mnp-person__text b {
+  font-size: 34px;
+}
+.mnp-people--tv .mnp-person__cash {
+  font-size: 44px;
+}
+.mnp-people--tv .mnp-delta {
+  font-size: 28px;
+  top: -14px;
+  padding: 2px 10px;
+}
+.mnp-tv .mnp-story {
+  flex: 1;
+  font-size: 26px;
+  gap: 10px;
+}
+.mnp-tv .mnp-story__line {
+  border-left-width: 5px;
+  padding-left: 14px;
+}
+
+/* ── Results ───────────────────────────────────────────────────────────── */
+.mnp-reveal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mnp-ledger {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mnp-ledger li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 6px 8px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-left: 8px solid var(--tint);
+}
+.mnp-ledger li.is-out {
+  opacity: 0.6;
+}
+.mnp-ledger__rank {
+  width: 1.4em;
+  font: 800 22px var(--font-display);
+  text-align: center;
+}
+.mnp-ledger__name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font: 400 15px / 1.25 var(--font-body);
+}
+.mnp-ledger__name b {
+  font: 800 18px var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mnp-ledger__name span {
+  color: var(--ink-2);
+}
+.mnp-ledger__worth {
+  font: 800 22px var(--font-plaque);
+}
+.mnp-ledger__foot {
+  margin: 0;
+  font: 400 15px / 1.3 var(--font-body);
+  color: var(--ink-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mnp-piece,
+  .mnp-die,
+  .mnp-card.is-fresh,
+  .mnp-offer,
+  .mnp-delta {
+    animation: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  button.mnp-sp:hover {
+    background: color-mix(in srgb, var(--mnp-card) 80%, var(--mnp-yellow));
+  }
+  .mnp-bid,
+  .mnp-quiet,
+  .mnp-row__acts button {
+    transition: transform 120ms var(--mnp-ease);
+  }
+  .mnp-bid:hover:not(:disabled),
+  .mnp-quiet:hover:not(:disabled),
+  .mnp-row__acts button:hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+}
+.mnp-tv .mnp-face__arrow {
+  width: 34%;
+}
+.mnp-tv .mnp-face--go {
+  gap: 0;
+}

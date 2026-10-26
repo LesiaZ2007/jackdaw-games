@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Plaque,
   useCountdown,
@@ -14,6 +14,7 @@ import { checkKings } from '../puzzle';
 import { ranking, type KingsAction, type KingsPlayerView } from '../rules';
 import { clock } from '../time';
 import { Board, KingMark, type Mark } from './board';
+import { PlayerCard } from './card';
 import { place, Race, useTick } from './race';
 import './kings.css';
 
@@ -123,6 +124,19 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   };
   const locked = solved && sent === board(marks) && !refused;
 
+  // Where your kings are goes to the server a moment after you stop tapping, so anyone who has
+  // finished can watch you (and the TV can count them). The finished board goes on its own.
+  const kingsKey = kings.join(',');
+  const serverKey = v.mine.join(',');
+  useEffect(() => {
+    if (!v.puzzle || solved || kingsKey === serverKey) return;
+    const t = setTimeout(() => {
+      const placed = kingsKey ? kingsKey.split(',').map(Number) : [];
+      void sendAction({ type: 'progress', puzzle: v.index, kings: placed } satisfies KingsAction);
+    }, 600);
+    return () => clearTimeout(t);
+  }, [kingsKey, serverKey, solved, v.puzzle, v.index, sendAction]);
+
   const order = ranking(v);
   const myPlace = order.indexOf(v.me);
   const doneAll = v.index >= v.count;
@@ -144,6 +158,52 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
             detail: `${clock(lastMs)}. ${v.count - fresh} to go.`,
           }
       : null;
+
+  const byId = new Map(players.map((p) => [p.id, p]));
+  if (doneAll && !solo) {
+    return (
+      <div className="kg kg--phone kg-watch" data-look={look}>
+        <header className="kg-head">
+          <p className="kg-head__title">Watching the race</p>
+          <span className="kg-clock" aria-label="Your time">
+            {clock(took)}
+          </span>
+        </header>
+        <p className="kg-you" role="status">
+          <b>{place(myPlace)}</b> You solved all {v.count} in {clock(took)}.{' '}
+          {closing !== null
+            ? `The race ends in ${clock(closing * 1000)}.`
+            : 'Here’s how everyone else is doing.'}
+        </p>
+        <div className="kg-spectate">
+          {order
+            .filter((id) => id !== v.me)
+            .map((id) => (
+              <PlayerCard
+                key={id}
+                id={id}
+                t={v}
+                player={byId.get(id)}
+                rank={order.indexOf(id)}
+                kings={v.watching?.[id] ?? []}
+                now={now}
+                reactions={reactions}
+              />
+            ))}
+        </div>
+        {moment && (
+          <VerdictMoment
+            key={fresh}
+            outcome="win"
+            title={moment.title}
+            detail={moment.detail}
+            emblem={<KingMark size={44} />}
+            onDone={dismiss}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="kg kg--phone" data-look={look}>
@@ -180,13 +240,6 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
                   ? `${v.count === 1 ? 'Solved' : `All ${v.count} solved`} in ${clock(took)}.`
                   : `${place(myPlace)}, all ${v.count} in ${clock(took)}.`}
               </p>
-              {!solo && (
-                <p className="kg-done__wait">
-                  {closing !== null
-                    ? `The race ends in ${clock(closing * 1000)}, or when everyone is done.`
-                    : 'Waiting for the others to finish.'}
-                </p>
-              )}
             </div>
           )}
         </div>
@@ -194,25 +247,25 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         <aside className="kg-side">
           {v.puzzle && (
             <div className="kg-tools">
-              <Plaque small onClick={undo} disabled={!canUndo || locked}>
+              <Plaque className="kg-tool" onClick={undo} disabled={!canUndo || locked}>
                 Undo
               </Plaque>
               <Plaque
-                small
+                className="kg-tool"
                 onClick={() => set(Array<Mark>(cells).fill(0))}
                 disabled={locked || marks.every((m) => m === 0)}
               >
                 Clear
               </Plaque>
-              <button
-                type="button"
+              <Plaque
+                className="kg-tool kg-switch"
                 role="switch"
                 aria-checked={auto}
-                className="kg-switch"
                 onClick={() => setAuto(!auto)}
               >
+                <span className="kg-switch__box" aria-hidden="true" />
                 Auto-cross
-              </button>
+              </Plaque>
             </div>
           )}
           {solo ? (

@@ -1,5 +1,6 @@
 'use client';
 
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Reaction } from '@jackdaw/engine';
 import { PlayerReaction, Token, useMoment, type ScreenPlayer } from '@jackdaw/ui';
 import { since, type KingsTableView } from '../rules';
@@ -119,5 +120,64 @@ export function PlayerCard({
         </span>
       </footer>
     </article>
+  );
+}
+
+const GAP = 16;
+/** Room a card takes beyond its board: padding and border across, header and footer down. */
+const CHROME_W = 24;
+const CHROME_H = 100;
+/** Below this, fitting everyone on screen makes boards too small to read; scroll instead. */
+const MIN_BOARD = 200;
+
+/** The best grid for `n` cards in a w×h box: the column count giving the biggest boards. */
+export function fitCards(n: number, w: number, h: number): { cols: number; board: number } {
+  let best = { cols: 1, board: 0 };
+  for (let cols = 1; cols <= n; cols++) {
+    const rows = Math.ceil(n / cols);
+    const board = Math.floor(
+      Math.min((w - GAP * (cols - 1)) / cols - CHROME_W, (h - GAP * (rows - 1)) / rows - CHROME_H),
+    );
+    if (board > best.board) best = { cols, board };
+  }
+  return best;
+}
+
+/**
+ * The cards someone watches. On a laptop they're sized to fill the space, so a few opponents get
+ * big boards; with too many for that, or on a phone, they scroll.
+ */
+export function Spectate({ count, children }: { count: number; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => {
+      const { width, height } = e!.contentRect;
+      setBox((b) => (b && b.w === width && b.h === height ? b : { w: width, h: height }));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const fit = box && box.w >= 520 && count > 0 ? fitCards(count, box.w, box.h) : null;
+  const fitted = fit !== null && fit.board >= MIN_BOARD;
+  return (
+    <div
+      ref={ref}
+      className={`kg-spectate${fitted ? ' is-fit' : ''}`}
+      style={
+        fitted
+          ? ({
+              '--cols': fit.cols,
+              '--rows': Math.ceil(count / fit.cols),
+              '--card-w': `${fit.board + CHROME_W}px`,
+              '--card-h': `${fit.board + CHROME_H}px`,
+            } as CSSProperties)
+          : undefined
+      }
+    >
+      {children}
+    </div>
   );
 }

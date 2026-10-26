@@ -16,7 +16,7 @@ export const LENGTH_LABEL: Record<Length, string> = {
   long: 'Over 45 min',
 };
 
-const KINDS: GameCategory[] = ['social-deduction', 'word', 'card', 'board'];
+const KINDS: GameCategory[] = ['social-deduction', 'word', 'card', 'board', 'mini'];
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 15;
 

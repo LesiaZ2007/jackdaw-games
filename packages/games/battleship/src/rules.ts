@@ -25,8 +25,9 @@ import { battleshipBot } from './bot';
 
 /**
  * Battleship for two. Each player hides the classic fleet (carrier 5, battleship 4, cruiser 3,
- * submarine 3, destroyer 2) on a 10×10 chart. Ships lie horizontal or vertical and may touch,
- * but not overlap. Both fleets are placed in secret. Then the players take turns firing until
+ * submarine 3, destroyer 2) on a 10×10 chart. Ships lie horizontal or vertical. A ship may
+ * not touch another, even at a corner: one water square stays between them. Both fleets are
+ * placed in secret. Then the players take turns firing until
  * one fleet is sunk.
  *
  * One shot: a hit, including one that sinks a ship while others remain, earns another shot.

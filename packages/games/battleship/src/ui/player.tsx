@@ -11,7 +11,16 @@ import {
   type GameUi,
   type ScreenPlayer,
 } from '@jackdaw/ui';
-import { aimSquares, SHIPS, shipOf, span, type Dir, type Placement, type ShipId } from '../fleet';
+import {
+  aimSquares,
+  SHIPS,
+  shipOf,
+  span,
+  touchesFleet,
+  type Dir,
+  type Placement,
+  type ShipId,
+} from '../fleet';
 import type { BattleshipAction, BattleshipPlayerView, OwnShip } from '../rules';
 import { Chart, hullsFromShips, hullsFromWrecks, HULL } from './chart';
 import { feltMoment, useArrival, useDelayedFelt } from './motion';
@@ -96,8 +105,13 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       setNote(`${spec.name} hangs off the chart.`);
       return;
     }
-    if (cells.some((square) => takenExcept(draft, picked).has(square))) {
+    const taken = takenExcept(draft, picked);
+    if (cells.some((square) => taken.has(square))) {
       setNote("Ships can't share a square.");
+      return;
+    }
+    if (cells.some((square) => touchesFleet(square, taken))) {
+      setNote('Leave a water square between ships.');
       return;
     }
     setDraft({ ...draft, [picked]: { dir, at: cell } });

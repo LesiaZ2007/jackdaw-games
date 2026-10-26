@@ -38,9 +38,28 @@ export function cellName(cell: number): string {
 }
 
 /**
+ * True when `cell` is one of `taken`, or shares a side or a corner with one.
+ * The water square around a ship is part of what the next ship may not enter.
+ */
+export function touchesFleet(cell: number, taken: ReadonlySet<number>): boolean {
+  const row = Math.floor(cell / GRID);
+  const col = cell % GRID;
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const r = row + dr;
+      const c = col + dc;
+      if (r < 0 || c < 0 || r >= GRID || c >= GRID) continue;
+      if (taken.has(r * GRID + c)) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Squares a hover would cover, bow at `at`. A ship that hangs off keeps the squares that
- * still lie on the chart, and `illegal` is set. Overlap with `taken` is illegal too.
- * This is a placement preview only. It is not a fleet and it is not sent anywhere.
+ * still lie on the chart, and `illegal` is set. Overlap is illegal, and so is sitting
+ * against another ship, even at a corner. This is a placement preview only. It is not a
+ * fleet and it is not sent anywhere.
  */
 export function aimSquares(
   at: number,
@@ -63,7 +82,7 @@ export function aimSquares(
     cells.push(r * GRID + c);
   }
   if (cells.length === 0) return null;
-  return { cells, illegal: hung || cells.some((cell) => taken.has(cell)) };
+  return { cells, illegal: hung || cells.some((cell) => touchesFleet(cell, taken)) };
 }
 
 /** The cells a ship covers, or null if it would leave the chart. */
@@ -81,7 +100,7 @@ export function span(at: number, dir: Dir, len: number): number[] | null {
   return cells;
 }
 
-/** Why this fleet can't be laid, or null when it is the classic five, on the chart, not overlapping. */
+/** Why this fleet can't be laid, or null when it is the classic five, with water between ships. */
 export function fleetError(ships: readonly Placement[]): string | null {
   if (ships.length !== SHIPS.length) return 'Place all five ships.';
   const seen = new Set<ShipId>();
@@ -92,28 +111,46 @@ export function fleetError(ships: readonly Placement[]): string | null {
     const cells = span(ship.at, ship.dir, shipOf(ship.id).len);
     if (!cells) return `${shipOf(ship.id).name} hangs off the chart.`;
     if (cells.some((c) => taken.has(c))) return "Ships can't share a square.";
+    if (cells.some((c) => touchesFleet(c, taken))) return 'Leave a water square between ships.';
     for (const c of cells) taken.add(c);
   }
   if (seen.size !== SHIPS.length) return 'Place all five ships.';
   return null;
 }
 
-/** A legal fleet, ships in the printed order. Touching is allowed. */
+/** Every square a ship of this length could occupy without touching `taken`. */
+function openings(id: ShipId, len: number, taken: ReadonlySet<number>): Placement[] {
+  const options: Placement[] = [];
+  for (let at = 0; at < CELLS; at++) {
+    for (const dir of ['h', 'v'] as const) {
+      const cells = span(at, dir, len);
+      if (cells && cells.every((c) => !touchesFleet(c, taken))) options.push({ id, dir, at });
+    }
+  }
+  return options;
+}
+
+/**
+ * A legal fleet, ships in the printed order. Each ship keeps a water square around it,
+ * including the corners. A dead-end layout is unwound and another bow is tried.
+ */
 export function dealFleet(rng: Rng): Placement[] {
   const taken = new Set<number>();
   const out: Placement[] = [];
-  for (const spec of SHIPS) {
-    const options: Placement[] = [];
-    for (let at = 0; at < CELLS; at++) {
-      for (const dir of ['h', 'v'] as const) {
-        const cells = span(at, dir, spec.len);
-        if (cells && cells.every((c) => !taken.has(c))) options.push({ id: spec.id, dir, at });
-      }
+  const lay = (index: number): boolean => {
+    if (index === SHIPS.length) return true;
+    const spec = SHIPS[index]!;
+    for (const pick of rng.shuffle(openings(spec.id, spec.len, taken))) {
+      const cells = span(pick.at, pick.dir, spec.len);
+      if (!cells) continue;
+      for (const c of cells) taken.add(c);
+      out.push(pick);
+      if (lay(index + 1)) return true;
+      out.pop();
+      for (const c of cells) taken.delete(c);
     }
-    if (options.length === 0) throw new Error('no room for the fleet');
-    const pick = rng.pick(options);
-    for (const c of span(pick.at, pick.dir, spec.len) ?? []) taken.add(c);
-    out.push(pick);
-  }
+    return false;
+  };
+  if (!lay(0)) throw new Error('no room for the fleet');
   return out;
 }

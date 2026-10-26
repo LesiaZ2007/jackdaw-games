@@ -17,9 +17,10 @@ Each player hides a fleet on a 10Ã—10 chart the other cannot see. Columns are Aâ
 | Submarine  | 3       |
 | Destroyer  | 2       |
 
-Ships lie horizontal or vertical. They may touch, including along an edge, and they may
-not overlap or leave the chart. Both fleets are placed in secret. When the second fleet
-locks, one player is drawn to fire first.
+Ships lie horizontal or vertical. They may not touch, not along an edge and not at a
+corner. At least one water square stays between any two ships. They may not overlap or
+leave the chart. A placement that would touch is refused. Both fleets are placed in
+secret. When the second fleet locks, one player is drawn to fire first.
 
 In One shot, a hit earns another shot. That includes a hit which sinks a ship while any
 of the fleet remains. A miss ends the turn. The shot that sinks the last ship ends the
@@ -128,9 +129,10 @@ ship sinks, the pegs on the hull take the same parchment outline.
 
 On a computer, while you are placing, a faded copy of the ship you have picked follows
 the mouse and snaps to the squares it would occupy. Same shape, length, and fill. A spot
-that hangs off the chart or overlaps another ship is drawn as a warning, not as a placed
-hull. Touch screens do not show it. The preview lives only on your own chart. It is not
-part of either player's view, the table view, or the TV.
+that hangs off the chart, overlaps another ship, or sits against one, even at a corner,
+is drawn as a warning, not as a placed hull. Touch screens do not show it. The preview
+lives only on your own chart. It is not part of either player's view, the table view,
+or the TV.
 
 - **Phone (`fit`):** one chart at a time, Your fleet or Their sea. From 740px of the
   game container both charts sit side by side and the switch hides. While placing, the
@@ -164,7 +166,8 @@ Entrances use `--ease-out` (`cubic-bezier(.22, 1, .36, 1)`), between 640ms and 9
 
 ## Testing
 
-- Rules: touching ships, overlap, off the chart, both must lock, the first shot is
+- Rules: a water square between ships, an edge touch refused, a corner touch refused,
+  a one-square gap allowed, overlap, off the chart, both must lock, the first shot is
   drawn, a second placement is refused, a hit keeps the turn and leaves the rest of
   the ship blank, a miss passes, a sink that is not the last ship keeps the turn and
   reveals the wreck, the shot that sinks the last ship ends the battle with no extra

@@ -13,7 +13,7 @@ export const battleshipUi: GameUi = {
     description:
       'Each of you hides a fleet on a chart the other cannot see. Then you take turns calling a square. A hit is marked, a miss is marked, and a ship is named only once it has gone down. First to sink the fleet wins.',
     steps: [
-      'Lay the carrier, battleship, cruiser, submarine and destroyer. Horizontal or vertical, and ships may touch. On a computer, a faded copy of the ship follows the mouse.',
+      'Lay the carrier, battleship, cruiser, submarine and destroyer. Horizontal or vertical, with a water square between ships, even at the corners. On a computer, a faded copy of the ship follows the mouse.',
       'When both fleets are placed, one of you is drawn to fire first.',
       'Call one square. A hit, red on the ship, lets you fire again. A miss ends the turn. Sink the last ship and the battle ends.',
       'Sink a ship and it is drawn on the chart. Until then, the squares you have not fired at stay blank.',

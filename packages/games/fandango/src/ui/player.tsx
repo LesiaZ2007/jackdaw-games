@@ -16,6 +16,7 @@ import { clock } from '../time';
 import { Board, PairMark } from './board';
 import { PlayerCard, Spectate } from './card';
 import { place, Race, useTick } from './race';
+import { findMistake, nextStep, type Hint } from '../hints';
 import './fandango.css';
 
 /** Your marks on a puzzle, kept on this device so a refresh doesn't wipe them. */
@@ -76,6 +77,18 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const [fresh, dismiss] = useMoment(v.index);
   const closing = useCountdown(v.closesAt, now);
   useTick();
+
+  // Hints, alone with hints on: shown until the board changes, and counted by the server.
+  const [tipAt, setTip] = useState<{ at: string; hint: Hint } | null>(null);
+  const here = `${v.index}:${cells.join(',')}`;
+  const tip = tipAt?.at === here ? tipAt.hint : null;
+  const helped = v.helped[v.index] ?? 0;
+  const ask = (kind: 'step' | 'mistake') => {
+    if (!v.puzzle) return;
+    const hint = kind === 'step' ? nextStep(v.puzzle, cells) : findMistake(v.puzzle, cells);
+    setTip({ at: here, hint: hint ?? { text: 'No mistakes so far.', cells: [], area: [] } });
+    if (hint) void sendAction({ type: 'hint', puzzle: v.index, kind } satisfies FandangoAction);
+  };
 
   const whole = (p: Puzzle, marks: readonly number[]) => p.given.map((g, i) => g || marks[i] || 0);
   const solved = v.puzzle !== null && checkBoard(v.puzzle, whole(v.puzzle, cells)) === null;
@@ -205,6 +218,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               cells={cells}
               onCells={locked ? undefined : mark}
               solved={locked}
+              hint={locked ? null : tip}
               label={`Puzzle ${v.index + 1}, ${v.size} by ${v.size}`}
             />
           ) : (
@@ -233,6 +247,26 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
                 Clear
               </Plaque>
             </div>
+          )}
+          {v.hints && v.puzzle && !locked && (
+            <div className="fd-tools fd-tools--hints">
+              <Plaque className="fd-tool" onClick={() => ask('step')}>
+                Hint
+              </Plaque>
+              <Plaque className="fd-tool" onClick={() => ask('mistake')}>
+                Show a mistake
+              </Plaque>
+            </div>
+          )}
+          {tip && !locked && (
+            <p className={`fd-tip${tip.mistake ? ' is-mistake' : ''}`} role="status">
+              {tip.text}
+              {helped > 0 && (
+                <span className="fd-tip__count">
+                  {helped === 1 ? '1 hint' : `${helped} hints`} on this puzzle
+                </span>
+              )}
+            </p>
           )}
           {full && v.puzzle && (
             <p className="fd-hint" role="status">

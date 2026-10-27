@@ -41,6 +41,8 @@ export const CLOSE_MS = 120_000;
 export const optionsSchema = z.object({
   board: z.enum(SIZES).describe('Board'),
   puzzles: z.number().int().min(1).max(MAX_PUZZLES).describe('Puzzles'),
+  /** Hint and Show a mistake, for someone playing alone. Never in a race. */
+  hints: z.boolean().describe('Hints when alone'),
 });
 export type FandangoOptions = z.infer<typeof optionsSchema>;
 
@@ -59,6 +61,12 @@ export const actionSchema = z.discriminatedUnion('type', [
     type: z.literal('progress'),
     puzzle: z.number().int().min(0).max(MAX_PUZZLES),
     cells: marks,
+  }),
+  /** A hint shown (alone, with hints on), counted for the results. */
+  z.object({
+    type: z.literal('hint'),
+    puzzle: z.number().int().min(0).max(MAX_PUZZLES),
+    kind: z.enum(['step', 'mistake']),
   }),
 ]);
 export type FandangoAction = z.infer<typeof actionSchema>;
@@ -83,6 +91,10 @@ export interface FandangoState {
   closesAt: number | null;
   over: boolean;
   recap: RecapEvent[];
+  /** Hints on: only when one person plays alone and the host left them on. */
+  hints?: boolean;
+  /** Hints used on each puzzle, by the one player. */
+  helped?: number[];
 }
 
 /** Everything public: the TV and every phone render this. */
@@ -99,6 +111,10 @@ export interface FandangoTableView {
   live?: Record<string, number[]>;
   closesAt: number | null;
   over: boolean;
+  /** Hint and Show a mistake are offered (alone, with hints on). */
+  hints: boolean;
+  /** Hints used on each puzzle. */
+  helped: number[];
 }
 
 export interface FandangoPlayerView extends FandangoTableView {
@@ -143,6 +159,8 @@ function tableView(s: FandangoState): FandangoTableView {
     ...(s.players.length === 1 ? { live: s.live ?? {} } : {}),
     closesAt: s.closesAt,
     over: s.over,
+    hints: s.hints ?? false,
+    helped: s.helped ?? [],
   };
 }
 
@@ -165,8 +183,9 @@ function resultFrom(s: FandangoState, early: boolean): GameResult | null {
   );
   const solo = s.players.length === 1;
   const all = solved === s.count;
+  const used = (s.helped ?? []).reduce((a, b) => a + b, 0);
   const summary = solo
-    ? `${all ? 'Solved' : 'Got through'} ${plural(solved, 'puzzle')} in ${clock(took(best))}`
+    ? `${all ? 'Solved' : 'Got through'} ${plural(solved, 'puzzle')} in ${clock(took(best))}${used ? `, ${plural(used, 'hint')}` : ''}`
     : `${solved} of ${s.count} solved in ${clock(took(best))}${winners.length > 1 ? ', a tie' : ''}`;
   const reveal: FandangoReveal = {
     size: s.size,
@@ -174,6 +193,7 @@ function resultFrom(s: FandangoState, early: boolean): GameResult | null {
     startedAt: s.startedAt,
     order,
     times: s.times,
+    helped: s.helped ?? [],
     puzzles: s.puzzles.map((p) => ({ ...p, answer: answerOf(p) })),
   };
   return {
@@ -226,6 +246,8 @@ export interface FandangoReveal {
   order: string[];
   times: Record<string, number[]>;
   puzzles: (Puzzle & { answer: number[] })[];
+  /** Hints used on each puzzle, when someone played alone. */
+  helped: number[];
 }
 
 const keyOf = (p: Puzzle) =>
@@ -298,7 +320,7 @@ export const fandango: GameModule<
   meta,
   optionsSchema,
   actionSchema,
-  defaultOptions: (n) => ({ board: '6×6', puzzles: n === 1 ? 1 : 5 }),
+  defaultOptions: (n) => ({ board: '6×6', puzzles: n === 1 ? 1 : 5, hints: true }),
 
   setup: ({ playerIds, options, rng, now }) => {
     const size = sizeOf(options.board);
@@ -314,6 +336,8 @@ export const fandango: GameModule<
       closesAt: null,
       over: false,
       recap: [],
+      hints: options.hints && playerIds.length === 1,
+      helped: [],
     };
   },
 
@@ -339,6 +363,13 @@ export const fandango: GameModule<
     const index = s.times[playerId]!.length;
     if (index >= s.count) throw new GameError('DONE', "You've solved them all.");
     if (action.puzzle !== index) throw new GameError('STALE', 'That board was already counted.');
+    if (action.type === 'hint') {
+      if (!s.hints) throw new GameError('NO_HINTS', 'Hints are only for playing alone.');
+      const was = s.helped ?? [];
+      const helped = Array.from({ length: Math.max(was.length, index + 1) }, (_, i) => was[i] ?? 0);
+      helped[index]! += 1;
+      return { ...s, helped };
+    }
     const puzzle = s.puzzles[index]!;
     if (action.type === 'progress') {
       // Kept without the squares that came filled in, so `drawn` counts only the player's own.

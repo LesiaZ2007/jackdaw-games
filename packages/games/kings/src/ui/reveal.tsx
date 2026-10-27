@@ -110,6 +110,8 @@ function Facts({ rv }: { rv: KingsReveal }) {
     facts.push(['Fastest', `${clock(fast)} · No. ${mine.indexOf(fast) + 1}`]);
     facts.push(['Average', clock(done.reduce((a, b) => a + b, 0) / done.length)]);
   }
+  const used = (rv.helped ?? []).reduce((a, b) => a + b, 0);
+  if (used) facts.push(['Hints', String(used)]);
   return (
     <section className="kg-reveal__part" aria-label="Your times">
       <dl className="kg-facts">

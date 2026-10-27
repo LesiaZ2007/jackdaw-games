@@ -41,6 +41,28 @@ first, now and then one in the wrong square of the right region, so the TV and a
 them build up. The time is per square of board (about 0.9 s at Easy, 0.5 s at Normal, 0.3 s at
 Hard), varied each puzzle, and slips get rarer with the level.
 
+## Hints
+
+Only when one person plays alone, and only if the lobby option _Hints when alone_ is on (it is by
+default). Two plaques sit under the board: **Hint** and **Show a mistake**. The reasoning runs on
+the phone (`src/hints.ts`), so nothing about the answer is sent anywhere new; the phone only tells
+the server a hint was used (`hint`), and the server refuses that in a race or with hints off. The
+table never sees hints, so they're never on the TV or in someone else's race.
+
+A hint is a short note under the board, a ring round the square it's about, and a light shade over
+the squares that explain it. It stays until the board changes. _Show a mistake_ rings the first
+wrong mark in red, or says "No mistakes so far." (which isn't counted). If the board has a mistake,
+Hint asks you to put that right first. Hints used are counted per puzzle and shown in the results
+(the summary line says ", 3 hints", and the results card has a Hints line); a run with none reads
+as before.
+
+Hints try the simplest deduction first: a row, column or colour with one square left; crossing
+out what a king rules out; a colour that fits in one row or column (or the other way round);
+then a square where a king would leave another colour, row or column with nowhere to go. Only if
+none of those finds anything does it fall back to pointing at the king's square in a colour. A
+mistake is a king in the wrong square (or two kings that rule each other out), then a cross where
+a king belongs.
+
 ## Look
 
 A printed puzzle book: region inks in ten soft printed colours (the same by day and in the dark),

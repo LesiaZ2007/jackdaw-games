@@ -17,6 +17,7 @@ export const zapUi: GameUi = {
       'Press on 1 and drag to draw. The line moves up, down, left or right, never through a wall, and never crosses itself.',
       'Drag back along the line to take steps back, or tap a square on it to cut back to there. Undo and Clear are under the board.',
       'Numbers passed out of order turn red. A finished line counts by itself and the next puzzle opens. Everyone gets the same puzzles in the same order.',
+      'Playing alone, you can ask for a hint: it explains the next deduction and shows you where. Show a mistake points out the first thing that’s wrong. Hints are counted in the results, and are never there in a race.',
       'Most puzzles solved wins, and the quickest to get there breaks a tie. Once someone has solved them all, everyone else has two minutes.',
     ],
     credit:
@@ -41,6 +42,10 @@ export const zapUi: GameUi = {
       '8×8': 'The largest. Long winding lines.',
     },
     puzzles: 'How many puzzles in a row. Everyone gets the same ones, in the same order.',
+    hints: {
+      true: 'Playing alone, Hint explains the next step and Show a mistake points one out. Never in a race.',
+      false: 'No hints, even when you play alone.',
+    },
   },
   fit: true,
   PlayerScreen,

@@ -60,6 +60,45 @@ test('alone: one puzzle, solved, lands on the results with its answer', async ({
   await expect(page.getByRole('grid', { name: 'Puzzle 1, solved' })).toBeVisible();
 });
 
+test('alone with hints: a hint rings a square, a mistake is pointed out, the results count them', async ({
+  browser,
+}) => {
+  const page = await (
+    await browser.newContext({ viewport: { width: 375, height: 812 } })
+  ).newPage();
+  await createLobby(page, 'Wren');
+  await page.getByRole('radio', { name: '5×5' }).click();
+  await expect(page.getByText('Hints when alone', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Hint explains the next step/)).toBeVisible();
+  await page.getByRole('button', { name: 'Start Kings' }).click();
+
+  const board = page.getByRole('grid', { name: /^Puzzle 1,/ });
+  await expect(board).toBeVisible();
+  await page.getByRole('button', { name: 'Hint', exact: true }).click();
+  await expect(page.locator('.kg-tip')).toContainText(/\w/);
+  await expect(page.locator('.kg-cell.is-hint').first()).toBeVisible();
+
+  const labels = await board
+    .getByRole('button')
+    .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label') ?? ''));
+  const size = Math.sqrt(labels.length);
+  const regions = labels.map((l) => Number(/colour (\d+)/.exec(l)![1]) - 1);
+  const answer = solve({ size, regions }, 1)[0]!;
+  const wrong = answer[0] === 0 ? 1 : 0;
+  const cell = board.getByRole('button').nth(wrong);
+  await cell.click();
+  await cell.click();
+  await page.getByRole('button', { name: 'Show a mistake' }).click();
+  await expect(page.locator('.kg-tip.is-mistake')).toContainText('wrong square');
+  await expect(board).toHaveClass(/is-mistake/);
+  await expect(page.locator('.kg-tip')).toContainText('2 hints on this puzzle');
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/kings-hint-375.png` });
+  await cell.click();
+
+  await solveBoard(page, 1);
+  await expect(page.getByText(/Solved 1 puzzle in \d+:\d\d, 2 hints/).first()).toBeVisible();
+});
+
 test('a race: the slider sets the puzzles, a bot races, everyone gets the same boards', async ({
   browser,
 }) => {
@@ -94,6 +133,11 @@ test('a race: the slider sets the puzzles, a bot races, everyone gets the same b
       .getByRole('button')
       .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')));
   await expect(rook.getByRole('grid', { name: /^Puzzle 1,/ })).toBeVisible();
+  // No hints in a race, even with the option on.
+  for (const p of [host, rook]) {
+    await expect(p.getByRole('button', { name: 'Hint', exact: true })).toHaveCount(0);
+    await expect(p.getByRole('button', { name: 'Show a mistake' })).toHaveCount(0);
+  }
   expect(await regionsOf(rook)).toEqual(await regionsOf(host));
   await expect(rook.getByRole('list', { name: 'The race' })).toContainText('Heron');
   if (SHOTS) await host.screenshot({ path: `${SHOTS}/kings-desktop.png` });

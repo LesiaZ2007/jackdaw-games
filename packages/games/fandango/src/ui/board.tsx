@@ -5,6 +5,13 @@ import { faults, MOON, SUN, type Puzzle } from '../puzzle';
 
 const vars = (v: Record<string, string | number>) => v as CSSProperties;
 
+/** A hint on the board: squares it's about, ringed, and squares that explain it, shaded. */
+export interface BoardHint {
+  cells: readonly number[];
+  area: readonly number[];
+  mistake?: boolean;
+}
+
 export function SunMark({ size }: { size?: number | string }) {
   return (
     <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden="true" className="fd-sun">
@@ -52,6 +59,7 @@ export function Board({
   cells,
   onCells,
   solved = false,
+  hint,
   label,
   className,
 }: {
@@ -59,6 +67,7 @@ export function Board({
   cells: readonly number[];
   onCells?: (next: number[]) => void;
   solved?: boolean;
+  hint?: BoardHint | null;
   label: string;
   className?: string;
 }) {
@@ -89,7 +98,7 @@ export function Board({
 
   return (
     <div
-      className={`fd-board${solved ? ' is-solved' : ''}${onCells ? ' is-live' : ''}${className ? ` ${className}` : ''}`}
+      className={`fd-board${solved ? ' is-solved' : ''}${onCells ? ' is-live' : ''}${hint?.mistake ? ' is-mistake' : ''}${className ? ` ${className}` : ''}`}
       role="grid"
       aria-label={label}
       style={vars({ '--n': size })}
@@ -108,7 +117,7 @@ export function Board({
             tabIndex={onCells && !given ? 0 : -1}
             disabled={!onCells || given}
             aria-label={`${name}: ${WORD[v]}${given ? ', given' : ''}`}
-            className={`fd-cell${given ? ' is-given' : ''}${bad.has(i) ? ' is-bad' : ''}`}
+            className={`fd-cell${given ? ' is-given' : ''}${bad.has(i) ? ' is-bad' : ''}${hint?.cells.includes(i) ? ' is-hint' : ''}${hint?.area.includes(i) ? ' is-area' : ''}`}
             style={vars({ '--i': i })}
             onClick={() => tap(i)}
           >

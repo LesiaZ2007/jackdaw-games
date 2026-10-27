@@ -16,6 +16,7 @@ import { clock } from '../time';
 import { BoltMark, Board } from './board';
 import { PlayerCard, Spectate } from './card';
 import { place, Race, useTick } from './race';
+import { findMistake, nextStep, type Hint } from '../hints';
 import './zap.css';
 
 /** The line on a puzzle, kept on this device so a refresh doesn't wipe it. */
@@ -74,6 +75,18 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const [fresh, dismiss] = useMoment(v.index);
   const closing = useCountdown(v.closesAt, now);
   useTick();
+
+  // Hints, alone with hints on: shown until the board changes, and counted by the server.
+  const [tipAt, setTip] = useState<{ at: string; hint: Hint } | null>(null);
+  const here = `${v.index}:${path.join(',')}`;
+  const tip = tipAt?.at === here ? tipAt.hint : null;
+  const helped = v.helped[v.index] ?? 0;
+  const ask = (kind: 'step' | 'mistake') => {
+    if (!v.puzzle) return;
+    const hint = kind === 'step' ? nextStep(v.puzzle, path) : findMistake(v.puzzle, path);
+    setTip({ at: here, hint: hint ?? { text: 'No mistakes so far.', cells: [], area: [] } });
+    if (hint) void sendAction({ type: 'hint', puzzle: v.index, kind } satisfies ZapAction);
+  };
 
   const solved = v.puzzle !== null && checkPath(v.puzzle, path) === null;
   const key = (line: readonly number[]) => `${v.index}:${line.join(',')}`;
@@ -199,6 +212,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               path={path}
               onPath={locked ? undefined : draw}
               solved={locked}
+              hint={locked ? null : tip}
               label={`Puzzle ${v.index + 1}, ${v.size} by ${v.size}`}
             />
           ) : (
@@ -223,6 +237,26 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
                 Clear
               </Plaque>
             </div>
+          )}
+          {v.hints && v.puzzle && !locked && (
+            <div className="zp-tools zp-tools--hints">
+              <Plaque className="zp-tool" onClick={() => ask('step')}>
+                Hint
+              </Plaque>
+              <Plaque className="zp-tool" onClick={() => ask('mistake')}>
+                Show a mistake
+              </Plaque>
+            </div>
+          )}
+          {tip && !locked && (
+            <p className={`zp-tip${tip.mistake ? ' is-mistake' : ''}`} role="status">
+              {tip.text}
+              {helped > 0 && (
+                <span className="zp-tip__count">
+                  {helped === 1 ? '1 hint' : `${helped} hints`} on this puzzle
+                </span>
+              )}
+            </p>
           )}
           {full && v.puzzle && (
             <p className="zp-hint" role="status">

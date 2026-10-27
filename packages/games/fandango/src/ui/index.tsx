@@ -17,6 +17,7 @@ export const fandangoUi: GameUi = {
       'Tap a square for a sun, tap again for a moon, and once more to clear it. Squares that came filled in stay put.',
       'Marks that break a rule turn red. Undo and Clear are under the board.',
       'A finished board counts by itself and the next puzzle opens. Everyone gets the same puzzles in the same order.',
+      'Playing alone, you can ask for a hint: it explains the next deduction and shows you where. Show a mistake points out the first thing that’s wrong. Hints are counted in the results, and are never there in a race.',
       'Most puzzles solved wins, and the quickest to get there breaks a tie. Once someone has solved them all, everyone else has two minutes.',
     ],
     credit:
@@ -41,6 +42,10 @@ export const fandangoUi: GameUi = {
       '10×10': 'The largest. Long rows to balance.',
     },
     puzzles: 'How many puzzles in a row. Everyone gets the same ones, in the same order.',
+    hints: {
+      true: 'Playing alone, Hint explains the next step and Show a mistake points one out. Never in a race.',
+      false: 'No hints, even when you play alone.',
+    },
   },
   fit: true,
   PlayerScreen,

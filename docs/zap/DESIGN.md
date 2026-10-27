@@ -41,6 +41,26 @@ end, now and then wandering a square or two off it and back. The time is per squ
 (about 1.1 s at Easy, 0.65 s at Normal, 0.38 s at Hard), varied each puzzle, and wrong turns get
 rarer with the level.
 
+## Hints
+
+Only when one person plays alone, and only if the lobby option _Hints when alone_ is on (it is by
+default). Two plaques sit under the board: **Hint** and **Show a mistake**. The reasoning runs on
+the phone (`src/hints.ts`), so nothing about the answer is sent anywhere new; the phone only tells
+the server a hint was used (`hint`), and the server refuses that in a race or with hints off. The
+table never sees hints, so they're never on the TV or in someone else's race.
+
+A hint is a short note under the board, a ring round the square it's about, and a light shade over
+the squares that explain it. It stays until the board changes. _Show a mistake_ rings the first
+wrong mark in red, or says "No mistakes so far." (which isn't counted). If the board has a mistake,
+Hint asks you to put that right first. Hints used are counted per puzzle and shown in the results
+(the summary line says ", 3 hints", and the results card has a Hints line); a run with none reads
+as before.
+
+Hints follow the line: start on 1, then the only way on from here, a square that would be cut
+off if the line doesn't take it now, or the next number when it's right beside the end. Otherwise
+it shows the next square of the answer. A mistake is where the line first leaves the answer, and
+Hint says to take it back to the square before.
+
 ## Look
 
 Kings' printed puzzle book with an orange line: ink numbers in circles, heavy walls, a double-ruled

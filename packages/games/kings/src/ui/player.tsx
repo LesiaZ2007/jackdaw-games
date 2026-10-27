@@ -16,6 +16,7 @@ import { clock } from '../time';
 import { Board, KingMark, type Mark } from './board';
 import { PlayerCard, Spectate } from './card';
 import { place, Race, useTick } from './race';
+import { findMistake, nextStep, type Hint } from '../hints';
 import './kings.css';
 
 const AUTO_KEY = 'jackdaw:kings:auto';
@@ -103,6 +104,18 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const [fresh, dismiss] = useMoment(v.index);
   const closing = useCountdown(v.closesAt, now);
   useTick();
+
+  // Hints, alone with hints on: shown until the board changes, and counted by the server.
+  const [tipAt, setTip] = useState<{ at: string; hint: Hint } | null>(null);
+  const here = `${v.index}:${marks.join(',')}`;
+  const tip = tipAt?.at === here ? tipAt.hint : null;
+  const helped = v.helped[v.index] ?? 0;
+  const ask = (kind: 'step' | 'mistake') => {
+    if (!v.puzzle) return;
+    const hint = kind === 'step' ? nextStep(v.puzzle, marks) : findMistake(v.puzzle, marks);
+    setTip({ at: here, hint: hint ?? { text: 'No mistakes so far.', cells: [], area: [] } });
+    if (hint) void sendAction({ type: 'hint', puzzle: v.index, kind } satisfies KingsAction);
+  };
 
   const kings = marks.flatMap((m, i) => (m === 2 ? [i] : []));
   const solved = v.puzzle !== null && checkKings(v.puzzle, kings) === null;
@@ -230,6 +243,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               onMarks={locked ? undefined : mark}
               auto={auto}
               solved={locked}
+              hint={locked ? null : tip}
               label={`Puzzle ${v.index + 1}, ${v.size} by ${v.size}`}
             />
           ) : (
@@ -267,6 +281,26 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
                 Auto-cross
               </Plaque>
             </div>
+          )}
+          {v.hints && v.puzzle && !locked && (
+            <div className="kg-tools kg-tools--hints">
+              <Plaque className="kg-tool" onClick={() => ask('step')}>
+                Hint
+              </Plaque>
+              <Plaque className="kg-tool" onClick={() => ask('mistake')}>
+                Show a mistake
+              </Plaque>
+            </div>
+          )}
+          {tip && !locked && (
+            <p className={`kg-tip${tip.mistake ? ' is-mistake' : ''}`} role="status">
+              {tip.text}
+              {helped > 0 && (
+                <span className="kg-tip__count">
+                  {helped === 1 ? '1 hint' : `${helped} hints`} on this puzzle
+                </span>
+              )}
+            </p>
           )}
           {solo ? (
             v.puzzle && (

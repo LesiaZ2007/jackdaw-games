@@ -5,6 +5,13 @@ import { links, type Puzzle } from '../puzzle';
 
 const vars = (v: Record<string, string | number>) => v as CSSProperties;
 
+/** A hint on the board: squares it's about, ringed, and squares that explain it, shaded. */
+export interface BoardHint {
+  cells: readonly number[];
+  area: readonly number[];
+  mistake?: boolean;
+}
+
 /** The bolt, for moments and the finished card. */
 export function BoltMark({ size }: { size?: number | string }) {
   return (
@@ -121,6 +128,7 @@ export function Board({
   path,
   onPath,
   solved = false,
+  hint,
   label,
   className,
 }: {
@@ -128,6 +136,7 @@ export function Board({
   path: readonly number[];
   onPath?: (next: number[]) => void;
   solved?: boolean;
+  hint?: BoardHint | null;
   label: string;
   className?: string;
 }) {
@@ -227,7 +236,7 @@ export function Board({
 
   return (
     <div
-      className={`zp-board${solved ? ' is-solved' : ''}${onPath ? ' is-live' : ''}${className ? ` ${className}` : ''}`}
+      className={`zp-board${solved ? ' is-solved' : ''}${onPath ? ' is-live' : ''}${hint?.mistake ? ' is-mistake' : ''}${className ? ` ${className}` : ''}`}
       role="grid"
       aria-label={label}
       style={vars({ '--n': size, '--zp-line': ink.line, '--zp-trail': ink.trail })}
@@ -244,7 +253,7 @@ export function Board({
           tabIndex={onPath ? 0 : -1}
           disabled={!onPath}
           aria-label={`${name(puzzle, i, wallsOf(i))}: ${i === end ? 'end of the line' : on.has(i) ? 'on the line' : 'empty'}`}
-          className={`zp-cell${on.has(i) ? ' is-on' : ''}`}
+          className={`zp-cell${on.has(i) ? ' is-on' : ''}${hint?.cells.includes(i) ? ' is-hint' : ''}${hint?.area.includes(i) ? ' is-area' : ''}`}
           onKeyDown={(ev) => {
             if (!onPath || (ev.key !== 'Enter' && ev.key !== ' ')) return;
             ev.preventDefault();

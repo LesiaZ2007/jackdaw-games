@@ -1,6 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { solve, type Puzzle, type Sign } from '@jackdaw/game-fandango';
 
+const SHOTS = process.env.E2E_SHOTS;
+
 async function createLobby(page: Page, name: string) {
   await page.goto('/');
   await page.getByLabel('Your name').fill(name);
@@ -84,6 +86,28 @@ test('alone: tap through the marks, undo, see what is wrong, then solve', async 
   await expect(page.getByRole('grid', { name: 'Puzzle 1, solved' })).toBeVisible();
 });
 
+test('alone with hints: a hint explains a square, the results count them', async ({ browser }) => {
+  const page = await (
+    await browser.newContext({ viewport: { width: 375, height: 812 } })
+  ).newPage();
+  await createLobby(page, 'Wren');
+  await expect(page.getByText('Hints when alone', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Start Fandango' }).click();
+
+  const board = page.getByRole('grid', { name: /^Puzzle 1,/ });
+  await expect(board).toBeVisible();
+  await page.getByRole('button', { name: 'Show a mistake' }).click();
+  await expect(page.locator('.fd-tip')).toContainText('No mistakes so far.');
+  await page.getByRole('button', { name: 'Hint', exact: true }).click();
+  await expect(page.locator('.fd-tip')).toContainText(/(sun|moon)/);
+  await expect(page.locator('.fd-cell.is-hint').first()).toBeVisible();
+  await expect(page.locator('.fd-tip')).toContainText('1 hint on this puzzle');
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/fandango-hint-375.png` });
+
+  await solveBoard(page, 1);
+  await expect(page.getByText(/Solved 1 puzzle in \d+:\d\d, 1 hint\b/).first()).toBeVisible();
+});
+
 test('a race: a bot races, everyone gets the same boards, the finisher watches', async ({
   browser,
 }) => {
@@ -112,6 +136,11 @@ test('a race: a bot races, everyone gets the same boards, the finisher watches',
       .getByRole('button')
       .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label')));
   await expect(rook.getByRole('grid', { name: /^Puzzle 1,/ })).toBeVisible();
+  // No hints in a race, even with the option on.
+  for (const p of [host, rook]) {
+    await expect(p.getByRole('button', { name: 'Hint', exact: true })).toHaveCount(0);
+    await expect(p.getByRole('button', { name: 'Show a mistake' })).toHaveCount(0);
+  }
   expect(await labelsOf(rook)).toEqual(await labelsOf(host));
   await expect(rook.getByRole('list', { name: 'The race' })).toContainText('Heron');
 

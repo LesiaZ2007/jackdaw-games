@@ -1113,3 +1113,61 @@
     animation-name: fd-stamp-still;
   }
 }
+
+/* ── Hints, alone only ─────────────────────────────────────────────────── */
+.fd-tools--hints {
+  grid-template-columns: 1fr 1fr;
+}
+.fd-tip {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--ink);
+  border-left-width: 6px;
+  background: var(--paper);
+  font-size: var(--step--1);
+  line-height: 1.35;
+}
+.fd-tip.is-mistake {
+  border-color: var(--danger);
+}
+.fd-tip__count {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-2);
+  font: 800 12px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.fd-cell.is-area::before,
+.fd-cell.is-hint::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+.fd-cell.is-area::before {
+  inset: 0;
+  background: color-mix(in srgb, var(--fd-ink) 13%, transparent);
+}
+.fd-cell.is-hint::after {
+  inset: 3px;
+  z-index: 3;
+  border: 3px solid var(--fd-ink);
+  animation: fd-hint 1400ms var(--ease-out) infinite;
+}
+.fd-board.is-mistake .fd-cell.is-hint::after {
+  border-color: var(--fd-bad);
+}
+@keyframes fd-hint {
+  0%,
+  100% {
+    inset: 3px;
+  }
+  50% {
+    inset: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fd-cell.is-hint::after {
+    animation: none;
+  }
+}

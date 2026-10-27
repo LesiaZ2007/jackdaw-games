@@ -24,10 +24,16 @@ import { clock } from './time';
 
 const answer = answerOf;
 
-function start(players: string[], board = '6×6', puzzles = 3, seed = 7): FandangoState {
+function start(
+  players: string[],
+  board = '6×6',
+  puzzles = 3,
+  seed = 7,
+  hints = true,
+): FandangoState {
   return fandango.setup({
     playerIds: players,
-    options: { board, puzzles },
+    options: { board, puzzles, hints },
     rng: createRng(seed),
     now: 1_000,
   });
@@ -276,6 +282,49 @@ describe('Fandango', () => {
   it('paces bots by level and board', () => {
     expect(botSolveMs(6, 'hard', 'x')).toBeLessThan(botSolveMs(6, 'easy', 'x'));
     expect(botSolveMs(4, 'normal', 'x')).toBeLessThan(botSolveMs(8, 'normal', 'x'));
+  });
+});
+
+describe('hints', () => {
+  const hint = (s: FandangoState, id: string, kind: 'step' | 'mistake' = 'step') =>
+    fandango.applyAction(
+      s,
+      id,
+      { type: 'hint', puzzle: s.times[id]!.length, kind },
+      createRng(1),
+      2_000,
+    );
+
+  it('are offered alone, counted per puzzle, and named in the result', () => {
+    let s = start(['wren'], '4×4', 2);
+    expect(fandango.getPlayerView(s, 'wren').hints).toBe(true);
+    s = hint(hint(s, 'wren'), 'wren', 'mistake');
+    s = solveFor(s, 'wren', 10_000);
+    s = hint(s, 'wren');
+    expect(fandango.getTableView(s).helped).toEqual([2, 1]);
+    s = solveFor(s, 'wren', 20_000);
+    expect(fandango.getResult(s)!.summary).toBe('Solved 2 puzzles in 0:19, 3 hints');
+    expect((fandango.getResult(s)!.reveal as { helped: number[] }).helped).toEqual([2, 1]);
+  });
+
+  it('leave the result alone when none were used', () => {
+    let s = start(['wren'], '4×4', 1);
+    s = solveFor(s, 'wren', 10_000);
+    expect(fandango.getResult(s)!.summary).toBe('Solved 1 puzzle in 0:09');
+  });
+
+  it('are never offered in a race, or when the host turned them off', () => {
+    const race = start(['wren', 'rook'], '4×4', 1);
+    expect(fandango.getTableView(race).hints).toBe(false);
+    expect(fandango.getPlayerView(race, 'wren').hints).toBe(false);
+    expect(() => hint(race, 'wren')).toThrow(/only for playing alone/);
+    const off = start(['wren'], '4×4', 1, 7, false);
+    expect(fandango.getPlayerView(off, 'wren').hints).toBe(false);
+    expect(() => hint(off, 'wren')).toThrow(GameError);
+  });
+
+  it('are on by default', () => {
+    expect(fandango.defaultOptions(1).hints).toBe(true);
   });
 });
 

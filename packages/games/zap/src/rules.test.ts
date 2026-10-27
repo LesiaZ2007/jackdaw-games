@@ -6,10 +6,10 @@ import { clock } from './time';
 
 const answer = answerOf;
 
-function start(players: string[], board = '6×6', puzzles = 3, seed = 7): ZapState {
+function start(players: string[], board = '6×6', puzzles = 3, seed = 7, hints = true): ZapState {
   return zap.setup({
     playerIds: players,
-    options: { board, puzzles },
+    options: { board, puzzles, hints },
     rng: createRng(seed),
     now: 1_000,
   });
@@ -218,6 +218,49 @@ describe('Zap', () => {
   it('paces bots by level and board', () => {
     expect(botSolveMs(7, 'hard', 'x')).toBeLessThan(botSolveMs(7, 'easy', 'x'));
     expect(botSolveMs(5, 'normal', 'x')).toBeLessThan(botSolveMs(8, 'normal', 'x'));
+  });
+});
+
+describe('hints', () => {
+  const hint = (s: ZapState, id: string, kind: 'step' | 'mistake' = 'step') =>
+    zap.applyAction(
+      s,
+      id,
+      { type: 'hint', puzzle: s.times[id]!.length, kind },
+      createRng(1),
+      2_000,
+    );
+
+  it('are offered alone, counted per puzzle, and named in the result', () => {
+    let s = start(['wren'], '5×5', 2);
+    expect(zap.getPlayerView(s, 'wren').hints).toBe(true);
+    s = hint(hint(s, 'wren'), 'wren', 'mistake');
+    s = solveFor(s, 'wren', 10_000);
+    s = hint(s, 'wren');
+    expect(zap.getTableView(s).helped).toEqual([2, 1]);
+    s = solveFor(s, 'wren', 20_000);
+    expect(zap.getResult(s)!.summary).toBe('Solved 2 puzzles in 0:19, 3 hints');
+    expect((zap.getResult(s)!.reveal as { helped: number[] }).helped).toEqual([2, 1]);
+  });
+
+  it('leave the result alone when none were used', () => {
+    let s = start(['wren'], '5×5', 1);
+    s = solveFor(s, 'wren', 10_000);
+    expect(zap.getResult(s)!.summary).toBe('Solved 1 puzzle in 0:09');
+  });
+
+  it('are never offered in a race, or when the host turned them off', () => {
+    const race = start(['wren', 'rook'], '5×5', 1);
+    expect(zap.getTableView(race).hints).toBe(false);
+    expect(zap.getPlayerView(race, 'wren').hints).toBe(false);
+    expect(() => hint(race, 'wren')).toThrow(/only for playing alone/);
+    const off = start(['wren'], '5×5', 1, 7, false);
+    expect(zap.getPlayerView(off, 'wren').hints).toBe(false);
+    expect(() => hint(off, 'wren')).toThrow(GameError);
+  });
+
+  it('are on by default', () => {
+    expect(zap.defaultOptions(1).hints).toBe(true);
   });
 });
 

@@ -35,6 +35,7 @@
 }
 .zp-cell {
   appearance: none;
+  position: relative;
   min-width: 0;
   min-height: 0;
   padding: 0;
@@ -1091,5 +1092,63 @@
   }
   .zp-stamp {
     animation-name: zp-stamp-still;
+  }
+}
+
+/* ── Hints, alone only ─────────────────────────────────────────────────── */
+.zp-tools--hints {
+  grid-template-columns: 1fr 1fr;
+}
+.zp-tip {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--ink);
+  border-left-width: 6px;
+  background: var(--paper);
+  font-size: var(--step--1);
+  line-height: 1.35;
+}
+.zp-tip.is-mistake {
+  border-color: var(--danger);
+}
+.zp-tip__count {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-2);
+  font: 800 12px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.zp-cell.is-area::before,
+.zp-cell.is-hint::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+.zp-cell.is-area::before {
+  inset: 0;
+  background: color-mix(in srgb, var(--zp-ink) 13%, transparent);
+}
+.zp-cell.is-hint::after {
+  inset: 3px;
+  z-index: 3;
+  border: 3px solid var(--zp-ink);
+  animation: zp-hint 1400ms var(--ease-out) infinite;
+}
+.zp-board.is-mistake .zp-cell.is-hint::after {
+  border-color: var(--zp-bad);
+}
+@keyframes zp-hint {
+  0%,
+  100% {
+    inset: 3px;
+  }
+  50% {
+    inset: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zp-cell.is-hint::after {
+    animation: none;
   }
 }

@@ -50,7 +50,7 @@ function linesOf(size: number): number[][] {
 const fills = new Map<number, number[][]>();
 
 /** Every way to fill one row: half suns, half moons, never three alike in a row. */
-function rowFills(size: number): number[][] {
+export function rowFills(size: number): number[][] {
   let out = fills.get(size);
   if (out) return out;
   out = [];

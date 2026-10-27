@@ -8,6 +8,13 @@ export type Mark = 0 | 1 | 2;
 
 const vars = (v: Record<string, string | number>) => v as CSSProperties;
 
+/** A hint on the board: squares it's about, ringed, and squares that explain it, shaded. */
+export interface BoardHint {
+  cells: readonly number[];
+  area: readonly number[];
+  mistake?: boolean;
+}
+
 /** The king, in the house line style: a crown with a cross on top. */
 export function KingMark({ size }: { size?: number | string }) {
   return (
@@ -111,6 +118,7 @@ export function Board({
   onMarks,
   auto = false,
   solved = false,
+  hint,
   label,
   className,
 }: {
@@ -119,6 +127,7 @@ export function Board({
   onMarks?: (next: Mark[]) => void;
   auto?: boolean;
   solved?: boolean;
+  hint?: BoardHint | null;
   label: string;
   className?: string;
 }) {
@@ -171,7 +180,7 @@ export function Board({
 
   return (
     <div
-      className={`kg-board${solved ? ' is-solved' : ''}${onMarks ? ' is-live' : ''}${className ? ` ${className}` : ''}`}
+      className={`kg-board${solved ? ' is-solved' : ''}${onMarks ? ' is-live' : ''}${hint?.mistake ? ' is-mistake' : ''}${className ? ` ${className}` : ''}`}
       role="grid"
       aria-label={label}
       style={vars({ '--n': size })}
@@ -199,6 +208,8 @@ export function Board({
               e.r && 'kg-r',
               bad.has(i) && 'is-bad',
               m === 0 && faint[i] && 'is-faint',
+              hint?.cells.includes(i) && 'is-hint',
+              hint?.area.includes(i) && 'is-area',
             ]
               .filter(Boolean)
               .join(' ')}

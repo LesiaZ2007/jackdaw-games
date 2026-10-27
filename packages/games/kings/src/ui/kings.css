@@ -1186,3 +1186,61 @@
     animation-name: kg-stamp-still;
   }
 }
+
+/* ── Hints, alone only ─────────────────────────────────────────────────── */
+.kg-tools--hints {
+  grid-template-columns: 1fr 1fr;
+}
+.kg-tip {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--ink);
+  border-left-width: 6px;
+  background: var(--paper);
+  font-size: var(--step--1);
+  line-height: 1.35;
+}
+.kg-tip.is-mistake {
+  border-color: var(--danger);
+}
+.kg-tip__count {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-2);
+  font: 800 12px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.kg-cell.is-area::before,
+.kg-cell.is-hint::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+.kg-cell.is-area::before {
+  inset: 0;
+  background: color-mix(in srgb, var(--kg-ink) 13%, transparent);
+}
+.kg-cell.is-hint::after {
+  inset: 3px;
+  z-index: 3;
+  border: 3px solid var(--kg-ink);
+  animation: kg-hint 1400ms var(--ease-out) infinite;
+}
+.kg-board.is-mistake .kg-cell.is-hint::after {
+  border-color: var(--kg-bad);
+}
+@keyframes kg-hint {
+  0%,
+  100% {
+    inset: 3px;
+  }
+  50% {
+    inset: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kg-cell.is-hint::after {
+    animation: none;
+  }
+}

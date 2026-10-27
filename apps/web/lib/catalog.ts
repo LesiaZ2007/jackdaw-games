@@ -13,6 +13,7 @@ import { secretHitlerUi } from '@jackdaw/game-secret-hitler/ui';
 import { wavelengthUi } from '@jackdaw/game-wavelength/ui';
 import { wordhoardUi } from '@jackdaw/game-wordhoard/ui';
 import { zapUi } from '@jackdaw/game-zap/ui';
+import { fandangoUi } from '@jackdaw/game-fandango/ui';
 import type { GameAbout, GameUi } from '@jackdaw/ui';
 import { games } from './registry';
 import { upcoming } from './upcoming';
@@ -48,6 +49,7 @@ export const gameUis: Record<string, GameUi> = {
   wavelength: wavelengthUi,
   wordhoard: wordhoardUi,
   zap: zapUi,
+  fandango: fandangoUi,
 };
 
 /** The order games are listed in: grouped loosely by kind. */

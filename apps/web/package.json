@@ -17,6 +17,7 @@
     "@jackdaw/game-battleship": "workspace:*",
     "@jackdaw/game-catan": "workspace:*",
     "@jackdaw/game-codenames": "workspace:*",
+    "@jackdaw/game-fandango": "workspace:*",
     "@jackdaw/game-kings": "workspace:*",
     "@jackdaw/game-monopoly": "workspace:*",
     "@jackdaw/game-poker": "workspace:*",

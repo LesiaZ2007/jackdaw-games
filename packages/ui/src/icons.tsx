@@ -229,6 +229,15 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 58h10v-6h14v6h10v-6h14" />
     </g>
   ),
+  /** A sun and a moon side by side over a strip of board squares (Fandango). */
+  sunmoon: (
+    <g {...stroke(3.4)}>
+      <circle cx="19" cy="26" r="8" />
+      <path d="M19 9v3M19 40v3M6 26h-3M35 26h-3M9.8 16.8l2.1 2.1M26.1 33.1l2.1 2.1M9.8 35.2l2.1-2.1M26.1 18.9l2.1-2.1" />
+      <path d="M50 14a12 12 0 1 0 8 20 10 10 0 0 1-8-20z" />
+      <path d="M8 50h48M8 58h48M20 50v8M32 50v8M44 50v8" />
+    </g>
+  ),
   /** A townhouse with a pitched roof, a chimney and a door (Monopoly). */
   house: (
     <g {...stroke(3.4)}>

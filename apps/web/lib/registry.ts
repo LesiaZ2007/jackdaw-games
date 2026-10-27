@@ -13,6 +13,7 @@ import { secretHitler } from '@jackdaw/game-secret-hitler';
 import { wavelength } from '@jackdaw/game-wavelength';
 import { wordhoard } from '@jackdaw/game-wordhoard';
 import { zap } from '@jackdaw/game-zap';
+import { fandango } from '@jackdaw/game-fandango';
 
 /**
  * The one place games are registered. The room runtime runs these modules, and the catalog
@@ -34,4 +35,5 @@ export const games: GameRegistry = {
   [wavelength.meta.id]: wavelength,
   [wordhoard.meta.id]: wordhoard,
   [zap.meta.id]: zap,
+  [fandango.meta.id]: fandango,
 };

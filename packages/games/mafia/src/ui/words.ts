@@ -31,7 +31,8 @@ export function edition(t: MafiaTableView): string {
   if (t.phase === 'deal') return 'The deal';
   if (t.phase === 'over') return 'Final edition';
   if (isNight(t)) return `Night ${t.night}`;
-  if (t.phase === 'dawn') return `Morning ${t.night}`;
+  // The Hunter shoots at dawn (before the day has started) or at dusk (after the vote).
+  if (t.phase === 'dawn' || (t.phase === 'hunter' && t.day < t.night)) return `Morning ${t.night}`;
   return `Day ${t.day}`;
 }
 
@@ -53,7 +54,7 @@ export function headline(t: MafiaTableView, name: Name): { head: string; sub: st
     case 'night':
       return {
         head: wolf ? 'Night falls on the village' : 'Night falls on the city',
-        sub: `Shield your screen and make your choice. ${t.nightDone} of ${t.alive.length} have chosen.`,
+        sub: 'Shield your screen and make your choice.',
       };
     case 'witch':
       return {
@@ -85,7 +86,7 @@ export function headline(t: MafiaTableView, name: Name): { head: string; sub: st
     case 'vote':
       return {
         head: wolf ? 'The village decides' : 'The town decides',
-        sub: `Vote for who you want out, or skip. ${t.voted.length} of ${t.alive.length} have voted.`,
+        sub: 'Vote for who you want out, or skip.',
       };
     case 'dusk': {
       const out = t.lastVote?.out;

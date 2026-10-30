@@ -11,8 +11,18 @@ import {
 } from '@jackdaw/ui';
 import { ROLE_INFO } from '../roles';
 import type { MafiaAction, MafiaPlayerView } from '../rules';
+import { CardBack, PrintedHead, useCurtain, useFreshDead, Weather } from './motion';
 import { useNarrator, VoiceButton } from './narrator';
-import { Masthead, Placards, RoleCard, rootClass, Scenery, type PlacardInfo } from './table';
+import {
+  Masthead,
+  Pips,
+  Placards,
+  progressOf,
+  RoleCard,
+  rootClass,
+  Scenery,
+  type PlacardInfo,
+} from './table';
 import { headline, isNight, moment, narration, PICK_MARK, promptWords } from './words';
 import './mafia.css';
 
@@ -45,6 +55,9 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   });
   const [fresh, dismiss] = useMoment(v.step);
   const m = fresh !== null ? moment(v, v, name) : null;
+  const curtain = useCurtain(v, h.head);
+  const progress = progressOf(v);
+  const freshDead = useFreshDead(v.deaths.map((d) => d.id));
   const [card, setCard] = useState(false);
   const [busy, setBusy] = useState(false);
   // Picks that wait for a confirm, kept per step so a new step starts clean.
@@ -92,9 +105,9 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     for (const c of v.checks)
       if (c.target === id && v.role === 'sheriff')
         tags.push(c.result === 'mafia' ? 'Mafia!' : 'Clean');
-    if ((v.phase === 'deal' || v.phase === 'day') && v.ready.includes(id))
-      tags.push(v.phase === 'deal' ? 'Seen' : 'Ready');
-    if (v.phase === 'vote' && v.voted.includes(id)) tags.push('Voted');
+    const ok =
+      ((v.phase === 'deal' || v.phase === 'day') && v.ready.includes(id)) ||
+      (v.phase === 'vote' && v.voted.includes(id));
     if (v.phase === 'dusk' && v.lastVote) {
       const n = v.lastVote.counts[id];
       if (n) tags.push(`${n} vote${n === 1 ? '' : 's'}`);
@@ -105,6 +118,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       role: id === v.me ? null : (v.known[id] ?? null),
       tags,
       picked: isPicked,
+      ok,
       marked,
       lover: v.lover === id || (!!v.lovers && v.lovers.includes(id)),
     };
@@ -112,15 +126,15 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 
   return (
     <div className={rootClass(v, night, 'mf--phone')} data-look={look}>
+      <Weather t={v} drops={14} />
       <Masthead t={v} now={now} short>
         <VoiceButton speaking={narr.speaking} pref={narr.pref} />
       </Masthead>
 
       <section className="mf-front" aria-live="polite">
-        <h2 className="mf-head" key={v.step}>
-          {h.head}
-        </h2>
+        <PrintedHead text={h.head} className="mf-head" city={v.mode === 'Mafia'} />
         <p className="mf-sub">{h.sub}</p>
+        {progress && <Pips {...progress} />}
         {narr.needsTap && <p className="mf-tapvoice">Tap anywhere to let the narrator speak.</p>}
       </section>
 
@@ -138,6 +152,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
             }
             onTap={live ? onTap : undefined}
             reactions={reactions}
+            fresh={freshDead}
           />
         )}
       </div>
@@ -153,7 +168,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         openCard={() => setCard(true)}
       />
 
-      <Scenery t={v} />
+      <Scenery t={v} repeat={2} />
 
       {card && (
         <div
@@ -169,7 +184,9 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         </div>
       )}
 
-      {m && (
+      {curtain.node}
+
+      {m && !curtain.busy && (
         <VerdictMoment
           key={v.step}
           outcome={m.outcome}
@@ -234,11 +251,16 @@ function DealCard({ v }: { v: MafiaPlayerView }) {
           : 'Your card, face down. Tap to look.'
       }
     >
-      <span className="mf-deal__back" aria-hidden={open}>
-        <span className="mf-deal__seal">?</span>
-        <span>Tap to look, in secret</span>
+      <span className="mf-deal__inner">
+        <span className="mf-deal__back" aria-hidden={open}>
+          <CardBack city={v.mode === 'Mafia'} />
+          <span className="mf-deal__seal">?</span>
+          <span className="mf-deal__hint">Tap to look, in secret</span>
+        </span>
+        <span className="mf-deal__front" aria-hidden={!open}>
+          <RoleCard role={v.role} className="mf-deal__face" />
+        </span>
       </span>
-      {open && <RoleCard role={v.role} className="mf-deal__face" />}
     </button>
   );
 }

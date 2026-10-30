@@ -74,6 +74,8 @@ export interface PlacardInfo {
   /** Small printed tags: "Your pick", "Rook's pick", "Voted", "2 votes". */
   tags?: string[];
   picked?: boolean;
+  /** Ready: seen their card, ready to vote, or voted. A green seal over the token. */
+  ok?: boolean;
   /** The pick of a teammate (the pack sees each other's). */
   marked?: boolean;
   lover?: boolean;
@@ -92,6 +94,7 @@ export function Placards({
   onTap,
   reactions,
   size = 'phone',
+  fresh = [],
 }: {
   t: MafiaTableView;
   players: ScreenPlayer[];
@@ -101,6 +104,8 @@ export function Placards({
   onTap?: (id: string) => void;
   reactions?: Reaction[];
   size?: 'phone' | 'tv';
+  /** The newly dead: their stamp slams down (or their tombstone rises). */
+  fresh?: string[];
 }) {
   const byId = new Map(players.map((p) => [p.id, p]));
   const n = t.players.length;
@@ -113,9 +118,13 @@ export function Placards({
     '--cols-w': wide,
     '--rows-w': Math.ceil(n / wide),
   } as CSSProperties;
-  const tok = size === 'tv' ? (n > 10 ? 76 : 96) : n > 9 ? 34 : 42;
+  // On the TV tokens have a set size; on phones and laptops mafia.css sizes them to the screen.
+  const tok = size === 'tv' ? (n > 10 ? 76 : 96) : undefined;
   return (
-    <ol className={cx('mf-cards', size === 'tv' && 'mf-cards--tv')} style={grid}>
+    <ol
+      className={cx('mf-cards', size === 'tv' && 'mf-cards--tv', n > 9 && 'mf-cards--many')}
+      style={grid}
+    >
       {t.players.map((id, i) => {
         const p = byId.get(id);
         const x = info(id);
@@ -126,8 +135,17 @@ export function Placards({
           <>
             <span className="mf-card__no">{t.mode === 'Mafia' ? `No. ${i + 1}` : i + 1}</span>
             <span className="mf-card__tok">
-              {p && <Token avatar={p.avatar} away={!p.online} size={tok} />}
+              {/* No "away" greying in play: phones are put down and locked all night as the game
+                  asks, so presence comes and goes and tokens would flicker; the timers keep it moving. */}
+              {p && <Token avatar={p.avatar} size={tok} />}
               <PlayerReaction reactions={reactions ?? []} playerId={id} name={name} />
+              {x.ok && !x.dead && (
+                <span className="mf-card__ok" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M5 12.5l4.5 4.5L19 7.5" />
+                  </svg>
+                </span>
+              )}
             </span>
             <span className="mf-card__name">
               {name}
@@ -163,12 +181,14 @@ export function Placards({
         const cls = cx(
           'mf-card',
           x.dead && 'is-dead',
+          fresh.includes(id) && 'is-fresh',
           x.picked && 'is-picked',
+          x.ok && !x.dead && 'is-ok',
           x.marked && 'is-marked',
           id === me && 'is-me',
           can && 'is-target',
         );
-        const label = `${name}${id === me ? ' (you)' : ''}${x.dead ? ', dead' : ''}${role ? `, ${ROLE_INFO[role].name}` : ''}${x.tags?.length ? `, ${x.tags.join(', ')}` : ''}`;
+        const label = `${name}${id === me ? ' (you)' : ''}${x.dead ? ', dead' : ''}${role ? `, ${ROLE_INFO[role].name}` : ''}${x.ok && !x.dead ? ', ready' : ''}${x.tags?.length ? `, ${x.tags.join(', ')}` : ''}`;
         return (
           <li key={id} className={cls}>
             {can ? (
@@ -191,6 +211,63 @@ export function Placards({
       })}
     </ol>
   );
+}
+
+/**
+ * How many are done, as a row of printed pips that fill in: seen their card, ready to vote,
+ * voted, or (at night) chosen, never saying who. A notch marks how many the day needs.
+ */
+export function Pips({
+  done,
+  total,
+  need,
+  label,
+}: {
+  done: number;
+  total: number;
+  need?: number;
+  label: string;
+}) {
+  return (
+    <span className="mf-pips" role="img" aria-label={`${done} of ${total} ${label}`}>
+      {Array.from({ length: total }, (_, i) => (
+        <i
+          key={i}
+          className={cx(
+            'mf-pip',
+            i < done && 'is-on',
+            need !== undefined && i === need - 1 && 'is-need',
+          )}
+        />
+      ))}
+      <b className="mf-pips__n">
+        {done}/{need ?? total}
+      </b>
+    </span>
+  );
+}
+
+/** What the progress row counts at this step, if anything. */
+export function progressOf(
+  t: MafiaTableView,
+): { done: number; total: number; need?: number; label: string } | null {
+  switch (t.phase) {
+    case 'deal':
+      return { done: t.ready.length, total: t.players.length, label: 'have seen their card' };
+    case 'night':
+      return { done: t.nightDone, total: t.alive.length, label: 'have chosen' };
+    case 'day':
+      return {
+        done: t.ready.length,
+        total: t.alive.length,
+        need: t.readyNeed,
+        label: 'ready to vote',
+      };
+    case 'vote':
+      return { done: t.voted.length, total: t.alive.length, label: 'have voted' };
+    default:
+      return null;
+  }
 }
 
 /** The deck, as counts: everyone knows what's in it, never who has what. */

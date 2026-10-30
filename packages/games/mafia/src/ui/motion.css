@@ -1,0 +1,722 @@
+/*
+ * Mafia's moving print (motion.tsx): one curtain per step that matters, weather in between,
+ * stamps that slam and tombstones that rise. Flat shapes only, no glows. Reduced motion turns it
+ * all off (at the foot of this file).
+ */
+.mf {
+  position: relative;
+  isolation: isolate;
+}
+
+/* ── Weather: behind everything on the page ─────────────────────────────── */
+.mf-weather {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.mf-rain {
+  position: absolute;
+  top: -20%;
+  left: var(--x);
+  width: 1.5px;
+  height: 12%;
+  background: color-mix(in srgb, var(--mf-ink) 22%, transparent);
+  transform: rotate(14deg);
+  animation: mf-rain var(--s) linear var(--d) infinite;
+}
+@keyframes mf-rain {
+  to {
+    transform: rotate(14deg) translateY(1100%);
+  }
+}
+.mf-star {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 3px;
+  height: 3px;
+  background: var(--mf-moon, var(--mf-cream));
+  animation: mf-twinkle 3.2s steps(2) var(--d) infinite;
+}
+@keyframes mf-twinkle {
+  50% {
+    opacity: 0.25;
+  }
+}
+.mf-cloud {
+  position: absolute;
+  top: 1.5%;
+  left: -30%;
+  width: 18%;
+  height: 2.6%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--mf-ink) 7%, transparent);
+  animation: mf-drift 46s linear infinite;
+}
+.mf-cloud::before {
+  content: '';
+  position: absolute;
+  left: 22%;
+  bottom: 40%;
+  width: 40%;
+  height: 160%;
+  border-radius: 999px;
+  background: inherit;
+}
+@keyframes mf-drift {
+  to {
+    transform: translateX(620%);
+  }
+}
+
+/* A jackdaw crossing the sky now and then. */
+.mf-lobby__wall .mf-bird {
+  z-index: 0;
+}
+.mf-bird {
+  position: absolute;
+  top: 6%;
+  left: -12%;
+  width: clamp(34px, 5%, 72px);
+  color: var(--mf-ink);
+  animation: mf-fly 19s linear 4s infinite;
+}
+.mf-bird svg {
+  display: block;
+  width: 100%;
+  fill: currentColor;
+  overflow: visible;
+}
+.mf-bird__wing {
+  transform-origin: 20px 11px;
+  animation: mf-flap 0.42s ease-in-out infinite alternate;
+}
+@keyframes mf-fly {
+  0% {
+    transform: translate(0, 0);
+  }
+  40% {
+    transform: translate(560%, 90%);
+  }
+  60%,
+  100% {
+    transform: translate(1400%, -40%);
+  }
+}
+@keyframes mf-flap {
+  to {
+    transform: scaleY(-0.7);
+  }
+}
+
+/* The city's windows flick on and off at night. */
+.is-night .mf-sky__win:nth-child(3n) {
+  animation: mf-flick 9s steps(1) infinite;
+}
+.is-night .mf-sky__win:nth-child(4n + 1) {
+  animation: mf-flick 13s steps(1) 2.4s infinite;
+}
+.is-night .mf-sky__win:nth-child(5n + 2) {
+  animation: mf-flick 7s steps(1) 5s infinite;
+}
+@keyframes mf-flick {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  38% {
+    opacity: 0.15;
+  }
+  64% {
+    opacity: 1;
+  }
+}
+
+/* Eyes in the village's trees, at night only, blinking now and then. */
+.mf-sky__eyes g {
+  opacity: 0;
+  fill: var(--mf-win);
+}
+.is-night .mf-sky__eyes g {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: mf-eyes 7s steps(1) infinite;
+}
+@keyframes mf-eyes {
+  0%,
+  30% {
+    opacity: 0;
+  }
+  31%,
+  58% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  59% {
+    opacity: 1;
+    transform: scaleY(0.1);
+  }
+  61%,
+  76% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  77% {
+    opacity: 0;
+  }
+}
+
+/* ── Curtains: one big moment per step ──────────────────────────────────── */
+.mf-curtain {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Night, in the city: the night edition drops over the page and passes on. */
+.mf-curtain--night .mf-curtain__sheet {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.2em;
+  background: var(--mf-sky);
+  color: var(--mf-cream);
+  animation: mf-sheet-drop 2.3s cubic-bezier(0.7, 0, 0.3, 1) both;
+}
+@keyframes mf-sheet-drop {
+  0% {
+    transform: translateY(-101%);
+  }
+  28%,
+  72% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(101%);
+  }
+}
+.mf-curtain__word {
+  font: 900 clamp(44px, 13vw, 96px) / 0.9 var(--font-plaque);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.mf--village .mf-curtain__word {
+  font: 800 clamp(48px, 14vw, 104px) / 0.9 var(--font-display);
+  text-transform: none;
+}
+.mf-curtain__small {
+  font: 800 clamp(14px, 3.6vw, 22px) var(--font-plaque);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.mf-curtain__sky {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 22%;
+}
+.mf-curtain .mf-sky__town,
+.mf-curtain .mf-sky__trees {
+  fill: color-mix(in srgb, var(--mf-cream) 9%, var(--mf-sky));
+}
+.mf-curtain .mf-sky__win {
+  fill: var(--mf-win);
+}
+
+/* Night, in the village: the sky darkens and the moon arcs up over the trees. */
+.mf--village .mf-curtain--night .mf-curtain__sheet {
+  animation: mf-sheet-fade 2.3s ease both;
+}
+@keyframes mf-sheet-fade {
+  0% {
+    opacity: 0;
+  }
+  22%,
+  76% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.mf-curtain__arc {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  width: 0;
+  height: 62%;
+  transform-origin: bottom center;
+  animation: mf-arc 2.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.mf-curtain__moon {
+  position: absolute;
+  top: 0;
+  left: -48px;
+  width: 96px;
+  height: 96px;
+}
+@keyframes mf-arc {
+  from {
+    transform: rotate(-72deg);
+  }
+  to {
+    transform: rotate(24deg);
+  }
+}
+
+/* The news, in the city: the front page spins in, holds, and is gone. */
+.mf-curtain--news,
+.mf-curtain--over {
+  display: grid;
+  place-items: center;
+  animation: mf-dim 2.5s ease both;
+}
+.mf-curtain--over {
+  animation-duration: 3.2s;
+}
+@keyframes mf-dim {
+  0%,
+  100% {
+    background: transparent;
+  }
+  15%,
+  80% {
+    background: color-mix(in srgb, #0d0d10 62%, transparent);
+  }
+}
+.mf-curtain__paper {
+  width: min(86%, 980px);
+  aspect-ratio: 4 / 3;
+  max-height: 86%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  justify-items: center;
+  gap: 2%;
+  padding: 3%;
+  background: #e8e2d2;
+  color: #18171b;
+  border: 3px solid #18171b;
+  outline: 1px solid #18171b;
+  outline-offset: -10px;
+  box-shadow: 0 30px 60px -30px #000;
+  animation: mf-spin-in 2.5s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.mf-curtain--over .mf-curtain__paper {
+  animation-duration: 3.2s;
+}
+@keyframes mf-spin-in {
+  0% {
+    transform: rotate(-1080deg) scale(0.04);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  46% {
+    transform: rotate(-3deg) scale(1);
+  }
+  82% {
+    transform: rotate(-3deg) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-3deg) scale(1.25);
+    opacity: 0;
+  }
+}
+.mf-curtain__mast {
+  width: 100%;
+  text-align: center;
+  font: 800 clamp(22px, 6vw, 64px) / 1 var(--font-display);
+  border-bottom: 5px double #18171b;
+  padding-bottom: 2%;
+}
+.mf-curtain__extra {
+  padding: 0.1em 0.6em;
+  background: #b0261c;
+  color: #f6f0e1;
+  font: 900 clamp(14px, 3.4vw, 34px) var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.mf-curtain.is-pack .mf-curtain__paper {
+  background: #18171b;
+  color: #e8e2d2;
+  border-color: #b0261c;
+  outline-color: #b0261c;
+}
+.mf-curtain.is-pack .mf-curtain__mast {
+  border-color: #e8e2d2;
+}
+.mf-curtain__paper .mf-curtain__head {
+  align-self: center;
+  text-align: center;
+  font: 900 clamp(34px, 9vw, 120px) / 0.88 var(--font-plaque);
+  text-transform: uppercase;
+}
+.mf-curtain__cols {
+  width: 100%;
+  height: 3.2em;
+  background: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 9px);
+  opacity: 0.22;
+  mask: linear-gradient(
+    to right,
+    #000 0 31%,
+    transparent 31% 34.5%,
+    #000 34.5% 65.5%,
+    transparent 65.5% 69%,
+    #000 69%
+  );
+}
+
+/* The news, in the village: the sun climbs over the trees (a blood moon if the wolves won). */
+.mf--village .mf-curtain--news,
+.mf--village .mf-curtain--over {
+  animation: none;
+}
+.mf--village .mf-curtain--news .mf-curtain__sheet,
+.mf--village .mf-curtain--over .mf-curtain__sheet {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  background: #e4dcc6;
+  color: #201d17;
+  animation: mf-sheet-fade 2.5s ease both;
+}
+.mf--village .mf-curtain--over .mf-curtain__sheet {
+  animation-duration: 3.2s;
+}
+.mf--village .mf-curtain.is-pack .mf-curtain__sheet {
+  background: #141a2a;
+  color: #e8e0cc;
+}
+.mf-curtain__rise {
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  width: clamp(120px, 34%, 340px);
+  aspect-ratio: 1;
+  translate: -50% 0;
+  animation: mf-rise 2.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes mf-rise {
+  from {
+    transform: translateY(70%);
+  }
+}
+.mf-sun {
+  width: 100%;
+  height: 100%;
+}
+.mf-sun__rays {
+  stroke: #a77d2c;
+  stroke-width: 4;
+  stroke-linecap: round;
+  transform-origin: 50px 50px;
+  animation: mf-turn 14s linear infinite;
+}
+.mf-sun__disc {
+  fill: #c9962f;
+}
+@keyframes mf-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.mf-curtain__blood {
+  width: 100%;
+  height: 100%;
+  fill: #8e2a22;
+}
+.mf--village .mf-curtain__sheet .mf-curtain__head {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 18%;
+  padding: 0 6%;
+  text-align: center;
+  font: 800 clamp(40px, 10vw, 118px) / 0.95 var(--font-display);
+  animation: mf-pull 1s 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.mf--village .mf-curtain__sheet .mf-sky__town,
+.mf--village .mf-curtain__sheet .mf-sky__trees {
+  fill: #2a3326;
+}
+.mf--village .mf-curtain.is-pack .mf-sky__town,
+.mf--village .mf-curtain.is-pack .mf-sky__trees {
+  fill: #0a0d17;
+}
+
+/* ── Headlines off the press ───────────────────────────────────────────── */
+.mf-head--press {
+  animation: none;
+}
+.mf-head__w {
+  display: inline-block;
+  white-space: nowrap;
+}
+.mf-head__ch {
+  display: inline-block;
+  animation: mf-letter 300ms cubic-bezier(0.3, 1.4, 0.5, 1) calc(var(--i) * 26ms) both;
+}
+@keyframes mf-letter {
+  from {
+    opacity: 0;
+    transform: translateY(-35%) scale(1.7);
+  }
+}
+.mf-head--pull {
+  animation: mf-pull 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes mf-pull {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 -2% 0 0);
+  }
+}
+
+/* ── Death: the stamp slams down, the cottage becomes a grave ──────────── */
+.mf-card.is-fresh .mf-card__stamp {
+  animation: mf-slam 520ms cubic-bezier(0.5, 0, 0.6, 1.6) 2.2s both;
+}
+.mf-card.is-fresh .mf-card__in {
+  animation: mf-thud 420ms ease 2.6s both;
+}
+@keyframes mf-slam {
+  0% {
+    opacity: 0;
+    transform: rotate(-38deg) scale(3.2);
+  }
+  70% {
+    opacity: 1;
+    transform: rotate(-12deg) scale(0.92);
+  }
+  100% {
+    transform: rotate(-14deg) scale(1);
+  }
+}
+.mf--village .mf-card.is-fresh .mf-card__stamp {
+  animation-name: mf-slam-flat;
+}
+@keyframes mf-slam-flat {
+  0% {
+    opacity: 0;
+    transform: scale(3);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(0.92);
+  }
+}
+@keyframes mf-thud {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  20% {
+    translate: -4px 2px;
+  }
+  45% {
+    translate: 4px -1px;
+  }
+  70% {
+    translate: -2px 1px;
+  }
+}
+.mf--village .mf-card.is-fresh .mf-card__in {
+  animation: mf-grave 1s cubic-bezier(0.22, 1, 0.36, 1) 2.2s both;
+}
+@keyframes mf-grave {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ── The vote, tallied a mark at a time ────────────────────────────────── */
+.mf-tally__marks {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+.mf-tally__marks i {
+  display: inline-block;
+  width: 4px;
+  height: 0.9em;
+  background: currentColor;
+  transform-origin: bottom;
+  animation: mf-mark 240ms ease-out calc(2.4s + var(--k) * 170ms) both;
+}
+.mf-tally__marks i:nth-child(5n) {
+  width: 3px;
+  transform: rotate(-60deg) translateY(2px);
+  margin-left: -26px;
+  animation-name: mf-strike;
+}
+@keyframes mf-mark {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes mf-strike {
+  from {
+    transform: rotate(-60deg) translateY(2px) scaleY(0);
+  }
+}
+
+/* ── The Hunter's sight sweeping the table ─────────────────────────────── */
+.mf-tv__table {
+  position: relative;
+}
+.mf-scope {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 280px;
+  height: 280px;
+  color: var(--mf-red);
+  pointer-events: none;
+  z-index: 2;
+  animation: mf-sweep 7s ease-in-out infinite;
+}
+.mf-scope svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+}
+@keyframes mf-sweep {
+  0% {
+    transform: translate(0%, 10%);
+  }
+  25% {
+    transform: translate(260%, 60%);
+  }
+  50% {
+    transform: translate(120%, 140%);
+  }
+  75% {
+    transform: translate(360%, 20%);
+  }
+  100% {
+    transform: translate(0%, 10%);
+  }
+}
+
+/* ── The clock's last seconds ──────────────────────────────────────────── */
+.mf-clock.is-low {
+  display: inline-block;
+  animation: mf-tick 1s ease-out infinite;
+}
+@keyframes mf-tick {
+  0% {
+    transform: scale(1.18);
+  }
+  40%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ── Your card: dealt, then turned over ────────────────────────────────── */
+.mf-deal {
+  perspective: 1400px;
+  animation: mf-dealt 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes mf-dealt {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) rotate(-16deg) scale(0.8);
+  }
+}
+.mf-deal__inner {
+  position: relative;
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 750ms cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+.mf-deal.is-open .mf-deal__inner {
+  transform: rotateY(180deg);
+}
+.mf-deal__back,
+.mf-deal__front {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+  min-height: 0;
+}
+.mf-deal__front {
+  display: grid;
+  transform: rotateY(180deg);
+}
+.mf-deal__back {
+  position: relative;
+  overflow: hidden;
+}
+.mf-deal__back > :not(.mf-back) {
+  position: relative;
+  z-index: 1;
+}
+.mf-deal__hint {
+  padding: 2px 8px;
+  background: var(--mf-plate);
+}
+.mf-back {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--mf-plate-ink);
+}
+.mf-back__rays path {
+  stroke: currentColor;
+  stroke-width: 1.4;
+  opacity: 0.35;
+}
+.mf-back__frame {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+.mf-back__fill {
+  fill: currentColor;
+  opacity: 0.85;
+}
+.mf-back__stars {
+  fill: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mf-curtain,
+  .mf-rain,
+  .mf-bird,
+  .mf-cloud,
+  .mf-scope {
+    display: none;
+  }
+  .mf *,
+  .mf *::before,
+  .mf *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .mf-sky__eyes g {
+    opacity: 0;
+  }
+}

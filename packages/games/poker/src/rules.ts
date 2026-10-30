@@ -153,6 +153,9 @@ export interface PokerState {
   buyIns?: Record<string, number>;
   /** The most anyone has won in one hand, for the night's awards. */
   biggest?: { player: string; amount: number; hand: number; with?: string };
+  /** Hands won (a split counts for each) and the biggest single win, per player, for the recap. Older games don't have them. */
+  handsWon?: Record<string, number>;
+  bestPot?: Record<string, number>;
 }
 
 /** Everything public: the TV and every phone render this. */
@@ -485,16 +488,54 @@ function finishHand(s: PokerState): PokerState {
     )
     .join('; ');
   const folded = s.folded.filter((id) => s.hole[id]);
-  const recap: RecapEvent = {
+  const cards = (id: string) => (s.hole[id] ?? []).map(cardText).join(' ');
+  const events: RecapEvent[] = [];
+  // Everyone's chips are in play, so a pot is big relative to the whole table.
+  const inPlay = sum(Object.values(stacks));
+  const potTotal = sum(pots.map((p) => p.amount));
+  const topId = Object.keys(won).sort((x, y) => (net[y] ?? 0) - (net[x] ?? 0))[0];
+  if (showdown && s.allIn.length > 0) {
+    events.push({
+      round: s.hand,
+      text: `${contenders.map((id) => `{${id}}`).join(' and ')} showed down with chips all in.`,
+      secret: contenders.map((id) => `{${id}} had ${cards(id)} (${best[id]!.name})`).join('; '),
+      tag: 'All in',
+      key: potTotal >= inPlay * 0.3,
+    });
+  }
+  events.push({
     round: s.hand,
+    actor: topId,
     text: `Hand ${s.hand}: ${text}.`,
-    secret: folded.length
-      ? folded
-          .map((id) => `{${id}} folded ${(s.hole[id] ?? []).map(cardText).join(' ')}`)
-          .join('; ')
-      : undefined,
-    data: { board, shown },
-  };
+    secret:
+      [
+        // An uncontested winner's cards stay hidden at the table.
+        !showdown && topId && s.hole[topId] ? `{${topId}} held ${cards(topId)}` : '',
+        ...folded.map((id) => `{${id}} folded ${cards(id)}`),
+      ]
+        .filter(Boolean)
+        .join('; ') || undefined,
+    tag: topId ? `+${net[topId]}` : undefined,
+    key: potTotal >= inPlay * 0.3,
+    data: { board, shown, pot: true },
+  });
+  for (const id of s.inHand) {
+    if ((stacks[id] ?? 0) > 0) continue;
+    events.push({
+      round: s.hand,
+      actor: id,
+      text: `{${id}} was knocked out on hand ${s.hand}.`,
+      tag: 'Busted',
+      tone: 'bad',
+      key: true,
+    });
+  }
+  const handsWon = { ...s.handsWon };
+  const bestPot = { ...s.bestPot };
+  for (const [id, amount] of Object.entries(won)) {
+    handsWon[id] = (handsWon[id] ?? 0) + 1;
+    bestPot[id] = Math.max(bestPot[id] ?? 0, amount);
+  }
   // The biggest single win so far, for the night's awards.
   let biggest = s.biggest;
   for (const [id, amount] of Object.entries(won)) {
@@ -516,7 +557,9 @@ function finishHand(s: PokerState): PokerState {
     bets: {},
     toAct: null,
     last,
-    recap: [...s.recap, recap],
+    handsWon,
+    bestPot,
+    recap: [...s.recap, ...events],
   };
 }
 
@@ -684,7 +727,12 @@ function move(s: PokerState, playerId: string, action: PokerAction, rng: Rng): P
       buyIns: { ...s.buyIns, [playerId]: (s.buyIns?.[playerId] ?? 0) + 1 },
       recap: [
         ...s.recap,
-        { round: s.hand, actor: playerId, text: `{${playerId}} bought back in.` },
+        {
+          round: s.hand,
+          actor: playerId,
+          text: `{${playerId}} bought back in.`,
+          tag: 'Bought back in',
+        },
       ],
     };
   }
@@ -771,7 +819,21 @@ function resultFrom(s: PokerState, stacks: Record<string, number>, summary: stri
     winners,
     summary,
     reveal,
-    recap: s.recap,
+    recap: s.recap.map((e, i) => {
+      // Pot events are logged before the winner is known; colour them now, and the last is a turning point.
+      const isPot = (x: RecapEvent) => (x.data as { pot?: boolean } | undefined)?.pot === true;
+      if (!isPot(e) || !e.actor) return e;
+      const last = !s.recap.slice(i + 1).some(isPot);
+      return { ...e, tone: winners.includes(e.actor) ? 'good' : e.tone, key: e.key || last };
+    }),
+    roundName: 'Hand',
+    stats: {
+      columns: ['Chips', 'Hands won', 'Biggest pot'],
+      rows: ranked.map((id) => ({
+        playerId: id,
+        values: [stacks[id] ?? 0, s.handsWon?.[id] ?? 0, s.bestPot?.[id] ?? 0],
+      })),
+    },
     highlights: s.biggest
       ? [
           {

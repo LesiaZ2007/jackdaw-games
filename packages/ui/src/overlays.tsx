@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
-import type { RecapEvent } from '@jackdaw/engine';
+import type { RecapEvent, RecapStats } from '@jackdaw/engine';
 import { Icon } from './icons';
-import { recapLine } from './recap';
+import { recapLine, withNames } from './recap';
 import './overlays.css';
 
 const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
@@ -137,10 +137,13 @@ export function RecapTimeline({
   events,
   names,
   title = 'How it went',
+  roundName = 'Round',
 }: {
   events: RecapEvent[];
   names: Record<string, string>;
   title?: string;
+  /** What a round is called in this game: "Quest", "Hand". */
+  roundName?: string;
 }) {
   if (events.length === 0) return null;
   const rounds: { round: number | null; items: RecapEvent[] }[] = [];
@@ -156,15 +159,27 @@ export function RecapTimeline({
       <ol className="jd-recap__list">
         {rounds.map((r, i) => (
           <li key={i} className="jd-recap__round">
-            {r.round !== null && <span className="jd-recap__n">Round {r.round}</span>}
+            {r.round !== null && (
+              <span className="jd-recap__n">
+                {roundName} {r.round}
+              </span>
+            )}
             <ul>
               {r.items.map((e, j) => {
                 const line = recapLine(e, names);
                 return (
-                  <li key={j} className="jd-recap__event">
-                    <span>
-                      {line.actor && <b>{line.actor}: </b>}
-                      {line.text}
+                  <li
+                    key={j}
+                    className="jd-recap__event"
+                    data-tone={e.tone}
+                    data-key={e.key || undefined}
+                  >
+                    <span className="jd-recap__line">
+                      <span>
+                        {line.actor && <b>{line.actor}: </b>}
+                        {line.text}
+                      </span>
+                      {e.tag && <span className="jd-recap__tag">{withNames(e.tag, names)}</span>}
                     </span>
                     {line.secret && <span className="jd-recap__secret">{line.secret}</span>}
                   </li>
@@ -174,6 +189,52 @@ export function RecapTimeline({
           </li>
         ))}
       </ol>
+    </section>
+  );
+}
+
+/** "By the numbers": a game's per-player measures, one row per player, `me` marked. */
+export function RecapStatsTable({
+  stats,
+  names,
+  me,
+  title = 'By the numbers',
+}: {
+  stats: RecapStats | undefined;
+  names: Record<string, string>;
+  me?: string | null;
+  title?: string;
+}) {
+  if (!stats || stats.rows.length === 0 || stats.columns.length === 0) return null;
+  return (
+    <section className="jd-stats" aria-label={title}>
+      <h3 className="jd-display jd-recap__title">{title}</h3>
+      <div className="jd-stats__scroll">
+        <table className="jd-stats__table">
+          <thead>
+            <tr>
+              <th scope="col">
+                <span className="sr-only">Player</span>
+              </th>
+              {stats.columns.map((c) => (
+                <th key={c} scope="col">
+                  {c}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {stats.rows.map((r) => (
+              <tr key={r.playerId} data-me={r.playerId === me || undefined}>
+                <th scope="row">{names[r.playerId] ?? 'Someone'}</th>
+                {stats.columns.map((c, i) => (
+                  <td key={c}>{r.values[i] ?? ''}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

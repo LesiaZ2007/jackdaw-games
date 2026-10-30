@@ -121,3 +121,23 @@ describe('hidden information', () => {
     expect(JSON.stringify(rps.getTableView(s))).not.toMatch(/rock|paper/);
   });
 });
+
+describe('recap', () => {
+  it('tags each round and gives per-player stats, winners first', () => {
+    let s = fresh(2);
+    s = playRound(s, { a: 'rock', b: 'scissors', c: 'scissors' });
+    s = playRound(s, { a: 'rock', b: 'rock', c: 'rock' });
+    const result = rps.getResult(s)!;
+    expect(result.roundName).toBe('Round');
+    expect(result.recap[0]).toMatchObject({ tag: '+2', key: true });
+    expect(result.recap[1]).toMatchObject({ tag: 'Draw', key: true });
+    expect(result.stats!.columns).toEqual(['Points', 'Rounds won', 'Favourite']);
+    expect(result.stats!.rows[0]).toEqual({ playerId: 'a', values: [2, 1, 'rock'] });
+  });
+
+  it('keeps the recap out of the views', () => {
+    const s = playRound(fresh(2), { a: 'rock', b: 'scissors', c: 'scissors' });
+    expect(JSON.stringify(rps.getTableView(s))).not.toContain('recap');
+    expect(JSON.stringify(rps.getPlayerView(s, 'a'))).not.toContain('recap');
+  });
+});

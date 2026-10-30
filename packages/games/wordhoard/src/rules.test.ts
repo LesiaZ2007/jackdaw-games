@@ -197,6 +197,28 @@ describe('playing', () => {
       { award: 'Best word', playerIds: ['a'], text: 'CAT for 10', value: 10 },
     ]);
   });
+
+  it('recaps with the racks left at the end as the secret, and stats winner first', () => {
+    let s = rigged('CAT', 'QZ');
+    s = { ...s, bag: [] };
+    s = act(s, 'a', { type: 'play', tiles: across(7, 6, 'CAT') });
+    const r = game.getResult(s)!;
+    expect(r.recap[0]).toMatchObject({ round: 1, actor: 'a', tag: '10 pts', key: true });
+    expect(r.recap[0]!.secret).toBeUndefined();
+    expect(r.recap.at(-1)!.secret).toContain('{b}: Q Z');
+    expect(r.stats!.rows.map((x) => x.playerId)).toEqual(['a', 'b']);
+    expect(r.stats!.rows[0]!.values).toEqual([30, 'CAT 10', 1, 0]);
+    expect(r.stats!.rows[0]!.values).toHaveLength(r.stats!.columns.length);
+  });
+
+  it('keeps swapped tiles out of the recap text and the table view', () => {
+    let s = rigged('QZXCATS');
+    s = act(s, 'a', { type: 'swap', tiles: ['Q', 'Z'] });
+    const e = s.recap.at(-1)!;
+    expect(e.secret).toBe('Threw back Q Z');
+    expect(e.text).not.toMatch(/Q|Z/);
+    expect(JSON.stringify(game.getTableView(s))).not.toContain('Threw back');
+  });
 });
 
 describe('pairs', () => {

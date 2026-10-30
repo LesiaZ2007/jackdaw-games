@@ -14,8 +14,10 @@ import {
   checkBoard,
   deduce,
   makePuzzle,
+  MOON,
   BOARD_SIZES as BOARDS,
   solve,
+  SUN,
   type Puzzle,
 } from './puzzle';
 import { clock } from './time';
@@ -169,6 +171,17 @@ function filled(cells: readonly number[] | undefined): number {
   return cells?.filter((v) => v).length ?? 0;
 }
 
+/** A finished board, a row at a time: suns and moons, empty squares dotted. */
+const boardText = (cells: number[], size: number) =>
+  Array.from({ length: size }, (_, r) =>
+    cells
+      .slice(r * size, (r + 1) * size)
+      .map((v) => (v === SUN ? '☀' : v === MOON ? '☾' : '·'))
+      .join(''),
+  ).join(' / ');
+
+const ordinal = (n: number) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : `${n}th`);
+
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 /** The result from the puzzles solved so far. Null while nobody has solved one. */
@@ -201,6 +214,22 @@ function resultFrom(s: FandangoState, early: boolean): GameResult | null {
     summary,
     reveal,
     recap: s.recap,
+    roundName: 'Puzzle',
+    stats: {
+      columns: ['Solved', 'Time', 'Fastest'],
+      rows: order.map((id) => {
+        const times = s.times[id] ?? [];
+        const gaps = times.map((at, i) => at - (i === 0 ? s.startedAt : times[i - 1]!));
+        return {
+          playerId: id,
+          values: [
+            `${times.length} of ${s.count}`,
+            times.length ? clock(took(id)) : '-',
+            gaps.length ? clock(Math.min(...gaps)) : '-',
+          ],
+        };
+      }),
+    },
     standings: s.players.map((playerId) => ({
       playerId,
       outcome: solo
@@ -391,6 +420,38 @@ export const fandango: GameModule<
     const ms = now - (index === 0 ? s.startedAt : s.times[playerId]![index - 1]!);
     const done = s.players.filter((id) => times[id]!.length === s.count);
     const over = done.length === s.players.length;
+    // Where they came on this puzzle, and whether that took the lead in the race.
+    const place = s.players.filter((id) => (s.times[id]?.length ?? 0) > index).length + 1;
+    const topBefore = ranking(s)[0]!;
+    const topAfter = ranking({ players: s.players, times, startedAt: s.startedAt })[0]!;
+    const hints = s.helped?.[index] ?? 0;
+    const events: RecapEvent[] = [
+      {
+        round: index + 1,
+        actor: playerId,
+        text: `{${playerId}} solved puzzle ${index + 1} in ${clock(ms)}`,
+        secret: `Board: ${boardText(action.cells, s.size)}${hints ? `, with ${plural(hints, 'hint')}` : ''}`,
+        tag: s.players.length > 1 ? ordinal(place) : clock(ms),
+        tone: place === 1 ? 'good' : undefined,
+        key: mine.length === s.count && done.length === 1 && s.players.length > 1,
+      },
+    ];
+    if (topAfter !== topBefore && (s.times[topBefore]?.length ?? 0) > 0)
+      events.push({
+        round: index + 1,
+        actor: topAfter,
+        text: `{${topAfter}} took the lead from {${topBefore}}.`,
+        tag: 'Lead',
+        tone: 'good',
+        key: true,
+      });
+    if (s.closesAt === null && !over && done.length > 0)
+      events.push({
+        round: index + 1,
+        text: `{${playerId}} finished all ${s.count}, so everyone else has two minutes.`,
+        tag: 'Last call',
+        key: true,
+      });
     return {
       ...s,
       times,
@@ -399,21 +460,33 @@ export const fandango: GameModule<
       puzzles,
       over,
       closesAt: over ? null : (s.closesAt ?? (done.length > 0 ? now + CLOSE_MS : null)),
-      recap: [
-        ...s.recap,
-        {
-          round: index + 1,
-          actor: playerId,
-          text: `${playerId} solved puzzle ${index + 1} in ${clock(ms)}`,
-        },
-      ],
+      recap: [...s.recap, ...events],
     };
   },
 
   nextTimer: (s) => (s.closesAt !== null && !s.over ? { id: 'close', at: s.closesAt } : null),
   onTimer: (s, id, _rng, now) =>
     id === 'close' && s.closesAt !== null && now >= s.closesAt && !s.over
-      ? { ...s, over: true, closesAt: null }
+      ? {
+          ...s,
+          over: true,
+          closesAt: null,
+          recap: [
+            ...s.recap,
+            {
+              text: 'Time ran out for everyone still going.',
+              secret: s.players
+                .filter((id) => (s.times[id]?.length ?? 0) < s.count)
+                .map(
+                  (id) =>
+                    `{${id}} was on puzzle ${(s.times[id]?.length ?? 0) + 1} with ${plural(filled(s.live?.[id]), 'square')} filled`,
+                )
+                .join('; '),
+              tag: 'Time',
+              tone: 'bad',
+            },
+          ],
+        }
       : s,
 
   waitingOn: (s) => (s.over ? [] : s.players.filter((id) => s.times[id]!.length < s.count)),

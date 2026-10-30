@@ -3,6 +3,7 @@ import {
   type GameModule,
   type GameResult,
   type RecapEvent,
+  type RecapStats,
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
@@ -267,8 +268,11 @@ export function points(s: CatanState, pid: string, withHidden: boolean): number 
   return n;
 }
 
-function logged(s: CatanState, text: string, who?: string): CatanState {
-  const ev: RecapEvent = { round: s.round, text, ...(who ? { actor: who } : {}) };
+type Chip = Pick<RecapEvent, 'tag' | 'tone' | 'key' | 'secret'>;
+
+/** Adds an event to the log. `chip` carries the recap's chip, tone, turning point and secret. */
+function logged(s: CatanState, text: string, who?: string, chip: Chip = {}): CatanState {
+  const ev: RecapEvent = { round: s.round, text, ...(who ? { actor: who } : {}), ...chip };
   return { ...s, log: [...s.log, ev].slice(-LOG_KEEP) };
 }
 
@@ -459,6 +463,7 @@ function discard(s: CatanState, who: string, c: Partial<Cards>): CatanState {
     },
     `{actor} discarded ${owe}`,
     who,
+    { tag: `-${owe}`, tone: 'bad' },
   );
   return Object.keys(discards).length ? next : { ...next, phase: 'robber' };
 }
@@ -543,6 +548,13 @@ function moveRobber(
     next,
     victim ? `{actor} moved the robber and robbed {${victim}}` : '{actor} moved the robber',
     who,
+    victim
+      ? {
+          tag: 'Robbed',
+          tone: 'good',
+          ...(resource ? { secret: `Took ${resource} from {${victim}}` } : {}),
+        }
+      : {},
   );
 }
 
@@ -715,6 +727,7 @@ function accept(s: CatanState, who: string, id: number, partner: string): CatanS
     { ...s, hands, offers: s.offers.filter((o) => o.id !== offer.id) },
     `{actor} traded ${cardsText(offer.give)} for ${cardsText(offer.want)} with {${taker}}`,
     maker,
+    { tag: 'Trade' },
   );
 }
 
@@ -754,7 +767,14 @@ function recountRoads(s: CatanState): CatanState {
     award: { seq, kind: 'road', from: s.longest.holder, to: holder },
   };
   return holder
-    ? logged(moved, `{actor} has Longest Road (${lengths[holder]})`, holder)
+    ? logged(
+        moved,
+        s.longest.holder
+          ? `{actor} has Longest Road (${lengths[holder]}), taking it from {${s.longest.holder}}`
+          : `{actor} has Longest Road (${lengths[holder]})`,
+        holder,
+        { tag: 'Longest road', tone: 'good', key: true },
+      )
     : logged(moved, 'Nobody holds Longest Road now');
 }
 
@@ -782,7 +802,12 @@ function build(s: CatanState, who: string, kind: Piece, at: string): CatanState 
       ...next,
       buildings: { ...next.buildings, [at]: { owner: who, city: kind === 'city' } },
     };
-  next = logged(next, `{actor} built a ${kind}`, who);
+  next = logged(
+    next,
+    `{actor} built a ${kind}`,
+    who,
+    kind === 'road' ? {} : { tag: kind === 'city' ? 'City' : 'Settlement', tone: 'good' },
+  );
   if (kind !== 'city') next = recountRoads(next);
   if (free) {
     const left = next.roadsToBuild - 1;
@@ -810,6 +835,7 @@ function buy(s: CatanState, who: string): CatanState {
     },
     '{actor} bought a development card',
     who,
+    { tag: 'Dev card', secret: `Drew ${DEV_NAMES[card!]}` },
   );
 }
 
@@ -836,7 +862,7 @@ function play(s: CatanState, who: string, a: PlayAction): CatanState {
   switch (a.card) {
     case 'knight': {
       const knights = { ...next.knights, [who]: next.knights[who]! + 1 };
-      next = logged({ ...next, knights }, '{actor} played a knight', who);
+      next = logged({ ...next, knights }, '{actor} played a knight', who, { tag: 'Knight' });
       const best = next.army ? knights[next.army]! : 2;
       if (next.army !== who && knights[who]! > best) {
         const seq = next.eventSeq + 1;
@@ -847,8 +873,11 @@ function play(s: CatanState, who: string, a: PlayAction): CatanState {
             eventSeq: seq,
             award: { seq, kind: 'army', from: next.army, to: who },
           },
-          `{actor} has Largest Army (${knights[who]})`,
+          next.army
+            ? `{actor} has Largest Army (${knights[who]}), taking it from {${next.army}}`
+            : `{actor} has Largest Army (${knights[who]})`,
           who,
+          { tag: 'Largest army', tone: 'good', key: true },
         );
       }
       return {
@@ -866,6 +895,7 @@ function play(s: CatanState, who: string, a: PlayAction): CatanState {
         { ...next, phase: can ? 'roadBuilding' : 'main', roadsToBuild: can ? n : 0 },
         '{actor} played road building',
         who,
+        { tag: 'Road building' },
       );
     }
     case 'yearOfPlenty': {
@@ -879,6 +909,7 @@ function play(s: CatanState, who: string, a: PlayAction): CatanState {
         },
         `{actor} played year of plenty for ${cardsText(take)}`,
         who,
+        { tag: 'Plenty', tone: 'good' },
       );
     }
     case 'monopoly': {
@@ -896,6 +927,7 @@ function play(s: CatanState, who: string, a: PlayAction): CatanState {
         { ...next, hands, eventSeq: seq, monopoly: { seq, pid: who, resource: r, took } },
         `{actor} played monopoly on ${r} and took ${took}`,
         who,
+        { tag: `+${took}`, tone: 'good', ...(took >= 4 ? { key: true } : {}) },
       );
     }
   }
@@ -930,11 +962,29 @@ function startOf(s: CatanState, who: string): CatanState {
   return points(s, who, true) >= s.target ? win(s, who) : s;
 }
 
+const DEV_NAMES: Record<DevCard, string> = {
+  knight: 'a knight',
+  victoryPoint: 'a victory point',
+  roadBuilding: 'road building',
+  yearOfPlenty: 'year of plenty',
+  monopoly: 'monopoly',
+};
+
+/** The victory point cards nobody saw, told at the end. */
+function hiddenPoints(s: CatanState): string {
+  const held = s.seats
+    .map((p) => [p, s.dev[p]!.filter((d) => d.card === 'victoryPoint').length] as const)
+    .filter(([, n]) => n > 0)
+    .map(([p, n]) => `{${p}} held ${n} victory point ${n === 1 ? 'card' : 'cards'}`);
+  return held.length ? held.join('; ') : 'Nobody held a victory point card.';
+}
+
 function win(s: CatanState, who: string): CatanState {
   return logged(
     { ...s, phase: 'over', winner: who, actBy: null, offers: [] },
     `{actor} wins with ${points(s, who, true)} points`,
     who,
+    { tag: `${points(s, who, true)} pts`, tone: 'good', key: true, secret: hiddenPoints(s) },
   );
 }
 
@@ -988,7 +1038,9 @@ function getTableView(s: CatanState): CatanTableView {
     },
     award: s.award,
     monopoly: s.monopoly,
-    log: s.log.slice(-LOG_SHOWN),
+    log: s.log
+      .slice(-LOG_SHOWN)
+      .map(({ secret, ...e }) => (over && secret !== undefined ? { ...e, secret } : e)),
     actBy: s.actBy,
     winner: s.winner,
     vpCards: over
@@ -1141,6 +1193,17 @@ function resultFor(s: CatanState, winners: string[], early = false): GameResult 
       value: s.best.haul.n,
     });
   const top = pts[winners[0]!]!.total;
+  const order = [...s.seats].sort(
+    (a, b) =>
+      Number(winners.includes(b)) - Number(winners.includes(a)) || pts[b]!.total - pts[a]!.total,
+  );
+  const stats: RecapStats = {
+    columns: ['VP', 'Cities', 'Road', 'Knights'],
+    rows: order.map((p) => ({
+      playerId: p,
+      values: [pts[p]!.total, pts[p]!.cities, s.longest.lengths[p] ?? 0, s.knights[p] ?? 0],
+    })),
+  };
   const rounds = `${s.round} ${s.round === 1 ? 'round' : 'rounds'}`;
   return {
     winners,
@@ -1151,6 +1214,8 @@ function resultFor(s: CatanState, winners: string[], early = false): GameResult 
         : `Led with ${top} points after ${rounds}`,
     reveal,
     recap: s.log,
+    roundName: 'Round',
+    stats,
     standings: s.seats.map((p) => ({
       playerId: p,
       outcome: winners.includes(p) ? (winners.length > 1 ? 'draw' : 'win') : 'loss',

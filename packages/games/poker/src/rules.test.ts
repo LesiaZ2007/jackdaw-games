@@ -314,6 +314,40 @@ describe('the game', () => {
     ]);
   });
 
+  it('recaps each hand with a tag, hidden cards in secret, and per-player stats', () => {
+    let s = deal(ids, { length: '15 hands' });
+    s = {
+      ...s,
+      hole: { a: ['Ah', 'Ad'], b: ['2c', '7d'], c: ['3s', '8h'] },
+      deck: ['Ac', 'Ks', '9d', '5h', 'Jc', ...s.deck.slice(5)],
+    };
+    s = passive(s);
+    const hand = s.recap.find((e) => e.round === 1 && e.tag?.startsWith('+'))!;
+    expect(hand.tag).toBe('+40');
+    expect(hand.text).toMatch(/\{a\}/);
+    expect(JSON.stringify(game.getTableView(s))).not.toContain('recap');
+    for (let h = 1; h < 15; h++) s = act(passive(s), 'a', { type: 'deal' });
+    s = act(passive(s), 'a', { type: 'deal' });
+    const r = game.getResult(s)!;
+    expect(r.roundName).toBe('Hand');
+    expect(r.stats!.rows).toHaveLength(3);
+    expect(r.stats!.rows[0]!.values).toHaveLength(r.stats!.columns.length);
+    expect(r.recap.some((e) => e.key)).toBe(true);
+    for (const e of r.recap) expect(e.text).not.toMatch(/\b[abc]\b(?<!\{[abc])(?!\})/);
+  });
+
+  it('keeps an uncontested winner’s cards, and a fold’s, out of the public text', () => {
+    let s = deal();
+    const folder = s.toAct!;
+    s = act(s, folder, { type: 'fold' });
+    s = act(s, s.toAct!, { type: 'fold' });
+    expect(s.phase).toBe('done');
+    const e = s.recap.find((x) => x.round === 1 && x.secret)!;
+    expect(e.secret).toMatch(/held/);
+    expect(e.secret).toMatch(/folded/);
+    expect(e.text).not.toMatch(/[2-9TJQKA][shdc]\b/);
+  });
+
   it('plays random games to the end without losing a chip', () => {
     for (let seed = 1; seed <= 25; seed++) {
       const rng = createRng(seed);

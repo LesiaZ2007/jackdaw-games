@@ -78,13 +78,16 @@ const MARKS: Record<Role, ReactNode> = {
       <path d="M32 26v22" />
     </g>
   ),
-  /** A wolf's head in profile, howling. */
+  /** A wolf sitting up and howling, solid against the ring of the full moon. */
   wolf: (
-    <g {...line}>
-      <path d="M14 56c0-10 2-16 6-22l-6-20 12 8c4-2 6-2 8-2l14-12-4 14 8 6-6 4c2 8 0 16-4 24" />
-      <path d="M34 22l12-14" />
-      <circle cx="31" cy="27" r="2" fill="currentColor" />
-      <path d="M44 32c-4 2-8 2-10 0" />
+    <g>
+      <circle cx="45" cy="15" r="11.5" {...line} strokeWidth={2.6} />
+      <path
+        fill="currentColor"
+        d="M5 11L17.5 16 19.5 5.5 23.5 13 27 7.5 30.5 19C35 23.5 39 29 42 35 45 40.5 47 44.5 49.5 47.5 56 46.5 61 50.5 62 57.5L49 58 47 52 43 58H36.5L37 51C34 48 30 47 28.5 45L28 58H22.5L23.5 44C22.5 40 22 37 21 34L18.5 32.5 19.5 29.5C17 27 15 23 14 18.5L6.5 15.5 12.5 14.8Z"
+      />
+      <circle cx="21" cy="16.5" r="1.4" fill="var(--mf-paper, #fff)" />
+      <path d="M6 58.5h52" {...line} strokeWidth={3} />
     </g>
   ),
   /** An eye in a crystal ball on its stand. */
@@ -229,6 +232,20 @@ export function Village({ className }: { className?: string }) {
       ].map(([x, y]) => (
         <rect key={`${x}-${y}`} className="mf-sky__win" x={x} y={y} width="6" height="7" />
       ))}
+      {/* Eyes in the trees, only at night (mafia.css). */}
+      <g className="mf-sky__eyes">
+        {[
+          [24, 84],
+          [62, 88],
+          [508, 82],
+          [566, 90],
+        ].map(([x, y], i) => (
+          <g key={i} style={{ animationDelay: `${i * 1.7}s` }}>
+            <ellipse cx={x} cy={y} rx="1.8" ry="1.2" />
+            <ellipse cx={x! + 6} cy={y} rx="1.8" ry="1.2" />
+          </g>
+        ))}
+      </g>
     </svg>
   );
 }

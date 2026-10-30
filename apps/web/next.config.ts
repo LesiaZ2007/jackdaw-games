@@ -19,6 +19,7 @@ const config: NextConfig = {
     '@jackdaw/game-poker',
     '@jackdaw/game-secret-hitler',
     '@jackdaw/game-wavelength',
+    '@jackdaw/game-mafia',
     '@jackdaw/game-wordhoard',
     '@jackdaw/game-zap',
     '@jackdaw/game-fandango',

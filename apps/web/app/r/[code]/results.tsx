@@ -6,11 +6,13 @@ import {
   Lid,
   OutcomeChip,
   Plaque,
+  RecapStatsTable,
   RecapTimeline,
   Token,
   Verdict,
   type LobbyChat,
   type Outcome,
+  withNames,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
@@ -69,6 +71,7 @@ export function Results({
   const mine = standings.find((st) => st.playerId === s.me);
   const winnerNames = result.winners.map((id) => names[id] ?? 'Someone');
   const me = s.me ? byId.get(s.me) : undefined;
+  const summary = withNames(result.summary, names);
 
   // A game with its own end screen draws all of it (Secret Hitler's victory popup).
   const OwnResults = entry?.ui?.Results;
@@ -126,7 +129,11 @@ export function Results({
           outcome={outcome}
           title={title}
           avatar={sealAvatar}
-          detail={lostTo ? `${joinNames(winnerNames)} won. ${result.summary}.` : result.summary}
+          detail={
+            lostTo
+              ? `${joinNames(winnerNames)} won. ${summary.replace(/\.$/, '')}.`
+              : summary
+          }
         />
         {result.winners.length > 0 && !soleInSeal && (
           <div className="results__winners-wrap">
@@ -192,9 +199,11 @@ export function Results({
               </ol>
             </section>
           )}
-          <RecapTimeline events={result.recap} names={names} />
         </>
       )}
+      {/* Every game gets the numbers and the timeline, under its own reveal if it has one. */}
+      <RecapStatsTable stats={result.stats} names={names} me={s.me} />
+      <RecapTimeline events={result.recap} names={names} roundName={result.roundName} />
 
       <div className="dock">
         {isHost ? (

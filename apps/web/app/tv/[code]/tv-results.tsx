@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import type { LobbySnapshot, RecapEvent, Standing } from '@jackdaw/engine';
 import {
   BirdMark,
@@ -13,6 +14,7 @@ import {
 import { catalogEntry } from '@/lib/catalog';
 
 const RECAP_ROWS = 8;
+const SWAP_MS = 15_000;
 const OUTCOME: Record<Standing['outcome'], string> = { win: 'Won', loss: 'Lost', draw: 'Draw' };
 
 /**
@@ -46,7 +48,28 @@ export function TvResults({
       outcome: result.winners.includes(playerId) ? 'win' : 'loss',
     }));
   const recap: RecapEvent[] = result.recap;
-  const shown = recap.slice(0, RECAP_ROWS);
+  // Turning points first, in game order, then the rest fill any room left.
+  const shown = [...recap.filter((e) => e.key), ...recap.filter((e) => !e.key)]
+    .slice(0, RECAP_ROWS)
+    .sort((a, b) => recap.indexOf(a) - recap.indexOf(b));
+  const statsOf = new Map(
+    (result.stats?.rows ?? []).map((r) => [
+      r.playerId,
+      result
+        .stats!.columns.map((c, i) => (r.values[i] === undefined ? '' : `${c} ${r.values[i]}`))
+        .filter(Boolean)
+        .join(' · '),
+    ]),
+  );
+  const roundName = result.roundName ?? 'Round';
+  // A game with its own picture of the end takes turns with the recap, so the TV shows both.
+  const [panel, setPanel] = useState<'reveal' | 'recap'>('reveal');
+  const swaps = Boolean(TvReveal) && shown.length > 0;
+  useEffect(() => {
+    if (!swaps) return;
+    const t = setInterval(() => setPanel((p) => (p === 'reveal' ? 'recap' : 'reveal')), SWAP_MS);
+    return () => clearInterval(t);
+  }, [swaps]);
   const more = recap.length - shown.length;
   const winnerNames = result.winners.map((id) => names[id] ?? 'A player who left');
   const title =
@@ -99,9 +122,9 @@ export function TvResults({
               <li key={s.playerId} className={`tv-standing tv-standing--${s.outcome}`}>
                 {p ? <Token avatar={p.avatar} size={48} /> : <span className="tv-standing__gone" />}
                 <span className="tv-standing__name">{names[s.playerId] ?? 'Left the lobby'}</span>
-                {(s.team || s.role) && (
+                {(s.team || s.role || statsOf.get(s.playerId)) && (
                   <span className="tv-standing__role">
-                    {[s.team, s.role].filter(Boolean).join(', ')}
+                    {[s.team, s.role, statsOf.get(s.playerId)].filter(Boolean).join(', ')}
                   </span>
                 )}
                 <OutcomeChip outcome={s.outcome} className="tv-standing__outcome">
@@ -113,7 +136,7 @@ export function TvResults({
         </ol>
       </section>
 
-      {TvReveal ? (
+      {TvReveal && (panel === 'reveal' || shown.length === 0) ? (
         <section className="tv-reveal" aria-label="How it ended">
           <TvReveal result={result} players={players} />
         </section>
@@ -127,11 +150,18 @@ export function TvResults({
               {shown.map((e, i) => {
                 const line = recapLine(e, names);
                 return (
-                  <li key={i} className="tv-recap__event">
-                    {e.round !== undefined && <span className="tv-recap__round">{e.round}</span>}
+                  <li key={i} className="tv-recap__event" data-tone={e.tone}>
+                    {e.round !== undefined && (
+                      <span className="tv-recap__round" title={`${roundName} ${e.round}`}>
+                        {e.round}
+                      </span>
+                    )}
                     <span className="tv-recap__text">
-                      {line.actor && <b>{line.actor}: </b>}
-                      {line.text}
+                      <span>
+                        {line.actor && <b>{line.actor}: </b>}
+                        {line.text}
+                        {e.tag && <span className="tv-recap__tag">{withNames(e.tag, names)}</span>}
+                      </span>
                       {line.secret && <span className="tv-recap__secret">{line.secret}</span>}
                     </span>
                   </li>

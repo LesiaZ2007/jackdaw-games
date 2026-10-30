@@ -162,6 +162,77 @@
   background: color-mix(in srgb, var(--or) 22%, var(--paper));
   border-left: 3px solid var(--or);
 }
+.jd-recap__line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+.jd-recap__tag {
+  padding: 1px 8px;
+  font: 800 12px/1.4 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+}
+.jd-recap__event[data-tone] {
+  padding-left: 10px;
+  border-left: 3px solid var(--ink-2);
+}
+.jd-recap__event[data-tone='good'] {
+  border-left-color: var(--vert);
+}
+.jd-recap__event[data-tone='good'] .jd-recap__tag {
+  color: var(--on-fill);
+  background: var(--vert);
+}
+.jd-recap__event[data-tone='bad'] {
+  border-left-color: var(--danger);
+}
+.jd-recap__event[data-tone='bad'] .jd-recap__tag {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 70%, transparent);
+  background: color-mix(in srgb, var(--gules) 12%, var(--paper));
+}
+.jd-recap__event[data-key] > .jd-recap__line {
+  font-weight: 700;
+}
+
+.jd-stats {
+  display: grid;
+  gap: var(--space-2);
+}
+.jd-stats__scroll {
+  overflow-x: auto;
+}
+.jd-stats__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.jd-stats__table th,
+.jd-stats__table td {
+  padding: 6px 8px;
+  text-align: right;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
+  white-space: nowrap;
+}
+.jd-stats__table thead th {
+  font: 700 12px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+.jd-stats__table tbody th {
+  text-align: left;
+  font-weight: 700;
+}
+.jd-stats__table tr[data-me] {
+  background: color-mix(in srgb, var(--or) 16%, transparent);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .jd-sheet__panel,

@@ -14,6 +14,7 @@ import type { Reaction } from '@jackdaw/engine';
 import { castCounts, castFor, MODES, ROLE_INFO, SETTING, type Mode, type Role } from '../roles';
 import { killersFor, type MafiaOptions } from '../rules';
 import { Moon, RoleMark, Skyline, Village } from './art';
+import { Jackdaw } from './motion';
 import { MASTHEAD } from './words';
 import './mafia.css';
 
@@ -224,7 +225,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
       </header>
       <SettingSwitch options={options} setOptions={setOptions} />
       <div className="mf-lobby__wall">
-        {mode === 'Werewolf' && <Moon night={5} className="mf-lobby__moon" />}
+        {mode === 'Werewolf' ? <Moon night={5} className="mf-lobby__moon" /> : <Jackdaw />}
         <Places
           seats={seats}
           max={max}
@@ -278,7 +279,7 @@ export function MafiaTvLobby({
           </p>
         </header>
         <div className="mf-lobby__wall">
-          {mode === 'Werewolf' && <Moon night={5} className="mf-lobby__moon" />}
+          {mode === 'Werewolf' ? <Moon night={5} className="mf-lobby__moon" /> : <Jackdaw />}
           <Places seats={seats} max={15} mode={mode} reactions={reactions} tv />
           {mode === 'Mafia' ? (
             <Skyline className="mf-lobby__sky" />

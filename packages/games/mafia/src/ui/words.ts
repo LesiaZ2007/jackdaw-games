@@ -28,13 +28,40 @@ export const MASTHEAD_SHORT: Record<Mode, string> = {
 
 /** "Night 2", "Day 3": which edition this is. */
 export function edition(t: MafiaTableView): string {
-  if (t.phase === 'deal') return 'The deal';
-  if (t.phase === 'over') return 'Final edition';
-  if (isNight(t)) return `Night ${t.night}`;
+  const village = t.mode === 'Werewolf';
   // The Hunter shoots at dawn (before the day has started) or at dusk (after the vote).
-  if (t.phase === 'dawn' || (t.phase === 'hunter' && t.day < t.night)) return `Morning ${t.night}`;
+  const morning = t.phase === 'dawn' || (t.phase === 'hunter' && t.day < t.night);
+  if (t.phase === 'deal') return 'The deal';
+  if (t.phase === 'over') return village ? 'The end' : 'Final edition';
+  if (village) {
+    if (isNight(t)) return `The ${ordinal(t.night)} night`;
+    if (morning) return `The ${ordinal(t.night)} dawn`;
+    return `The ${ordinal(t.day)} day`;
+  }
+  if (isNight(t)) return `Night ${t.night}`;
+  if (morning) return `Morning ${t.night}`;
   return `Day ${t.day}`;
 }
+
+const ORDINALS = [
+  'first',
+  'second',
+  'third',
+  'fourth',
+  'fifth',
+  'sixth',
+  'seventh',
+  'eighth',
+  'ninth',
+  'tenth',
+  'eleventh',
+  'twelfth',
+  'thirteenth',
+  'fourteenth',
+  'fifteenth',
+];
+/** "first", "second"… as a chronicle counts its days (numbers past the fifteenth). */
+const ordinal = (n: number) => ORDINALS[n - 1] ?? `${n}th`;
 
 function roleOf(t: MafiaTableView, id: string): Role | null {
   return t.deaths.find((d) => d.id === id)?.role ?? null;

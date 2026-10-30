@@ -46,7 +46,8 @@ export const NIGHT_MS = 75_000;
 export const WITCH_MS = 30_000;
 export const DAWN_MS = 9_000;
 export const VOTE_MS = 60_000;
-export const DUSK_MS = 9_000;
+/** Long enough to read who voted for whom. */
+export const DUSK_MS = 15_000;
 export const HUNTER_MS = 30_000;
 const TALK_MS: Record<(typeof TALK)[number], number> = {
   Off: 0,

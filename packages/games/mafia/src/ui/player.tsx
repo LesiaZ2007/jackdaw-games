@@ -13,6 +13,7 @@ import { ROLE_INFO } from '../roles';
 import type { MafiaAction, MafiaPlayerView } from '../rules';
 import { CardBack, PrintedHead, useCurtain, useFreshDead, Weather } from './motion';
 import { useNarrator, VoiceButton } from './narrator';
+import { VoteBoard } from './vote';
 import {
   Masthead,
   Pips,
@@ -96,11 +97,12 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       isPicked = true;
       tags.push(PICK_MARK[p.act]);
     }
+    const by: string[] = [];
     if (v.packPicks)
       for (const [who, target] of Object.entries(v.packPicks))
         if (who !== v.me && target === id) {
           marked = true;
-          tags.push(`${name(who)}’s pick`);
+          by.push(who);
         }
     for (const c of v.checks)
       if (c.target === id && v.role === 'sheriff')
@@ -118,6 +120,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       role: id === v.me ? null : (v.known[id] ?? null),
       tags,
       picked: isPicked,
+      by,
       ok,
       marked,
       lover: v.lover === id || (!!v.lovers && v.lovers.includes(id)),
@@ -141,6 +144,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       <div className="mf-board">
         {v.phase === 'deal' ? (
           <DealCard v={v} />
+        ) : v.phase === 'dusk' && v.lastVote ? (
+          <VoteBoard t={v} players={players} />
         ) : (
           <Placards
             t={v}

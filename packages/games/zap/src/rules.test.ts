@@ -115,6 +115,26 @@ describe('Zap', () => {
     expect(ranking(s)).toEqual(['wren', 'rook', 'finch']);
     expect(result.standings!.map((x) => x.outcome)).toEqual(['win', 'loss', 'loss']);
     expect(result.highlights![0]!.award).toBe('Fastest puzzle');
+    // The recap tells the race: who was first, the last call, and who ran out of time.
+    expect(result.roundName).toBe('Puzzle');
+    expect(result.recap[0]).toMatchObject({ tag: 'First', tone: 'good' });
+    expect(result.recap.find((e) => e.tag === 'Last call')).toMatchObject({ key: true });
+    expect(result.recap.at(-1)).toMatchObject({ tag: "Time's up", tone: 'bad', key: true });
+    expect(result.recap.at(-1)!.text).toContain('{finch}');
+    expect(result.recap.every((e) => !/wren|rook|finch/.test(e.text.replace(/\{\w+\}/g, '')))).toBe(
+      true,
+    );
+    expect(result.stats!.columns).toEqual(['Solved', 'Time', 'Quickest']);
+    expect(result.stats!.rows.map((r) => r.playerId)).toEqual(['wren', 'rook', 'finch']);
+    expect(result.stats!.rows[0]!.values[0]).toBe('2/2');
+  });
+
+  it('keeps the recap out of the views mid-race', () => {
+    let s = start(['wren', 'rook'], '5×5', 2);
+    s = solveFor(s, 'wren', 10_000);
+    expect(s.recap[0]).toMatchObject({ tag: 'First', tone: 'good' });
+    expect(JSON.stringify(zap.getTableView(s))).not.toContain('recap');
+    expect(JSON.stringify(zap.getPlayerView(s, 'rook'))).not.toContain('recap');
   });
 
   it('ends at once when the last player finishes', () => {

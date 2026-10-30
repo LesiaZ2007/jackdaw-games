@@ -359,6 +359,44 @@ describe('hidden information', () => {
   });
 });
 
+describe('recap', () => {
+  it('keeps the spymaster’s key out of the views and in the clue’s secret', () => {
+    const s = act(clue(fixed()), 'ben', { type: 'guess', index: 0 });
+    expect(JSON.stringify(codenames.getTableView(s))).not.toContain('still needed');
+    expect(JSON.stringify(codenames.getPlayerView(s, 'eli'))).not.toContain('still needed');
+    const r = codenames.getResult(act(s, 'ben', { type: 'guess', index: 24 }))!;
+    const clueEvent = r.recap.find((e) => e.tag === 'RIVER 2')!;
+    expect(clueEvent.round).toBe(1);
+    expect(clueEvent.secret).toContain(`the assassin was ${WORDS[24]}`);
+    expect(clueEvent.text).not.toContain(WORDS[24]!);
+  });
+
+  it('tags guesses and turns, marks the turning points, and has stats winners first', () => {
+    let s = act(clue(fixed()), 'ben', { type: 'guess', index: 0 });
+    s = act(s, 'ben', { type: 'guess', index: 24 });
+    const r = codenames.getResult(s)!;
+    expect(r.roundName).toBe('Turn');
+    const tags = r.recap.map((e) => e.tag);
+    expect(tags).toContain('Hit');
+    expect(tags).toContain('Assassin!');
+    expect(r.recap.find((e) => e.tag === 'Assassin!')).toMatchObject({ tone: 'bad', key: true });
+    expect(r.recap.at(-1)).toMatchObject({ tag: '1 found', tone: 'bad', key: true });
+    expect(r.recap.every((e) => !/\b(ana|ben|dee)\b/.test(e.text.replace(/\{\w+\}/g, '')))).toBe(
+      true,
+    );
+    expect(r.stats!.columns).toEqual(['Clues', 'Guesses', 'Hits']);
+    expect(r.stats!.rows).toHaveLength(6);
+    expect(
+      r
+        .stats!.rows.slice(0, 3)
+        .map((x) => x.playerId)
+        .sort(),
+    ).toEqual(['dee', 'eli', 'fay']);
+    expect(r.stats!.rows.find((x) => x.playerId === 'ben')!.values).toEqual([0, 2, 1]);
+    expect(r.stats!.rows.find((x) => x.playerId === 'ana')!.values).toEqual([1, 0, 1]);
+  });
+});
+
 describe('outcomes and chat', () => {
   it('works out the latest guess from public data', () => {
     let s = clue(fixed());

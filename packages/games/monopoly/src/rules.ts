@@ -4,6 +4,7 @@ import {
   type GameModule,
   type GameResult,
   type RecapEvent,
+  type RecapStats,
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
@@ -324,8 +325,56 @@ function note(
   if (s.log.length > LOG) s.log.splice(0, s.log.length - LOG);
 }
 
-function recap(s: MonopolyState, actor: string, text: string) {
-  s.recap.push({ round: s.round, actor, text });
+function recap(
+  s: MonopolyState,
+  actor: string,
+  text: string,
+  chip: Pick<RecapEvent, 'tag' | 'tone' | 'key' | 'secret'> = {},
+) {
+  s.recap.push({ round: s.round, actor, text, ...chip });
+}
+
+/** A rent this big is a moment of its own. */
+const BIG_RENT = 300;
+/** Rent or a building so big it is a turning point. */
+const HUGE_RENT = 600;
+
+const groupName = (space: number) => {
+  const d = deedAt(space);
+  return d?.kind === 'street' ? d.group.replace(/^./, (c) => c.toUpperCase()) : 'Railroads';
+};
+
+/**
+ * The sets (colour groups, and the railroads) this player holds in full, by their first space.
+ * Compared before and after a deed changes hands to spot a monopoly being completed.
+ */
+function setsHeld(s: MonopolyState, id: string): number[] {
+  const out = new Set<number>();
+  for (const d of ownedBy(s, id)) {
+    if (deedAt(d)?.kind === 'utility') continue;
+    if (setOf(d).every((x) => holding(s, x)?.owner === id)) out.add(setOf(d)[0]!);
+  }
+  return [...out];
+}
+
+/** Recaps each set `id` completed since `before`. */
+function recapSets(s: MonopolyState, id: string, before: number[]) {
+  for (const first of setsHeld(s, id)) {
+    if (before.includes(first)) continue;
+    const name = groupName(first);
+    recap(
+      s,
+      id,
+      deedAt(first)?.kind === 'street'
+        ? `{${id}} completed the ${name} set.`
+        : `{${id}} now owns every railroad.`,
+      {
+        tag: deedAt(first)?.kind === 'street' ? `${name} set` : 'Railroads',
+        tone: 'good',
+        key: true,
+      },
+    );
+  }
 }
 
 /** True when one player owns every deed in a colour group. */
@@ -414,6 +463,7 @@ function charge(s: MonopolyState, debt: Debt) {
 /** Hand a bankrupt player's estate to whoever they owe, or back to the bank. */
 function bankrupt(s: MonopolyState, id: string, to: string | null) {
   const p = s.seats[id]!;
+  const deedCount = ownedBy(s, id).length;
   // Sell every building back to the bank first.
   for (const d of ownedBy(s, id)) {
     const h = holding(s, d)!;
@@ -443,7 +493,12 @@ function bankrupt(s: MonopolyState, id: string, to: string | null) {
   }
   const text = to ? `{${id}} is bankrupt and everything goes to {${to}}.` : `{${id}} is bankrupt.`;
   note(s, 'out', text, { by: id });
-  recap(s, id, text);
+  recap(s, id, text, {
+    tag: 'Bankrupt',
+    tone: 'bad',
+    key: true,
+    secret: `Left with ${deedCount} ${deedCount === 1 ? 'deed' : 'deeds'}.`,
+  });
 }
 
 /* ------------------------------------------------------------------ moving */
@@ -470,6 +525,7 @@ function toJail(s: MonopolyState, id: string) {
   p.tries = 0;
   if (id === s.turn) s.after = 'done';
   note(s, 'jail', `{${id}} went to Jail.`, { by: id });
+  recap(s, id, `{${id}} went to Jail.`, { tag: 'Jail', tone: 'bad' });
 }
 
 function draw(s: MonopolyState, deck: Deck): string {
@@ -501,6 +557,11 @@ function land(s: MonopolyState, id: string, rng: Rng, card: 'double' | 'ten' | n
           by: id,
           amount: s.pot,
         });
+        if (s.pot >= 500)
+          recap(s, id, `{${id}} took ${money(s.pot)} from Free Parking.`, {
+            tag: `+${money(s.pot)}`,
+            tone: 'good',
+          });
         p.cash += s.pot;
         s.pot = 0;
       }
@@ -538,6 +599,12 @@ function land(s: MonopolyState, id: string, rng: Rng, card: 'double' | 'ten' | n
         amount: rent,
         space: p.pos,
       });
+      if (rent >= BIG_RENT)
+        recap(s, id, `{${id}} paid {${h.owner}} ${money(rent)} rent for ${nameOf(s, p.pos)}.`, {
+          tag: `-${money(rent)}`,
+          tone: 'bad',
+          ...(rent >= HUGE_RENT ? { key: true } : {}),
+        });
       charge(s, { from: id, to: h.owner, amount: rent, why: 'rent' });
       return;
     }
@@ -626,6 +693,12 @@ function clock(s: MonopolyState, now: number) {
 }
 
 function finish(s: MonopolyState, now: number, winners: string[], ending: string) {
+  if (winners[0])
+    recap(s, winners[0], `{${winners[0]}} wins. ${ending}`, {
+      tag: money(netWorth(s, winners[0])),
+      tone: 'good',
+      key: true,
+    });
   s.winners = winners;
   s.ending = ending;
   s.phase = 'show';
@@ -765,11 +838,13 @@ function roll(s: MonopolyState, id: string, rng: Rng) {
 
 function buy(s: MonopolyState, id: string, at: number, price: number, how: string) {
   const p = s.seats[id]!;
+  const before = setsHeld(s, id);
   p.cash -= price;
   s.deeds[String(at)] = { owner: id, mortgaged: false, houses: 0 };
   const text = `{${id}} ${how} ${nameOf(s, at)} for ${money(price)}.`;
   note(s, 'buy', text, { by: id, space: at, amount: price });
-  recap(s, id, text);
+  recap(s, id, text, { tag: money(price) });
+  recapSets(s, id, before);
 }
 
 function closeAuction(s: MonopolyState) {
@@ -843,7 +918,16 @@ function build(s: MonopolyState, id: string, at: number) {
     s.bankHotels -= 1;
     s.bankHouses += 4;
   } else s.bankHouses -= 1;
+  const first = !setHasBuildings(s, at);
   h.houses += 1;
+  if (h.houses === 5)
+    recap(s, id, `{${id}} built a hotel on ${nameOf(s, at)}.`, {
+      tag: 'Hotel',
+      tone: 'good',
+      ...(s.recap.every((e) => e.tag !== 'Hotel') ? { key: true } : {}),
+    });
+  else if (first)
+    recap(s, id, `{${id}} began building on ${nameOf(s, at)}.`, { tag: 'Houses', tone: 'good' });
   note(s, 'build', `{${id}} built ${h.houses === 5 ? 'a hotel' : 'a house'} on ${nameOf(s, at)}.`, {
     by: id,
     space: at,
@@ -1036,6 +1120,19 @@ function resultOf(s: MonopolyState, winners: string[], summary: string): GameRes
       rounds: s.round,
     } satisfies MonopolyReveal,
     recap: s.recap,
+    roundName: 'Round',
+    stats: {
+      columns: ['Worth', 'Deeds', 'Rent'],
+      rows: [...s.players]
+        .sort(
+          (a, b) =>
+            Number(winners.includes(b)) - Number(winners.includes(a)) || worth[b]! - worth[a]!,
+        )
+        .map((id) => ({
+          playerId: id,
+          values: [money(worth[id]!), ownedBy(s, id).length, money(s.rent[id] ?? 0)],
+        })),
+    } satisfies RecapStats,
     standings: s.players.map((id) => ({
       playerId: id,
       outcome:
@@ -1209,6 +1306,8 @@ function act(s: MonopolyState, id: string, a: MonopolyAction, rng: Rng, now: num
           throw new GameError('NOT_NOW', 'Wait for the auction to finish.');
         checkSide(s, o.from, o.give, true);
         checkSide(s, o.to, o.get, true);
+        const beforeFrom = setsHeld(s, o.from);
+        const beforeTo = setsHeld(s, o.to);
         hand(s, o.from, o.to, o.give);
         hand(s, o.to, o.from, o.get);
         // An accepted deed can't be promised twice.
@@ -1218,7 +1317,9 @@ function act(s: MonopolyState, id: string, a: MonopolyAction, rng: Rng, now: num
         );
         const text = `{${o.to}} took {${o.from}}'s trade: ${describeSide(o.give, s.names)} for ${describeSide(o.get, s.names)}.`;
         note(s, 'trade', text, { by: o.to });
-        recap(s, o.to, text);
+        recap(s, o.to, text, { tag: 'Trade' });
+        recapSets(s, o.from, beforeFrom);
+        recapSets(s, o.to, beforeTo);
         break;
       }
       note(

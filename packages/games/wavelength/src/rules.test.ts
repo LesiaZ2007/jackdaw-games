@@ -559,3 +559,33 @@ describe('who the game waits on', () => {
     expect(game.waitingOn!(c).sort()).toEqual(callersOf(c).sort());
   });
 });
+
+describe('recap', () => {
+  it('keeps the target and the other card out of the views, and in the clue’s secret', () => {
+    const s0 = withTarget(start(), 61);
+    const s1 = clue(s0);
+    expect(JSON.stringify(game.getTableView(s1))).not.toContain('other card');
+    expect(JSON.stringify(game.getPlayerView(s1, s1.round.psychic))).not.toContain('other card');
+    const event = s1.recap.at(-1)!;
+    expect(event.text).toContain(`{${s1.round.psychic}}`);
+    expect(event.text).not.toContain('61');
+    expect(event.secret).toMatch(/target was at 61\. The other card was .+ to .+\./);
+  });
+
+  it('tags rounds, flags the turning points and reports clue stats, winners first', () => {
+    let s = start(six, { length: 'Short' });
+    const team = s.round.team;
+    s = { ...s, scores: { sun: 0, moon: 0, [team]: 5 } };
+    const psychic = s.round.psychic;
+    s = guessAt(withTarget(clue(s), 50), 50);
+    s = act(s, 'a', { type: 'next', after: s.round.n });
+    const r = game.getResult(s)!;
+    expect(r.roundName).toBe('Round');
+    expect(r.recap.at(-1)).toMatchObject({ tag: 'Bullseye!', tone: 'good', key: true });
+    expect(r.recap.at(-1)!.secret).toContain('target was at 50');
+    expect(r.stats!.columns).toEqual(['Clues', 'Points', 'Bullseyes']);
+    expect(r.stats!.rows).toHaveLength(6);
+    expect(r.stats!.rows.slice(0, 3).every((x) => s.teams[x.playerId] === team)).toBe(true);
+    expect(r.stats!.rows.find((x) => x.playerId === psychic)!.values).toEqual([1, 4, 1]);
+  });
+});

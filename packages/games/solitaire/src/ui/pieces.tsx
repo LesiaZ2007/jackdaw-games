@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import type { ScreenPlayer } from '@jackdaw/ui';
-import { cardText, isRed, rankOf, suitOf, SUITS, type Card, type Suit } from '../cards';
+import { cardText, isRed, suitOf, SUITS, type Card, type Suit } from '../cards';
 import type { FoundationView, SeatView, Source } from '../rules';
 
 const SUIT_PATH: Record<Suit, string> = {
@@ -20,181 +20,6 @@ export function SuitMark({ suit }: { suit: Suit }) {
   );
 }
 
-/** Where the pips go on each number card, on a 50 by 70 card. Ones below the middle are upside down. */
-const L = 17;
-const C = 25;
-const R = 33;
-const PIPS: Record<number, [number, number][]> = {
-  2: [
-    [C, 12],
-    [C, 58],
-  ],
-  3: [
-    [C, 12],
-    [C, 35],
-    [C, 58],
-  ],
-  4: [
-    [L, 12],
-    [R, 12],
-    [L, 58],
-    [R, 58],
-  ],
-  5: [
-    [L, 12],
-    [R, 12],
-    [C, 35],
-    [L, 58],
-    [R, 58],
-  ],
-  6: [
-    [L, 12],
-    [R, 12],
-    [L, 35],
-    [R, 35],
-    [L, 58],
-    [R, 58],
-  ],
-  7: [
-    [L, 12],
-    [R, 12],
-    [C, 23.5],
-    [L, 35],
-    [R, 35],
-    [L, 58],
-    [R, 58],
-  ],
-  8: [
-    [L, 12],
-    [R, 12],
-    [C, 23.5],
-    [L, 35],
-    [R, 35],
-    [C, 46.5],
-    [L, 58],
-    [R, 58],
-  ],
-  9: [
-    [L, 12],
-    [R, 12],
-    [L, 27.3],
-    [R, 27.3],
-    [C, 35],
-    [L, 42.7],
-    [R, 42.7],
-    [L, 58],
-    [R, 58],
-  ],
-  10: [
-    [L, 12],
-    [R, 12],
-    [C, 19.7],
-    [L, 27.3],
-    [R, 27.3],
-    [L, 42.7],
-    [R, 42.7],
-    [C, 50.3],
-    [L, 58],
-    [R, 58],
-  ],
-};
-
-/** The court cards' pictures, drawn on 24 units: a crown, a coronet and a plumed cap. */
-const COURT: Record<string, string> = {
-  K: 'M3 18L5 7l4.5 5L12 4l2.5 8L19 7l2 11zM3 19.5h18V22H3z',
-  Q: 'M4 18c2-7 5-9 8-12 3 3 6 5 8 12zM4 19.5h16V22H4zM12 1.6a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4z',
-  J: 'M4 18c0-7 4-9 8-9s8 2 8 9zM3 19.5h18V22H3zM14 9c2-5 6-7 8-6.5-2 2.5-5 5.5-7 7.5z',
-};
-
-/** A suit mark of size `size` centred on (x, y), upside down when `flip`. */
-function Pip({
-  suit,
-  x,
-  y,
-  size,
-  flip,
-}: {
-  suit: Suit;
-  x: number;
-  y: number;
-  size: number;
-  flip?: boolean;
-}) {
-  const at = `translate(${x - size / 2} ${y - size / 2}) scale(${size / 24})`;
-  return <path d={SUIT_PATH[suit]} transform={flip ? `rotate(180 ${x} ${y}) ${at}` : at} />;
-}
-
-/** The corner index: the rank with its suit under it. */
-function Index({ card, suit }: { card: Card; suit: Suit }) {
-  const ten = card[0] === 'T';
-  return (
-    <>
-      <text
-        x="6"
-        y="10.5"
-        textAnchor="middle"
-        fontSize={ten ? 9 : 11}
-        letterSpacing={ten ? -0.8 : 0}
-      >
-        {ten ? '10' : card[0]}
-      </text>
-      <Pip suit={suit} x={6} y={15.5} size={6.5} />
-    </>
-  );
-}
-
-/**
- * A full printed face (2026-10-30: "the full card pictures"): the index in two corners, the
- * pips laid out as on a real card, and a framed picture on the jack, queen and king.
- */
-function Face({ card }: { card: Card }) {
-  const suit = suitOf(card);
-  const rank = rankOf(card);
-  const court = COURT[card[0]!];
-  return (
-    <svg className="sol-card__face" viewBox="0 0 50 70" aria-hidden="true" fill="currentColor">
-      <Index card={card} suit={suit} />
-      <g transform="rotate(180 25 35)">
-        <Index card={card} suit={suit} />
-      </g>
-      {rank === 1 && <Pip suit={suit} x={25} y={35} size={22} />}
-      {PIPS[rank]?.map(([x, y], i) => (
-        <Pip key={i} suit={suit} x={x} y={y} size={9} flip={y > 35} />
-      ))}
-      {court && (
-        <>
-          <rect
-            x="12"
-            y="8"
-            width="26"
-            height="54"
-            rx="1.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="0.9"
-          />
-          <rect
-            x="14"
-            y="10"
-            width="22"
-            height="50"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="0.4"
-          />
-          {[false, true].map((flip) => (
-            <g key={String(flip)} transform={flip ? 'rotate(180 25 35)' : undefined}>
-              <path d={court} transform="translate(17 13) scale(0.667)" />
-              <Pip suit={suit} x={25} y={29} size={6} />
-            </g>
-          ))}
-          <path d="M14 35h22" stroke="currentColor" strokeWidth="0.4" />
-        </>
-      )}
-    </svg>
-  );
-}
-
 const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
 
 /** A player's tint, for their deck's backs and the tab on cards they put up. */
@@ -202,11 +27,11 @@ export const tintOf = (players: ScreenPlayer[], id: string) =>
   `var(--tint-${players.find((p) => p.id === id)?.avatar.tint ?? 'slate'}, var(--sable))`;
 
 /**
- * A printed playing card. On laptops and TVs it has the full face (see `Face`). On phones,
- * where cards are small, it's the rank in the corner and the suit large in the middle (2026-10-30:
- * "on phones, it should only be the suit"), and a card with another fanned over it shows a tiny
- * suit in its top right corner instead ("if it's under another card, have a tiny symbol"). Face down it shows the deck's
- * back in its owner's tint. Its width comes from `--w` (set by whatever holds it).
+ * A printed playing card: the rank in the corner and the suit large in the middle. A card with
+ * another fanned over it shows a tiny suit in its top right corner instead, so it still reads
+ * (2026-10-30: "if it's under another card, have a tiny symbol"; full faces were tried and
+ * dropped: "let's go back to just showing the suit"). Face down it shows the deck's back in its
+ * owner's tint. Its width comes from `--w` (set by whatever holds it).
  */
 export function PlayingCard({
   card,
@@ -245,14 +70,11 @@ export function PlayingCard({
   const suit = suitOf(card);
   const body: ReactNode = (
     <>
-      <Face card={card} />
-      <span className="sol-card__simple">
-        <b className="sol-card__rank" aria-hidden="true">
-          {card[0] === 'T' ? '10' : card[0]}
-        </b>
-        <span className={covered ? 'sol-card__corner' : 'sol-card__pip'} aria-hidden="true">
-          <SuitMark suit={suit} />
-        </span>
+      <b className="sol-card__rank" aria-hidden="true">
+        {card[0] === 'T' ? '10' : card[0]}
+      </b>
+      <span className={covered ? 'sol-card__corner' : 'sol-card__pip'} aria-hidden="true">
+        <SuitMark suit={suit} />
       </span>
       {tab && <span className="sol-card__tab" aria-hidden="true" />}
     </>

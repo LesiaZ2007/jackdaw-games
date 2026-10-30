@@ -157,6 +157,10 @@ export interface ScreenExtras {
   players: ScreenPlayer[];
   /** Table talk, for a `fullBleed` game to draw in its own style (phones only; never a TV). */
   chat?: LobbyChat;
+  /** The lobby's host (Mafia: the host's phone reads the narration when there's no TV). */
+  hostId?: string;
+  /** How many TV displays are watching the lobby right now. */
+  displays?: number;
 }
 
 /**

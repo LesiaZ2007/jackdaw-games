@@ -258,6 +258,16 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 58h48" />
     </g>
   ),
+  /** A fedora under a crescent moon (Mafia, and Werewolf by night). */
+  fedora: (
+    <g {...stroke(3.4)}>
+      <path d="M44 6a8 8 0 1 0 8 12 6.5 6.5 0 0 1-8-12z" />
+      <path d="M6 44c8 6 44 6 52 0" />
+      <path d="M14 43c-1-9 2-19 8-22 4-2 7 2 10 2s6-4 10-2c6 3 9 13 8 22" />
+      <path d="M15 37c10 3 24 3 34 0v5c-10 3-24 3-34 0z" fill="currentColor" />
+      <path d="M8 56h48" />
+    </g>
+  ),
   /** Three island tiles with a settlement where they meet (Catan). */
   hexes: (
     <g {...stroke(3.4)}>

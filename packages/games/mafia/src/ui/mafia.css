@@ -1,0 +1,1372 @@
+/*
+ * Mafia: two printed worlds in the compendium.
+ * The city is a 1920s tabloid, newsprint and press ink with a red EXTRA stamp; the players are
+ * mugshot placards against a line-up's height chart; at night the page turns to the night
+ * edition. The village (Werewolf) is a woodcut chapbook, linen and forest ink and blood red;
+ * the players are cottages; at night it's indigo under a moon that waxes each night.
+ * Every colour is a token in these first blocks. Flat print: no gradients, glows or italics.
+ */
+.mf {
+  --mf-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --mf-cream: #f6f0e1;
+  --mf-purpure: #6a3f74;
+  --mf-vert: #30634a;
+  color: var(--mf-ink);
+  background: var(--mf-paper);
+  transition:
+    background-color 900ms var(--mf-ease),
+    color 900ms var(--mf-ease);
+}
+
+/* The city by day: newsprint. */
+.mf--city {
+  --mf-paper: #e8e2d2;
+  --mf-paper-2: #dcd4bf;
+  --mf-ink: #18171b;
+  --mf-ink-2: #4b4740;
+  --mf-red: #b0261c;
+  --mf-sky: #18171b;
+  --mf-win: #e8e2d2;
+  --mf-plate: #18171b;
+  --mf-plate-ink: #ece5d3;
+  --mf-chart: #c9c0a8;
+}
+.mf--city[data-look='dark'] {
+  --mf-paper: #232226;
+  --mf-paper-2: #2e2d32;
+  --mf-ink: #e8e2d2;
+  --mf-ink-2: #aaa59a;
+  --mf-red: #d0493d;
+  --mf-sky: #111013;
+  --mf-win: #3b3a40;
+  --mf-plate: #0f0f11;
+  --mf-chart: #3a393f;
+}
+/* The night edition. */
+.mf--city.is-night {
+  --mf-paper: #1c2130;
+  --mf-paper-2: #262c3e;
+  --mf-ink: #ece5d3;
+  --mf-ink-2: #a9afbd;
+  --mf-red: #d0473b;
+  --mf-sky: #0d1019;
+  --mf-win: #e3b25a;
+  --mf-plate: #0d1019;
+  --mf-chart: #313850;
+}
+.mf--city.is-night[data-look='dark'] {
+  --mf-paper: #141823;
+  --mf-paper-2: #1d2230;
+}
+
+/* The village by day: linen and woodcut ink. */
+.mf--village {
+  --mf-paper: #e4dcc6;
+  --mf-paper-2: #d5cbb0;
+  --mf-ink: #201d17;
+  --mf-ink-2: #554d3e;
+  --mf-red: #8e2a22;
+  --mf-sky: #2a3326;
+  --mf-win: #e4dcc6;
+  --mf-plate: #2f4a35;
+  --mf-plate-ink: #efe8d4;
+  --mf-chart: #cbbf9f;
+  --mf-moon: #f1e7c4;
+}
+.mf--village[data-look='dark'] {
+  --mf-paper: #22231f;
+  --mf-paper-2: #2d2e29;
+  --mf-ink: #e4dcc6;
+  --mf-ink-2: #aca592;
+  --mf-red: #c4473b;
+  --mf-sky: #121410;
+  --mf-win: #3a3b35;
+  --mf-plate: #2f4a35;
+  --mf-chart: #383a33;
+}
+.mf--village.is-night {
+  --mf-paper: #141a2a;
+  --mf-paper-2: #1e263b;
+  --mf-ink: #e8e0cc;
+  --mf-ink-2: #a7adbd;
+  --mf-red: #c4473b;
+  --mf-sky: #0a0d17;
+  --mf-win: #e9c46a;
+  --mf-plate: #0a0d17;
+  --mf-chart: #2b3450;
+}
+.mf--village.is-night[data-look='dark'] {
+  --mf-paper: #0f1420;
+  --mf-paper-2: #182033;
+}
+
+.mf-team-pack {
+  --mf-team: var(--mf-red);
+}
+.mf-team-town {
+  --mf-team: var(--mf-ink);
+}
+.mf-team-jester,
+.mf-team-killer,
+.mf-team-lovers {
+  --mf-team: var(--mf-purpure);
+}
+.is-night .mf-team-jester,
+.is-night .mf-team-killer,
+[data-look='dark'] .mf-team-jester,
+[data-look='dark'] .mf-team-killer {
+  --mf-team: #b98ac4;
+}
+
+/* ── Type ───────────────────────────────────────────────────────────────── */
+.mf-mast__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+}
+.mf-head {
+  margin: 0;
+  line-height: 0.92;
+  overflow-wrap: anywhere;
+  animation: mf-press 520ms var(--mf-ease) both;
+}
+.mf--city .mf-head {
+  font: 900 var(--step-4) / 0.9 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+}
+.mf--village .mf-head {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-4);
+}
+.mf-sub {
+  margin: 4px 0 0;
+  color: var(--mf-ink-2);
+  font-size: var(--step-0);
+  line-height: 1.3;
+}
+@keyframes mf-press {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+
+/* ── Masthead ───────────────────────────────────────────────────────────── */
+.mf-mast {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 0 6px;
+  border-bottom: 4px double var(--mf-ink);
+}
+.mf-mast__name {
+  font-size: clamp(22px, 6.4vw, 34px);
+  text-align: center;
+  white-space: nowrap;
+  min-width: 0;
+}
+.mf--phone .mf-mast {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.mf--phone .mf-mast__name {
+  font-size: clamp(19px, 5.4vw, 32px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mf-mast__ed {
+  font: 800 13px var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mf-ink-2);
+}
+.mf-mast__side {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+}
+.mf-clock {
+  font: 800 18px var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.mf-clock.is-low {
+  color: var(--mf-red);
+}
+.mf-voice {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+  padding: 0 6px;
+  border: 2px solid var(--mf-ink);
+  background: transparent;
+  color: var(--mf-ink);
+  cursor: pointer;
+  font: 800 12px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mf-voice.is-on {
+  background: var(--mf-ink);
+  color: var(--mf-paper);
+}
+.mf-voice:focus-visible,
+.mf-card__in:focus-visible,
+.mf-deal:focus-visible,
+.mf-switch__o:focus-visible,
+.mf-extra-role:focus-visible {
+  outline: 3px solid var(--mf-red);
+  outline-offset: 2px;
+}
+
+/* ── Phone: fits under the bar, never scrolls ───────────────────────────── */
+.mf--phone {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  gap: var(--space-2);
+  overflow: hidden;
+  padding: 4px var(--space-3) 0;
+  box-sizing: border-box;
+  position: relative;
+}
+.mf-front {
+  text-align: center;
+  position: relative;
+}
+.mf--phone .mf-head {
+  font-size: clamp(30px, 9vw, 52px);
+}
+.mf--village.mf--phone .mf-head {
+  font-size: clamp(30px, 8.6vw, 50px);
+}
+.mf-tapvoice {
+  margin: 4px 0 0;
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mf-red);
+}
+.mf-board {
+  min-height: 0;
+  container-type: size;
+  display: grid;
+}
+
+/* ── Placards ───────────────────────────────────────────────────────────── */
+.mf-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  gap: 6px;
+  height: 100%;
+  max-height: calc(var(--rows) * 150px);
+  align-self: center;
+}
+@container (min-width: 560px) {
+  .mf-cards:not(.mf-cards--tv) {
+    grid-template-columns: repeat(var(--cols-w), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows-w), minmax(0, 1fr));
+    max-height: calc(var(--rows-w) * 170px);
+  }
+}
+.mf-card {
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+.mf-card__in {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 44px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--mf-ink);
+  background: var(--mf-paper-2);
+  color: var(--mf-ink);
+  transition:
+    transform 200ms var(--mf-ease),
+    border-color 200ms;
+}
+button.mf-card__in {
+  cursor: pointer;
+}
+.mf-card__no {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font: 800 11px var(--font-plaque);
+  letter-spacing: 0.06em;
+  color: var(--mf-ink-2);
+}
+.mf-card__tok {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding-top: 8px;
+}
+.mf-card__name {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2px 4px 3px;
+  font: 800 14px / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mf-card__you {
+  opacity: 0.75;
+}
+.mf-card__role {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  font: 800 11px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mf-team, var(--mf-ink));
+}
+.mf-card__heart {
+  position: absolute;
+  top: 1px;
+  right: 4px;
+  color: var(--mf-red);
+  font-size: 16px;
+}
+.mf-card__tags {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  left: 30%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.mf-tag {
+  padding: 1px 4px;
+  background: var(--mf-red);
+  color: var(--mf-cream);
+  font: 800 10px / 1.2 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.mf-card.is-target .mf-card__in {
+  border-style: solid;
+}
+.mf-card.is-picked .mf-card__in {
+  border: 3px solid var(--mf-red);
+  transform: translateY(-2px);
+}
+.mf-card.is-marked:not(.is-picked) .mf-card__in {
+  outline: 2px dashed var(--mf-red);
+  outline-offset: -6px;
+}
+.mf-card.is-me .mf-card__in {
+  border-width: 3px;
+}
+.mf-card.is-dead .mf-card__in {
+  background: var(--mf-paper);
+  border-style: dashed;
+  color: var(--mf-ink-2);
+}
+.mf-card.is-dead .mf-card__tok {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+.mf-card__stamp {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.mf-card.is-dead .mf-card__stamp {
+  font: 900 clamp(14px, 22cqmin, 26px) / 1 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mf-red);
+}
+.mf--city .mf-card.is-dead .mf-card__stamp {
+  transform: rotate(-14deg);
+}
+
+/* City placards: a letter board under a height chart. */
+.mf--city .mf-card__in {
+  background-color: var(--mf-paper-2);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 13px,
+    var(--mf-chart) 13px 14px
+  );
+}
+.mf--city .mf-card__name {
+  background: var(--mf-plate);
+  color: var(--mf-plate-ink);
+}
+.mf--city .mf-card.is-dead .mf-card__in {
+  background-image: none;
+}
+
+/* Village placards: a cottage, the player at its door, a roof above. */
+.mf--village .mf-card__in {
+  clip-path: polygon(0 18%, 50% 0, 100% 18%, 100% 100%, 0 100%);
+  border: none;
+  background: var(--mf-paper-2);
+  box-shadow: inset 0 0 0 2px var(--mf-ink);
+  padding-top: 10%;
+}
+.mf--village .mf-card__in::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(0 18%, 50% 0, 100% 18%, 100% 22%, 50% 4%, 0 22%);
+  background: var(--mf-ink);
+}
+.mf--village .mf-card__name {
+  background: var(--mf-plate);
+  color: var(--mf-plate-ink);
+  font-family: var(--font-plaque);
+}
+.mf--village .mf-card.is-picked .mf-card__in {
+  box-shadow: inset 0 0 0 4px var(--mf-red);
+}
+.mf--village .mf-card.is-dead .mf-card__in {
+  clip-path: none;
+  border-radius: 46% 46% 0 0 / 28% 28% 0 0;
+  box-shadow: inset 0 0 0 2px var(--mf-ink-2);
+  padding-top: 0;
+}
+.mf--village .mf-card.is-dead .mf-card__in::before {
+  display: none;
+}
+.mf--village .mf-card.is-dead .mf-card__name {
+  background: transparent;
+  color: var(--mf-ink-2);
+}
+
+/* ── The deal: your card face down ──────────────────────────────────────── */
+.mf-deal {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  justify-self: center;
+  align-self: center;
+  height: min(100cqh, 520px);
+  aspect-ratio: 5 / 7;
+  max-width: 100cqw;
+  display: grid;
+  position: relative;
+}
+.mf-deal__back {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-3);
+  border: 2px solid var(--mf-ink);
+  outline: 1px solid var(--mf-plate-ink);
+  outline-offset: -8px;
+  background: var(--mf-plate);
+  color: var(--mf-plate-ink);
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: var(--space-4);
+}
+.mf-deal__seal {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--mf-red);
+  color: var(--mf-cream);
+  font: 900 64px var(--font-display);
+}
+.mf-deal.is-open .mf-deal__back {
+  display: none;
+}
+.mf-deal__face {
+  animation: mf-flip 420ms var(--mf-ease) both;
+}
+@keyframes mf-flip {
+  from {
+    transform: rotateY(90deg);
+  }
+}
+
+/* ── Role card ──────────────────────────────────────────────────────────── */
+.mf-role {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 2px solid var(--mf-ink);
+  outline: 1px solid var(--mf-ink);
+  outline-offset: -8px;
+  background: var(--mf-paper);
+  color: var(--mf-ink);
+  text-align: center;
+  min-height: 0;
+  height: 100%;
+}
+.mf-role__kicker {
+  font: 800 13px var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mf-ink-2);
+}
+.mf-role__art {
+  min-height: 0;
+  width: min(60%, 180px);
+  color: var(--mf-team);
+  display: grid;
+  place-items: center;
+}
+.mf-role__art svg {
+  width: 100%;
+  height: 100%;
+  max-height: 180px;
+}
+.mf-role__name {
+  margin: 0;
+  color: var(--mf-team);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-4);
+  line-height: 0.9;
+}
+.mf--city .mf-role__name {
+  font: 900 var(--step-4) / 0.9 var(--font-plaque);
+  text-transform: uppercase;
+}
+.mf-role__power {
+  margin: 0;
+  font-size: var(--step-0);
+  line-height: 1.3;
+  max-width: 32ch;
+}
+.mf-know {
+  font-size: var(--step-0);
+  line-height: 1.3;
+}
+.mf-know p {
+  margin: 4px 0;
+}
+.mf-know__checks {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+}
+.mf-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5) var(--space-4);
+  background: color-mix(in srgb, var(--mf-ink) 70%, transparent);
+  animation: mf-fade 220ms var(--mf-ease) both;
+}
+.mf-sheet .mf-role {
+  height: auto;
+  width: min(100%, 420px);
+  max-height: 100%;
+  overflow: auto;
+}
+.mf-sheet__hint {
+  font: 800 13px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mf-ink-2);
+}
+@keyframes mf-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ── Dock ───────────────────────────────────────────────────────────────── */
+.mf-dock {
+  display: grid;
+  gap: 6px;
+  padding: var(--space-2) 0 calc(var(--space-2) + env(safe-area-inset-bottom));
+  border-top: 4px double var(--mf-ink);
+}
+.mf-dock__title {
+  margin: 0;
+  font: 900 20px / 1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mf--village .mf-dock__title {
+  font: 800 26px / 1 var(--font-display);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.mf-dock__say {
+  margin: 0;
+  font-size: var(--step--1);
+  line-height: 1.3;
+  color: var(--mf-ink-2);
+}
+.mf-dock__result {
+  margin: 0;
+  font: 900 26px / 1 var(--font-plaque);
+  text-transform: uppercase;
+  color: var(--mf-red);
+}
+.mf-dock__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.mf-dock__row > :last-child:not(.mf-cardbtn) {
+  flex: 1;
+}
+.mf-dock .jd-plaque {
+  min-width: 0;
+}
+
+/* ── Scenery ────────────────────────────────────────────────────────────── */
+.mf-scene {
+  position: relative;
+  height: 30px;
+  margin-inline: calc(-1 * var(--space-3));
+  overflow: hidden;
+  pointer-events: none;
+}
+.mf-scene {
+  display: flex;
+}
+.mf-scene__sky {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+.mf-sky__town,
+.mf-sky__trees {
+  fill: var(--mf-sky);
+  color: var(--mf-sky);
+  transition: fill 900ms var(--mf-ease);
+}
+.mf-sky__trees {
+  opacity: 0.85;
+}
+.mf-sky__win {
+  fill: var(--mf-win);
+  transition: fill 900ms var(--mf-ease);
+}
+.mf-scene__moon {
+  position: absolute;
+  right: 12%;
+  top: 0;
+  height: 100%;
+}
+.mf-moon {
+  fill: var(--mf-moon, var(--mf-cream));
+}
+
+/* ── Deck list ──────────────────────────────────────────────────────────── */
+.mf-castlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.mf-castlist__r {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 800 var(--step--1) var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mf-castlist__r .mf-mark {
+  color: var(--mf-team);
+}
+
+/* ── Lobby ──────────────────────────────────────────────────────────────── */
+.mf-lobby {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 2px solid var(--mf-ink);
+  outline: 1px solid var(--mf-ink);
+  outline-offset: -7px;
+}
+.mf-lobby__mast {
+  text-align: center;
+  border-bottom: 4px double var(--mf-ink);
+  padding-bottom: var(--space-2);
+}
+.mf-lobby__mast .mf-mast__name {
+  font-size: clamp(30px, 7vw, 52px);
+  white-space: normal;
+}
+.mf-lobby__strap {
+  margin: 4px 0 0;
+  color: var(--mf-ink-2);
+  font-size: var(--step--1);
+}
+.mf--city .mf-lobby__strap {
+  font: 800 var(--step--1) var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mf-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 2px solid var(--mf-ink);
+}
+.mf-switch__o {
+  all: unset;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 6px 10px;
+  text-align: center;
+  cursor: pointer;
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mf-ink);
+}
+.mf-switch__o + .mf-switch__o {
+  border-left: 2px solid var(--mf-ink);
+}
+.mf-switch__o.is-on {
+  background: var(--mf-ink);
+  color: var(--mf-paper);
+}
+.mf-lobby__wall {
+  position: relative;
+  padding: var(--space-3) var(--space-2) 46px;
+  border: 2px solid var(--mf-ink);
+  background: var(--mf-paper-2);
+  overflow: hidden;
+}
+.mf--city .mf-lobby__wall {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0 21px,
+    var(--mf-chart) 21px 23px
+  );
+}
+.mf--village .mf-lobby__wall {
+  --mf-paper-2: #1a2236;
+  --mf-ink: #e8e0cc;
+  --mf-ink-2: #a7adbd;
+  --mf-sky: #0a0d17;
+  --mf-win: #e9c46a;
+  background: var(--mf-paper-2);
+  color: var(--mf-ink);
+  border-color: var(--mf-plate);
+}
+.mf-lobby__moon {
+  position: absolute;
+  top: 8px;
+  right: 14px;
+  width: 40px;
+  height: 40px;
+}
+/* The moon gets its own strip of sky above the cottages. */
+.mf--village .mf-lobby__wall {
+  padding-top: 56px;
+}
+.mf-lobby__sky {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 46px;
+}
+.mf-places {
+  position: relative;
+  z-index: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px 6px;
+}
+.mf-place {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+.mf-place__frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+}
+.mf-place__ghost {
+  width: 40px;
+  height: 52px;
+  border: 2px dashed var(--mf-ink-2);
+  border-radius: 50% 50% 4px 4px / 40% 40% 4px 4px;
+  opacity: 0.55;
+}
+.mf-place__add {
+  position: absolute;
+  inset: 0;
+}
+.mf-place__tap {
+  all: unset;
+  position: absolute;
+  inset: -4px;
+  cursor: pointer;
+}
+.mf-place__tap:focus-visible {
+  outline: 3px solid var(--mf-red);
+}
+.mf-place__plate {
+  display: grid;
+  justify-items: center;
+  max-width: 100%;
+  padding: 2px 6px;
+  background: var(--mf-plate);
+  color: var(--mf-plate-ink);
+  font: 800 12px / 1.1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-sizing: border-box;
+}
+.mf-place.is-open .mf-place__plate {
+  background: transparent;
+  color: var(--mf-ink-2);
+  border: 1px dashed var(--mf-ink-2);
+}
+.mf-place__no {
+  font-size: 10px;
+  opacity: 0.75;
+}
+.mf-place__name {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+.mf-place__you {
+  font-size: 9px;
+  color: var(--mf-red);
+  filter: brightness(1.6);
+}
+.mf-place.is-me .mf-place__plate {
+  outline: 2px solid var(--mf-red);
+}
+.mf-place.is-landing .mf-place__frame {
+  animation: mf-land 900ms var(--mf-ease) both;
+}
+@keyframes mf-land {
+  from {
+    transform: translateY(-24px);
+    opacity: 0;
+  }
+}
+/* Village places: each player in a cottage door. */
+.mf--village .mf-place__frame {
+  width: 64px;
+  height: 66px;
+  align-items: end;
+  padding-bottom: 4px;
+  box-sizing: border-box;
+}
+.mf--village .mf-place__frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--mf-plate);
+  clip-path: polygon(0 34%, 50% 0, 100% 34%, 100% 100%, 0 100%);
+}
+.mf--village .mf-place.is-open .mf-place__frame::before {
+  background: color-mix(in srgb, var(--mf-ink) 16%, transparent);
+}
+.mf--village .mf-place__frame > * {
+  position: relative;
+}
+.mf--village .mf-place__ghost {
+  display: none;
+}
+
+/* The cast, printed as a programme. */
+.mf-bill {
+  display: grid;
+  gap: var(--space-2);
+}
+.mf-bill__head {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-bottom: 2px solid var(--mf-ink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-2);
+}
+.mf-bill__head span {
+  font: 800 13px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--mf-ink-2);
+}
+.mf-bill__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 4px 12px;
+}
+.mf-bill__r {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 800 var(--step--1) var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mf-bill__r .mf-mark {
+  color: var(--mf-team);
+  flex: none;
+}
+.mf-bill__extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mf-bill__extras:empty {
+  display: none;
+}
+.mf-extra-role {
+  all: unset;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 4px 10px;
+  border: 2px dashed var(--mf-ink);
+  cursor: pointer;
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mf-extra-role.is-on {
+  border-style: solid;
+  background: var(--mf-ink);
+  color: var(--mf-paper);
+}
+.mf-bill__note {
+  margin: 0;
+  font-size: var(--step--1);
+  color: var(--mf-ink-2);
+}
+
+/* ── Results ────────────────────────────────────────────────────────────── */
+.mf-final {
+  padding: var(--space-3);
+  border: 2px solid var(--mf-ink);
+  outline: 1px solid var(--mf-ink);
+  outline-offset: -7px;
+  display: grid;
+  gap: var(--space-2);
+  text-align: center;
+}
+.mf-final .mf-mast__name {
+  font-size: var(--step-3);
+  border-bottom: 4px double var(--mf-ink);
+  padding-bottom: 4px;
+}
+.mf-final__line {
+  margin: 0;
+  font-size: var(--step-0);
+}
+.mf-final__cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 6px;
+  text-align: left;
+}
+.mf-final__c {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 2px solid var(--mf-ink);
+  background: var(--mf-paper-2);
+}
+.mf-final__c.is-won {
+  border-color: var(--mf-vert);
+  box-shadow: inset 4px 0 0 var(--mf-vert);
+}
+.mf-final__c.is-dead {
+  border-style: dashed;
+}
+.mf-final__who {
+  display: grid;
+  min-width: 0;
+  line-height: 1.15;
+}
+.mf-final__who b {
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mf-final__who span {
+  color: var(--mf-team);
+  font-weight: 800;
+}
+.mf-final__who small {
+  color: var(--mf-ink-2);
+  font-size: 14px;
+}
+.mf-final__mark {
+  width: 40px;
+  height: 40px;
+  color: var(--mf-team);
+}
+
+/* ── TV: the narrator's front page ──────────────────────────────────────── */
+.mf-tv {
+  position: relative;
+  isolation: isolate;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 20px 48px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 440px;
+  grid-template-rows: auto auto minmax(0, 1fr) 120px;
+  gap: 14px 44px;
+  overflow: hidden;
+}
+.mf-tv .mf-mast {
+  grid-column: 1 / -1;
+  padding: 0 0 10px;
+  border-bottom-width: 8px;
+}
+.mf-tv .mf-mast__name {
+  font-size: 78px;
+}
+.mf-tv .mf-mast__ed {
+  font-size: 30px;
+}
+.mf-tv .mf-clock {
+  font-size: 52px;
+}
+.mf-tv .mf-voice {
+  min-width: 64px;
+  min-height: 64px;
+  font-size: 24px;
+}
+.mf-tv .mf-voice svg {
+  width: 34px;
+  height: 34px;
+}
+.mf-tv__front {
+  position: relative;
+  grid-column: 1;
+  text-align: center;
+}
+.mf-tv__head.mf-head {
+  font-size: 112px;
+}
+.mf--village .mf-tv__head.mf-head {
+  font-size: 104px;
+}
+.mf-tv__sub.mf-sub {
+  font-size: 36px;
+  margin-top: 8px;
+}
+.mf-extra {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 4px 14px;
+  border: 5px solid var(--mf-red);
+  color: var(--mf-red);
+  font: 900 44px / 1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+  animation: mf-stamp 600ms 200ms var(--mf-ease) both;
+}
+@keyframes mf-stamp {
+  from {
+    opacity: 0;
+    transform: rotate(-4deg) scale(2.2);
+  }
+}
+.mf-tv__tap {
+  margin-top: 10px;
+  padding: 10px 20px;
+  border: 3px solid var(--mf-red);
+  background: transparent;
+  color: var(--mf-red);
+  font: 800 26px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mf-tv__table {
+  grid-column: 1;
+  min-height: 0;
+  display: grid;
+  container-type: size;
+}
+.mf-cards--tv {
+  gap: 14px;
+  max-height: none;
+}
+.mf-cards--tv .mf-card__name {
+  font-size: 30px;
+  padding: 4px 8px 6px;
+}
+.mf-cards--tv .mf-card__no {
+  font-size: 24px;
+  top: 4px;
+  left: 8px;
+}
+.mf-cards--tv .mf-card__tok {
+  padding-top: 16px;
+}
+.mf-cards--tv .mf-tag {
+  font-size: 24px;
+  padding: 2px 8px;
+}
+.mf-cards--tv .mf-card__role {
+  font-size: 24px;
+  bottom: 46px;
+}
+.mf-cards--tv .mf-card.is-dead .mf-card__stamp {
+  font-size: 54px;
+}
+.mf-cards--tv .mf-card__heart {
+  font-size: 34px;
+}
+.mf-tv__side {
+  grid-column: 2;
+  grid-row: 2 / 4;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 22px;
+  padding-left: 30px;
+  border-left: 4px double var(--mf-ink);
+  overflow: hidden;
+}
+.mf-tv__label {
+  margin: 0 0 6px;
+  font: 800 26px var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mf-ink-2);
+  border-bottom: 2px solid var(--mf-ink);
+}
+.mf-tv__progress {
+  margin: 0;
+  font: 900 38px / 1.05 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.mf-tv .mf-castlist {
+  display: grid;
+  gap: 6px;
+}
+.mf-tv .mf-castlist__r {
+  font-size: 28px;
+}
+.mf-tally ul,
+.mf-obits ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.mf-tally li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font: 800 28px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.mf-tally li.is-out {
+  color: var(--mf-red);
+}
+.mf-tally__marks {
+  letter-spacing: 0.18em;
+}
+.mf-obits li {
+  font-size: 26px;
+  line-height: 1.25;
+}
+.mf-tv .mf-scene {
+  grid-column: 1 / -1;
+  height: auto;
+  margin-inline: -48px;
+}
+.mf-tv .mf-scene__moon {
+  height: 90%;
+  top: 5%;
+}
+
+/* ── TV lobby ───────────────────────────────────────────────────────────── */
+.mf-tvlobby {
+  height: 100%;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr) 560px;
+  gap: 40px;
+  padding: 36px 48px;
+  border: none;
+  outline: none;
+}
+.mf-tvlobby__main {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 24px;
+  min-height: 0;
+}
+.mf-tvlobby .mf-mast__name {
+  font-size: 96px;
+}
+.mf-tvlobby .mf-lobby__strap {
+  font-size: 30px;
+}
+.mf-tvlobby .mf-lobby__wall {
+  padding: 40px 30px 140px;
+  display: grid;
+  align-content: center;
+}
+.mf-tvlobby .mf-lobby__sky {
+  height: 130px;
+}
+.mf-tvlobby .mf-lobby__moon {
+  width: 96px;
+  height: 96px;
+  top: 20px;
+  right: 40px;
+}
+.mf-tvlobby.mf--village .mf-lobby__wall {
+  padding-top: 130px;
+}
+.mf-tvlobby .mf-places {
+  gap: 34px 20px;
+}
+.mf-tvlobby .mf-place__frame {
+  width: 120px;
+  height: 120px;
+}
+.mf-tvlobby .mf-place__ghost {
+  width: 80px;
+  height: 104px;
+}
+.mf-tvlobby .mf-place__plate {
+  font-size: 24px;
+  padding: 4px 12px;
+}
+.mf-tvlobby .mf-place__name {
+  font-size: 28px;
+}
+.mf-tvlobby .mf-place__no,
+.mf-tvlobby .mf-place__you {
+  font-size: 24px;
+}
+.mf-tvlobby__side {
+  display: grid;
+  align-content: start;
+  gap: 28px;
+}
+.mf-tvlobby__status {
+  margin: 0;
+  font: 800 30px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mf-tvlobby .mf-bill__head {
+  font-size: 54px;
+}
+.mf-tvlobby .mf-bill__head span,
+.mf-tvlobby .mf-bill__note {
+  font-size: 24px;
+}
+.mf-tvlobby .mf-bill__list {
+  grid-template-columns: 1fr;
+}
+.mf-tvlobby .mf-bill__r {
+  font-size: 32px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mf,
+  .mf-head,
+  .mf-extra,
+  .mf-deal__face,
+  .mf-sheet,
+  .mf-place.is-landing .mf-place__frame,
+  .mf-sky__town,
+  .mf-sky__win {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .mf-card.is-target button.mf-card__in:hover {
+    transform: translateY(-3px);
+    border-color: var(--mf-red);
+  }
+  .mf-extra-role:hover,
+  .mf-switch__o:not(.is-on):hover {
+    background: var(--mf-paper-2);
+  }
+}

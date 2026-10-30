@@ -105,6 +105,8 @@ export function GameShell({
         now={clock}
         reactions={s.reactions}
         chat={ui.fullBleed ? chat : undefined}
+        hostId={s.hostId}
+        displays={s.displays}
       />
     </div>
   );

@@ -27,8 +27,8 @@ export const tintOf = (players: ScreenPlayer[], id: string) =>
   `var(--tint-${players.find((p) => p.id === id)?.avatar.tint ?? 'slate'}, var(--sable))`;
 
 /**
- * A printed playing card. The rank and a small suit run along the top edge, so a card fanned in a
- * column still reads; the suit is large below. Face down it shows the deck's back in its owner's
+ * A printed playing card. The rank and its suit run along the top edge, so a card fanned in a
+ * column still reads, and that is the card's only mark (2026-10-30: "just have one"). Face down it shows the deck's back in its owner's
  * tint. Its width comes from `--w` (set by whatever holds it).
  */
 export function PlayingCard({
@@ -67,9 +67,6 @@ export function PlayingCard({
     <>
       <span className="sol-card__index" aria-hidden="true">
         <b>{card[0] === 'T' ? '10' : card[0]}</b>
-        <SuitMark suit={suit} />
-      </span>
-      <span className="sol-card__pip" aria-hidden="true">
         <SuitMark suit={suit} />
       </span>
       {tab && <span className="sol-card__tab" aria-hidden="true" />}

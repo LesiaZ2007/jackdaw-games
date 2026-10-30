@@ -4,6 +4,7 @@ import { useMoment, useTheme, VerdictMoment, type GameUi, type ScreenPlayer } fr
 import { ROLE_INFO } from '../roles';
 import type { MafiaTableView } from '../rules';
 import { useNarrator, VoiceButton } from './narrator';
+import { VoteBoard } from './vote';
 import { PrintedHead, Scope, useCurtain, useFreshDead, Weather } from './motion';
 import {
   CastList,
@@ -40,7 +41,8 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
     now,
   });
   const [fresh, dismiss] = useMoment(t.step);
-  const m = fresh !== null ? moment(t, null, name) : null;
+  // At dusk the ballot board is the TV's moment; elsewhere the kit's moment names what happened.
+  const m = fresh !== null && t.phase !== 'dusk' ? moment(t, null, name) : null;
   const curtain = useCurtain(t, h.head);
   const freshDead = useFreshDead(t.deaths.map((d) => d.id));
 
@@ -77,10 +79,10 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
         <VoiceButton speaking={narr.speaking} pref={narr.pref} />
       </Masthead>
 
-      <section className="mf-tv__front">
-        {(t.phase === 'dawn' || t.phase === 'dusk') && (t.dawn.length > 0 || t.lastVote?.out) && (
+      <section className="mf-front mf-tv__front">
+        {t.phase === 'dawn' && t.dawn.length > 0 && (
           <span className="mf-extra" aria-hidden="true">
-            Extra!
+            {t.mode === 'Mafia' ? 'Extra!' : 'Hear ye!'}
           </span>
         )}
         <PrintedHead text={h.head} className="mf-head mf-tv__head" city={t.mode === 'Mafia'} />
@@ -93,15 +95,19 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
       </section>
 
       <div className="mf-tv__table">
-        <Placards
-          t={t}
-          players={players}
-          me={null}
-          info={info}
-          reactions={reactions}
-          size="tv"
-          fresh={freshDead}
-        />
+        {t.phase === 'dusk' && t.lastVote ? (
+          <VoteBoard t={t} players={players} size="tv" />
+        ) : (
+          <Placards
+            t={t}
+            players={players}
+            me={null}
+            info={info}
+            reactions={reactions}
+            size="tv"
+            fresh={freshDead}
+          />
+        )}
         {t.phase === 'hunter' && <Scope />}
       </div>
 

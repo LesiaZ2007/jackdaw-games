@@ -78,6 +78,8 @@ export interface PlacardInfo {
   ok?: boolean;
   /** The pick of a teammate (the pack sees each other's). */
   marked?: boolean;
+  /** Who picked this player (the pack's picks): shown as their small tokens. */
+  by?: string[];
   lover?: boolean;
 }
 
@@ -162,6 +164,16 @@ export function Placards({
                 ♥
               </span>
             )}
+            {x.by && x.by.length > 0 && (
+              <span className="mf-card__by">
+                {x.by.map((who) => {
+                  const q = byId.get(who);
+                  return q ? (
+                    <Token key={who} avatar={q.avatar} size={size === 'tv' ? 40 : 22} />
+                  ) : null;
+                })}
+              </span>
+            )}
             {x.tags && x.tags.length > 0 && (
               <span className="mf-card__tags">
                 {x.tags.map((tag) => (
@@ -188,7 +200,7 @@ export function Placards({
           id === me && 'is-me',
           can && 'is-target',
         );
-        const label = `${name}${id === me ? ' (you)' : ''}${x.dead ? ', dead' : ''}${role ? `, ${ROLE_INFO[role].name}` : ''}${x.ok && !x.dead ? ', ready' : ''}${x.tags?.length ? `, ${x.tags.join(', ')}` : ''}`;
+        const label = `${name}${id === me ? ' (you)' : ''}${x.dead ? ', dead' : ''}${role ? `, ${ROLE_INFO[role].name}` : ''}${x.ok && !x.dead ? ', ready' : ''}${x.by?.length ? `, picked by ${x.by.map((who) => byId.get(who)?.name ?? 'someone').join(' and ')}` : ''}${x.tags?.length ? `, ${x.tags.join(', ')}` : ''}`;
         return (
           <li key={id} className={cls}>
             {can ? (
@@ -237,6 +249,7 @@ export function Pips({
             'mf-pip',
             i < done && 'is-on',
             need !== undefined && i === need - 1 && 'is-need',
+            need !== undefined && i >= need && 'is-extra',
           )}
         />
       ))}

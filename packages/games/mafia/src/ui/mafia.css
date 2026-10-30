@@ -365,20 +365,24 @@ button.mf-card__in {
   position: absolute;
   top: 3px;
   right: 3px;
-  left: 30%;
+  left: 3px;
+  padding-left: 30px;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 2px;
 }
 .mf-tag {
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 1px 4px;
   background: var(--mf-red);
   color: var(--mf-cream);
   font: 800 10px / 1.2 var(--font-plaque);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 .mf-card.is-target .mf-card__in {
   border-style: solid;
@@ -1454,18 +1458,12 @@ button.mf-card__in {
   border-color: var(--mf-vert);
   transform: rotate(45deg) scale(1.12);
 }
-.mf-pip.is-need::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 3px;
-  height: 22px;
-  background: var(--mf-red);
-  transform: translate(9px, -50%) rotate(-45deg);
-}
 .mf-pip.is-need {
-  margin-right: 10px;
+  margin-right: 12px;
+}
+.mf-pip.is-extra:not(.is-on) {
+  border-style: dotted;
+  opacity: 0.55;
 }
 .mf-pips__n {
   margin-left: 6px;
@@ -1487,10 +1485,8 @@ button.mf-card__in {
   height: 30px;
   border-width: 3px;
 }
-.mf-tv__progress .mf-pip.is-need::after {
-  width: 5px;
-  height: 44px;
-  transform: translate(18px, -50%) rotate(-45deg);
+.mf-tv__progress .mf-pip.is-need {
+  margin-right: 22px;
 }
 .mf-tv__progress .mf-pips__n {
   font-size: 34px;
@@ -1583,5 +1579,442 @@ button.mf-card__in {
   display: none;
 }
 .mf--phone .mf-scene__sky + .mf-scene__sky {
+  display: none;
+}
+
+/* ── Who picked this player (the pack sees each other's picks) ─────────── */
+.mf-card__by {
+  position: absolute;
+  left: 3px;
+  bottom: 26px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  background: var(--mf-red);
+  z-index: 1;
+}
+.mf-cards--tv .mf-card__by {
+  bottom: 56px;
+  left: 8px;
+  gap: 4px;
+  padding: 4px;
+}
+
+/* ── After the vote: who voted for whom ────────────────────────────────── */
+.mf-ballot {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  align-content: start;
+}
+.mf-ballot__head {
+  margin: 0;
+  text-align: center;
+  font: 900 18px var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--mf-ink);
+  padding-bottom: 4px;
+}
+.mf--village .mf-ballot__head {
+  font: 800 24px var(--font-display);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.mf-ballot__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-height: 0;
+  overflow: hidden;
+}
+.mf-ballot__row {
+  display: grid;
+  grid-template-columns: minmax(0, 9em) 2em minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border: 2px solid var(--mf-ink);
+  background: var(--mf-paper-2);
+}
+.mf-ballot__row.is-out {
+  border-color: var(--mf-red);
+  border-width: 3px;
+}
+.mf-ballot__who {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.mf-ballot__name {
+  min-width: 0;
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mf-ballot__skip {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2px dashed var(--mf-ink-2);
+  border-radius: 50%;
+  font: 900 18px var(--font-plaque);
+  color: var(--mf-ink-2);
+  flex: none;
+}
+.mf-ballot__out {
+  position: absolute;
+  right: -4px;
+  top: -10px;
+  padding: 0 6px;
+  border: 2px solid var(--mf-red);
+  background: var(--mf-paper-2);
+  color: var(--mf-red);
+  font: 900 13px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(-8deg);
+  animation: mf-slam 520ms cubic-bezier(0.5, 0, 0.6, 1.6) 3.2s both;
+}
+.mf-ballot__count {
+  font: 900 26px / 1 var(--font-plaque);
+  text-align: center;
+  color: var(--mf-ink);
+}
+.mf-ballot__row.is-out .mf-ballot__count {
+  color: var(--mf-red);
+}
+.mf-ballot__voters {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  min-width: 0;
+}
+.mf-ballot__voter {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  animation: mf-drop 380ms cubic-bezier(0.3, 1.5, 0.5, 1) calc(2.6s + var(--k) * 150ms) both;
+}
+@keyframes mf-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-60%) scale(1.4);
+  }
+}
+.mf-ballot__vname {
+  font: 700 13px var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.mf-ballot__vname b {
+  color: var(--mf-red);
+}
+.mf-ballot__note {
+  margin: 0;
+  text-align: center;
+  font-size: var(--step--1);
+  color: var(--mf-ink-2);
+}
+.mf-ballot--tv {
+  gap: 14px;
+}
+.mf-ballot--tv .mf-ballot__head {
+  font-size: 34px;
+}
+.mf--village .mf-ballot--tv .mf-ballot__head {
+  font-size: 48px;
+}
+.mf-ballot--tv .mf-ballot__rows {
+  gap: 12px;
+}
+.mf-ballot--tv .mf-ballot__row {
+  grid-template-columns: minmax(0, 15em) 2.4em minmax(0, 1fr);
+  gap: 18px;
+  padding: 10px 18px;
+  border-width: 3px;
+}
+.mf-ballot--tv .mf-ballot__name {
+  font-size: 34px;
+}
+.mf-ballot--tv .mf-ballot__skip {
+  width: 48px;
+  height: 48px;
+  font-size: 36px;
+}
+.mf-ballot--tv .mf-ballot__out {
+  font-size: 26px;
+  top: -18px;
+}
+.mf-ballot--tv .mf-ballot__count {
+  font-size: 54px;
+}
+.mf-ballot--tv .mf-ballot__voters {
+  gap: 10px 18px;
+}
+.mf-ballot--tv .mf-ballot__vname {
+  font-size: 26px;
+}
+.mf-ballot--tv .mf-ballot__note {
+  font-size: 28px;
+}
+@container game (min-width: 860px) {
+  .mf--phone .mf-ballot__name {
+    font-size: 20px;
+  }
+  .mf--phone .mf-ballot__vname {
+    font-size: 16px;
+  }
+  .mf--phone .mf-ballot__head {
+    font-size: 24px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-ballot__voter,
+  .mf-ballot__out {
+    animation: none;
+  }
+}
+
+/* ── The village is a chronicle, not a newspaper ───────────────────────────
+   The masthead is a forked heraldic ribbon; the news is written on a scroll unrolled between two
+   wooden rods, opening with an illuminated initial. */
+.mf--village {
+  --mf-scroll: #ece1c2;
+  --mf-scroll-edge: #c9b68b;
+  --mf-scroll-ink: #2a2217;
+  --mf-scroll-ink-2: #5b4d36;
+  --mf-rod: #6b4a2b;
+  --mf-rod-end: #4a3220;
+}
+.mf--village[data-look='dark'] {
+  --mf-scroll: #3a3326;
+  --mf-scroll-edge: #574c37;
+  --mf-scroll-ink: #ece2c6;
+  --mf-scroll-ink-2: #c3b79a;
+  --mf-rod: #4a3220;
+  --mf-rod-end: #2e1f13;
+}
+.mf--village .mf-mast {
+  border-bottom: none;
+}
+.mf--village .mf-mast__name {
+  justify-self: center;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 3px 30px 5px;
+  background: var(--mf-red);
+  color: var(--mf-cream);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 50%, 100% 100%, 0 100%, 16px 50%);
+}
+.mf--village .mf-mast__ed {
+  font: 800 15px var(--font-display);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.mf--village .mf-front {
+  --mf-ink: var(--mf-scroll-ink);
+  --mf-ink-2: var(--mf-scroll-ink-2);
+  position: relative;
+  margin: 8px 10px 6px;
+  padding: 10px 14px 10px;
+  background: var(--mf-scroll);
+  color: var(--mf-scroll-ink);
+  border-inline: 2px solid var(--mf-scroll-edge);
+}
+.mf--village .mf-front::before,
+.mf--village .mf-front::after {
+  content: '';
+  position: absolute;
+  left: -12px;
+  right: -12px;
+  height: 12px;
+  border-radius: 6px;
+  background: var(--mf-rod);
+  box-shadow:
+    inset 6px 0 0 var(--mf-rod-end),
+    inset -6px 0 0 var(--mf-rod-end);
+}
+.mf--village .mf-front::before {
+  top: -7px;
+}
+.mf--village .mf-front::after {
+  bottom: -7px;
+}
+.mf--village .mf-front .mf-head {
+  color: var(--mf-scroll-ink);
+}
+.mf--village .mf-sub::first-letter {
+  font: 800 1.7em / 0.8 var(--font-display);
+  color: var(--mf-red);
+}
+.mf--village .mf-front .mf-pip.is-on {
+  background: var(--mf-red);
+  border-color: var(--mf-red);
+}
+.mf--village .mf-pip.is-on {
+  background: var(--mf-red);
+  border-color: var(--mf-red);
+}
+.mf--village .mf-dock {
+  border-top: 2px solid var(--mf-ink);
+}
+/* the TV's scroll */
+.mf--village .mf-tv__front {
+  margin: 14px 18px 8px;
+  padding: 18px 30px 16px;
+  border-inline-width: 4px;
+}
+.mf--village .mf-tv__front::before,
+.mf--village .mf-tv__front::after {
+  left: -22px;
+  right: -22px;
+  height: 22px;
+  border-radius: 11px;
+  box-shadow:
+    inset 12px 0 0 var(--mf-rod-end),
+    inset -12px 0 0 var(--mf-rod-end);
+}
+.mf--village .mf-tv__front::before {
+  top: -12px;
+}
+.mf--village .mf-tv__front::after {
+  bottom: -12px;
+}
+.mf-tv.mf--village .mf-mast {
+  border-bottom: none;
+}
+.mf-tv.mf--village .mf-mast__name {
+  padding: 4px 64px 10px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 34px) 50%, 100% 100%, 0 100%, 34px 50%);
+}
+.mf-tv.mf--village .mf-mast__ed {
+  font-size: 34px;
+}
+.mf--village .mf-extra {
+  border-radius: 999px;
+  border-width: 4px;
+  transform: rotate(-4deg);
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.mf--village .mf-tv__side {
+  border-left: 3px solid var(--mf-ink);
+}
+@container game (min-width: 860px) {
+  .mf--village.mf--phone > .mf-dock {
+    border-top: none;
+    border-left: 2px solid var(--mf-ink);
+  }
+}
+
+/* The village's curtain: the scroll unrolls from its middle. */
+.mf-scroll {
+  --mf-ink: var(--mf-scroll-ink);
+  position: relative;
+  z-index: 1;
+  margin-bottom: 18%;
+  padding: 3% 6%;
+  max-width: 82%;
+  background: var(--mf-scroll);
+  color: var(--mf-scroll-ink);
+  border-inline: 3px solid var(--mf-scroll-edge);
+  animation: mf-unroll 900ms cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+.mf-scroll::before,
+.mf-scroll::after {
+  content: '';
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  height: clamp(12px, 3vw, 26px);
+  border-radius: 999px;
+  background: var(--mf-rod);
+}
+.mf-scroll::before {
+  top: 0;
+  translate: 0 -50%;
+}
+.mf-scroll::after {
+  bottom: 0;
+  translate: 0 50%;
+}
+@keyframes mf-unroll {
+  from {
+    clip-path: inset(46% -10% 46% -10%);
+  }
+  to {
+    clip-path: inset(-20% -10% -20% -10%);
+  }
+}
+.mf--village .mf-scroll .mf-curtain__head {
+  margin-bottom: 0;
+  padding: 0;
+  animation: none;
+}
+.mf--village .mf-curtain.is-pack .mf-scroll {
+  --mf-scroll: #3a3326;
+  --mf-scroll-ink: #ece2c6;
+}
+
+/* Tags clear the TV's big seat numbers. */
+.mf-cards--tv .mf-card__tags {
+  padding-left: 76px;
+}
+
+/* A grave's arch would clip a tag in the corner: on the dead, tags sit below the arch. */
+.mf--village .mf-card.is-dead .mf-card__tags {
+  top: 24%;
+  padding-left: 0;
+  justify-content: center;
+}
+/* Voters' names clear their tokens (and the tokens' printed nubs). */
+.mf-ballot__voter {
+  gap: 8px;
+}
+.mf-ballot--tv .mf-ballot__voter {
+  gap: 14px;
+}
+.mf-ballot--tv .mf-ballot__row {
+  padding: 6px 18px;
+}
+
+.mf-ballot--tv .mf-ballot__skip {
+  width: 44px;
+  height: 44px;
+}
+.mf-ballot--tv .mf-ballot__name {
+  font-size: 30px;
+}
+.mf-ballot--many .mf-ballot__rows {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.mf-ballot--many .mf-ballot__row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+}
+.mf-ballot--many .mf-ballot__voters {
+  grid-column: 1 / -1;
+}
+.mf-ballot--many .mf-ballot__vname {
   display: none;
 }

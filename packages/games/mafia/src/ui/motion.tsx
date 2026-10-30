@@ -90,7 +90,9 @@ function Curtain({ kind, t, head }: { kind: CurtainKind; t: MafiaTableView; head
             <Sun />
           )}
         </span>
-        <span className="mf-curtain__head">{head}</span>
+        <span className="mf-scroll">
+          <span className="mf-curtain__head">{head}</span>
+        </span>
         <Village className="mf-curtain__sky" />
       </div>
     </div>

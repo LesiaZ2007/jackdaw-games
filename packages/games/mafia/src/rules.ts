@@ -4,6 +4,7 @@ import {
   type GameResult,
   type Highlight,
   type RecapEvent,
+  type RecapStats,
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
@@ -325,8 +326,23 @@ function witchCanAct(s: MafiaState): boolean {
   return !!w && s.alive.includes(w) && (s.potions.heal || s.potions.poison);
 }
 
-function pushRecap(s: MafiaState, ev: RecapEvent): MafiaState {
-  return { ...s, recap: [...s.recap, ev] };
+function pushRecap(s: MafiaState, ...evs: RecapEvent[]): MafiaState {
+  return { ...s, recap: [...s.recap, ...evs] };
+}
+
+/** Recap text and secrets name players only as `{id}`; the platform swaps in their names. */
+const brace = (id: string) => `{${id}}`;
+const named = (s: Pick<MafiaState, 'roles'>, id: string) =>
+  `${brace(id)} (the ${ROLE_INFO[s.roles[id]!].name})`;
+
+/**
+ * What a recap event happened to, so its colour can be settled once the winners are known:
+ * `about` are the players it touched and `harm` says whether it hurt them (a death) or helped
+ * them (a save). It is good for the winners when it hurt their opponents or helped themselves.
+ */
+interface Touch {
+  about: string[];
+  harm: boolean;
 }
 
 const at = (now: number, ms: number) => now + ms;
@@ -434,37 +450,74 @@ function dawn(
 
   const dying: string[] = [];
   const saves: string[] = [];
-  const secret: string[] = [];
+  const events: RecapEvent[] = [];
+  const round = s.night;
+  const names = TEAM_NAME[s.mode];
+  const cupid = s.players.find((id) => s.roles[id] === 'cupid');
+  if (s.night === 1 && s.lovers)
+    events.push({
+      round,
+      text: 'Cupid’s arrow flew.',
+      secret: `${cupid ? named(s, cupid) : 'Cupid'} made ${brace(s.lovers[0])} and ${brace(s.lovers[1])} lovers.`,
+      tag: 'Lovers',
+      key: true,
+      data: { kind: 'lovers', lovers: s.lovers },
+    });
   if (s.victim) {
-    secret.push(`${TEAM_NAME[s.mode].pack} chose ${s.victim}.`);
-    if (guarded === s.victim) {
-      saves.push(angel!);
-      secret.push(`${angel} (the Angel) saved them.`);
-    } else if (potion?.heal) {
-      saves.push(witch!);
-      secret.push(`${witch} (the Witch) saved them.`);
-    } else dying.push(s.victim);
+    const saver = guarded === s.victim ? angel : potion?.heal ? witch : null;
+    if (saver) saves.push(saver);
+    else dying.push(s.victim);
+    events.push({
+      round,
+      text: `The ${names.pack} chose their victim.`,
+      secret: `${packAlive(s).map(brace).join(', ')} chose ${brace(s.victim)}.${saver ? ` ${named(s, saver)} saved them.` : ''}`,
+      tag: saver ? 'Saved' : 'Targeted',
+      key: !!saver,
+      data: { kind: 'attack', about: [s.victim], harm: !saver },
+    });
   }
   if (stabbed) {
-    secret.push(`The Serial Killer, ${killer}, went after ${stabbed}.`);
-    if (guarded === stabbed) {
+    const saved = guarded === stabbed;
+    if (saved) {
       if (!saves.includes(angel!)) saves.push(angel!);
-      secret.push(`${angel} (the Angel) saved them.`);
     } else if (!dying.includes(stabbed)) dying.push(stabbed);
+    events.push({
+      round,
+      text: 'The Serial Killer struck.',
+      secret: `${brace(killer!)} went after ${brace(stabbed)}.${saved ? ` ${named(s, angel!)} saved them.` : ''}`,
+      tag: saved ? 'Saved' : 'Stabbed',
+      key: saved,
+      data: { kind: 'stab', about: [stabbed], harm: !saved },
+    });
   }
   if (potion?.poison) {
-    secret.push(`${witch} (the Witch) poisoned ${potion.poison}.`);
     if (!dying.includes(potion.poison)) dying.push(potion.poison);
+    events.push({
+      round,
+      text: 'A poison slipped into the night.',
+      secret: `${named(s, witch!)} poisoned ${brace(potion.poison)}.`,
+      tag: 'Poisoned',
+      data: { kind: 'poison', about: [potion.poison], harm: true },
+    });
   }
   for (const id of s.alive) {
     const act = nightAct({ ...s, phase: 'night' }, id);
-    if (act === 'ask' || act === 'see')
-      secret.push(
-        `${id} (the ${ROLE_INFO[s.roles[id]!].name}) checked ${s.picks[id] ?? 'nobody'}.`,
-      );
+    const check = (s.checks[id] ?? []).find((c) => c.night === s.night);
+    if ((act !== 'ask' && act !== 'see') || !check) continue;
+    const found =
+      act === 'see'
+        ? ROLE_INFO[check.result as Role].name
+        : check.result === 'mafia'
+          ? 'Mafia'
+          : 'Clean';
+    events.push({
+      round,
+      text: 'A suspect was checked in the dark.',
+      secret: `${named(s, id)} checked ${brace(check.target)}: ${found === 'Clean' ? 'not Mafia' : found}.`,
+      tag: found,
+      data: { kind: 'check', by: id, target: check.target },
+    });
   }
-  if (s.night === 1 && s.lovers)
-    secret.push(`Cupid made ${s.lovers[0]} and ${s.lovers[1]} lovers.`);
 
   const dead = withGrief(s, dying);
   let next = kill(s, dead, 'night');
@@ -486,13 +539,31 @@ function dawn(
       : s.potions,
     hunter: hunter ? { id: hunter.id, then: 'day' } : null,
   };
-  return pushRecap(next, {
-    round: s.night,
+  const shown = (d: { id: string; grief: boolean }) =>
+    `${s.revealRoles ? named(s, d.id) : brace(d.id)}${d.grief ? ' (of grief)' : ''}`;
+  // Who used a power tonight, for the end screen's count of night actions.
+  const acted = s.alive.filter((id) =>
+    id === witch ? !!potion : nightAct({ ...s, phase: 'night' }, id) !== 'suspect',
+  );
+  return pushRecap(next, ...events, {
+    round,
     text: dead.length
-      ? `Morning ${s.night}: ${dead.map((d) => (d.grief ? `${d.id} (of grief)` : d.id)).join(', ')} found dead.`
+      ? `Morning ${s.night}: ${dead.map(shown).join(', ')} found dead.`
       : `Morning ${s.night}: nobody died.`,
-    secret: secret.join(' ') || undefined,
-    data: { kind: 'dawn', night: s.night, dead: dead.map((d) => d.id) },
+    secret: s.revealRoles
+      ? undefined
+      : dead.map((d) => `${brace(d.id)} was the ${ROLE_INFO[s.roles[d.id]!].name}.`).join(' ') ||
+        undefined,
+    tag: dead.length ? (dead.length > 1 ? `${dead.length} dead` : 'Killed') : 'No deaths',
+    // The game's first blood is a turning point; later mornings are not.
+    key: dead.length > 0 && s.deaths.length === 0,
+    data: {
+      kind: 'dawn',
+      night: s.night,
+      dead: dead.map((d) => d.id),
+      acted,
+      ...(dead.length ? { about: dead.map((d) => d.id), harm: true } : {}),
+    },
   });
 }
 
@@ -546,27 +617,83 @@ function closeVote(s: MafiaState, now: number): MafiaState {
     since: now,
     deadline: at(now, DUSK_MS),
   };
+  const round = s.day;
+  const events: RecapEvent[] = [
+    {
+      round,
+      text: ballotText(result),
+      data: { kind: 'ballots', day: s.day, votes: result.votes },
+    },
+  ];
+  // The Mayor's double vote comes out with the ballots.
+  for (const m of result.double)
+    events.push({
+      round,
+      text: `${brace(m)} was the Mayor: their vote counted twice.`,
+      tag: 'Mayor',
+      data: { kind: 'mayor', by: m },
+    });
   let text = `Day ${s.day}: no one was voted out.`;
+  let secret: string | undefined;
+  let tag = voteStall(result);
+  let key = false;
+  let touch: Partial<Touch> = {};
   if (result.out) {
     const dead = withGrief(s, [result.out]);
     next = kill(next, dead, 'vote');
     const hunter = dead.find((d) => s.roles[d.id] === 'hunter');
     if (hunter) next = { ...next, hunter: { id: hunter.id, then: 'night' } };
-    text = `Day ${s.day}: ${result.out} was voted out${dead.length > 1 ? `, and ${dead[1]!.id} died of grief` : ''}.`;
+    const said = s.revealRoles ? named(s, result.out) : brace(result.out);
+    text = `Day ${s.day}: ${said} was voted out${dead.length > 1 ? `, and ${brace(dead[1]!.id)} died of grief` : ''}.`;
+    if (!s.revealRoles) secret = `${named(s, result.out)} was voted out.`;
+    const second = Math.max(
+      0,
+      ...Object.entries(result.counts)
+        .filter(([t]) => t !== result.out)
+        .map(([, n]) => n),
+    );
+    tag = `Lynched ${result.counts[result.out]}–${second}`;
+    // Catching anyone who wasn't plain town is a turning point.
+    key = ROLE_INFO[s.roles[result.out]!].team !== 'town' || !!hunter;
+    touch = { about: dead.map((d) => d.id), harm: true };
     if (s.roles[result.out] === 'jester')
       next = {
         ...next,
         win: { team: 'jester', line: 'The Jester fooled the town into voting them out.' },
       };
   }
-  return pushRecap(next, {
-    round: s.day,
+  events.push({
+    round,
     text,
-    secret: result.out
-      ? `${result.out} was the ${ROLE_INFO[s.roles[result.out]!].name}.`
-      : undefined,
-    data: { kind: 'vote', day: s.day, votes: result.votes, out: result.out },
+    secret,
+    tag,
+    key,
+    data: { kind: 'vote', day: s.day, votes: result.votes, out: result.out, ...touch },
   });
+  return pushRecap(next, ...events);
+}
+
+/** Who voted for whom, grouped by the person they named. */
+function ballotText(r: VoteResult): string {
+  const by = new Map<string, string[]>();
+  for (const [voter, t] of Object.entries(r.votes)) by.set(t, [...(by.get(t) ?? []), voter]);
+  const parts = [...by]
+    .sort(([a], [b]) => Number(a === 'skip') - Number(b === 'skip'))
+    .map(
+      ([t, voters]) =>
+        `${voters.map(brace).join(', ')} ${t === 'skip' ? 'skipped' : `voted ${brace(t)}`}`,
+    );
+  return parts.length
+    ? `Day ${r.day} ballots: ${parts.join('; ')}.`
+    : `Day ${r.day}: nobody cast a vote.`;
+}
+
+/** Why nobody went out: a tie, skipping, or no votes at all. */
+function voteStall(r: VoteResult): string {
+  const people = Object.entries(r.counts).filter(([t]) => t !== 'skip');
+  if (!people.length) return Object.keys(r.votes).length ? 'Skipped' : 'No votes';
+  const top = Math.max(...people.map(([, n]) => n));
+  return people.filter(([, n]) => n === top).length > 1 ? 'Tied' : 'Skipped';
 }
 
 /** Who has won, if anyone, from who's alive. */
@@ -604,23 +731,58 @@ function settle(s: MafiaState, then: 'day' | 'night', now: number): MafiaState {
   if (s.hunter)
     return { ...s, phase: 'hunter', step: s.step + 1, since: now, deadline: at(now, HUNTER_MS) };
   const win = s.win ?? checkWin(s);
-  if (win) return { ...s, win, phase: 'over', step: s.step + 1, since: now, deadline: null };
+  if (win) {
+    const name = TEAM_NAME[s.mode][win.team];
+    return pushRecap(
+      { ...s, win, phase: 'over', step: s.step + 1, since: now, deadline: null },
+      {
+        round: then === 'day' ? s.night : s.day,
+        text: win.line,
+        // Nobody left is no one's win.
+        tag: s.alive.length
+          ? `${name} ${win.team === 'pack' || win.team === 'lovers' ? 'win' : 'wins'}`
+          : 'Draw',
+        key: true,
+        data: { kind: 'win', team: win.team },
+      },
+    );
+  }
   return then === 'day' ? startDay(s, now) : startNight(s, now);
 }
 
 function shoot(s: MafiaState, shot: string | null, now: number): MafiaState {
   const h = s.hunter!;
   let next: MafiaState = { ...s, hunter: null };
+  // A Hunter killed at dawn shoots in that night's round, one killed by the vote in that day's.
+  const round = h.then === 'day' ? s.night : s.day;
   if (shot) {
     const dead = withGrief(s, [shot]);
     next = kill(next, dead, 'shot');
+    const said = s.revealRoles ? named(s, shot) : brace(shot);
     next = pushRecap(next, {
-      round: s.day || s.night,
+      round,
       actor: h.id,
-      text: `${h.id}, the Hunter, shot ${shot}${dead.length > 1 ? `, and ${dead[1]!.id} died of grief` : ''}.`,
-      data: { kind: 'shot', by: h.id, target: shot },
+      text: `${brace(h.id)}, the Hunter, shot ${said}${dead.length > 1 ? `, and ${brace(dead[1]!.id)} died of grief` : ''}.`,
+      secret: s.revealRoles ? undefined : `${named(s, shot)} was shot.`,
+      tag: 'Hunter shot',
+      key: true,
+      data: {
+        kind: 'shot',
+        by: h.id,
+        target: shot,
+        at: h.then === 'day' ? 'Night' : 'Day',
+        about: dead.map((d) => d.id),
+        harm: true,
+      },
     });
-  }
+  } else
+    next = pushRecap(next, {
+      round,
+      actor: h.id,
+      text: `${brace(h.id)}, the Hunter, lowered the gun.`,
+      tag: 'Spared',
+      data: { kind: 'shot', by: h.id, target: null },
+    });
   return settle(next, h.then, now);
 }
 
@@ -727,6 +889,57 @@ const sideLost = (s: MafiaState, pack: boolean) => {
   return side.length ? dead / side.length : 0;
 };
 
+/**
+ * Colours an event once the winners are known: good if it hurt only players who lost or helped
+ * only players who won (and bad the other way round); mixed or unknown events stay plain.
+ */
+function withTone(e: RecapEvent, winners: string[]): RecapEvent {
+  const d = e.data as (Partial<Touch> & { kind?: string }) | undefined;
+  if (d?.kind === 'win') return winners.length ? { ...e, tone: 'good' } : e;
+  if (!d?.about?.length || !winners.length) return e;
+  const won = d.about.filter((id) => winners.includes(id)).length;
+  if (won > 0 && won < d.about.length) return e;
+  const goodForWinners = won > 0 !== !!d.harm;
+  return { ...e, tone: goodForWinners ? 'good' : 'bad' };
+}
+
+/** When a player went out, from the morning, vote or shot that took them: "Night 2", "Day 3". */
+function outAt(s: MafiaState, id: string): string {
+  for (const e of s.recap) {
+    const d = e.data as { kind?: string; about?: string[]; at?: string } | undefined;
+    if (!d?.about?.includes(id)) continue;
+    if (d.kind === 'dawn') return `Night ${e.round}`;
+    if (d.kind === 'vote') return `Day ${e.round}`;
+    if (d.kind === 'shot') return `${d.at} ${e.round}`;
+  }
+  return 'Alive';
+}
+
+/** Ballots cast and received, how long each lasted and the nights they used a power, winners first. */
+function statsOf(s: MafiaState, winners: string[]): RecapStats {
+  const order = [...winners, ...s.players.filter((id) => !winners.includes(id))];
+  const cast: Record<string, number> = {};
+  const got: Record<string, number> = {};
+  const acts: Record<string, number> = {};
+  for (const e of s.recap) {
+    const d = e.data as
+      { kind?: string; votes?: Record<string, string>; acted?: string[] } | undefined;
+    if (d?.kind === 'ballots')
+      for (const [voter, t] of Object.entries(d.votes ?? {})) {
+        cast[voter] = (cast[voter] ?? 0) + 1;
+        got[t] = (got[t] ?? 0) + 1;
+      }
+    if (d?.kind === 'dawn') for (const id of d.acted ?? []) acts[id] = (acts[id] ?? 0) + 1;
+  }
+  return {
+    columns: ['Votes cast', 'Votes received', 'Survived to', 'Night actions'],
+    rows: order.map((playerId) => ({
+      playerId,
+      values: [cast[playerId] ?? 0, got[playerId] ?? 0, outAt(s, playerId), acts[playerId] ?? 0],
+    })),
+  };
+}
+
 function result(s: MafiaState, win: Win, early: boolean): GameResult {
   // Nobody left standing is a draw for everyone.
   const draw = s.alive.length === 0;
@@ -755,7 +968,9 @@ function result(s: MafiaState, win: Win, early: boolean): GameResult {
     winners,
     summary: early ? `Ended early. ${win.line}` : win.line,
     reveal,
-    recap: s.recap,
+    recap: s.recap.map((e) => withTone(e, winners)),
+    roundName: 'Round',
+    stats: statsOf(s, winners),
     highlights,
     standings: s.players.map((playerId) => {
       const team = teamOf(s, playerId);
@@ -838,7 +1053,7 @@ export const mafia: GameModule<
           text: `The cards were dealt: ${castCounts(cast)
             .map(([r, n]) => (n === 1 ? ROLE_INFO[r].name : `${n} ${ROLE_INFO[r].plural}`))
             .join(', ')}.`,
-          secret: playerIds.map((id) => `${id}: ${ROLE_INFO[roles[id]!].name}`).join('. '),
+          secret: playerIds.map((id) => `${brace(id)}: ${ROLE_INFO[roles[id]!].name}`).join('. '),
           data: { kind: 'deal', roles },
         },
       ],
@@ -1026,6 +1241,7 @@ export const mafia: GameModule<
       return {
         ...r,
         winners: [],
+        recap: r.recap.map(({ tone: _, ...e }) => e),
         standings: r.standings!.map((x) => ({ ...x, outcome: 'draw' as const })),
       };
     }

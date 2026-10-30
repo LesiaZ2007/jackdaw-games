@@ -4,6 +4,7 @@ import {
   type GameModule,
   type GameResult,
   type RecapEvent,
+  type RecapStats,
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
@@ -413,13 +414,84 @@ function fireAt(
     wrecks: { ...s.wrecks, [defender]: wrecks },
     seq,
     volleys: [...s.volleys, volley],
-    recap: [...s.recap, recapWithSecrets(s, volley)],
+    recap: [...s.recap, ...recapEntries(s, volley, lost)],
     winner: lost ? shooter : s.winner,
     phase: lost ? 'show' : 'fire',
     toAct: lost ? null : keep ? shooter : defender,
     showBy: lost ? now + SHOW_MS : null,
   };
   return lost ? { ...next, placeBy: null, actBy: null } : withClock(next, now);
+}
+
+/** Hits in a row by the shooter before this volley, across volleys that were all hits. */
+function streakBefore(s: BattleshipState, shooter: string): number {
+  let run = 0;
+  for (let i = s.volleys.length - 1; i >= 0; i--) {
+    const v = s.volleys[i]!;
+    if (v.by !== shooter) break;
+    let hits = 0;
+    for (let j = v.shots.length - 1; j >= 0 && v.shots[j]!.result !== 'miss'; j--) hits++;
+    run += hits;
+    if (hits < v.shots.length) break;
+  }
+  return run;
+}
+
+/** Hits in a row worth a line of their own. */
+const STREAK = 3;
+
+/**
+ * The recap entries for one volley: the shots themselves, with a chip, plus a line when the first
+ * hit of the battle lands or a run of hits reaches three. Appended as it happens.
+ */
+function recapEntries(s: BattleshipState, volley: Volley, lost: boolean): RecapEvent[] {
+  const base = recapWithSecrets(s, volley);
+  const hits = volley.shots.filter((shot) => shot.result !== 'miss').length;
+  const sunk = volley.sunk.length;
+  const noHitsYet = s.players.every((id) => (s.shots[id] ?? []).every((x) => x.result === 'miss'));
+  const where = volley.sunk
+    .map(
+      (w) =>
+        `${shipOf(w.id).name} lay ${w.dir === 'h' ? 'across' : 'down'} from ${cellName(Math.min(...w.cells))}`,
+    )
+    .join('; ');
+  const entry: RecapEvent = {
+    ...base,
+    round: volley.seq,
+    tag: lost
+      ? 'Fleet sunk'
+      : sunk
+        ? sunk > 1
+          ? `Sunk ${sunk}`
+          : 'Sunk'
+        : hits
+          ? hits > 1
+            ? `${hits} hits`
+            : 'Hit'
+          : 'Miss',
+    ...(hits ? { tone: 'good' as const } : {}),
+    ...(sunk || lost ? { key: true } : {}),
+    ...(where ? { secret: [base.secret, where].filter(Boolean).join(' ') } : {}),
+  };
+  const out = [entry];
+  if (hits && noHitsYet) {
+    entry.tag = sunk ? entry.tag : 'First hit';
+    entry.key = true;
+  }
+  // A run of hits that reaches three on this volley.
+  let trail = 0;
+  for (let j = volley.shots.length - 1; j >= 0 && volley.shots[j]!.result !== 'miss'; j--) trail++;
+  const before = streakBefore(s, volley.by);
+  const run = trail === volley.shots.length ? before + trail : trail;
+  if (!lost && run >= STREAK && run - trail < STREAK)
+    out.push({
+      round: volley.seq,
+      actor: volley.by,
+      text: `{${volley.by}} is on a run of ${run} hits.`,
+      tag: `${run} in a row`,
+      tone: 'good',
+    });
+  return out;
 }
 
 function recapFor(volley: Volley): RecapEvent {
@@ -452,6 +524,29 @@ function openCells(s: BattleshipState, defender: string): number[] {
   const open: number[] = [];
   for (let cell = 0; cell < CELLS; cell++) if (!used.has(cell)) open.push(cell);
   return open;
+}
+
+/** Hits, accuracy and ships sunk for each player, the winner first. */
+function statsOf(s: BattleshipState, winners: string[]): RecapStats {
+  const order = [...s.players].sort(
+    (a, b) => Number(winners.includes(b)) - Number(winners.includes(a)),
+  );
+  return {
+    columns: ['Hits', 'Shots', 'Accuracy', 'Sunk'],
+    rows: order.map((id) => {
+      const mine = s.shots[foeOf(s, id)] ?? [];
+      const hits = mine.filter((shot) => shot.result !== 'miss').length;
+      return {
+        playerId: id,
+        values: [
+          hits,
+          mine.length,
+          mine.length ? `${Math.round((hits / mine.length) * 100)}%` : '-',
+          s.wrecks[foeOf(s, id)]?.length ?? 0,
+        ],
+      };
+    }),
+  };
 }
 
 function resultOf(s: BattleshipState, summary: string, winners: string[]): GameResult {
@@ -489,6 +584,8 @@ function resultOf(s: BattleshipState, summary: string, winners: string[]): GameR
       fired,
     } satisfies BattleshipReveal,
     recap: s.recap,
+    roundName: 'Turn',
+    stats: statsOf(s, winners),
     standings: s.players.map((id) => ({
       playerId: id,
       outcome: winners.length > 1 ? 'draw' : winners.includes(id) ? 'win' : 'loss',

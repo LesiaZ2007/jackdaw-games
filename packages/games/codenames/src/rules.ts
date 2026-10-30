@@ -3,6 +3,7 @@ import {
   type GameModule,
   type GameResult,
   type RecapEvent,
+  type RecapStats,
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
@@ -132,6 +133,23 @@ export interface CodenamesPlayerView extends CodenamesTableView {
   key: Card[] | null;
 }
 
+/** Clues given, guesses made and hits (own-team words found) per player, winners first. */
+function statsOf(state: CodenamesState, winners: string[]): RecapStats {
+  const order = [...winners, ...state.players.filter((id) => !winners.includes(id))];
+  return {
+    columns: ['Clues', 'Guesses', 'Hits'],
+    rows: order.map((playerId) => {
+      const given = state.clues.filter((c) => c.by === playerId);
+      const guesses = state.clues.flatMap((c) => c.guesses.filter((g) => g.by === playerId));
+      const hits =
+        state.spymasters[state.teams[playerId]!] === playerId
+          ? given.reduce((n, c) => n + c.guesses.filter((g) => g.card === c.team).length, 0)
+          : guesses.filter((g) => g.card === state.teams[playerId]).length;
+      return { playerId, values: [given.length, guesses.length, hits] };
+    }),
+  };
+}
+
 /** Each team's word count: the starting team has one more. */
 export const teamSize = (team: Team, starting: Team) => (team === starting ? 9 : 8);
 
@@ -196,13 +214,39 @@ export function clueOnBoard(word: string, words: readonly string[]): boolean {
   return words.some((b) => b === w || `${b}S` === w || `${w}S` === b);
 }
 
+const ENDED: Record<TurnEnd, string> = {
+  bystander: 'a bystander',
+  'other-team': 'the other team’s word',
+  pass: 'a pass',
+  limit: 'the guess limit',
+  won: 'the last word',
+  assassin: 'the assassin',
+};
+
+/** How a turn's clue paid off, appended as the turn ends. */
+function turnSummary(clue: Clue, why: TurnEnd): RecapEvent {
+  const found = clue.guesses.filter((g) => g.card === clue.team).length;
+  const wrong = why === 'bystander' || why === 'other-team' || why === 'assassin';
+  return {
+    actor: clue.by,
+    text: `${TEAM_NAME[clue.team]} found ${found} of ${clue.count ?? '∞'} on {${clue.by}}’s clue ${clue.word}; the turn ended on ${ENDED[why]}`,
+    tag: `${found} found`,
+    ...(wrong ? { tone: 'bad' as const } : found > 0 ? { tone: 'good' as const } : {}),
+    ...(found >= 3 || why === 'won' || why === 'assassin' ? { key: true } : {}),
+  };
+}
+
 function endTurn(state: CodenamesState, why: TurnEnd): CodenamesState {
   const clues = state.clues.map((c, i) =>
     i === state.clues.length - 1 ? { ...c, ended: why } : c,
   );
+  const last = clues[clues.length - 1];
   return {
     ...state,
     clues,
+    recap: last
+      ? [...state.recap, { ...turnSummary(last, why), round: clues.length }]
+      : state.recap,
     turn: other(state.turn),
     phase: 'clue',
     guessesLeft: null,
@@ -226,8 +270,19 @@ function reveal(state: CodenamesState, index: number, by: string): CodenamesStat
     recap: [
       ...state.recap,
       {
+        round: state.clues.length,
         actor: by,
-        text: `${by} guessed ${state.words[index]}: ${card === 'bystander' ? 'a bystander' : card === 'assassin' ? 'the assassin' : `${TEAM_NAME[card as Team]}`}`,
+        text: `{${by}} guessed ${state.words[index]}: ${card === 'bystander' ? 'a bystander' : card === 'assassin' ? 'the assassin' : `${TEAM_NAME[card as Team]}`}`,
+        tag:
+          card === team
+            ? 'Hit'
+            : card === 'bystander'
+              ? 'Bystander'
+              : card === 'assassin'
+                ? 'Assassin!'
+                : 'Other team',
+        tone: card === team ? 'good' : 'bad',
+        ...(card === 'assassin' ? { key: true } : {}),
         data: { kind: 'guess', team, ...guess, word: state.words[index] },
       },
     ],
@@ -346,8 +401,14 @@ export const codenames: GameModule<
         recap: [
           ...state.recap,
           {
+            round: state.clues.length + 1,
             actor: playerId,
             text: `${TEAM_NAME[team]} clue: ${word} ${action.count ?? '∞'}`,
+            tag: `${word} ${action.count ?? '∞'}`,
+            // What the spymaster could see and no one else could.
+            secret: `${TEAM_NAME[team]} still needed ${state.words
+              .filter((_, i) => state.key[i] === team && !state.revealed[i])
+              .join(', ')}; the assassin was ${state.words[state.key.indexOf('assassin')]}`,
             data: { kind: 'clue', team, word, count: action.count },
           },
         ],
@@ -421,6 +482,11 @@ export const codenames: GameModule<
       summary,
       reveal,
       recap: state.recap,
+      roundName: 'Turn',
+      stats: statsOf(
+        state,
+        state.players.filter((id) => state.teams[id] === winner),
+      ),
       highlights: bestClue
         ? [
             {
@@ -473,6 +539,11 @@ export const codenames: GameModule<
         how: null,
       } satisfies CodenamesReveal,
       recap: state.recap,
+      roundName: 'Turn',
+      stats: statsOf(
+        state,
+        state.players.filter((id) => leader && state.teams[id] === leader),
+      ),
       standings: state.players.map((playerId) => {
         const team = state.teams[playerId]!;
         return {

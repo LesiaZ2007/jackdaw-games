@@ -8,7 +8,7 @@ import type {
   LobbyStats,
   PlayerStats,
 } from '@jackdaw/engine';
-import { Sheet, Token } from '@jackdaw/ui';
+import { Sheet, Token, withNames } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 import { nightSummary } from '@/lib/night';
 import { ConfirmButton } from './menu-sheet';
@@ -177,7 +177,7 @@ export function StatsSheet({
             <li key={h.endedAt}>
               <time>{time(h.endedAt)}</time>
               <span>
-                <b>{gameName(h.gameId)}</b>: {h.summary}
+                <b>{gameName(h.gameId)}</b>: {withNames(h.summary, h.names)}
                 {h.winners.length > 0 && (
                   <> Won by {h.winners.map((w) => h.names[w] ?? 'someone').join(', ')}.</>
                 )}

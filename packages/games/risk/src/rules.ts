@@ -3,6 +3,7 @@ import {
   type GameModule,
   type GameResult,
   type RecapEvent,
+  type RecapStats,
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
@@ -328,11 +329,23 @@ const fogged = (s: RiskState) => !!s.fog && s.phase !== 'over';
 
 /** Recap lines that name a territory, told without it while the fog is down. */
 function foggedLog(log: RecapEvent[]): RecapEvent[] {
-  return log.map((e) =>
-    e.data && typeof e.data === 'object' && 'to' in e.data
-      ? { round: e.round, actor: e.actor, text: '{actor} takes a territory' }
-      : e,
-  );
+  return log
+    .filter((e) => !(e.data && typeof e.data === 'object' && 'fogged' in e.data))
+    .map((e) =>
+      e.data && typeof e.data === 'object' && 'to' in e.data
+        ? { round: e.round, actor: e.actor, text: '{actor} takes a territory' }
+        : e,
+    );
+}
+
+/** What the table sees of the log: no hidden truths until the game is over. */
+function openLog(s: RiskState): RecapEvent[] {
+  const shown = s.log.slice(-LOG_SHOWN).map((e) => {
+    if (s.phase === 'over' || e.secret === undefined) return e;
+    const { secret: _secret, ...rest } = e;
+    return rest;
+  });
+  return fogged(s) ? foggedLog(shown) : shown;
 }
 
 function getTableView(s: RiskState): RiskTableView {
@@ -362,7 +375,7 @@ function getTableView(s: RiskState): RiskTableView {
     eliminated: s.eliminated,
     battle: fog ? null : s.battle,
     actBy: s.actBy,
-    log: fog ? foggedLog(s.log.slice(-LOG_SHOWN)) : s.log.slice(-LOG_SHOWN),
+    log: openLog(s),
     missions: s.phase === 'over' ? s.missions : null,
     winner: s.winner,
   };
@@ -406,8 +419,20 @@ const refuse = (code: string, message: string): never => {
 };
 
 /** Adds an event to the log (keeping the last few dozen). */
-function logged(s: RiskState, text: string, actor = s.turn, data?: unknown): RiskState {
-  const e: RecapEvent = { round: s.round, actor, text, ...(data === undefined ? {} : { data }) };
+function logged(
+  s: RiskState,
+  text: string,
+  actor = s.turn,
+  data?: unknown,
+  extra: Pick<RecapEvent, 'tag' | 'tone' | 'key' | 'secret'> = {},
+): RiskState {
+  const e: RecapEvent = {
+    round: s.round,
+    actor,
+    text,
+    ...extra,
+    ...(data === undefined ? {} : { data }),
+  };
   return { ...s, log: [...s.log, e].slice(-LOG_KEEP) };
 }
 
@@ -483,6 +508,7 @@ function trade(s: RiskState, pid: string, ids: string[]): RiskState {
     `{actor} trades a set for ${value} armies`,
     pid,
     { value },
+    { tag: `+${value}`, tone: 'good', ...(value >= 10 ? { key: true } : {}) },
   );
 }
 
@@ -593,7 +619,8 @@ function attack(
     run,
     best,
   };
-  if (!conquered) return next;
+  if (!conquered)
+    return atk < 2 && run.lost >= BIG_BATTLE ? failedAssault(next, a, run.lost) : next;
   // The dice rolled last move in at once; occupy can send more.
   const min = last.attackDice.length;
   next = {
@@ -607,9 +634,74 @@ function attack(
   if (next.takenThisTurn > (next.best.conquest?.value ?? 0))
     next = { ...next, best: { ...next.best, conquest: { pid, value: next.takenThisTurn } } };
   next = logged(next, `{actor} takes ${nameOf(map, a.to)}`, pid, { to: a.to, from: defender });
+  next = conquestEvents(next, s, a.to, pid, defender, run.lost);
   return defender !== NEUTRAL && territoriesOf(next.owner, defender).length === 0
     ? knockOut(next, pid, defender)
     : next;
+}
+
+/** A run of attacks costing this many armies is worth a line. */
+const BIG_BATTLE = 12;
+
+/** A costly attack that ran out of armies before taking the territory. */
+function failedAssault(s: RiskState, a: { from: string; to: string }, lost: number): RiskState {
+  const map = mapOf(s);
+  return logged(
+    s,
+    `{actor}'s assault on ${nameOf(map, a.to)} falls short`,
+    s.turn,
+    { fogged: true },
+    { tag: `${lost} lost`, tone: 'bad' },
+  );
+}
+
+/**
+ * The lines a conquest earns: a continent completed, a rival's continent broken, or a bloody fight
+ * won. `before` is the state before the attack. Territory names stay out of the fog.
+ */
+function conquestEvents(
+  s: RiskState,
+  before: RiskState,
+  to: string,
+  pid: string,
+  defender: string,
+  lost: number,
+): RiskState {
+  const map = mapOf(s);
+  const held = new Set(continentsHeld(map, before.owner, pid));
+  let next = s;
+  for (const c of continentsHeld(map, s.owner, pid)) {
+    if (held.has(c)) continue;
+    const cont = map.continents.find((x) => x.id === c)!;
+    next = logged(
+      next,
+      `{actor} now holds all of ${cont.name}`,
+      pid,
+      { fogged: true },
+      { tag: `${cont.name} +${cont.bonus}`, tone: 'good', key: true },
+    );
+  }
+  if (defender !== NEUTRAL)
+    for (const c of continentsHeld(map, before.owner, defender)) {
+      if (!map.territories.some((t) => t.id === to && t.continent === c)) continue;
+      const cont = map.continents.find((x) => x.id === c)!;
+      next = logged(
+        next,
+        `{actor} breaks {${defender}}'s hold on ${cont.name}`,
+        pid,
+        { fogged: true },
+        { tag: 'Broken', tone: 'good', key: true },
+      );
+    }
+  if (lost >= BIG_BATTLE)
+    next = logged(
+      next,
+      `{actor} wins a bloody fight for ${nameOf(map, to)}`,
+      pid,
+      { fogged: true },
+      { tag: `${lost} lost`, tone: 'good' },
+    );
+  return next;
 }
 
 /** `loser` has no territories left: out of the game, their cards to whoever took them out. */
@@ -634,6 +726,13 @@ function knockOut(s: RiskState, by: string, loser: string): RiskState {
     },
     `{actor} is knocked out`,
     loser,
+    undefined,
+    {
+      tag: 'Eliminated',
+      tone: 'bad',
+      key: true,
+      secret: `{${by}} took their ${s.hands[loser]?.length ?? 0} cards.`,
+    },
   );
 }
 
@@ -731,7 +830,23 @@ function settle(s: RiskState, mover: string, before: RiskState): RiskState {
     { ...s, phase: 'over', winner: won, occupy: null, actBy: null },
     '{actor} wins',
     won,
+    undefined,
+    {
+      tag: 'Victory',
+      tone: 'good',
+      key: true,
+      ...(s.missions ? { secret: missionsSecret(s) } : {}),
+    },
   );
+}
+
+/** Every player's secret mission, told once the game is over. */
+function missionsSecret(s: RiskState): string {
+  const map = mapOf(s);
+  return s.seats
+    .filter((p) => s.missions?.[p])
+    .map((p) => `{${p}}: ${missionText(s.missions![p]!, map, (q) => `{${q}}`)}`)
+    .join('; ');
 }
 
 function applyAction(s: RiskState, pid: string, a: RiskAction, rng: Rng): RiskState {
@@ -934,6 +1049,32 @@ function standingsOf(s: RiskState, winners: string[]): GameResult['standings'] {
   }));
 }
 
+/** Territories, armies and conquests for each player, winners first, then by land held. */
+function statsOf(s: RiskState, winners: string[]): RecapStats {
+  const rows = s.seats.map((p) => {
+    const lands = territoriesOf(s.owner, p);
+    return {
+      playerId: p,
+      lands: lands.length,
+      values: [
+        lands.length,
+        lands.reduce((n, t) => n + (s.armies[t] ?? 0), 0),
+        s.log.filter((e) => e.actor === p && e.data && typeof e.data === 'object' && 'to' in e.data)
+          .length,
+      ],
+    };
+  });
+  rows.sort(
+    (a, b) =>
+      Number(winners.includes(b.playerId)) - Number(winners.includes(a.playerId)) ||
+      b.lands - a.lands,
+  );
+  return {
+    columns: ['Lands', 'Armies', 'Conquests'],
+    rows: rows.map((r) => ({ playerId: r.playerId, values: r.values })),
+  };
+}
+
 function getResult(s: RiskState): GameResult | null {
   if (s.phase !== 'over' || !s.winner) return null;
   const mission = s.missions?.[s.winner];
@@ -944,6 +1085,8 @@ function getResult(s: RiskState): GameResult | null {
       : `The last army standing after ${s.round} rounds`,
     reveal: revealOf(s, s.winner),
     recap: s.log,
+    roundName: 'Round',
+    stats: statsOf(s, [s.winner]),
     standings: standingsOf(s, [s.winner]),
     highlights: highlightsOf(s),
   };
@@ -980,6 +1123,8 @@ function partialResult(s: RiskState): GameResult | null {
         : `Held the most territories (${lead.lands}) after ${s.round} rounds`,
     reveal: revealOf(s, winners.length === 1 ? winners[0]! : null),
     recap: s.log,
+    roundName: 'Round',
+    stats: statsOf(s, winners),
     standings: standingsOf(s, winners),
     highlights: highlightsOf(s),
   };

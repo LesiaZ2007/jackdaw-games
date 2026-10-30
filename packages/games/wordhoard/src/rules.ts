@@ -3,6 +3,7 @@ import {
   type GameModule,
   type GameResult,
   type RecapEvent,
+  type RecapStats,
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
@@ -197,17 +198,44 @@ function finish(s: WordhoardState, out: string | null, who?: string): WordhoardS
   const scores = Object.fromEntries(
     keys(s).map((id) => [id, (s.scores[id] ?? 0) + (endBonus[id] ?? 0)]),
   );
+  // The racks were hidden all game; now they are told, with what each cost or earned.
+  const racks = keys(s)
+    .map((id) => {
+      const rack = s.racks[id] ?? [];
+      return `${(s.sides.find((x) => x[0] === id) ?? [id]).map((p) => `{${p}}`).join(' and ')}: ${rack.length ? tilesText(rack) : 'empty'}`;
+    })
+    .join('; ');
+  // The single best play of the game is a turning point (older games' recaps carry no tags).
+  const best = s.moves.reduce(
+    (a, m, i) => (m.kind === 'play' && (a < 0 || m.score > s.moves[a]!.score) ? i : a),
+    -1,
+  );
+  const bestWord = best >= 0 ? s.moves[best]!.words?.[0]?.word : undefined;
+  const recap = s.recap.map((e) =>
+    bestWord &&
+    e.tag &&
+    e.text.includes(`played ${bestWord}`) &&
+    e.tag === `${s.moves[best]!.score} pts`
+      ? { ...e, key: true }
+      : e,
+  );
   return {
     ...s,
     scores,
     endBonus,
     over: true,
     recap: [
-      ...s.recap,
+      ...recap,
       {
+        round: roundOf(s),
+        actor: out ? (who ?? out) : undefined,
         text: out
           ? `{${who ?? out}} used the last tile and gained ${left} from the other racks.`
           : `Six scoreless turns in a row ended the game.`,
+        secret: `Racks left: ${racks}`,
+        tag: out ? `+${left}` : 'Stalemate',
+        ...(out ? { tone: 'good' as const } : {}),
+        key: true,
       },
     ],
   };
@@ -241,6 +269,18 @@ function clock(prev: WordhoardState | null, s: WordhoardState, now: number): Wor
 
 const words = (ws: FormedWord[]) => ws.map((w) => w.word).join(', ');
 
+/** The round a move belongs to: each side has played once per round. */
+const roundOf = (s: WordhoardState) => Math.floor(s.moves.length / s.sides.length) + 1;
+
+/** A play this big is worth a mention on its own. */
+const BIG_PLAY = 40;
+
+const tilesText = (tiles: string[]) =>
+  [...tiles]
+    .sort()
+    .map((t) => (t === '?' ? 'blank' : t))
+    .join(' ');
+
 /** One player's move, before the turn timer is set (see `clock`). */
 function act(
   s: WordhoardState,
@@ -259,7 +299,16 @@ function act(
       turn: nextSide(s),
       moves: [...s.moves, { player: playerId, kind: 'pass', score: 0 }],
       scoreless: s.scoreless + 1,
-      recap: [...s.recap, { actor: playerId, text: 'passed' }],
+      recap: [
+        ...s.recap,
+        {
+          round: roundOf(s),
+          actor: playerId,
+          text: 'passed',
+          secret: `Rack: ${tilesText(rack)}`,
+          tag: 'Pass',
+        },
+      ],
     };
     return next.scoreless >= SCORELESS_END ? finish(next, null) : next;
   }
@@ -278,7 +327,16 @@ function act(
       turn: nextSide(s),
       moves: [...s.moves, { player: playerId, kind: 'swap', score: 0, count: action.tiles.length }],
       scoreless: s.scoreless + 1,
-      recap: [...s.recap, { actor: playerId, text: `swapped ${action.tiles.length} tiles` }],
+      recap: [
+        ...s.recap,
+        {
+          round: roundOf(s),
+          actor: playerId,
+          text: `swapped ${action.tiles.length} tiles`,
+          secret: `Threw back ${tilesText(action.tiles)}`,
+          tag: 'Swap',
+        },
+      ],
     };
     return next.scoreless >= SCORELESS_END ? finish(next, null) : next;
   }
@@ -325,13 +383,43 @@ function act(
     recap: [
       ...s.recap,
       {
+        round: roundOf(s),
         actor: playerId,
         text: `played ${words(check.words)} for ${check.score}${check.bingo ? ' (all seven tiles)' : ''}`,
+        tag: check.bingo ? `Bingo ${check.score} pts` : `${check.score} pts`,
+        ...(check.bingo || check.score >= BIG_PLAY ? { tone: 'good' as const } : {}),
+        ...(check.bingo ? { key: true } : {}),
       },
     ],
   };
   if (d.rack.length === 0 && d.bag.length === 0) return finish(next, side, playerId);
   return next.scoreless >= SCORELESS_END ? finish(next, null) : next;
+}
+
+/** Score, best word and words played for each side, winners first. */
+function statsOf(s: WordhoardState, won: string[]): RecapStats {
+  const rows = keys(s).map((id) => {
+    const plays = s.moves.filter(
+      (m) => m.kind === 'play' && (sideOf(s, m.player) ?? m.player) === id,
+    );
+    const top = plays.reduce<Move | null>((a, m) => (!a || m.score > a.score ? m : a), null);
+    return {
+      playerId: id,
+      score: s.scores[id] ?? 0,
+      won: won.includes(id),
+      values: [
+        s.scores[id] ?? 0,
+        top ? `${top.words?.[0]?.word} ${top.score}` : '-',
+        plays.length,
+        plays.filter((m) => m.bingo).length,
+      ],
+    };
+  });
+  rows.sort((a, b) => Number(b.won) - Number(a.won) || b.score - a.score);
+  return {
+    columns: ['Score', 'Best word', 'Words', 'Bingos'],
+    rows: rows.map((r) => ({ playerId: r.playerId, values: r.values })),
+  };
 }
 
 /**
@@ -362,6 +450,8 @@ function resultOf(s: WordhoardState): GameResult {
         : `${top} points${best ? `; best play ${best.words?.[0]?.word} for ${best.score}` : ''}`,
     reveal,
     recap: s.recap,
+    roundName: 'Round',
+    stats: statsOf(s, won),
     highlights: best
       ? [
           {
@@ -453,7 +543,17 @@ export const wordhoard: GameModule<
       turn: nextSide(s),
       moves: [...s.moves, { player: s.turn, kind: 'pass', score: 0, late: true }],
       scoreless: s.scoreless + 1,
-      recap: [...s.recap, { actor: s.turn, text: 'ran out of time' }],
+      recap: [
+        ...s.recap,
+        {
+          round: roundOf(s),
+          actor: s.turn,
+          text: 'ran out of time',
+          secret: `Rack: ${tilesText(s.racks[s.turn] ?? [])}`,
+          tag: 'Timed out',
+          tone: 'bad',
+        },
+      ],
     };
     return clock(s, next.scoreless >= SCORELESS_END ? finish(next, null) : next, now);
   },

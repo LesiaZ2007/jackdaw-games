@@ -4,6 +4,7 @@ import {
   type GameModule,
   type GameResult,
   type RecapEvent,
+  type RecapStats,
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
@@ -114,6 +115,28 @@ export function botPick(
   return { type: 'pick', pick: rng.pick(PICKS) };
 }
 
+/** Points, rounds topped and most-thrown pick per player, the winners first. */
+function statsFrom(state: RpsState, winners: string[]): RecapStats {
+  const order = [...winners, ...state.players.filter((id) => !winners.includes(id))];
+  return {
+    columns: ['Points', 'Rounds won', 'Favourite'],
+    rows: order.map((playerId) => {
+      const thrown = state.history.map((h) => h.picks[playerId]!);
+      const favourite = PICKS.map((p) => [p, thrown.filter((t) => t === p).length] as const).sort(
+        (a, b) => b[1] - a[1],
+      )[0]!;
+      const roundsWon = state.history.filter((h) => {
+        const top = Math.max(...Object.values(h.points));
+        return top > 0 && h.points[playerId] === top;
+      }).length;
+      return {
+        playerId,
+        values: [state.scores[playerId]!, roundsWon, favourite[1] > 0 ? favourite[0] : '-'],
+      };
+    }),
+  };
+}
+
 /** The game's result from the points so far: the most wins, a tie shares it, all level is a draw. */
 function resultFrom(
   state: RpsState,
@@ -127,6 +150,8 @@ function resultFrom(
     summary: summary(best, winners),
     reveal: { history: state.history, scores: state.scores },
     recap: state.recap,
+    roundName: 'Round',
+    stats: statsFrom(state, winners),
     standings: state.players.map((playerId) => ({
       playerId,
       outcome: allTied ? 'draw' : winners.includes(playerId) ? 'win' : 'loss',
@@ -169,6 +194,10 @@ export const rps: GameModule<RpsState, RpsAction, RpsPlayerView, RpsTableView, R
       state.players.map((id) => [id, state.scores[id]! + points[id]!]),
     );
     const result: RoundResult = { round: state.round, picks, points };
+    const top = Math.max(...Object.values(points));
+    const leaders = state.players.filter((id) => points[id] === top);
+    // A clean sweep (one throw beating everyone else's) or the final round is a turning point.
+    const sweep = top > 0 && leaders.length === 1 && top === state.players.length - 1;
     return {
       ...state,
       round: state.round + 1,
@@ -180,7 +209,9 @@ export const rps: GameModule<RpsState, RpsAction, RpsPlayerView, RpsTableView, R
         {
           round: state.round,
           // Player ids in the text are swapped for names by the recap screens.
-          text: state.players.map((id) => `${id} threw ${picks[id]} (+${points[id]})`).join(', '),
+          text: state.players.map((id) => `{${id}} threw ${picks[id]} (+${points[id]})`).join(', '),
+          tag: top === 0 ? 'Draw' : leaders.length === 1 ? `+${top}` : `${leaders.length} tied`,
+          key: sweep || state.round === state.rounds || undefined,
           data: result,
         },
       ],

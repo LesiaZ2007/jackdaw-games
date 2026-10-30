@@ -846,3 +846,48 @@ describe('the computer player', () => {
     expect(ask(s, 'Wren')).toEqual({ type: 'move', from: 'waste', card: '9c', to: 0 });
   });
 });
+
+describe('the recap', () => {
+  it('names the winner by braced id, with everyone’s cards left as the secret', () => {
+    const n = act(
+      table(
+        { Wren: seat({ cols: [col(['2s'])] }), Rook: seat({ cols: [col(['Kd']), col(['5c'])] }) },
+        [found('s', 1, 'Rook')],
+      ),
+      'Wren',
+      { type: 'up', from: 0, card: '2s' },
+    );
+    const r = game.getResult(n)!;
+    const win = r.recap.at(-1)!;
+    expect(win).toMatchObject({ text: '{Wren} got rid of every card', tag: 'Out!', key: true });
+    expect(win.secret).toBe('Cards left: {Wren} 0, {Rook} 2');
+    expect(r.stats!.rows.map((x) => x.playerId)).toEqual(['Wren', 'Rook']);
+    expect(r.stats!.rows[0]!.values).toEqual([0, 1]);
+    expect(r.stats!.rows[1]!.values).toHaveLength(r.stats!.columns.length);
+  });
+
+  it('logs aces and kings going up and a change of lead, and shows none of it mid-game', () => {
+    const s = table(
+      {
+        Wren: seat({ cols: [col(['Ah']), col(['Ks'])], stock: ['5d'] }),
+        Rook: seat({ cols: [col(['9c', '8d']), col(['7c']), col(['6c']), col(['5c'])] }),
+      },
+      [found('s', 12, 'Rook')],
+    );
+    const a = act(s, 'Wren', { type: 'up', from: 1, card: 'Ks' });
+    expect(a.recap.find((e) => e.tag === 'Pile done')).toMatchObject({ actor: 'Wren', key: true });
+    expect(a.lead).toBe('Wren');
+    expect(a.recap.some((e) => e.tag === 'Lead')).toBe(true);
+    expect(JSON.stringify(game.getTableView(a))).not.toContain('Pile done');
+    expect(JSON.stringify(game.getPlayerView(a, 'Rook'))).not.toContain('Cards left:');
+  });
+
+  it('records what each player pulled when everyone is stuck, as a secret', () => {
+    const before = stuckTable();
+    const n = act(before, 'Wren', { type: 'move', from: 'waste', card: '9c', to: 0 });
+    expect(n.recap.at(-1)).toMatchObject({
+      tag: 'Stuck',
+      secret: '{Wren} pulled 8♦, {Rook} pulled J♥',
+    });
+  });
+});

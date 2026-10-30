@@ -1398,6 +1398,33 @@ describe('game end', () => {
     expect(game.getResult!(over)!.standings!.map((x) => x.outcome)).toEqual(['draw', 'draw']);
   });
 
+  it('recaps the big rent, the bankruptcy and the win, with stats winner first', () => {
+    const shown = lastOne();
+    const over = game.onTimer!(shown, 'show', createRng(1), shown.showBy!);
+    const result = game.getResult!(over)!;
+    expect(result.recap.find((e) => e.tag === '-$320')).toMatchObject({
+      actor: 'rook',
+      tone: 'bad',
+    });
+    const out = result.recap.find((e) => e.tag === 'Bankrupt')!;
+    expect(out).toMatchObject({ actor: 'rook', tone: 'bad', key: true });
+    expect(out.secret).toMatch(/^Left with/);
+    expect(out.text).not.toContain('Left with');
+    expect(result.recap.at(-1)).toMatchObject({ actor: 'wren', tone: 'good', key: true });
+    expect(result.stats!.rows.map((r) => r.playerId)).toEqual(['wren', 'rook']);
+    for (const r of result.stats!.rows) expect(r.values).toHaveLength(result.stats!.columns.length);
+    expect(JSON.stringify(game.getTableView(shown))).not.toContain('Left with');
+  });
+
+  it('recaps completing a colour set', () => {
+    const s = edit(base(), (d) => {
+      own(d, 'wren', [1]);
+      seat(d, 'wren').pos = 1;
+    });
+    const bought = act(act(s, 'wren', { type: 'roll' }, dice(1, 1)), 'wren', { type: 'buy' });
+    expect(bought.recap.at(-1)).toMatchObject({ actor: 'wren', tag: 'Brown set', key: true });
+  });
+
   it('getResult is null while the game is on', () => {
     expect(game.getResult!(base())).toBeNull();
   });

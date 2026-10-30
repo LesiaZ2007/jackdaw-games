@@ -8,6 +8,7 @@ import {
   type GameModule,
   type GameResult,
   type RecapEvent,
+  type RecapStats,
   type Standing,
 } from '@jackdaw/engine';
 import { DECK, cardShort, rankOf, stacks, suitOf, type Card, type Suit } from './cards';
@@ -108,6 +109,8 @@ export interface SolitaireState {
   startedAt: number;
   endedAt: number | null;
   recap: RecapEvent[];
+  /** Who last led by two or more cards, so the recap notes each change of lead once. Older games don't have it. */
+  lead?: string | null;
 }
 
 /** One foundation as the screens see it. */
@@ -308,6 +311,10 @@ function acesUp(seat: Seat, id: string, fs: Foundation[]): Seat {
   return { ...seat, cols, played };
 }
 
+/** Everyone's cards left, for an event's secret: "{Wren} 12, {Rook} 9". */
+const leftLine = (s: SolitaireState) =>
+  `Cards left: ${s.players.map((id) => `{${id}} ${cardsLeft(s.seats[id]!)}`).join(', ')}`;
+
 /** Fewest cards left first. */
 function leaders(s: SolitaireState): string[] {
   const left = s.players.map((id) => cardsLeft(s.seats[id]!));
@@ -328,7 +335,18 @@ function settle(s: SolitaireState, now: number): SolitaireState {
       over: true,
       winners: [out],
       endedAt: now,
-      recap: [...s.recap, { actor: out, text: `${out} got rid of every card` }],
+      recap: [
+        ...s.recap,
+        {
+          round: s.pulls + 1,
+          actor: out,
+          text: `{${out}} got rid of every card`,
+          secret: leftLine(s),
+          tag: 'Out!',
+          tone: 'good',
+          key: true,
+        },
+      ],
     };
   }
   let st = s;
@@ -367,8 +385,11 @@ function settle(s: SolitaireState, now: number): SolitaireState {
         recap: [
           ...st.recap,
           {
+            round: st.pulls + 1,
             text: 'Nobody could play and nobody had a covered card left',
-            secret: `Fewest cards left: ${winners.join(', ')}`,
+            secret: `${leftLine(st)}. Fewest left: ${winners.map((id) => `{${id}}`).join(', ')}`,
+            tag: 'Blocked',
+            key: true,
           },
         ],
       };
@@ -384,6 +405,13 @@ function settle(s: SolitaireState, now: number): SolitaireState {
         {
           round: n,
           text: 'Everyone was stuck, so everyone pulled a covered card',
+          secret: st.players
+            .map(
+              (id) => `{${id}} pulled ${cards[id] ? cardShort(cards[id]!) : 'nothing (none left)'}`,
+            )
+            .join(', '),
+          tag: 'Stuck',
+          key: n === 1,
           data: { cards },
         },
       ],
@@ -438,6 +466,7 @@ function apply(s: SolitaireState, id: string, a: SolitaireAction, now: number): 
   let foundations = s.foundations;
   let last = s.last;
   let ups = s.ups;
+  const notes: RecapEvent[] = [];
 
   if (a.type === 'draw') {
     if (seat.stock.length === 0) {
@@ -473,6 +502,22 @@ function apply(s: SolitaireState, id: string, a: SolitaireAction, now: number): 
     }
     ups++;
     last = { n: ups, by: id, card: a.card, pile: at };
+    const rank = rankOf(a.card);
+    if (rank === 1 || rank === 13) {
+      const after = { ...s, seats: { ...s.seats, [id]: seat } };
+      notes.push({
+        round: s.pulls + 1,
+        actor: id,
+        text:
+          rank === 1
+            ? `{${id}} put the ${cardShort(a.card)} up and started a pile.`
+            : `{${id}} put the ${cardShort(a.card)} up and finished a pile.`,
+        secret: leftLine(after),
+        tag: rank === 1 ? 'Ace' : 'Pile done',
+        tone: 'good',
+        key: rank === 13,
+      });
+    }
   } else {
     if (a.from === a.to) throw new GameError('same', 'It’s already there.');
     if (!fits(seat.cols[a.to]!, a.card)) throw new GameError('no_fit', 'It doesn’t go there.');
@@ -484,7 +529,23 @@ function apply(s: SolitaireState, id: string, a: SolitaireAction, now: number): 
     seat = { ...seat, cols };
   }
 
-  return settle({ ...s, seats: { ...s.seats, [id]: seat }, foundations, ups, last }, now);
+  const next: SolitaireState = { ...s, seats: { ...s.seats, [id]: seat }, foundations, ups, last };
+  // A change of lead, once someone is two cards clear of everyone else.
+  const left = s.players.map((p) => cardsLeft(next.seats[p]!)).sort((x, y) => x - y);
+  const front = leaders(next);
+  let lead = s.lead;
+  if (front.length === 1 && front[0] !== lead && left[0]! > 0 && left[1]! - left[0]! >= 2) {
+    lead = front[0]!;
+    notes.push({
+      round: s.pulls + 1,
+      actor: lead,
+      text: `{${lead}} took the lead with ${left[0]} cards left.`,
+      secret: leftLine(next),
+      tag: 'Lead',
+      tone: 'good',
+    });
+  }
+  return settle({ ...next, lead, recap: [...s.recap, ...notes] }, now);
 }
 
 // ── Views ─────────────────────────────────────────────────────────────────────
@@ -555,7 +616,15 @@ function resultOf(s: SolitaireState, early: boolean): GameResult | null {
     pulls: s.pulls,
     ms: (s.endedAt ?? s.startedAt) - s.startedAt,
   };
-  return { winners, summary, reveal, recap: s.recap, standings };
+  // Winners first, then fewest cards left.
+  const order = [...s.players].sort(
+    (x, y) => Number(winners.includes(y)) - Number(winners.includes(x)) || left[x]! - left[y]!,
+  );
+  const stats: RecapStats = {
+    columns: ['Cards left', 'Cards played'],
+    rows: order.map((id) => ({ playerId: id, values: [left[id]!, played[id]!] })),
+  };
+  return { winners, summary, reveal, recap: s.recap, standings, roundName: 'Stretch', stats };
 }
 
 // ── Bot ───────────────────────────────────────────────────────────────────────

@@ -335,3 +335,35 @@ describe('clock', () => {
     expect(clock(3_729_000)).toBe('1:02:09');
   });
 });
+
+describe('the recap', () => {
+  it('logs each solve with its place, the board as a secret, and nothing on the table', () => {
+    let s = start(['wren', 'rook'], '4×4', 2);
+    s = solveFor(s, 'rook', 5_000);
+    s = solveFor(s, 'wren', 9_000);
+    const [first, second] = s.recap;
+    expect(first).toMatchObject({ round: 1, actor: 'rook', tag: '1st', tone: 'good' });
+    expect(first!.text).toBe('{rook} solved puzzle 1 in 0:04');
+    expect(first!.secret).toMatch(/^Board: /);
+    expect(second).toMatchObject({ actor: 'wren', tag: '2nd' });
+    const json = JSON.stringify([fandango.getTableView(s), fandango.getPlayerView(s, 'wren')]);
+    expect(json).not.toContain('recap');
+    expect(json).not.toContain('Board:');
+  });
+
+  it('notes a change of lead, the last call and the time running out, with stats at the end', () => {
+    let s = start(['wren', 'rook', 'finch'], '4×4', 2);
+    s = solveFor(s, 'rook', 10_000);
+    s = solveFor(s, 'wren', 11_000);
+    s = solveFor(s, 'wren', 20_000);
+    expect(s.recap.some((e) => e.tag === 'Lead' && e.actor === 'wren' && e.key)).toBe(true);
+    expect(s.recap.some((e) => e.tag === 'Last call')).toBe(true);
+    s = fandango.onTimer!(s, 'close', createRng(1), 20_000 + CLOSE_MS);
+    expect(s.recap.at(-1)!.secret).toContain('{finch} was on puzzle 1');
+    const r = fandango.getResult(s)!;
+    expect(r.roundName).toBe('Puzzle');
+    expect(r.stats!.rows.map((x) => x.playerId)).toEqual(['wren', 'rook', 'finch']);
+    expect(r.stats!.rows[0]!.values).toEqual(['2 of 2', '0:19', '0:09']);
+    for (const e of r.recap) expect(e.text).not.toMatch(/(^|\s)(wren|rook|finch)(\s|$)/);
+  });
+});

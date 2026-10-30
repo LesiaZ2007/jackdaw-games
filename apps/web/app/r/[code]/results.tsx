@@ -130,9 +130,7 @@ export function Results({
           title={title}
           avatar={sealAvatar}
           detail={
-            lostTo
-              ? `${joinNames(winnerNames)} won. ${summary.replace(/\.$/, '')}.`
-              : summary
+            lostTo ? `${joinNames(winnerNames)} won. ${summary.replace(/\.$/, '')}.` : summary
           }
         />
         {result.winners.length > 0 && !soleInSeal && (

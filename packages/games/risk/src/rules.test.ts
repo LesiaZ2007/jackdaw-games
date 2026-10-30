@@ -950,3 +950,69 @@ describe('ending early', () => {
     expect(game.partialResult!(base)!.winners.sort()).toEqual(['a', 'b', 'c']);
   });
 });
+
+describe('the recap', () => {
+  const asia = world.territories.filter((t) => t.continent === 'asia').map((t) => t.id);
+  const seize = (s: RiskState) =>
+    act(
+      s,
+      'a',
+      { type: 'attack', from: 'alaska', to: 'kamchatka', mode: 'roll' },
+      dice(6, 6, 6, 1),
+    );
+  const missionGame = () => {
+    const base = staged({
+      a: tids.filter((t) => t !== 'kamchatka').slice(0, 23),
+      armies: { alaska: 4 },
+    });
+    const missions: Record<string, Mission> = {
+      a: { kind: 'territories', n: 24 },
+      b: { kind: 'destroy', target: 'c' },
+    };
+    return { ...base, goal: 'missions' as const, missions };
+  };
+
+  it('chips a completed continent and a knock-out as turning points', () => {
+    const s = staged({
+      a: ['alaska', ...asia.filter((t) => t !== 'kamchatka')],
+      armies: { alaska: 4 },
+    });
+    const e = seize(s).log.find((x) => x.tag?.startsWith('Asia'))!;
+    expect(e).toMatchObject({ actor: 'a', tone: 'good', key: true });
+    const s3 = staged({ a: ['alaska'], c: ['kamchatka'], armies: { alaska: 4 } }, 'attack', [
+      'a',
+      'b',
+      'c',
+    ]);
+    expect(seize(s3).log.at(-1)).toMatchObject({
+      actor: 'c',
+      tag: 'Eliminated',
+      tone: 'bad',
+      key: true,
+    });
+  });
+
+  it('tells missions only in the winning event, and strips secrets from the table view', () => {
+    const done = seize(missionGame());
+    expect(done.phase).toBe('over');
+    const win = game.getResult(done)!.recap.at(-1)!;
+    expect(win).toMatchObject({ tag: 'Victory', key: true });
+    expect(win.secret).toContain('{b}: Destroy');
+    expect(win.text).not.toContain('Hold');
+    const s3 = staged({ a: ['alaska'], c: ['kamchatka'], armies: { alaska: 4 } }, 'attack', [
+      'a',
+      'b',
+      'c',
+    ]);
+    const mid = seize(s3);
+    expect(mid.log.at(-1)!.secret).toBeDefined();
+    expect(JSON.stringify(game.getTableView(mid).log)).not.toContain('secret');
+  });
+
+  it('has stats rows, winner first, matching the columns', () => {
+    const stats = game.getResult(seize(missionGame()))!.stats!;
+    expect(stats.rows[0]!.playerId).toBe('a');
+    for (const r of stats.rows) expect(r.values).toHaveLength(stats.columns.length);
+    expect(stats.rows[0]!.values[2]).toBe(1);
+  });
+});

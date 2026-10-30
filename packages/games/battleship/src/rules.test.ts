@@ -286,6 +286,41 @@ describe('firing', () => {
   });
 });
 
+describe('recap', () => {
+  it('chips the first hit and each sunk ship, with the hidden truth only in secret', () => {
+    let s = placed(3);
+    const attacker = s.toAct!;
+    const defender = other(s, attacker);
+    const destroyer = squares(FLEET[defender]!.find((ship) => ship.id === 'destroyer')!);
+    s = act(s, attacker, { type: 'fire', cells: [destroyer[0]!] });
+    expect(s.recap.at(-1)).toMatchObject({ round: 1, tag: 'First hit', tone: 'good', key: true });
+    s = act(s, attacker, { type: 'fire', cells: [destroyer[1]!] });
+    const sunk = s.recap.at(-1)!;
+    expect(sunk).toMatchObject({ tag: 'Sunk', key: true });
+    expect(sunk.text).not.toMatch(/lay (across|down)/);
+    expect(sunk.secret).toMatch(/lay (across|down)/);
+    expect(JSON.stringify(game.getTableView(s))).not.toMatch(/First hit|lay across|lay down/);
+    expectNoLeak(s);
+  });
+
+  it('adds a line when hits run to three, and stats put the winner first', () => {
+    let s = placed(5);
+    const attacker = s.toAct!;
+    const defender = other(s, attacker);
+    const cells = FLEET[defender]!.flatMap(squares);
+    for (let i = 0; i < 3; i++) s = act(s, attacker, { type: 'fire', cells: [cells[i]!] });
+    expect(s.recap.some((e) => e.tag === '3 in a row')).toBe(true);
+    for (let i = 3; i < cells.length; i++)
+      s = act(s, attacker, { type: 'fire', cells: [cells[i]!] });
+    const over = game.onTimer!(s, 'show', createRng(1), s.showBy!);
+    const r = game.getResult(over)!;
+    expect(r.roundName).toBe('Turn');
+    expect(r.stats!.rows[0]).toEqual({ playerId: attacker, values: [17, 17, '100%', 5] });
+    expect(r.stats!.rows).toHaveLength(2);
+    expect(r.recap.at(-1)).toMatchObject({ tag: 'Fleet sunk', key: true });
+  });
+});
+
 describe('salvo', () => {
   it('is five shots while the fleet is whole, and one fewer after you lose a ship', () => {
     let s = placed(7, { firing: 'Salvo' });

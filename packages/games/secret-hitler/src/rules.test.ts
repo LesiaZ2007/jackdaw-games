@@ -487,3 +487,45 @@ describe('winning', () => {
     }
   });
 });
+
+describe('recap', () => {
+  /** Five players, a deck of nothing but Liberal policies, five governments, Liberals win. */
+  function liberalWin() {
+    let s = table(5, { deck: Array<Policy>(12).fill(L) });
+    for (let i = 0; i < 5; i++) s = govern(s, anyone(s), L);
+    return s;
+  }
+
+  it('keeps the roles and the cards out of the views, and in the secrets', () => {
+    let s = table(5, { deck: Array<Policy>(12).fill(L) });
+    s = govern(s, anyone(s), L);
+    const views = [game.getTableView(s), ...ids(5).map((id) => game.getPlayerView(s, id))];
+    for (const v of views) expect(JSON.stringify(v)).not.toMatch(/recap|drew and|was Hitler/);
+    expect(s.recap[0]!.text).not.toMatch(/Hitler|Fascist|Liberal/);
+    expect(s.recap[0]!.secret).toMatch(/\{p\d\} was Hitler/);
+    const enacted = s.recap.find((e) => e.tag === 'Liberal 1/5')!;
+    expect(enacted.secret).toMatch(/drew .* and discarded/);
+    expect(enacted.text).not.toContain('drew');
+  });
+
+  it('tags, colours and keys the events, and names the sides in stats', () => {
+    const s = liberalWin();
+    const r = game.getResult(s)!;
+    expect(r.roundName).toBe('Government');
+    const last = r.recap.at(-1)!;
+    expect(last).toMatchObject({ tag: 'Liberal 5/5', tone: 'good', key: true });
+    expect(r.recap.some((e) => e.tag === 'Elected')).toBe(true);
+    // Every vote line says who voted which way, by braced id.
+    const vote = r.recap.find((e) => e.tag === 'Elected')!;
+    expect(vote.text).toMatch(/Ja: \{p\d\}/);
+    for (const e of r.recap) expect(e.text.replace(/\{p\d\}/g, '')).not.toMatch(/\bp\d\b/);
+    expect(r.stats!.columns).toEqual(['President', 'Chancellor', 'Ja votes', 'Fascist laws']);
+    expect(r.stats!.rows).toHaveLength(5);
+    const winners = r.winners.length;
+    expect(r.stats!.rows.slice(0, winners).map((x) => x.playerId)).toEqual(r.winners);
+    expect(r.standings!.find((x) => x.playerId === 'p0')).toMatchObject({
+      team: 'Fascist',
+      role: 'Hitler',
+    });
+  });
+});

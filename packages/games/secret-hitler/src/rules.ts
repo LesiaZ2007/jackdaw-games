@@ -3,6 +3,7 @@ import {
   type GameModule,
   type GameResult,
   type RecapEvent,
+  type RecapStats,
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
@@ -207,6 +208,9 @@ export interface ShPlayerView extends ShTableView {
 export const teamOf = (role: Role): Team => (role === 'liberal' ? 'liberal' : 'fascist');
 const alive = (s: ShState) => s.players.filter((id) => !s.dead.includes(id));
 
+/** Player ids as braced names for recap text, which the screens swap for names. */
+const named = (ids: string[]) => ids.map((id) => `{${id}}`).join(', ');
+
 function fail(message: string, code = 'ILLEGAL'): never {
   throw new GameError(code, message);
 }
@@ -308,8 +312,11 @@ function chaos(s: ShState, rng: Rng): ShState {
       recap: [
         ...s.recap,
         {
+          round: s.governments.length,
           text: `Three governments failed in a row: the top policy, ${policy}, was enacted with no power.`,
-          data: { kind: 'chaos', policy },
+          tag: 'Chaos',
+          key: true,
+          data: { kind: 'chaos', policy, benefits: policy },
         },
       ],
     },
@@ -372,7 +379,12 @@ function setup(playerIds: string[], options: ShOptions, rng: Rng): ShState {
     winner: null,
     reason: null,
     options,
-    recap: [],
+    recap: [
+      {
+        text: `The roles are dealt. {${first}} is the first president.`,
+        secret: `${playerIds.map((id, i) => `{${id}} was ${NAMES[dealt[i]!]}`).join(', ')}.`,
+      },
+    ],
   };
 }
 
@@ -521,6 +533,8 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
       };
       const voted: ShState = { ...s, ballots: {}, governments: [...s.governments, gov] };
       const tally = `Ja ${ja}, Nein ${living.length - ja}`;
+      // Votes are public once the last one is in, so who voted which way is part of the text.
+      const who = `Ja: ${named(living.filter((id) => ballots[id])) || 'no one'}. Nein: ${named(living.filter((id) => !ballots[id])) || 'no one'}.`;
       if (!passed) {
         const failed: ShState = {
           ...voted,
@@ -530,7 +544,8 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
             {
               round: gov.n,
               actor: s.president,
-              text: `${s.president} nominated ${s.nominee}: ${tally}. Voted down.`,
+              text: `{${s.president}} nominated {${s.nominee}}: ${tally}. Voted down. ${who}`,
+              tag: `Voted down ${s.tracker + 1}/3`,
               data: { kind: 'vote', n: gov.n },
             },
           ],
@@ -546,7 +561,8 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
           {
             round: gov.n,
             actor: s.president,
-            text: `${s.president} nominated ${s.nominee}: ${tally}. Elected.`,
+            text: `{${s.president}} nominated {${s.nominee}}: ${tally}. Elected. ${who}`,
+            tag: 'Elected',
             data: { kind: 'vote', n: gov.n },
           },
         ],
@@ -554,6 +570,18 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
       if (s.fascist >= HITLER_ZONE && s.roles[s.nominee!] === 'hitler') {
         return {
           ...elected,
+          recap: [
+            ...elected.recap,
+            {
+              round: gov.n,
+              actor: s.nominee!,
+              text: `{${s.nominee}} was elected chancellor with ${s.fascist} Fascist policies down.`,
+              secret: `{${s.nominee}} was Hitler.`,
+              tag: 'Hitler elected!',
+              key: true,
+              data: { kind: 'hitler', benefits: 'fascist' },
+            },
+          ],
           governments: updateGov(elected, { hitlerElected: true }),
           phase: 'over',
           winner: 'fascist',
@@ -601,9 +629,18 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
           {
             round: g.n,
             actor: s.nominee!,
-            text: `${s.nominee} enacted a ${a.policy} policy.`,
-            secret: `${s.president} drew ${g.drawn!.join(', ')} and discarded ${g.presidentDiscard}; ${s.nominee} discarded ${dropped}.`,
-            data: { kind: 'enacted', n: g.n },
+            text: `{${s.nominee}} enacted a ${a.policy} policy.`,
+            secret: `{${s.president}} drew ${g.drawn!.join(', ')} and discarded ${g.presidentDiscard}; {${s.nominee}} discarded ${dropped}.`,
+            tag:
+              a.policy === 'fascist'
+                ? `Fascist ${s.fascist + 1}/${FASCIST_WIN}`
+                : `Liberal ${s.liberal + 1}/${LIBERAL_WIN}`,
+            key:
+              s.liberal + (a.policy === 'liberal' ? 1 : 0) >= LIBERAL_WIN ||
+              s.fascist + (a.policy === 'fascist' ? 1 : 0) >= FASCIST_WIN ||
+              (a.policy === 'fascist' && s.fascist + 1 === HITLER_ZONE) ||
+              undefined,
+            data: { kind: 'enacted', n: g.n, benefits: a.policy },
           },
         ],
       };
@@ -621,7 +658,21 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
     case 'vetoReply': {
       if (s.phase !== 'veto') fail('Nobody has asked for a veto.');
       if (me !== s.president) fail('Only the president answers a veto.');
-      if (!a.accept) return { ...s, phase: 'chancellor' };
+      if (!a.accept)
+        return {
+          ...s,
+          phase: 'chancellor',
+          recap: [
+            ...s.recap,
+            {
+              round: current(s).n,
+              actor: me,
+              text: `{${s.nominee}} asked for a veto and {${s.president}} refused.`,
+              tag: 'Veto refused',
+              data: { kind: 'veto', n: current(s).n },
+            },
+          ],
+        };
       // Both cards are thrown away, and it counts as a failed government on the tracker.
       const g = current(s);
       const vetoed: ShState = {
@@ -635,8 +686,10 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
           {
             round: g.n,
             actor: s.president,
-            text: `${s.nominee} asked for a veto and ${s.president} agreed. Nothing was enacted.`,
-            secret: `${s.president} drew ${g.drawn!.join(', ')} and discarded ${g.presidentDiscard}; both ${s.hand.join(' and ')} were vetoed.`,
+            text: `{${s.nominee}} asked for a veto and {${s.president}} agreed. Nothing was enacted.`,
+            secret: `{${s.president}} drew ${g.drawn!.join(', ')} and discarded ${g.presidentDiscard}; both ${s.hand.join(' and ')} were vetoed.`,
+            tag: 'Vetoed',
+            key: true,
             data: { kind: 'veto', n: g.n },
           },
         ],
@@ -666,8 +719,9 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
             {
               round: g.n,
               actor: me,
-              text: `${me} looked at the top three policies.`,
+              text: `{${me}} looked at the top three policies.`,
               secret: `They were ${cards.join(', ')}.`,
+              tag: 'Peek',
               data: { kind: 'power', power },
             },
           ],
@@ -689,8 +743,9 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
             {
               round: g.n,
               actor: me,
-              text: `${me} investigated ${target}.`,
-              secret: `${target} is ${team === 'liberal' ? 'a Liberal' : 'on the Fascist team'}.`,
+              text: `{${me}} investigated {${target}}.`,
+              secret: `{${target}} is ${team === 'liberal' ? 'a Liberal' : 'on the Fascist team'}${s.roles[target] === 'hitler' ? ' (Hitler)' : ''}.`,
+              tag: 'Investigated',
               data: { kind: 'power', power },
             },
           ],
@@ -706,7 +761,8 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
             {
               round: g.n,
               actor: me,
-              text: `${me} called a special election: ${target} is the next president.`,
+              text: `{${me}} called a special election: {${target}} is the next president.`,
+              tag: 'Special election',
               data: { kind: 'power', power },
             },
           ],
@@ -722,8 +778,15 @@ function apply(s: ShState, me: string, a: ShAction, rng: Rng): ShState {
           {
             round: g.n,
             actor: me,
-            text: `${me} executed ${target}.`,
-            data: { kind: 'power', power },
+            text: `{${me}} executed {${target}}.`,
+            secret: `{${target}} was ${s.roles[target] === 'hitler' ? 'Hitler' : `a ${s.roles[target] === 'liberal' ? 'Liberal' : 'Fascist'}`}.`,
+            tag: s.roles[target] === 'hitler' ? 'Hitler shot!' : 'Executed',
+            key: true,
+            data: {
+              kind: 'power',
+              power,
+              ...(s.roles[target] === 'hitler' ? { benefits: 'liberal' } : {}),
+            },
           },
         ],
       };
@@ -741,6 +804,28 @@ const REASON: Record<WinReason, string> = {
   'hitler-shot': 'Liberals win: Hitler was executed',
 };
 export const reasonText = (r: WinReason) => REASON[r];
+
+/** Terms served, Ja votes and Fascist laws passed per player, the winning side first. */
+function statsOf(s: ShState, winners: string[]): RecapStats {
+  const order = [...winners, ...s.players.filter((id) => !winners.includes(id))];
+  return {
+    columns: ['President', 'Chancellor', 'Ja votes', 'Fascist laws'],
+    rows: order.map((playerId) => {
+      const served = s.governments.filter(
+        (g) => g.passed && (g.president === playerId || g.chancellor === playerId),
+      );
+      return {
+        playerId,
+        values: [
+          s.governments.filter((g) => g.passed && g.president === playerId).length,
+          s.governments.filter((g) => g.passed && g.chancellor === playerId).length,
+          s.governments.filter((g) => g.votes[playerId]).length,
+          served.filter((g) => g.enacted === 'fascist').length,
+        ],
+      };
+    }),
+  };
+}
 
 /** Everything about the game, now that it's over: the reveal behind the recap screen. */
 export interface ShReveal {
@@ -782,13 +867,22 @@ function resultFor(s: ShState, winner: Winner, reason: WinReason, ended: boolean
     lineup: tableView(s).lineup,
   };
   const side = winner === 'liberal' ? 'Liberals' : 'Fascists';
+  const winners = s.players.filter((id) => teamOf(s.roles[id]!) === winner);
   return {
-    winners: s.players.filter((id) => teamOf(s.roles[id]!) === winner),
+    winners,
     summary: ended
       ? `The ${side} were ahead: ${s.liberal} of ${LIBERAL_WIN} Liberal policies to ${s.fascist} of ${FASCIST_WIN} Fascist.`
       : REASON[reason],
     reveal,
-    recap: s.recap,
+    // Events that helped one side are coloured for or against the side that won.
+    recap: s.recap.map((e) => {
+      const benefits = (e.data as { benefits?: Winner } | undefined)?.benefits;
+      return benefits
+        ? { ...e, tone: benefits === winner ? ('good' as const) : ('bad' as const) }
+        : e;
+    }),
+    roundName: 'Government',
+    stats: statsOf(s, winners),
     standings: s.players.map((playerId) => {
       const role = s.roles[playerId]!;
       return {

@@ -126,7 +126,25 @@ export function resultFrom(status: StatusResponse): GameResult {
     winners: players.filter((p) => p.won).map((p) => p.id),
     summary,
     reveal: { winner: status.winner ?? null, roles: standings },
-    recap: [{ text: summary }],
+    // Avalon keeps the quest-by-quest story in its own app; here, the sides and how it ended.
+    recap: [
+      {
+        text: summary,
+        tag: `${winner} wins`,
+        tone: winner === 'Good' ? 'good' : 'bad',
+        key: true,
+      },
+      ...(players.length
+        ? [
+            {
+              text: 'The sides and roles were revealed.',
+              secret: `${players.map((p) => `{${p.id}} was ${roleName(p.role)} (${p.side === 'evil' ? 'Evil' : 'Good'})`).join(', ')}.`,
+              key: true,
+            },
+          ]
+        : []),
+    ],
+    roundName: 'Quest',
     standings,
   };
 }

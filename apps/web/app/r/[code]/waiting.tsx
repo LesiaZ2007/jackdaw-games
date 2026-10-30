@@ -363,7 +363,8 @@ export function Waiting({
           <ul>
             {s.history.slice(0, 3).map((h) => (
               <li key={h.endedAt}>
-                <b>{catalogEntry(h.gameId)?.meta.name ?? h.gameId}</b>: {withNames(h.summary, h.names)}
+                <b>{catalogEntry(h.gameId)?.meta.name ?? h.gameId}</b>:{' '}
+                {withNames(h.summary, h.names)}
                 {h.winners.length > 0 && (
                   <> ({h.winners.map((w) => h.names[w] ?? 'someone').join(', ')})</>
                 )}

@@ -7,6 +7,7 @@ import {
   type GameResult,
   type Highlight,
   type RecapEvent,
+  type RecapStats,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import { meta } from './meta';
@@ -206,6 +207,8 @@ function resultFrom(s: ZapState, early: boolean): GameResult | null {
     summary,
     reveal,
     recap: s.recap,
+    roundName: 'Puzzle',
+    stats: statsOf(s, order),
     standings: s.players.map((playerId) => ({
       playerId,
       outcome: solo
@@ -219,6 +222,25 @@ function resultFrom(s: ZapState, early: boolean): GameResult | null {
             : 'loss',
     })),
     highlights: fastest(s),
+  };
+}
+
+/** Solved, total time and quickest puzzle per player, best first (the ranking order). */
+function statsOf(s: ZapState, order: string[]): RecapStats {
+  return {
+    columns: ['Solved', 'Time', 'Quickest'],
+    rows: order.map((playerId) => {
+      const times = s.times[playerId] ?? [];
+      const splits = times.map((at, i) => at - (i === 0 ? s.startedAt : times[i - 1]!));
+      return {
+        playerId,
+        values: [
+          `${times.length}/${s.count}`,
+          times.length ? clock(times[times.length - 1]! - s.startedAt) : '-',
+          splits.length ? clock(Math.min(...splits)) : '-',
+        ],
+      };
+    }),
   };
 }
 
@@ -391,6 +413,35 @@ export const zap: GameModule<ZapState, ZapAction, ZapPlayerView, ZapTableView, Z
     const ms = now - (index === 0 ? s.startedAt : s.times[playerId]![index - 1]!);
     const done = s.players.filter((id) => times[id]!.length === s.count);
     const over = done.length === s.players.length;
+    const first = s.players.every((id) => id === playerId || (s.times[id]?.length ?? 0) <= index);
+    const finished = mine.length === s.count;
+    const winsRace = finished && done.length === 1;
+    const used = s.helped?.[index] ?? 0;
+    const events: RecapEvent[] = [
+      {
+        round: index + 1,
+        actor: playerId,
+        text: `{${playerId}} solved puzzle ${index + 1} in ${clock(ms)}${
+          used ? `, using ${plural(used, 'hint')}` : ''
+        }`,
+        tag:
+          winsRace && s.players.length > 1
+            ? 'Finished first'
+            : first && s.players.length > 1
+              ? 'First'
+              : clock(ms),
+        ...(first && s.players.length > 1 ? { tone: 'good' as const } : {}),
+        ...(winsRace || (finished && s.players.length === 1) ? { key: true } : {}),
+      },
+    ];
+    // The first finisher starts the clock for everyone else.
+    if (winsRace && !over && s.players.length > 1)
+      events.push({
+        actor: playerId,
+        text: `{${playerId}} finished all ${s.count}; everyone else has ${clock(CLOSE_MS)} to finish their puzzle`,
+        tag: 'Last call',
+        key: true,
+      });
     return {
       ...s,
       times,
@@ -399,21 +450,30 @@ export const zap: GameModule<ZapState, ZapAction, ZapPlayerView, ZapTableView, Z
       puzzles,
       over,
       closesAt: over ? null : (s.closesAt ?? (done.length > 0 ? now + CLOSE_MS : null)),
-      recap: [
-        ...s.recap,
-        {
-          round: index + 1,
-          actor: playerId,
-          text: `${playerId} solved puzzle ${index + 1} in ${clock(ms)}`,
-        },
-      ],
+      recap: [...s.recap, ...events],
     };
   },
 
   nextTimer: (s) => (s.closesAt !== null && !s.over ? { id: 'close', at: s.closesAt } : null),
   onTimer: (s, id, _rng, now) =>
     id === 'close' && s.closesAt !== null && now >= s.closesAt && !s.over
-      ? { ...s, over: true, closesAt: null }
+      ? {
+          ...s,
+          over: true,
+          closesAt: null,
+          recap: [
+            ...s.recap,
+            {
+              text: `Time called: ${s.players
+                .filter((id) => s.times[id]!.length < s.count)
+                .map((id) => `{${id}} (${s.times[id]!.length}/${s.count})`)
+                .join(', ')} didn't finish`,
+              tag: "Time's up",
+              tone: 'bad' as const,
+              key: true,
+            },
+          ],
+        }
       : s,
 
   waitingOn: (s) => (s.over ? [] : s.players.filter((id) => s.times[id]!.length < s.count)),

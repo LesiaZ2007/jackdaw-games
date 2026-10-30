@@ -5,7 +5,7 @@ import { layout } from './geometry';
 import { catan } from './rules';
 import { YIELD, countCards, type Cards } from './types';
 
-import { act, hand, playSetup, ready, seedFor, start } from './testkit';
+import { act, hand, main, playSetup, ready, seedFor, start, withDev } from './testkit';
 
 const game = catan;
 
@@ -248,5 +248,40 @@ describe('order', () => {
   it('rejects stale and repeated moves', () => {
     const s = act(ready(), ready().turn, { type: 'roll' }, seedFor(6));
     refused(() => act(s, s.turn, { type: 'roll' }));
+  });
+});
+
+describe('the recap', () => {
+  it('keeps what a development card was out of the table view until the end', () => {
+    const s0 = main({ a: { ore: 1, wool: 1, grain: 1 } });
+    const s = { ...s0, turn: 'a' };
+    const bought = act(s, 'a', { type: 'buy' });
+    const e = bought.log.at(-1)!;
+    expect(e).toMatchObject({ tag: 'Dev card', actor: 'a' });
+    expect(e.secret).toMatch(/^Drew /);
+    expect(e.text).not.toMatch(/knight|monopoly|victory/);
+    expect(JSON.stringify(game.getTableView(bought).log)).not.toContain('Drew');
+  });
+
+  it('tells hidden victory point cards in the winning event, with stats winner first', () => {
+    const s0 = main({ a: { ore: 1, wool: 1, grain: 1 } });
+    let s = withDev({ ...s0, turn: 'a', target: 3 }, 'a', ['victoryPoint']);
+    s = act(s, 'a', { type: 'buy' });
+    expect(s.phase).toBe('over');
+    const win = s.log.at(-1)!;
+    expect(win).toMatchObject({ tag: '3 pts', tone: 'good', key: true });
+    expect(win.secret).toContain('{a} held 1 victory point card');
+    expect(JSON.stringify(game.getTableView(s).log)).toContain('victory point card');
+    const r = game.getResult(s)!;
+    expect(r.stats!.rows[0]!.playerId).toBe('a');
+    expect(r.stats!.rows[0]!.values[0]).toBe(3);
+    for (const row of r.stats!.rows) expect(row.values).toHaveLength(r.stats!.columns.length);
+  });
+
+  it('chips a monopoly with what it took', () => {
+    const s0 = main({ b: { ore: 3 }, c: { ore: 2 } });
+    const s = withDev({ ...s0, turn: 'a' }, 'a', ['monopoly']);
+    const next = act(s, 'a', { type: 'play', card: 'monopoly', resource: 'ore' });
+    expect(next.log.at(-1)).toMatchObject({ tag: '+5', tone: 'good', key: true });
   });
 });

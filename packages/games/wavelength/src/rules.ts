@@ -4,6 +4,7 @@ import {
   type GameResult,
   type Highlight,
   type RecapEvent,
+  type RecapStats,
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
@@ -208,6 +209,25 @@ export interface WavelengthPlayerView extends WavelengthTableView {
   target: number | null;
   /** Everyone guesses: my own dial, if I've turned it. */
   myDial: number | null;
+}
+
+/** Per-player numbers for the end screen: how their clues did, winners first. */
+function statsOf(s: WavelengthState, winners: string[]): RecapStats {
+  const order = [...winners, ...s.players.filter((id) => !winners.includes(id))];
+  return {
+    columns: ['Clues', 'Points', 'Bullseyes'],
+    rows: order.map((playerId) => {
+      const mine = s.history.filter((h) => h.psychic === playerId);
+      return {
+        playerId,
+        values: [
+          mine.length,
+          mine.reduce((n, h) => n + h.points, 0),
+          mine.filter((h) => h.points === 4).length,
+        ],
+      };
+    }),
+  };
 }
 
 /** The points a guess scores against a target. */
@@ -426,9 +446,29 @@ function reveal(s: WavelengthState, now: number): WavelengthState {
         round: r.n,
         actor: r.psychic,
         text: `${who} turned the dial to ${Math.round(guess)} and scored ${points}.${callText}`,
-        secret: `The target was at ${r.target}.`,
+        secret: `The target was at ${r.target}.${
+          s.guessing === 'average' && Object.keys(r.dials).length
+            ? ` Dials: ${Object.entries(r.dials)
+                .map(([id, at]) => `{${id}} ${Math.round(at)}`)
+                .join(', ')}.`
+            : ''
+        }`,
+        tag: points === 4 ? 'Bullseye!' : points ? `+${points}` : 'Missed',
+        tone: points >= 3 ? 'good' : points === 0 ? 'bad' : undefined,
+        key: points === 4 || points === 0 || final || r.catchUp || undefined,
         data: { kind: 'reveal', ...result },
       },
+      // The other team's call is its own beat: a right call steals a point.
+      ...(callPoint
+        ? [
+            {
+              round: r.n,
+              text: `${TEAM_NAME[other(r.team)]} called ${r.call} and was right`,
+              tag: '+1 call',
+              tone: 'good' as const,
+            },
+          ]
+        : []),
     ],
   };
 }
@@ -601,8 +641,8 @@ export const wavelength: GameModule<
             {
               round: r.n,
               actor: playerId,
-              text: `${playerId} gave “${text}” for ${spectrum[0]} to ${spectrum[1]}.`,
-              secret: `The target was at ${r.target}.`,
+              text: `{${playerId}} gave “${text}” for ${spectrum[0]} to ${spectrum[1]}.`,
+              secret: `The target was at ${r.target}. The other card was ${SPECTRUMS[r.offer[action.card === 0 ? 1 : 0]]!.join(' to ')}.`,
               data: { kind: 'clue', psychic: playerId, clue: text, spectrum },
             },
           ],
@@ -751,11 +791,14 @@ export const wavelength: GameModule<
         summary: `${total} points in ${rounds} round${rounds === 1 ? '' : 's'}: ${rating(total, rounds)}`,
         reveal,
         recap: s.recap,
+        roundName: 'Round',
+        stats: statsOf(s, s.players),
         standings: s.players.map((playerId) => ({ playerId, outcome: pass ? 'win' : 'loss' })),
       };
     }
     const { sun, moon } = s.scores;
     const leader: Team | null = sun > moon ? 'sun' : moon > sun ? 'moon' : null;
+    const leaderPlayers = leader ? s.players.filter((id) => s.teams[id] === leader) : [];
     return {
       winners: leader ? s.players.filter((id) => s.teams[id] === leader) : [],
       summary: leader
@@ -763,6 +806,8 @@ export const wavelength: GameModule<
         : `Level at ${sun} each`,
       reveal: { ...reveal, winner: leader },
       recap: s.recap,
+      roundName: 'Round',
+      stats: statsOf(s, leaderPlayers),
       standings: s.players.map((playerId) => ({
         playerId,
         outcome: leader === null ? 'draw' : s.teams[playerId] === leader ? 'win' : 'loss',
@@ -801,6 +846,8 @@ export const wavelength: GameModule<
         summary: `${total} points in ${s.history.length} rounds: ${rating(total, s.history.length)}`,
         reveal,
         recap: s.recap,
+        roundName: 'Round',
+        stats: statsOf(s, s.players),
         highlights,
         standings: s.players.map((playerId) => ({
           playerId,
@@ -815,6 +862,11 @@ export const wavelength: GameModule<
       summary: `${TEAM_NAME[winner]} wins, ${s.scores[winner]} to ${s.scores[other(winner)]}`,
       reveal,
       recap: s.recap,
+      roundName: 'Round',
+      stats: statsOf(
+        s,
+        s.players.filter((id) => s.teams[id] === winner),
+      ),
       highlights,
       standings: s.players.map((playerId) => ({
         playerId,

@@ -451,3 +451,57 @@ describe('hidden information', () => {
     }
   });
 });
+
+describe('the recap', () => {
+  it('logs wild calls, bluff challenges and the final card, with the hidden truth in secret', () => {
+    const s = table({
+      a: [c('w4'), c('r', 2), c('b', 1), c('w')],
+      b: [c('b', 2), c('g', 5)],
+      c: [c('b', 3)],
+    });
+    const card = s.hands.a![0]!;
+    const played = act(s, 'a', { type: 'play', card, colour: 'b' });
+    // Nothing secret reaches a screen mid-game.
+    expect(JSON.stringify(game.getTableView(played))).not.toContain('bluff');
+    expect(JSON.stringify(game.getTableView(played))).not.toContain('recap');
+    const n = act(played, 'b', { type: 'challenge' });
+    const ev = n.recap.find((e) => e.tag === 'Bluff caught')!;
+    expect(ev).toMatchObject({ actor: 'b', tone: 'good', key: true, round: 1 });
+    expect(ev.secret).toContain('{a}');
+    expect(n.recap.find((e) => e.tag === 'Draw 4')?.secret).toMatch(/bluff/);
+    const wildCard = s.hands.a![3]!;
+    const wild = act(table({ a: [wildCard, c('r', 2)], b: [c('b', 2)] }), 'a', {
+      type: 'play',
+      card: wildCard,
+      colour: 'g',
+    });
+    expect(wild.recap.at(-1)).toMatchObject({ tag: 'Green' });
+    expect(wild.recap.at(-1)!.secret).toContain('Red');
+  });
+
+  it('ends with stats rows, winner first, and the leftover hands as a secret', () => {
+    const s = table({ a: [c('b', 5)], b: [c('g', 9), c('w')], c: [c('y', 'skip')] }, { target: 0 });
+    const over = act(act(s, 'a', { type: 'play', card: c('b', 5) }), 'b', { type: 'deal' });
+    const r = game.getResult(over)!;
+    expect(r.stats!.rows.map((x) => x.playerId)[0]).toBe('a');
+    expect(r.stats!.rows).toHaveLength(3);
+    for (const row of r.stats!.rows) expect(row.values).toHaveLength(r.stats!.columns.length);
+    const last = r.recap.at(-1)!;
+    expect(last).toMatchObject({ tag: '+79', key: true, tone: 'good' });
+    expect(last.secret).toContain('{b} was left with');
+  });
+
+  it('logs UNO calls and catches', () => {
+    const s = table({
+      a: [c('r', 1), c('b', 1)],
+      b: [c('b', 2), c('g', 2)],
+      c: [c('b', 3), c('g', 3)],
+    });
+    const n = act(s, 'a', { type: 'play', card: c('r', 1) });
+    const caught = act(n, 'c', { type: 'catch' });
+    expect(caught.recap.at(-1)).toMatchObject({ actor: 'a', tag: 'Caught +2', tone: 'bad' });
+    const called = act(s, 'a', { type: 'play', card: c('r', 1), call: true });
+    expect(called.recap.at(-1)).toMatchObject({ tag: 'UNO!' });
+    expect(act(n, 'a', { type: 'call' }).recap.at(-1)).toMatchObject({ tag: 'UNO!' });
+  });
+});

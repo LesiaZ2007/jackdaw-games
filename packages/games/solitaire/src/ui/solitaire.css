@@ -78,21 +78,48 @@ button.sol-card {
 .sol-card--red {
   color: var(--gules);
 }
-.sol-card__index {
+.sol-card__rank {
   position: absolute;
   top: 3%;
-  left: 7%;
-  right: 7%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.sol-card__index b {
+  left: 8%;
   font: 800 calc(var(--w) * 0.38) / 1 var(--font-code);
   letter-spacing: -0.04em;
 }
-.sol-card__index svg {
-  width: calc(var(--w) * 0.34);
+.sol-card__pip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 48%;
+  translate: -50% -40%;
+}
+.sol-card__face {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.sol-card__face text {
+  font-family: var(--font-code);
+  font-weight: 800;
+}
+/* Phones get the plain card: rank and one big suit (or a tiny one when covered). */
+.sol-card__simple {
+  display: none;
+}
+@media (max-width: 600px), (pointer: coarse) and (max-height: 500px) {
+  .sol-card .sol-card__face {
+    display: none;
+  }
+  .sol-card__simple {
+    display: contents;
+  }
+}
+/* Only on a card with another fanned over it, where the middle is hidden. */
+.sol-card__corner {
+  position: absolute;
+  top: 5%;
+  right: 8%;
+  width: 22%;
 }
 .sol-card svg {
   display: block;

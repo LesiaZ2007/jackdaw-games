@@ -92,13 +92,7 @@ button.sol-card {
   letter-spacing: -0.04em;
 }
 .sol-card__index svg {
-  width: calc(var(--w) * 0.3);
-}
-.sol-card__pip {
-  position: absolute;
-  left: 22%;
-  right: 22%;
-  bottom: 14%;
+  width: calc(var(--w) * 0.34);
 }
 .sol-card svg {
   display: block;

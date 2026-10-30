@@ -232,8 +232,6 @@
   flex: 1;
   min-height: 0;
   width: 100%;
-  max-width: 720px;
-  margin-inline: auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr) auto auto;
@@ -439,39 +437,64 @@ button.mf-card__in {
   background-image: none;
 }
 
-/* Village placards: a cottage, the player at its door, a roof above. */
+/* Village placards: a cottage, the player at its door, a roof above. The cottage shape clips
+   anything drawn on its edge, so the edge is the card itself in the edge colour, with the cottage
+   laid over it a border's width in: the outline follows the roof in any colour. */
 .mf--village .mf-card__in {
+  --mf-edge: var(--mf-ink);
+  --mf-bw: 2px;
   clip-path: polygon(0 18%, 50% 0, 100% 18%, 100% 100%, 0 100%);
   border: none;
-  background: var(--mf-paper-2);
-  box-shadow: inset 0 0 0 2px var(--mf-ink);
+  background: var(--mf-edge);
   padding-top: 10%;
 }
 .mf--village .mf-card__in::before {
   content: '';
   position: absolute;
-  inset: 0;
-  clip-path: polygon(0 18%, 50% 0, 100% 18%, 100% 22%, 50% 4%, 0 22%);
-  background: var(--mf-ink);
+  inset: var(--mf-bw);
+  clip-path: polygon(0 18%, 50% 0, 100% 18%, 100% 100%, 0 100%);
+  background: var(--mf-paper-2);
+}
+.mf--village .mf-card__in > * {
+  z-index: 1;
+}
+.mf--village .mf-card__tok,
+.mf--village .mf-card__name {
+  position: relative;
 }
 .mf--village .mf-card__name {
+  width: calc(100% - 2 * var(--mf-bw));
+  margin-bottom: var(--mf-bw);
   background: var(--mf-plate);
   color: var(--mf-plate-ink);
   font-family: var(--font-plaque);
 }
+.mf--village .mf-card.is-me .mf-card__in {
+  --mf-bw: 3px;
+}
 .mf--village .mf-card.is-picked .mf-card__in {
-  box-shadow: inset 0 0 0 4px var(--mf-red);
+  --mf-edge: var(--mf-red);
+  --mf-bw: 4px;
+  border: none;
+}
+.mf--village .mf-card.is-marked:not(.is-picked) .mf-card__in {
+  --mf-edge: var(--mf-red);
+  --mf-bw: 3px;
+  outline: none;
 }
 .mf--village .mf-card.is-dead .mf-card__in {
   clip-path: none;
   border-radius: 46% 46% 0 0 / 28% 28% 0 0;
-  box-shadow: inset 0 0 0 2px var(--mf-ink-2);
+  border: 2px dashed var(--mf-ink-2);
+  background: var(--mf-paper);
   padding-top: 0;
 }
 .mf--village .mf-card.is-dead .mf-card__in::before {
   display: none;
 }
 .mf--village .mf-card.is-dead .mf-card__name {
+  width: 100%;
+  margin-bottom: 0;
   background: transparent;
   color: var(--mf-ink-2);
 }
@@ -514,17 +537,6 @@ button.mf-card__in {
   background: var(--mf-red);
   color: var(--mf-cream);
   font: 900 64px var(--font-display);
-}
-.mf-deal.is-open .mf-deal__back {
-  display: none;
-}
-.mf-deal__face {
-  animation: mf-flip 420ms var(--mf-ease) both;
-}
-@keyframes mf-flip {
-  from {
-    transform: rotateY(90deg);
-  }
 }
 
 /* ── Role card ──────────────────────────────────────────────────────────── */
@@ -1369,4 +1381,207 @@ button.mf-card__in {
   .mf-switch__o:not(.is-on):hover {
     background: var(--mf-paper-2);
   }
+}
+
+/* ── Tokens sized to the screen (phones and laptops; the TV sets its own) ── */
+.mf-cards:not(.mf-cards--tv) .jd-token {
+  --z: 42px;
+}
+.mf-cards--many:not(.mf-cards--tv) .jd-token {
+  --z: 34px;
+}
+
+/* ── Ready: a green seal with a check pressed over the token ───────────── */
+.mf-card__ok {
+  position: absolute;
+  right: -10%;
+  bottom: -6%;
+  width: 46%;
+  min-width: 20px;
+  max-width: 44px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mf-vert);
+  box-shadow: 0 0 0 2px var(--mf-paper-2);
+  animation: mf-seal 420ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+.mf-card__ok svg {
+  width: 70%;
+  height: 70%;
+  fill: none;
+  stroke: var(--mf-cream);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mf-cards--tv .mf-card__ok {
+  max-width: 54px;
+  box-shadow: 0 0 0 4px var(--mf-paper-2);
+}
+@keyframes mf-seal {
+  from {
+    transform: scale(0) rotate(-40deg);
+  }
+}
+.mf-card.is-ok .mf-card__name {
+  background: var(--mf-vert);
+}
+
+/* ── Progress: pips that fill in ───────────────────────────────────────── */
+.mf-pips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+.mf-pip {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--mf-ink);
+  box-sizing: border-box;
+  transform: rotate(45deg);
+  transition:
+    background-color 240ms,
+    transform 240ms cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+.mf-pip.is-on {
+  background: var(--mf-vert);
+  border-color: var(--mf-vert);
+  transform: rotate(45deg) scale(1.12);
+}
+.mf-pip.is-need::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 22px;
+  background: var(--mf-red);
+  transform: translate(9px, -50%) rotate(-45deg);
+}
+.mf-pip.is-need {
+  margin-right: 10px;
+}
+.mf-pips__n {
+  margin-left: 6px;
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+}
+.mf-tv__progress {
+  display: grid;
+  gap: 4px;
+  font: 900 30px / 1.05 var(--font-plaque);
+  text-transform: uppercase;
+}
+.mf-tv__progress .mf-pips {
+  justify-content: flex-start;
+  gap: 10px;
+}
+.mf-tv__progress .mf-pip {
+  width: 30px;
+  height: 30px;
+  border-width: 3px;
+}
+.mf-tv__progress .mf-pip.is-need::after {
+  width: 5px;
+  height: 44px;
+  transform: translate(18px, -50%) rotate(-45deg);
+}
+.mf-tv__progress .mf-pips__n {
+  font-size: 34px;
+}
+
+/* ── A laptop or tablet: the whole width, the paper beside the dock ────── */
+@container game (min-width: 860px) {
+  .mf--phone {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 32%);
+    grid-template-rows: auto auto minmax(0, 1fr) 64px;
+    column-gap: 40px;
+    padding: 8px 32px 0;
+  }
+  .mf--phone > .mf-mast {
+    grid-column: 1 / -1;
+  }
+  .mf--phone > .mf-front {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .mf--phone > .mf-board {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .mf--phone > .mf-dock {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    align-self: center;
+    border-top: none;
+    border-left: 4px double var(--mf-ink);
+    padding: var(--space-4) 0 var(--space-4) 28px;
+  }
+  .mf--phone > .mf-scene {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    height: 64px;
+    margin-inline: -32px;
+  }
+  .mf--phone .mf-mast__name {
+    font-size: clamp(32px, 4cqw, 56px);
+  }
+  .mf--phone .mf-head {
+    font-size: clamp(44px, 5.4cqw, 88px);
+  }
+  .mf--phone .mf-sub {
+    font-size: var(--step-1);
+  }
+  .mf--phone .mf-cards {
+    gap: 12px;
+    max-height: none;
+  }
+  .mf-cards:not(.mf-cards--tv) .jd-token {
+    --z: clamp(52px, 13cqmin, 96px);
+  }
+  .mf--phone > .mf-dock .mf-dock__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mf.mf--phone .mf-voice__word {
+    display: inline;
+  }
+  .mf.mf--phone .mf-scene__sky + .mf-scene__sky {
+    display: block;
+  }
+  .mf--phone .mf-card__name {
+    font-size: 18px;
+    padding: 4px 6px 5px;
+  }
+  .mf--phone .mf-card__no,
+  .mf--phone .mf-card__role,
+  .mf--phone .mf-tag {
+    font-size: 14px;
+  }
+  .mf--phone .mf-card__role {
+    bottom: 32px;
+  }
+  .mf--phone .mf-dock__title {
+    font-size: 28px;
+  }
+  .mf--phone .mf-dock__say {
+    font-size: var(--step-0);
+  }
+  .mf--phone .mf-deal {
+    height: min(100cqh, 640px);
+  }
+}
+
+/* A phone: the voice switch is just its icon, and one skyline is plenty. */
+.mf--phone .mf-voice__word {
+  display: none;
+}
+.mf--phone .mf-scene__sky + .mf-scene__sky {
+  display: none;
 }

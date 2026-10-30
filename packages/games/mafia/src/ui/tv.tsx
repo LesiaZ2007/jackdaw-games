@@ -4,7 +4,17 @@ import { useMoment, useTheme, VerdictMoment, type GameUi, type ScreenPlayer } fr
 import { ROLE_INFO } from '../roles';
 import type { MafiaTableView } from '../rules';
 import { useNarrator, VoiceButton } from './narrator';
-import { CastList, Masthead, Placards, rootClass, Scenery, type PlacardInfo } from './table';
+import { PrintedHead, Scope, useCurtain, useFreshDead, Weather } from './motion';
+import {
+  CastList,
+  Masthead,
+  Pips,
+  Placards,
+  progressOf,
+  rootClass,
+  Scenery,
+  type PlacardInfo,
+} from './table';
 import { headline, isNight, moment, narration } from './words';
 import './mafia.css';
 
@@ -31,12 +41,11 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
   });
   const [fresh, dismiss] = useMoment(t.step);
   const m = fresh !== null ? moment(t, null, name) : null;
+  const curtain = useCurtain(t, h.head);
+  const freshDead = useFreshDead(t.deaths.map((d) => d.id));
 
   const info = (id: string): PlacardInfo => {
     const tags: string[] = [];
-    if ((t.phase === 'deal' || t.phase === 'day') && t.ready.includes(id))
-      tags.push(t.phase === 'deal' ? 'Seen' : 'Ready');
-    if (t.phase === 'vote' && t.voted.includes(id)) tags.push('Voted');
     if (t.phase === 'dusk' && t.lastVote) {
       const n = t.lastVote.counts[id];
       if (n) tags.push(`${n} vote${n === 1 ? '' : 's'}`);
@@ -46,23 +55,24 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
       id,
       dead: t.deaths.find((d) => d.id === id),
       tags,
+      ok:
+        ((t.phase === 'deal' || t.phase === 'day') && t.ready.includes(id)) ||
+        (t.phase === 'vote' && t.voted.includes(id)),
       lover: !!t.lovers?.includes(id),
     };
   };
 
-  const progress =
-    t.phase === 'night'
-      ? `${t.nightDone} of ${t.alive.length} have chosen`
-      : t.phase === 'vote'
-        ? `${t.voted.length} of ${t.alive.length} have voted`
-        : t.phase === 'day'
-          ? `${t.ready.length} of ${t.readyNeed} ready to vote`
-          : t.phase === 'deal'
-            ? `${t.ready.length} of ${t.players.length} have seen their card`
-            : null;
+  const progress = progressOf(t);
+  const progressWords: Record<string, string> = {
+    deal: 'have seen their card',
+    night: 'have chosen',
+    day: 'ready to vote',
+    vote: 'have voted',
+  };
 
   return (
     <div className={rootClass(t, night, 'mf-tv')} data-look={look}>
+      <Weather t={t} drops={44} />
       <Masthead t={t} now={now}>
         <VoiceButton speaking={narr.speaking} pref={narr.pref} />
       </Masthead>
@@ -73,9 +83,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
             Extra!
           </span>
         )}
-        <h2 className="mf-head mf-tv__head" key={t.step}>
-          {h.head}
-        </h2>
+        <PrintedHead text={h.head} className="mf-head mf-tv__head" city={t.mode === 'Mafia'} />
         <p className="mf-sub mf-tv__sub">{h.sub}</p>
         {narr.needsTap && (
           <button type="button" className="mf-tv__tap">
@@ -85,11 +93,25 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
       </section>
 
       <div className="mf-tv__table">
-        <Placards t={t} players={players} me={null} info={info} reactions={reactions} size="tv" />
+        <Placards
+          t={t}
+          players={players}
+          me={null}
+          info={info}
+          reactions={reactions}
+          size="tv"
+          fresh={freshDead}
+        />
+        {t.phase === 'hunter' && <Scope />}
       </div>
 
       <aside className="mf-tv__side">
-        {progress && <p className="mf-tv__progress">{progress}</p>}
+        {progress && (
+          <div className="mf-tv__progress">
+            <Pips {...progress} />
+            <span>{progressWords[t.phase]}</span>
+          </div>
+        )}
         <section>
           <h3 className="mf-tv__label">In the deck</h3>
           <CastList cast={t.cast} />
@@ -100,7 +122,9 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
 
       <Scenery t={t} repeat={3} />
 
-      {m && (
+      {curtain.node}
+
+      {m && !curtain.busy && (
         <VerdictMoment
           key={t.step}
           size="tv"
@@ -126,7 +150,9 @@ function VoteSheet({ t, name }: { t: MafiaTableView; name: (id: string) => strin
           <li key={who} className={who === v.out ? 'is-out' : undefined}>
             <span>{who === 'skip' ? 'Skip' : name(who)}</span>
             <span className="mf-tally__marks" aria-label={`${n} votes`}>
-              {'|'.repeat(n)}
+              {Array.from({ length: n }, (_, k) => (
+                <i key={k} style={{ ['--k' as string]: k }} />
+              ))}
             </span>
           </li>
         ))}

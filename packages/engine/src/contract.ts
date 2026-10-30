@@ -61,8 +61,23 @@ export interface RecapEvent {
   text: string;
   /** What was hidden at the time, e.g. "Cy played Fail". */
   secret?: string;
+  /** A short outcome chip shown beside the event: "Failed, 2 Fail cards", "Bankrupt", "+340". */
+  tag?: string;
+  /** Colours the event's chip and edge: 'good' (it went well, or the winning side scored), 'bad'. */
+  tone?: 'good' | 'bad';
+  /** A turning point. The TV, which only has room for a few lines, shows these first. */
+  key?: boolean;
   /** Free-form structured data for a game's own recap renderer. */
   data?: unknown;
+}
+
+/**
+ * Per-player numbers for the end screen, one column per measure ("Chips", "Biggest pot").
+ * Rows follow the order given, so games put the winner first.
+ */
+export interface RecapStats {
+  columns: string[];
+  rows: { playerId: string; values: (string | number)[] }[];
 }
 
 /**
@@ -106,6 +121,10 @@ export interface GameResult {
   standings?: Standing[];
   /** Optional standout moments for the night's awards. */
   highlights?: Highlight[];
+  /** What a recap `round` is called here: "Quest", "Hand", "Turn". Defaults to "Round". */
+  roundName?: string;
+  /** Optional per-player numbers, shown as a table on phones and beside each standing on the TV. */
+  stats?: RecapStats;
 }
 
 export interface GameModule<State, Action, View, TableView, Options> {

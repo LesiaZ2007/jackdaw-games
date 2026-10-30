@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from 'react';
 import type { Avatar, HistoryEntry, LobbySnapshot } from '@jackdaw/engine';
-import { GameTile, Icon, OutcomeChip, Token } from '@jackdaw/ui';
+import { GameTile, Icon, OutcomeChip, Token, withNames } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 import { duration, nightSummary } from '@/lib/night';
 
@@ -185,7 +185,7 @@ export function TvNight({ code, snapshot }: { code: string; snapshot: LobbySnaps
                   {entry && <GameTile art={entry.art} size={72} />}
                   <span className="tv-played__text">
                     <b className="jd-display">{entry?.meta.name ?? h.gameId}</b>
-                    <span>{h.summary}</span>
+                    <span>{withNames(h.summary, h.names)}</span>
                   </span>
                   <span className="tv-played__winners">
                     {draw ? (

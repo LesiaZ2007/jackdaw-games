@@ -14,6 +14,7 @@ import { wavelength } from '@jackdaw/game-wavelength';
 import { wordhoard } from '@jackdaw/game-wordhoard';
 import { zap } from '@jackdaw/game-zap';
 import { fandango } from '@jackdaw/game-fandango';
+import { solitaire } from '@jackdaw/game-solitaire';
 
 /**
  * The one place games are registered. The room runtime runs these modules, and the catalog
@@ -36,4 +37,5 @@ export const games: GameRegistry = {
   [wordhoard.meta.id]: wordhoard,
   [zap.meta.id]: zap,
   [fandango.meta.id]: fandango,
+  [solitaire.meta.id]: solitaire,
 };

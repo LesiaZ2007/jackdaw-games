@@ -1,0 +1,503 @@
+/*
+ * Solitaire: printed playing cards (cream stock, charcoal ink, gules for hearts and diamonds) on
+ * the compendium page, with the shared middle printed as heraldic vert baize. Each deck's backs
+ * are its owner's tint, and a card put up in the middle carries a tab in that tint. Cards and the
+ * baize are printed, so they're the same in day and dark; everything else comes from tokens.
+ */
+.sol {
+  --sol-ink: #1d1d1c;
+  --sol-stock: #f6f0e1;
+  --sol-on-felt: rgba(246, 240, 225, 0.6);
+  --cap: 84px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  margin-inline: auto;
+}
+
+/* ── Phone and laptop: fits under the bar, the columns take what's left ─────── */
+.sol--phone {
+  flex: 1;
+  min-height: 0;
+  max-width: 760px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  --cw: min(calc((100cqw - 18px) / 7), var(--cap));
+}
+.sol--watch {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: start;
+}
+.sol__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 44px;
+}
+.sol__head h2 {
+  margin: 0;
+  font-size: var(--step-1);
+  line-height: 1.1;
+}
+.sol__head p {
+  margin: 0;
+  color: var(--ink-2);
+  font: 700 15px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+.sol-card {
+  --w: var(--card-w, 44px);
+  position: relative;
+  display: block;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--w);
+  aspect-ratio: 5 / 7;
+  padding: 0;
+  border: max(1px, calc(var(--w) * 0.03)) solid var(--sol-ink);
+  border-radius: calc(var(--w) * 0.09);
+  background: var(--sol-stock);
+  color: var(--sol-ink);
+  box-shadow: 0 calc(var(--w) * 0.04) 0 var(--shadow);
+  font: inherit;
+  appearance: none;
+  transition:
+    top 220ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+button.sol-card {
+  cursor: pointer;
+}
+.sol-card--red {
+  color: var(--gules);
+}
+.sol-card__index {
+  position: absolute;
+  top: 3%;
+  left: 7%;
+  right: 7%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sol-card__index b {
+  font: 800 calc(var(--w) * 0.38) / 1 var(--font-code);
+  letter-spacing: -0.04em;
+}
+.sol-card__index svg {
+  width: calc(var(--w) * 0.3);
+}
+.sol-card__pip {
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 14%;
+}
+.sol-card svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* Whose deck it came from, on cards in the middle. */
+.sol-card__tab {
+  position: absolute;
+  inset: auto 0 0;
+  height: 11%;
+  background: var(--tab);
+  border-radius: 0 0 calc(var(--w) * 0.06) calc(var(--w) * 0.06);
+}
+.sol-card--back {
+  background: var(--back, var(--azure))
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='16'%3E%3Cpath d='M6 0L12 8L6 16L0 8Z' fill='none' stroke='%23f6f0e1' stroke-opacity='.4' stroke-width='1.2'/%3E%3C/svg%3E");
+  background-size: calc(var(--w) * 0.24) auto;
+  outline: max(1px, calc(var(--w) * 0.025)) solid var(--sol-on-felt);
+  outline-offset: calc(var(--w) * -0.1);
+}
+.sol-slot {
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 2px dashed var(--rule);
+  box-shadow: none;
+  color: var(--rule);
+}
+.sol-slot b {
+  font: 800 calc(var(--w) * 0.42) / 1 var(--font-code);
+}
+.sol-mark {
+  outline: 3px solid var(--or);
+  outline-offset: 1px;
+  animation: sol-pulse 900ms ease-in-out infinite alternate;
+}
+.sol-bump {
+  animation: sol-bump 380ms;
+}
+.sol-land {
+  animation: sol-land 520ms var(--ease-out);
+}
+@keyframes sol-pulse {
+  to {
+    outline-offset: 4px;
+  }
+}
+@keyframes sol-bump {
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+@keyframes sol-land {
+  from {
+    transform: translateY(-40%) scale(1.25) rotate(-6deg);
+    box-shadow: 0 calc(var(--w) * 0.25) 0 var(--shadow);
+  }
+}
+
+/* ── The middle: printed baize, everyone's piles by suit ─────────────────── */
+.sol-middle {
+  --card-w: clamp(32px, calc((100cqw - 60px) / 8), 52px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  gap: 6px 4px;
+  min-height: calc(var(--card-w) * 1.4 + 20px);
+  padding: 8px;
+  background: var(--vert);
+  border: 3px double var(--sol-on-felt);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 4px var(--vert);
+}
+.sol-middle__empty {
+  margin: 0;
+  align-self: center;
+  color: var(--sol-stock);
+  font: 700 15px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sol-pile--done .sol-card {
+  opacity: 0.72;
+}
+.sol-pile--hint .sol-card {
+  outline: 3px solid var(--or);
+  outline-offset: 1px;
+}
+
+/* ── Your stock and waste ───────────────────────────────────────────────── */
+.sol-sw {
+  --card-w: min(var(--cw), 64px);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.sol-stock {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: calc(var(--card-w) * 0.09);
+}
+.sol-stock:disabled {
+  cursor: default;
+}
+.sol-count {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  min-width: 24px;
+  padding: 2px 5px;
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  font: 700 13px / 1.2 var(--font-code);
+  text-align: center;
+}
+.sol-waste {
+  display: flex;
+}
+.sol-fan + .sol-fan {
+  margin-left: calc(var(--card-w) * -0.62);
+}
+
+/* ── Your columns ───────────────────────────────────────────────────────── */
+.sol-stage {
+  min-height: 0;
+  container-type: size;
+}
+.sol-tableau {
+  --card-w: min(calc((100cqw - 18px) / 7), var(--cap), calc(100cqh / 3.2));
+  display: grid;
+  grid-template-columns: repeat(7, var(--card-w));
+  justify-content: space-between;
+  height: 100%;
+}
+.sol-col {
+  --h: calc(var(--card-w) * 1.4);
+  --do: calc(var(--h) * 0.09);
+  /* The face-up run spreads enough to read each rank, less when the column is long. */
+  --uo: max(
+    5px,
+    min(
+      calc(var(--h) * 0.38),
+      calc((100cqh - var(--h) - var(--d) * var(--do)) / max(var(--u) - 1, 1))
+    )
+  );
+  position: relative;
+  height: 100%;
+}
+.sol-at {
+  position: absolute;
+  left: 0;
+  top: calc(var(--i) * var(--do) + var(--j) * var(--uo));
+}
+@media (hover: hover) and (pointer: fine) {
+  button.sol-card:hover {
+    transform: translateY(-3px);
+  }
+}
+
+/* ── Everyone else ──────────────────────────────────────────────────────── */
+.sol-rivals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sol-rival {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  align-items: center;
+  padding: 4px 10px 6px 4px;
+  border: 1.5px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.sol-rival__token {
+  position: relative;
+  grid-row: span 2;
+  display: grid;
+}
+.sol-rival__name {
+  font: 700 14px / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sol-rival__left {
+  font: 13px / 1.1 var(--font-body);
+  color: var(--ink-2);
+}
+.sol-rival__left b {
+  font-family: var(--font-code);
+  color: var(--ink);
+}
+.sol-rival__bar {
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--vert) var(--p), transparent var(--p));
+}
+.sol-rival--stuck {
+  border-style: dashed;
+}
+.sol-rival--stuck .sol-rival__left {
+  color: var(--gules);
+}
+.sol-rival--lead {
+  border-color: var(--vert);
+}
+
+/* ── Everyone pulls ─────────────────────────────────────────────────────── */
+.sol-banner {
+  --card-w: 56px;
+  position: absolute;
+  inset: 30% 8px auto;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 3px double var(--ink);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 6px 0 var(--shadow);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  animation: sol-drop 380ms var(--ease-out);
+}
+.sol-banner > span {
+  display: grid;
+  gap: 2px;
+}
+.sol-banner b {
+  font-size: var(--step-1);
+}
+@keyframes sol-drop {
+  from {
+    transform: translateY(-24px) scale(0.92);
+    opacity: 0;
+  }
+}
+
+/* ── TV: the middle across the top, everyone's layout below ─────────────── */
+.sol--tv {
+  --cap: 120px;
+  height: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 24px;
+  padding: 24px 32px;
+}
+.sol--tv .sol__head h2 {
+  font-size: var(--step-3);
+}
+.sol--tv .sol__head p {
+  font-size: 28px;
+}
+.sol--tv .sol-middle {
+  --card-w: 76px;
+  gap: 12px 8px;
+  padding: 16px;
+}
+.sol--tv .sol-middle__empty {
+  font-size: 32px;
+}
+.sol-boards {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--boards, 3), minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 24px;
+}
+.sol-board {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 18px;
+  border: 3px double var(--rule);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.sol-board > header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.sol-board > header b {
+  font: 700 34px / 1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sol-board > header > span:last-child {
+  margin-left: auto;
+  font: 700 30px / 1 var(--font-code);
+  color: var(--ink-2);
+}
+.sol-board--stuck {
+  border-style: dashed;
+}
+.sol-board--stuck > header > span:last-child {
+  color: var(--gules);
+}
+.sol-board--lead {
+  border-color: var(--vert);
+}
+.sol-board__body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+}
+.sol-board .sol-sw {
+  --card-w: 64px;
+  flex-direction: column;
+  gap: 18px;
+}
+.sol-board .sol-count {
+  min-width: 34px;
+  font-size: 24px;
+}
+.sol-board .sol-fan + .sol-fan {
+  margin-left: 0;
+  margin-top: calc(var(--card-w) * -1.1);
+}
+.sol-board .sol-waste {
+  flex-direction: column;
+}
+.sol-banner--tv {
+  --card-w: 110px;
+  inset: 34% 20% auto;
+  padding: 32px 48px;
+  gap: 40px;
+}
+.sol-banner--tv b {
+  font-size: var(--step-4);
+}
+.sol-banner--tv span {
+  font-size: 32px;
+}
+
+/* ── Results ────────────────────────────────────────────────────────────── */
+.sol-reveal table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.sol-reveal th,
+.sol-reveal td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+}
+.sol-reveal td {
+  font-family: var(--font-code);
+}
+.sol-reveal thead th {
+  font: 700 13px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.sol-reveal--win th {
+  color: var(--vert);
+}
+.sol-reveal p {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sol-card,
+  .sol-mark,
+  .sol-bump,
+  .sol-land,
+  .sol-banner {
+    animation: none;
+    transition: none;
+  }
+}

@@ -197,6 +197,16 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 56h48" />
     </g>
   ),
+  /** A column of cards fanned down, an ace beside it (Solitaire). */
+  patience: (
+    <g {...stroke(3.4)}>
+      <path d="M8 8h18v8M8 16h18v8M8 24h18v24H8z" />
+      <path d="M8 8v40" />
+      <path d="M34 14h22v32H34z" />
+      <path d="M45 21l-6 16M45 21l6 16M41.5 31h7" />
+      <path d="M8 56h48" />
+    </g>
+  ),
   /** Two war banners crossed (Risk). */
   banners: (
     <g {...stroke(3.4)}>

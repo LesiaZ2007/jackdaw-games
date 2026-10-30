@@ -24,6 +24,7 @@
     "@jackdaw/game-risk": "workspace:*",
     "@jackdaw/game-rps": "workspace:*",
     "@jackdaw/game-secret-hitler": "workspace:*",
+    "@jackdaw/game-solitaire": "workspace:*",
     "@jackdaw/game-uno": "workspace:*",
     "@jackdaw/game-wavelength": "workspace:*",
     "@jackdaw/game-wordhoard": "workspace:*",

@@ -2,6 +2,8 @@ import {
   GameError,
   type GameLink,
   type GameResult,
+  type RecapEvent,
+  type RecapStats,
   type LinkStatus,
   type Standing,
 } from '@jackdaw/engine';
@@ -76,6 +78,99 @@ interface StatusResponse {
   winner?: 'good' | 'evil';
   reason?: string;
   players?: { id: string; side: 'good' | 'evil'; role: string; won: boolean }[];
+  /** Newer Avalon builds also send the story: every quest, every team vote, Lady checks, the stab. */
+  quests?: { result: 'success' | 'fail' | null; fails: number | null; failsNeeded: number }[];
+  proposals?: {
+    quest: number;
+    leader: string;
+    team: string[];
+    approve: string[];
+    reject: string[];
+    approved: boolean;
+  }[];
+  lady?: { holder: string; target: string; evil: boolean; quest: number }[];
+  assassin?: { by: string | null; target: string } | null;
+}
+
+const NUMERALS = ['I', 'II', 'III', 'IV', 'V'];
+const braced = (ids: string[]) =>
+  ids.length < 2
+    ? ids.map((id) => `{${id}}`).join('')
+    : `${ids
+        .slice(0, -1)
+        .map((id) => `{${id}}`)
+        .join(', ')} and {${ids[ids.length - 1]}}`;
+
+/**
+ * Quest by quest, as Avalon's own recap tells it: each team put up and how the table voted, what
+ * the quest drew (with the traitors on it as the secret), Lady checks, and the Assassin's pick.
+ */
+function questStory(status: StatusResponse): RecapEvent[] {
+  const evil = new Set((status.players ?? []).filter((p) => p.side === 'evil').map((p) => p.id));
+  const goodWon = status.winner === 'good';
+  const events: RecapEvent[] = [];
+  (status.quests ?? []).forEach((q, i) => {
+    const round = i + 1;
+    for (const p of (status.proposals ?? []).filter((h) => h.quest === i)) {
+      const traitors = p.team.filter((id) => evil.has(id));
+      events.push({
+        round,
+        actor: p.leader,
+        text: `{${p.leader}} put up ${braced(p.team)}. Approve: ${braced(p.approve) || 'nobody'}. Reject: ${braced(p.reject) || 'nobody'}.`,
+        tag: `${p.approved ? 'Approved' : 'Rejected'} ${p.approve.length}–${p.reject.length}`,
+        ...(traitors.length ? { secret: `Evil on this team: ${braced(traitors)}.` } : {}),
+      });
+    }
+    if (q.result) {
+      const fail = q.result === 'fail';
+      events.push({
+        round,
+        text: `Quest ${NUMERALS[i] ?? round} ${fail ? 'failed' : 'succeeded'}.`,
+        tag: fail ? `Failed, ${q.fails} Fail card${q.fails === 1 ? '' : 's'}` : 'Succeeded',
+        tone: fail === goodWon ? 'bad' : 'good',
+        key: true,
+      });
+    }
+    for (const l of (status.lady ?? []).filter((c) => c.quest === i)) {
+      events.push({
+        round,
+        actor: l.holder,
+        text: `{${l.holder}} used the Lady of the Lake on {${l.target}}.`,
+        secret: `{${l.target}} was ${l.evil ? 'Evil' : 'Good'}.`,
+      });
+    }
+  });
+  if (status.assassin) {
+    const merlin = (status.players ?? []).find((p) => p.role === 'merlin')?.id;
+    const hit = status.assassin.target === merlin;
+    events.push({
+      ...(status.assassin.by ? { actor: status.assassin.by } : {}),
+      text: `The Assassin named {${status.assassin.target}} as Merlin.`,
+      tag: hit ? 'Merlin found' : 'Missed',
+      tone: hit === goodWon ? 'bad' : 'good',
+      key: true,
+    });
+  }
+  return events;
+}
+
+/** Per player: quests led to a vote, quests gone on, and how often they approved a team. */
+function questStats(status: StatusResponse): RecapStats | undefined {
+  const proposals = status.proposals ?? [];
+  if (!proposals.length) return undefined;
+  const players = [...(status.players ?? [])].sort((a, b) => Number(b.won) - Number(a.won));
+  const sent = proposals.filter((p) => p.approved);
+  return {
+    columns: ['Led', 'Quests', 'Approved'],
+    rows: players.map((p) => ({
+      playerId: p.id,
+      values: [
+        proposals.filter((h) => h.leader === p.id).length,
+        sent.filter((h) => h.team.includes(p.id)).length,
+        `${proposals.filter((h) => h.approve.includes(p.id)).length}/${proposals.length}`,
+      ],
+    })),
+  };
 }
 
 /** The avatar as Avalon stores it: a crest id (or null for initials) and a tint index. */
@@ -122,12 +217,14 @@ export function resultFrom(status: StatusResponse): GameResult {
   // Jackdaw's summaries carry no closing stop; the results screen adds its own.
   const reason = status.reason?.trim().replace(/\.+$/, '');
   const summary = reason ? `${winner} wins: ${reason}` : `${winner} wins`;
+  const stats = questStats(status);
   return {
     winners: players.filter((p) => p.won).map((p) => p.id),
     summary,
     reveal: { winner: status.winner ?? null, roles: standings },
-    // Avalon keeps the quest-by-quest story in its own app; here, the sides and how it ended.
+    // The quest-by-quest story when Avalon sends it (older builds don't), then how it ended.
     recap: [
+      ...questStory(status),
       {
         text: summary,
         tag: `${winner} wins`,
@@ -145,6 +242,7 @@ export function resultFrom(status: StatusResponse): GameResult {
         : []),
     ],
     roundName: 'Quest',
+    ...(stats ? { stats } : {}),
     standings,
   };
 }

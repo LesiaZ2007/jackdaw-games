@@ -1372,3 +1372,99 @@ describe('hidden information', () => {
     expect(lines2.join(' ')).toMatch(/Civilian/);
   });
 });
+
+describe('the recap', () => {
+  /** R7 played out: finch dies night 1, wren is voted out day 1, rook is voted out day 2. */
+  function played(o: Partial<MafiaOptions> = {}) {
+    let s = readyAll(deal(R7, o));
+    s = runNight(s, { wren: 'finch', rook: 'finch' }, { magpie: 'robin', robin: 'wren' });
+    s = advance(s); // dawn -> day
+    s = advance(s); // talk timer -> vote
+    s = voteAll(s, { magpie: 'wren', robin: 'wren', heron: 'wren', swift: 'wren', wren: 'heron' });
+    s = advance(s); // dusk -> night 2
+    s = runNight(s, { rook: 'heron' }, { magpie: 'heron' });
+    s = advance(s);
+    s = advance(s);
+    s = voteAll(s, { magpie: 'rook', robin: 'rook', swift: 'rook' });
+    return advance(s);
+  }
+
+  it('keeps the night secrets in the recap, for the end', () => {
+    const s = played();
+    expect(s.phase).toBe('over');
+    const r = game.getResult(s)!;
+    const secrets = r.recap.map((e) => e.secret ?? '').join('\n');
+    expect(secrets).toContain('{wren}, {rook} chose {finch}.');
+    expect(secrets).toContain('{robin} (the Sheriff) checked {wren}: Mafia.');
+    expect(r.recap.filter((e) => e.round).length).toBe(r.recap.length - 1);
+    expect(r.roundName).toBe('Round');
+    const tags = r.recap.map((e) => e.tag);
+    expect(tags).toContain('Lynched 4–1');
+    expect(tags).toContain('Town wins');
+    expect(r.recap.filter((e) => e.key).length).toBeGreaterThanOrEqual(3);
+    // The town won: its win is good, and the Mafia dying is good for it.
+    expect(r.recap.find((e) => e.tag === 'Town wins')!.tone).toBe('good');
+    expect(r.recap.find((e) => e.tag === 'Lynched 4–1')!.tone).toBe('good');
+  });
+
+  it('gives every player a stats row, the winners first', () => {
+    const r = game.getResult(played())!;
+    expect(r.stats!.columns).toEqual([
+      'Votes cast',
+      'Votes received',
+      'Survived to',
+      'Night actions',
+    ]);
+    expect(
+      r
+        .stats!.rows.map((x) => x.playerId)
+        .slice(0, r.winners.length)
+        .sort(),
+    ).toEqual([...r.winners].sort());
+    expect(r.stats!.rows).toHaveLength(7);
+    for (const row of r.stats!.rows) expect(row.values).toHaveLength(r.stats!.columns.length);
+    const row = (id: string) => r.stats!.rows.find((x) => x.playerId === id)!.values;
+    expect(row('wren')[1]).toBe(4);
+    expect(row('wren')[2]).toBe('Day 1');
+    expect(row('finch')[2]).toBe('Night 1');
+  });
+
+  it('writes players only as braced ids', () => {
+    const r = game.getResult(played())!;
+    const dealt = game.setup({
+      playerIds: ids(7),
+      options: game.defaultOptions(7),
+      rng: rng(),
+      now: NOW,
+    });
+    for (const e of [...r.recap, ...dealt.recap])
+      for (const text of [e.text, e.secret ?? '']) {
+        let bare = text;
+        for (const id of ids(7)) bare = bare.replaceAll(`{${id}}`, '');
+        for (const id of ids(7)) expect(bare).not.toMatch(new RegExp(`\\b${id}\\b`));
+      }
+  });
+
+  it('keeps cards out of the public text when the dead are hidden', () => {
+    const r = game.getResult(played({ reveal: 'Hidden' }))!;
+    // The first line is the cast list, which is public; the rest must not name anyone's card.
+    const text = r.recap
+      .slice(1)
+      .map((e) => e.text)
+      .join('\n');
+    expect(text).not.toMatch(/Sheriff|Angel|Civilian/);
+    expect(r.recap.some((e) => /was the Civilian/.test(e.secret ?? ''))).toBe(true);
+  });
+
+  it('shows nothing from the recap in the table view or a player view mid-game', () => {
+    let s = readyAll(deal(R7));
+    s = runNight(s, { wren: 'finch', rook: 'finch' }, { magpie: 'finch', robin: 'wren' });
+    for (const v of [game.getTableView(s), game.getPlayerView(s, 'heron')]) {
+      const json = JSON.stringify(v);
+      expect(json).not.toContain('recap');
+      expect(json).not.toContain('chose');
+      expect(json).not.toContain('checked');
+    }
+    expect(s.recap.some((e) => e.secret?.includes('chose'))).toBe(true);
+  });
+});

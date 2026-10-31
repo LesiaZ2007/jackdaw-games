@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -101,7 +101,7 @@ export function GameShelves() {
   return (
     <div className="home-games">
       <FilterBar filters={filters} onChange={setFilters} />
-      <nav className="shelf-index" aria-label="Kinds of game">
+      <nav className="shelf-index" aria-label="Jump to a shelf">
         <ol>
           {shelves.map((s) => (
             <li key={s.kind}>
@@ -122,7 +122,7 @@ export function GameShelves() {
           {filters.players ? ` for ${filters.players}` : ''}
           {hasFilters(filters) && (
             <button type="button" className="cat-linkbtn" onClick={clear}>
-              Clear
+              Clear filters
             </button>
           )}
         </p>
@@ -166,7 +166,7 @@ export function GameShelves() {
                   </div>
                   <Link className="shelf__all" href={`/games?kind=${s.kind}`}>
                     All {s.games.length}
-                    <span aria-hidden="true">›</span>
+                    <span aria-hidden="true">â€º</span>
                   </Link>
                 </header>
                 <div className="shelf__case">
@@ -193,7 +193,7 @@ export function GameShelves() {
                           </span>
                           <span className="shelf__bookend-label">
                             See all {s.title.toLowerCase()}
-                            <span aria-hidden="true"> ›</span>
+                            <span aria-hidden="true"> â€º</span>
                           </span>
                         </Link>
                       </li>
@@ -281,7 +281,7 @@ function DrawBox({ pool, span }: { pool: CatalogEntry[]; span: number }) {
                 <BirdMark weight={2.6} />
               </span>
             </span>
-            <span className="shelf-draw__label">{shuffling ? 'Shuffling…' : 'Draw a game'}</span>
+            <span className="shelf-draw__label">{shuffling ? 'Shufflingâ€¦' : 'Draw a game'}</span>
           </button>
         )}
       </div>

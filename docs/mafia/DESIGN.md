@@ -1,4 +1,4 @@
-# Mafia (and Werewolf)
+# Mafia / Werewolf
 
 A social deduction game for 5 to 15 players where the app is the moderator, so nobody sits out to
 run it. One rules engine, two settings: **Mafia** (a 1920s city) and **Werewolf** (the village of

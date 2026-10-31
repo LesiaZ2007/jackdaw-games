@@ -9,7 +9,6 @@ import {
   AvatarPicker,
   BirdMark,
   CodeInput,
-  GameCover,
   Glyph,
   Icon,
   Lid,
@@ -17,12 +16,11 @@ import {
   Sheet,
   Token,
 } from '@jackdaw/ui';
-import { catalog, CATEGORY_LABEL, SHELVES, unfitReason } from '@/lib/catalog';
+import { catalog } from '@/lib/catalog';
 import { rememberAvatar, rememberedAvatar, rememberedName, rememberName } from '@/lib/identity';
 import { createLobby } from '@/lib/use-lobby';
-import { FilterBar } from './games/filter-bar';
-import { hasFilters, matches, NO_FILTERS, type Filters } from './games/filters';
 import { InstallButton } from './pwa';
+import { GameShelves } from './shelves';
 import { ThemeButton } from './theme-toggle';
 
 const FALLBACK_AVATAR: Avatar = { crest: 'raven', tint: 'slate' };
@@ -225,115 +223,5 @@ export function Home() {
         </Plaque>
       </Sheet>
     </>
-  );
-}
-
-/**
- * The games on shelves, one per kind (2026-10-31: "carousels or categories for each type of
- * game"), with the filters and a contents line along the top. A shelf swipes sideways on phones
- * and fits on one row wider up. Filters hide games, and a shelf left empty goes too.
- */
-function GameShelves() {
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
-  const shown = catalog.filter((e) => matches(e.meta, filters));
-  const shelves = SHELVES.map((s) => ({
-    ...s,
-    games: shown.filter((e) => e.meta.category === s.kind),
-  })).filter((s) => s.games.length > 0);
-
-  function jump(kind: string) {
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document
-      .getElementById(`shelf-${kind}`)
-      ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-  }
-
-  return (
-    <div className="home-games">
-      <FilterBar filters={filters} onChange={setFilters} />
-      <div className="cat-count">
-        <span>
-          {shown.length === 1 ? '1 game' : `${shown.length} games`}
-          {filters.players ? ` for ${filters.players} players` : ''}
-        </span>
-        {hasFilters(filters) && (
-          <button type="button" className="cat-linkbtn" onClick={() => setFilters(NO_FILTERS)}>
-            Clear filters
-          </button>
-        )}
-      </div>
-      {shelves.length === 0 ? (
-        <p className="cat-empty">
-          No games match those filters.{' '}
-          <button type="button" className="cat-linkbtn" onClick={() => setFilters(NO_FILTERS)}>
-            Show every game
-          </button>
-        </p>
-      ) : (
-        <>
-          {shelves.length > 1 && (
-            <nav className="shelf-index" aria-label="Kinds of game">
-              <ol>
-                {shelves.map((s) => (
-                  <li key={s.kind}>
-                    <button
-                      type="button"
-                      style={{ '--tint': `var(--${s.tint})` } as React.CSSProperties}
-                      onClick={() => jump(s.kind)}
-                    >
-                      {s.title}
-                      <span>{s.games.length}</span>
-                    </button>
-                  </li>
-                ))}
-              </ol>
-            </nav>
-          )}
-          {shelves.map((s) => (
-            <section
-              key={s.kind}
-              id={`shelf-${s.kind}`}
-              className="shelf"
-              style={{ '--tint': `var(--${s.tint})` } as React.CSSProperties}
-              aria-labelledby={`shelf-${s.kind}-title`}
-            >
-              <header className="shelf__head">
-                <span className="shelf__shield" aria-hidden="true">
-                  <Glyph id={s.glyph} size={30} />
-                </span>
-                <div className="shelf__titles">
-                  <h3 id={`shelf-${s.kind}-title`}>{s.title}</h3>
-                  <p>{s.line}</p>
-                </div>
-                <Link className="shelf__all" href={`/games?kind=${s.kind}`}>
-                  {s.games.length === 1 ? '1 game' : `${s.games.length} games`}
-                  <span aria-hidden="true">›</span>
-                </Link>
-              </header>
-              <div className="shelf__case">
-                <ul className="shelf__row">
-                  {s.games.map((e) => (
-                    <li key={e.meta.id}>
-                      <GameCover
-                        name={e.meta.name}
-                        art={e.art}
-                        players={[e.meta.minPlayers, e.meta.maxPlayers]}
-                        minutes={e.meta.minutes}
-                        tagline={e.meta.tagline}
-                        kind={CATEGORY_LABEL[e.meta.category]}
-                        soon={!e.playable}
-                        unfit={filters.players ? unfitReason(e.meta, filters.players) : null}
-                        href={`/games/${e.meta.id}`}
-                        link={Link}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </section>
-          ))}
-        </>
-      )}
-    </div>
   );
 }

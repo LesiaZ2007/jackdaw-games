@@ -10,6 +10,7 @@ const config: NextConfig = {
     '@jackdaw/game-rps',
     '@jackdaw/game-risk',
     '@jackdaw/game-avalon',
+    '@jackdaw/game-backgammon',
     '@jackdaw/game-battleship',
     '@jackdaw/game-kings',
     '@jackdaw/game-monopoly',

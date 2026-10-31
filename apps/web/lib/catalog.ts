@@ -1,5 +1,6 @@
 import type { GameCategory, GameMeta } from '@jackdaw/engine';
 import { avalonUi } from '@jackdaw/game-avalon/ui';
+import { backgammonUi } from '@jackdaw/game-backgammon/ui';
 import { battleshipUi } from '@jackdaw/game-battleship/ui';
 import { monopolyUi } from '@jackdaw/game-monopoly/ui';
 import { catanUi } from '@jackdaw/game-catan/ui';
@@ -38,6 +39,7 @@ export interface CatalogEntry {
 /** Client UI modules for registered games, by id. Add a game's `./ui` export here. */
 export const gameUis: Record<string, GameUi> = {
   avalon: avalonUi,
+  backgammon: backgammonUi,
   battleship: battleshipUi,
   monopoly: monopolyUi,
   catan: catanUi,

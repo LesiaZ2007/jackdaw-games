@@ -276,6 +276,15 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 58h48" />
     </g>
   ),
+  /** An open tables case: points top and bottom, the bar, and a checker (Backgammon). */
+  tables: (
+    <g {...stroke(3.4)}>
+      <path d="M6 12h52v40H6zM32 12v40" />
+      <path d="M10 12l4 14 4-14M18 12l4 14 4-14M38 52l4-14 4 14M46 52l4-14 4 14" />
+      <circle cx="16" cy="44" r="5" fill="currentColor" />
+      <circle cx="48" cy="20" r="5" />
+    </g>
+  ),
 };
 
 export function Glyph({ id, size }: { id: string; size?: number | string }) {

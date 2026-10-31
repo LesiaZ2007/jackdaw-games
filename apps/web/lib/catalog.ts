@@ -16,7 +16,7 @@ import { wordhoardUi } from '@jackdaw/game-wordhoard/ui';
 import { zapUi } from '@jackdaw/game-zap/ui';
 import { fandangoUi } from '@jackdaw/game-fandango/ui';
 import { solitaireUi } from '@jackdaw/game-solitaire/ui';
-import type { GameAbout, GameUi } from '@jackdaw/ui';
+import type { GameAbout, GameUi, Heraldic } from '@jackdaw/ui';
 import { games } from './registry';
 import { upcoming } from './upcoming';
 import type { GameArt } from '@jackdaw/ui';
@@ -90,7 +90,7 @@ export interface Shelf {
   title: string;
   line: string;
   /** The tincture its banner is printed in. */
-  tint: 'gules' | 'vert' | 'azure' | 'purpure' | 'sable' | 'tenne';
+  tint: Heraldic;
   /** The glyph on its shield. */
   glyph: string;
 }

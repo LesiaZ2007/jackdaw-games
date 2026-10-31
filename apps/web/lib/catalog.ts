@@ -1,4 +1,4 @@
-﻿import type { GameCategory, GameMeta } from '@jackdaw/engine';
+import type { GameCategory, GameMeta } from '@jackdaw/engine';
 import { avalonUi } from '@jackdaw/game-avalon/ui';
 import { battleshipUi } from '@jackdaw/game-battleship/ui';
 import { monopolyUi } from '@jackdaw/game-monopoly/ui';

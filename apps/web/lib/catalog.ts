@@ -1,4 +1,4 @@
-import type { GameCategory, GameMeta } from '@jackdaw/engine';
+﻿import type { GameCategory, GameMeta } from '@jackdaw/engine';
 import { avalonUi } from '@jackdaw/game-avalon/ui';
 import { battleshipUi } from '@jackdaw/game-battleship/ui';
 import { monopolyUi } from '@jackdaw/game-monopoly/ui';
@@ -85,53 +85,52 @@ export const CATEGORY_LABEL: Record<GameCategory, string> = {
   mini: 'Mini game',
 };
 
-/**
- * The home page's shelves, one per kind, in this order: a heading, a line under it, the
- * tincture its banner is printed in, and a glyph for its shield.
- */
-export const SHELVES: {
+export interface Shelf {
   kind: GameCategory;
   title: string;
   line: string;
+  /** The tincture its banner is printed in. */
   tint: 'gules' | 'vert' | 'azure' | 'purpure' | 'sable' | 'tenne';
+  /** The glyph on its shield. */
   glyph: string;
-}[] = [
-  {
-    kind: 'social-deduction',
+}
+
+/**
+ * The home page's shelves, one per kind. A Record, so a new kind of game won't typecheck until
+ * it has a shelf (and can't drop off the home page).
+ */
+const SHELF: Record<GameCategory, Omit<Shelf, 'kind'>> = {
+  'social-deduction': {
     title: 'Hidden roles',
     line: 'Lie, accuse, survive.',
     tint: 'gules',
     glyph: 'avalon',
   },
-  {
-    kind: 'board',
+  board: {
     title: 'Board games',
     line: 'Long evenings and big maps.',
     tint: 'vert',
     glyph: 'hexes',
   },
-  {
-    kind: 'card',
-    title: 'Card games',
-    line: 'Shuffle up and deal.',
-    tint: 'azure',
-    glyph: 'cards',
-  },
-  {
-    kind: 'word',
+  card: { title: 'Card games', line: 'Shuffle up and deal.', tint: 'azure', glyph: 'cards' },
+  word: {
     title: 'Word and party',
     line: 'Clues, guesses and shouting.',
     tint: 'purpure',
     glyph: 'tiles',
   },
-  {
-    kind: 'mini',
+  mini: {
     title: 'Mini games',
     line: 'A quick round between the big ones.',
-    tint: 'sable',
+    tint: 'tenne',
     glyph: 'bolt',
   },
-];
+};
+
+/** The shelves in the order they're listed (wide screens may pair them differently). */
+export const SHELVES: Shelf[] = (
+  ['social-deduction', 'board', 'card', 'word', 'mini'] satisfies GameCategory[]
+).map((kind) => ({ kind, ...SHELF[kind] }));
 
 export const COMPLEXITY_LABEL: Record<1 | 2 | 3, string> = { 1: 'Light', 2: 'Medium', 3: 'Heavy' };
 

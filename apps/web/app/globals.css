@@ -78,7 +78,7 @@ a {
   gap: var(--space-5);
   align-items: center;
   width: 100%;
-  max-width: 1180px;
+  max-width: 1400px;
   margin-inline: auto;
   /* room at the foot for the "the games are below" arrow */
   padding: var(--space-5) var(--gutter) calc(var(--space-6) + 64px);
@@ -174,7 +174,7 @@ a {
   justify-content: space-between;
   gap: var(--space-3);
   width: 100%;
-  max-width: 1180px;
+  max-width: 1400px;
   margin-inline: auto;
   padding-inline: var(--gutter);
 }
@@ -185,7 +185,7 @@ a {
   display: grid;
   gap: var(--space-3);
   width: 100%;
-  max-width: 1180px;
+  max-width: 1400px;
   margin-inline: auto;
   padding-inline: var(--gutter);
 }
@@ -197,196 +197,6 @@ a {
   .home-games,
   .home-shelves__head {
     padding-inline: var(--space-6);
-  }
-}
-
-/* The contents line: every shelf by name, ruled above and below like a book's contents. */
-.shelf-index {
-  border-block: 2px solid var(--ink);
-  outline: 1px solid var(--ink);
-  outline-offset: 3px;
-  margin: 4px 0 var(--space-2);
-  background: var(--paper);
-}
-.shelf-index ol {
-  list-style: none;
-  margin: 0;
-  padding: 0 var(--space-2);
-  display: flex;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.shelf-index li + li {
-  border-left: 1px solid var(--rule);
-}
-.shelf-index button {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--tap);
-  padding: 0 var(--space-4);
-  border: 0;
-  background: none;
-  color: var(--ink);
-  font: 800 15px var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  white-space: nowrap;
-  cursor: pointer;
-}
-.shelf-index button::before {
-  content: '';
-  width: 10px;
-  height: 10px;
-  background: var(--tint);
-  border: 1.5px solid var(--ink);
-  transform: rotate(45deg);
-}
-.shelf-index button span {
-  color: var(--ink-2);
-  font-weight: 700;
-}
-.shelf-index button:hover {
-  text-decoration: underline;
-  text-decoration-color: var(--tint);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 5px;
-}
-.shelf-index button:focus-visible {
-  outline: 3px solid var(--or);
-  outline-offset: -3px;
-}
-
-/* One shelf: a banner in the kind's tincture, then its covers on a printed ledge. */
-.shelf,
-.shelf-index {
-  /* grid children: without this a sideways-scrolling row widens the whole page */
-  min-width: 0;
-}
-.shelf {
-  display: grid;
-  gap: var(--space-4);
-  margin-top: var(--space-5);
-  scroll-margin-top: var(--space-4);
-}
-.shelf__head {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--space-3);
-  padding-bottom: var(--space-3);
-  /* a double rule in the shelf's colour */
-  border-bottom: 5px double var(--tint);
-}
-.shelf__shield {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 54px;
-  color: var(--on-fill);
-  background: var(--tint);
-  border: 2px solid var(--ink);
-  clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%);
-  padding-bottom: 8px;
-}
-.shelf__titles {
-  min-width: 0;
-}
-.shelf__titles h3 {
-  margin: 0;
-  font: 800 var(--step-2) / 1 var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.shelf__titles p {
-  margin: 4px 0 0;
-  color: var(--ink-2);
-  font-size: var(--step--1);
-}
-.shelf__all {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: var(--tap);
-  padding-left: var(--space-2);
-  color: var(--ink);
-  font: 700 15px var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  text-decoration: none;
-  white-space: nowrap;
-}
-.shelf__all span {
-  font-size: 24px;
-  line-height: 1;
-  color: var(--tint);
-}
-.shelf__all:hover {
-  text-decoration: underline;
-  text-underline-offset: 5px;
-}
-.shelf__case {
-  position: relative;
-  padding-bottom: 14px;
-}
-/* the ledge the boxes stand on */
-.shelf__case::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10px;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  box-shadow: 0 5px 0 -1px var(--rule);
-  pointer-events: none;
-}
-.shelf__row {
-  list-style: none;
-  margin: 0;
-  /* room for the covers' box edges */
-  padding: 4px 8px 10px 0;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--space-5);
-}
-.shelf__row li {
-  min-width: 0;
-}
-/* Phones: the shelf swipes sideways, with the next box peeking in from the edge. */
-@media (max-width: 719.98px) {
-  .shelf__case {
-    margin-inline: calc(-1 * var(--gutter));
-  }
-  .shelf__row {
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: 44%;
-    gap: var(--space-4);
-    padding-inline: var(--gutter);
-    scroll-padding-inline: var(--gutter);
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-  }
-  .shelf__row::-webkit-scrollbar {
-    display: none;
-  }
-  .shelf__row li {
-    scroll-snap-align: start;
-  }
-  .shelf__row .jd-cover__name {
-    font-size: 1.3rem;
-  }
-  .shelf__row .jd-cover__tag,
-  .shelf__row .jd-cover__kind {
-    display: none;
-  }
-  .shelf__shield {
-    width: 42px;
-    height: 48px;
   }
 }
 

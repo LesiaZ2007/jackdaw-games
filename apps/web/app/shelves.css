@@ -1,0 +1,552 @@
+/*
+ * The home page's game shelves (shelves.tsx): a contents line that sticks to the top, then one
+ * shelf per kind. Wide screens pack the shelves into six columns; narrower ones stack them and
+ * swipe each shelf sideways.
+ */
+.shelves {
+  --shelf-gap: 28px;
+  display: grid;
+  gap: var(--space-6) var(--shelf-gap);
+  align-items: stretch;
+}
+
+/* ── Contents line ───────────────────────────────────────────────────────── */
+.shelf-index {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin: 0 0 var(--space-2);
+  background: var(--paper);
+  border-block: 2px solid var(--ink);
+  box-shadow:
+    0 3px 0 -1px var(--paper),
+    0 4px 0 0 var(--ink);
+}
+.shelf-index ol {
+  flex: 1;
+  min-width: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0 var(--space-2);
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.shelf-index ol::-webkit-scrollbar {
+  display: none;
+}
+.shelf-index li + li {
+  border-left: 1px solid var(--rule);
+}
+.shelf-index button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap);
+  padding: 0 var(--space-4);
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 800 15px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 160ms ease;
+}
+.shelf-index button::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: var(--tint);
+  border: 1.5px solid var(--ink);
+  transform: rotate(45deg);
+  transition: transform 260ms var(--ease-out);
+}
+/* the shelf in view: a bar in its colour under the name, and the diamond turned square */
+.shelf-index button::after {
+  content: '';
+  position: absolute;
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: 5px;
+  height: 4px;
+  background: var(--tint);
+  transform: scaleX(0);
+  transition: transform 260ms var(--ease-out);
+}
+.shelf-index button[aria-current]::after {
+  transform: scaleX(1);
+}
+.shelf-index button[aria-current]::before {
+  transform: rotate(0deg) scale(1.15);
+}
+.shelf-index button span {
+  color: var(--ink-2);
+  font-weight: 700;
+}
+.shelf-index button:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: -3px;
+}
+.shelf-index__count {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0 var(--space-4);
+  border-left: 2px solid var(--ink);
+  min-height: var(--tap);
+  font: 700 14px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.shelf-index__count .cat-linkbtn {
+  min-height: var(--tap);
+  font: 700 15px var(--font-body);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* ── One shelf ───────────────────────────────────────────────────────────── */
+.shelf {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--space-4);
+  min-width: 0;
+  scroll-margin-top: calc(var(--tap) + var(--space-5));
+}
+.shelf__head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 5px double var(--tint);
+}
+.shelf__shield {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 54px;
+  padding-bottom: 8px;
+  color: var(--on-fill);
+  background: var(--tint);
+  border: 2px solid var(--ink);
+  clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%);
+}
+.shelf__titles {
+  min-width: 0;
+}
+.shelf__titles h3 {
+  margin: 0;
+  font: 800 var(--step-2) / 1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.shelf__titles p {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-size: var(--step--1);
+}
+.shelf__all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--tap);
+  padding-left: var(--space-2);
+  color: var(--ink);
+  font: 700 15px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.shelf__all span {
+  font-size: 24px;
+  line-height: 1;
+  color: var(--tint);
+  transition: transform 200ms var(--ease-out);
+}
+.shelf__all:hover span {
+  transform: translateX(4px);
+}
+
+/* The ledge the boxes stand on. */
+.shelf__case {
+  position: relative;
+  display: flex;
+  /* paired shelves share a row, so their boxes stand the same height */
+  align-items: stretch;
+  padding-bottom: 14px;
+}
+.shelf__case::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 0 5px 0 -1px var(--rule);
+  pointer-events: none;
+}
+.shelf__row {
+  flex: 1;
+  min-width: 0;
+  list-style: none;
+  margin: 0;
+  /* room for the covers' box edges */
+  padding: 4px 8px 10px 0;
+  display: grid;
+  grid-auto-flow: column;
+  gap: var(--shelf-gap);
+}
+.shelf__row li {
+  min-width: 0;
+}
+/* Shelves list kinds already, so the covers don't each repeat it. */
+.shelf__row .jd-cover__kind {
+  display: none;
+}
+
+/*
+ * A bookend: closes the gap after a shelf's last box on wide screens (uneven counts can't
+ * always pair up), printed in the shelf's colour with its glyph. It links to the whole kind,
+ * like "All 4" in the heading, so it stays out of the tab order.
+ */
+.shelf__bookend {
+  display: none;
+}
+.shelf__bookend a {
+  position: relative;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+  height: 100%;
+  min-height: 200px;
+  padding: var(--space-5) var(--space-4);
+  color: var(--on-fill);
+  text-decoration: none;
+  background-color: var(--tint);
+  border: 2px solid var(--ink);
+  /* the field shows through faintly, so it reads as print rather than a box to open */
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 14px,
+    color-mix(in srgb, var(--on-fill) 9%, transparent) 14px 16px
+  );
+  box-shadow:
+    inset 0 0 0 5px var(--tint),
+    inset 0 0 0 6px var(--on-fill);
+  transition: filter 200ms ease;
+}
+.shelf__bookend a:hover {
+  filter: brightness(1.08);
+}
+.shelf__bookend-seal {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid var(--on-fill);
+  box-shadow:
+    0 0 0 4px var(--tint),
+    0 0 0 5px var(--on-fill);
+}
+.shelf__bookend-seal svg {
+  width: 58px;
+  height: 58px;
+}
+.shelf__bookend-label {
+  font: 800 16px / 1.2 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+/* Boxes rise onto a shelf the first time it comes into view. */
+.shelves.is-armed .shelf__row > li,
+.shelves.is-armed .shelf-draw__box {
+  transition:
+    opacity 420ms ease,
+    transform 560ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+.shelves.is-armed .shelf:not(.is-in) .shelf__row li,
+.shelves.is-armed .shelf-draw:not(.is-in) .shelf-draw__box {
+  opacity: 0;
+  transform: translateY(28px) rotate(-1.5deg);
+}
+
+/* ── Draw a game ─────────────────────────────────────────────────────────── */
+.shelf-draw {
+  --band: var(--sable);
+  --i: 2;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.shelf-draw__text {
+  grid-row: 1;
+  align-self: end;
+  padding-bottom: var(--space-3);
+  border-bottom: 5px double var(--rule);
+}
+.shelf-draw__text p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--step--1);
+}
+.shelf-draw__text .shelf-draw__title {
+  color: var(--ink);
+  font: 800 var(--step-1) / 1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.shelf-draw__text .cat-linkbtn {
+  min-height: var(--tap);
+  padding: 0;
+}
+.shelf-draw__box {
+  grid-row: 2;
+  position: relative;
+  display: flex;
+  padding: 4px 8px 24px 0;
+}
+.shelf-draw__box::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 0 5px 0 -1px var(--rule);
+}
+.shelf-draw__face {
+  flex: 1;
+  display: flex;
+  animation: shelf-turn 480ms var(--ease-out);
+}
+.shelf-draw__face .jd-cover__kind {
+  display: none;
+}
+.shelf-draw__back {
+  --edge: 7px;
+  flex: 1;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  min-height: 220px;
+  padding: 0;
+  color: var(--on-fill);
+  font: inherit;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow:
+    1px 1px 0 0 var(--ink),
+    var(--edge) var(--edge) 0 -1px color-mix(in srgb, var(--band) 62%, var(--shade-base)),
+    var(--edge) var(--edge) 0 1px var(--ink);
+  cursor: pointer;
+  transition:
+    transform 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out);
+}
+.shelf-draw__mark {
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background-color: var(--band);
+  background-image: var(--field);
+  border-bottom: 2px solid var(--ink);
+}
+/* the bird in a roundel, like the emblem on a game's lid */
+.shelf-draw__mark > span {
+  display: grid;
+  place-items: center;
+  width: min(68%, 120px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--band);
+  border: 3px solid var(--on-fill);
+  box-shadow:
+    0 0 0 4px var(--band),
+    0 0 0 5px var(--on-fill);
+}
+.shelf-draw__mark .jd-mark {
+  width: 70%;
+  height: 70%;
+  color: var(--on-fill);
+}
+.shelf-draw__label {
+  padding: 10px 12px 12px;
+  color: var(--ink);
+  font: 800 17px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: left;
+}
+@media (hover: hover) and (pointer: fine) {
+  .shelf-draw__back:not(:disabled):hover {
+    transform: translate(-2px, -3px) rotate(-1deg);
+    --edge: 10px;
+  }
+}
+.shelf-draw__back:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 4px;
+}
+.shelf-draw__back.is-shuffling {
+  cursor: progress;
+  animation: shelf-shuffle 650ms ease-in-out;
+}
+@keyframes shelf-shuffle {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-8px) rotate(-4deg);
+  }
+  40% {
+    transform: translateX(8px) rotate(4deg);
+  }
+  60% {
+    transform: translateX(-6px) rotate(-3deg);
+  }
+  80% {
+    transform: translateX(4px) rotate(2deg);
+  }
+}
+@keyframes shelf-turn {
+  from {
+    transform: perspective(700px) rotateY(80deg);
+    opacity: 0.3;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ── Wide: shelves packed into six columns ───────────────────────────────── */
+@media (min-width: 1200px) {
+  .shelves {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .shelf,
+  .shelf-draw {
+    grid-column: span var(--span);
+  }
+  .shelf__row {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(var(--span), minmax(0, 1fr));
+  }
+  .shelf__bookend {
+    display: block;
+  }
+  .shelf-draw--wide {
+    grid-template-columns: calc((100% - (var(--span) - 1) * var(--shelf-gap)) / var(--span)) 1fr;
+    column-gap: var(--shelf-gap);
+  }
+  .shelf-draw--wide .shelf-draw__text {
+    grid-row: 2;
+    grid-column: 2;
+    align-self: center;
+    border: 0;
+  }
+  .shelf-draw--wide .shelf-draw__box {
+    grid-column: 1;
+  }
+}
+
+/* ── Narrower: stacked shelves, each swiping sideways ────────────────────── */
+@media (max-width: 1199.98px) {
+  .shelf {
+    order: var(--order, 0);
+  }
+  .shelf-draw {
+    order: 9999;
+  }
+  .shelf__case,
+  .shelf-draw {
+    margin-inline: calc(-1 * var(--gutter));
+  }
+  .shelf__row {
+    grid-auto-columns: min(30%, 250px);
+    padding-inline: var(--gutter);
+    scroll-padding-inline: var(--gutter);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .shelf__row::-webkit-scrollbar {
+    display: none;
+  }
+  .shelf__row li {
+    scroll-snap-align: start;
+  }
+  /* the draw box: a box on its own shelf, the words beside it */
+  .shelf-draw {
+    grid-template-columns: min(30%, 250px) 1fr;
+    grid-template-rows: auto;
+    column-gap: var(--shelf-gap);
+    padding-inline: var(--gutter);
+  }
+  .shelf-draw__box {
+    grid-row: 1;
+    grid-column: 1;
+  }
+  .shelf-draw__text {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: center;
+    border: 0;
+  }
+}
+@media (max-width: 719.98px) {
+  .shelves {
+    --shelf-gap: var(--space-4);
+  }
+  .shelf__row {
+    grid-auto-columns: 44%;
+  }
+  .shelf-draw {
+    grid-template-columns: 44% 1fr;
+  }
+  .shelf__row .jd-cover__name,
+  .shelf-draw .jd-cover__name {
+    font-size: 1.3rem;
+  }
+  .shelf__row .jd-cover__tag,
+  .shelf-draw .jd-cover__tag {
+    display: none;
+  }
+  .shelf__shield {
+    width: 42px;
+    height: 48px;
+  }
+  /* the count earns its room on a phone only when there's a filter to clear */
+  .shelf-index__count:not(.is-filtered) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shelf-draw__face,
+  .shelf-draw__back.is-shuffling {
+    animation: none;
+  }
+}

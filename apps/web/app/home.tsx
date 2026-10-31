@@ -9,7 +9,6 @@ import {
   AvatarPicker,
   BirdMark,
   CodeInput,
-  GameCover,
   Glyph,
   Icon,
   Lid,
@@ -17,12 +16,11 @@ import {
   Sheet,
   Token,
 } from '@jackdaw/ui';
-import { catalog, CATEGORY_LABEL, unfitReason } from '@/lib/catalog';
+import { catalog } from '@/lib/catalog';
 import { rememberAvatar, rememberedAvatar, rememberedName, rememberName } from '@/lib/identity';
 import { createLobby } from '@/lib/use-lobby';
-import { FilterBar } from './games/filter-bar';
-import { hasFilters, matches, NO_FILTERS, type Filters } from './games/filters';
 import { InstallButton } from './pwa';
+import { GameShelves } from './shelves';
 import { ThemeButton } from './theme-toggle';
 
 const FALLBACK_AVATAR: Avatar = { crest: 'raven', tint: 'slate' };
@@ -208,7 +206,7 @@ export function Home() {
             See all games
           </Link>
         </header>
-        <GameGrid />
+        <GameShelves />
       </section>
 
       <Sheet open={picking} onClose={closePicker} title="Your token">
@@ -225,57 +223,5 @@ export function Home() {
         </Plaque>
       </Sheet>
     </>
-  );
-}
-
-/**
- * Every game in one grid, loosely by kind (playable first), with the filters along the top.
- * Each cover opens the game's page.
- */
-function GameGrid() {
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
-  const shown = catalog.filter((e) => matches(e.meta, filters));
-  return (
-    <div className="home-games">
-      <FilterBar filters={filters} onChange={setFilters} />
-      <div className="cat-count">
-        <span>
-          {shown.length === 1 ? '1 game' : `${shown.length} games`}
-          {filters.players ? ` for ${filters.players} players` : ''}
-        </span>
-        {hasFilters(filters) && (
-          <button type="button" className="cat-linkbtn" onClick={() => setFilters(NO_FILTERS)}>
-            Clear filters
-          </button>
-        )}
-      </div>
-      {shown.length === 0 ? (
-        <p className="cat-empty">
-          No games match those filters.{' '}
-          <button type="button" className="cat-linkbtn" onClick={() => setFilters(NO_FILTERS)}>
-            Show every game
-          </button>
-        </p>
-      ) : (
-        <ul className="cat-grid">
-          {shown.map((e) => (
-            <li key={e.meta.id}>
-              <GameCover
-                name={e.meta.name}
-                art={e.art}
-                players={[e.meta.minPlayers, e.meta.maxPlayers]}
-                minutes={e.meta.minutes}
-                tagline={e.meta.tagline}
-                kind={CATEGORY_LABEL[e.meta.category]}
-                soon={!e.playable}
-                unfit={filters.players ? unfitReason(e.meta, filters.players) : null}
-                href={`/games/${e.meta.id}`}
-                link={Link}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   );
 }

@@ -78,7 +78,7 @@ a {
   gap: var(--space-5);
   align-items: center;
   width: 100%;
-  max-width: 1180px;
+  max-width: 1400px;
   margin-inline: auto;
   /* room at the foot for the "the games are below" arrow */
   padding: var(--space-5) var(--gutter) calc(var(--space-6) + 64px);
@@ -174,7 +174,7 @@ a {
   justify-content: space-between;
   gap: var(--space-3);
   width: 100%;
-  max-width: 1180px;
+  max-width: 1400px;
   margin-inline: auto;
   padding-inline: var(--gutter);
 }
@@ -185,7 +185,7 @@ a {
   display: grid;
   gap: var(--space-3);
   width: 100%;
-  max-width: 1180px;
+  max-width: 1400px;
   margin-inline: auto;
   padding-inline: var(--gutter);
 }

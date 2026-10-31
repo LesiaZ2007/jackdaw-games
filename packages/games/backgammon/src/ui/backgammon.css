@@ -1,0 +1,599 @@
+/*
+ * Backgammon: the tables. A folding walnut case with boxwood stringing, a vellum field, points
+ * printed in gules and azure with an engraved line, turned ivory and ebony checkers and bone
+ * dice. The case's colours live in this token block and follow the shell's day and dark through
+ * data-look. Flat printed fills: no gradients, no glows. Jackdaw's bar is not restyled here.
+ */
+
+.bgm {
+  --bgm-case: #5b3a22;
+  --bgm-string: #c9a46a;
+  --bgm-field: #ead9b6;
+  --bgm-tray: #4a2f1b;
+  --bgm-pt-a: var(--gules);
+  --bgm-pt-b: var(--azure);
+  --bgm-ivory: #f5eedc;
+  --bgm-ivory-edge: #3b2c1e;
+  --bgm-ebony: #26201c;
+  --bgm-ebony-edge: #d9c8a4;
+  --bgm-mark: var(--or);
+  color: var(--ink);
+}
+.bgm[data-look='dark'] {
+  --bgm-case: #2e1f14;
+  --bgm-string: #8c6a3e;
+  --bgm-field: #3b2d21;
+  --bgm-tray: #22170f;
+  --bgm-ebony: #120e0b;
+  --bgm-ebony-edge: #cdb88f;
+}
+
+/* ── Phone: fits under the bar ─────────────────────────────────────────── */
+.bgm--phone {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow: hidden;
+}
+.bgm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.bgm-status {
+  margin: 0;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-1);
+  line-height: 1.05;
+}
+.bgm-clock {
+  flex: none;
+  font: 800 18px var(--font-plaque);
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+.bgm-clock.is-low {
+  color: var(--danger);
+}
+
+.bgm-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.bgm-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px var(--space-2);
+}
+.bgm-side .bgm-match {
+  grid-column: 1 / -1;
+}
+.bgm-side .bgm-log {
+  display: none;
+}
+.bgm-board {
+  flex: 0 1 auto;
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+  aspect-ratio: 960 / 660;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* The last moves under the board on a phone, in the room the wide board leaves. */
+.bgm-below {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.bgm-tables {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.bgm-match {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.bgm-match__tag {
+  margin-left: 6px;
+  padding: 0 6px;
+  background: var(--sable);
+  color: var(--on-fill);
+}
+
+/* A name plate: printed card, double rule when it is their move. */
+.bgm-plate {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 2px solid var(--rule);
+  background: var(--paper);
+}
+.bgm-plate.is-turn {
+  border-color: var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: -5px;
+}
+.bgm-plate__tok {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 36px;
+}
+.bgm-plate__who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font: 700 14px/1.15 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.bgm-plate__who b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+.bgm-plate__who span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  color: var(--ink-2);
+}
+.bgm-plate__score {
+  flex: none;
+  min-width: 34px;
+  padding: 2px 6px;
+  text-align: center;
+  background: var(--ink);
+  color: var(--paper);
+  font: 900 22px/1.1 var(--font-plaque);
+}
+
+/* The dock: Roll, Double, Undo, Done, Take, Drop. */
+.bgm-dock {
+  flex: none;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.bgm-dock > .jd-plaque,
+.bgm-dock > button {
+  flex: 1;
+  max-width: 260px;
+}
+.bgm-dock__line {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+  font: 700 16px/1.2 var(--font-plaque);
+  letter-spacing: 0.04em;
+  color: var(--ink-2);
+}
+.bgm-btn {
+  min-height: 52px;
+  padding: 0 var(--space-3);
+  border: 2px solid var(--ink);
+  outline: 1px solid var(--ink);
+  outline-offset: -6px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 17px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.bgm-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.bgm-btn--cube {
+  background: var(--bgm-ivory);
+  color: var(--bgm-ivory-edge);
+  border-color: var(--bgm-ivory-edge);
+  outline-color: var(--bgm-ivory-edge);
+}
+
+.bgm-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: 600 15px/1.25 var(--font-body);
+}
+.bgm-log li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.bgm-log li:first-child {
+  font-weight: 800;
+}
+.bgm-log__dice {
+  display: inline-flex;
+  gap: 2px;
+}
+.bgm-dieicon,
+.bgm-ckicon {
+  flex: none;
+  display: inline-block;
+}
+
+/* Laptop, or a phone on its side: the board beside the plates. */
+@container game (min-width: 740px) {
+  .bgm-main {
+    flex-direction: row;
+  }
+  .bgm-side {
+    width: clamp(220px, 28cqw, 300px);
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .bgm-side .bgm-log {
+    display: flex;
+    margin-top: var(--space-2);
+  }
+  .bgm-below {
+    display: none;
+  }
+  .bgm-main > .bgm-board {
+    flex: 1;
+    aspect-ratio: auto;
+  }
+}
+
+/* ── The tables (SVG) ───────────────────────────────────────────────────── */
+.bgm-case {
+  fill: var(--bgm-case);
+}
+.bgm-string {
+  fill: none;
+  stroke: var(--bgm-string);
+  stroke-width: 3;
+}
+.bgm-field {
+  fill: var(--bgm-field);
+}
+.bgm-pt--a path:first-child {
+  fill: var(--bgm-pt-a);
+}
+.bgm-pt--b path:first-child {
+  fill: var(--bgm-pt-b);
+}
+.bgm-pt__line {
+  fill: none;
+  stroke: var(--bgm-field);
+  stroke-width: 2;
+  opacity: 0.5;
+}
+.bgm-bar {
+  fill: var(--bgm-case);
+}
+.bgm-hinge,
+.bgm-inlay {
+  fill: var(--bgm-string);
+}
+.bgm-tray {
+  fill: var(--bgm-tray);
+}
+.bgm-tray__rule {
+  stroke: var(--bgm-string);
+  stroke-width: 2;
+}
+.bgm-num {
+  fill: var(--bgm-string);
+  font: 800 17px var(--font-plaque);
+  text-anchor: middle;
+}
+
+.bgm-ck--ivory {
+  --ck: var(--bgm-ivory);
+  --ck-edge: var(--bgm-ivory-edge);
+}
+.bgm-ck--ebony {
+  --ck: var(--bgm-ebony);
+  --ck-edge: var(--bgm-ebony-edge);
+}
+.bgm-ck__disc,
+rect.bgm-ck {
+  fill: var(--ck);
+  stroke: var(--ck-edge);
+  stroke-width: 2.5;
+}
+.bgm-ck__ring,
+.bgm-ck__boss {
+  fill: none;
+  stroke: var(--ck-edge);
+  stroke-width: 1.5;
+}
+.bgm-ck__n {
+  fill: var(--ck-edge);
+  font: 900 26px var(--font-plaque);
+  text-anchor: middle;
+}
+.bgm-ck__body {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 180ms var(--ease-out);
+}
+.bgm-ck.is-movable .bgm-ck__disc {
+  stroke: var(--bgm-mark);
+  stroke-width: 5;
+}
+.bgm-ck.is-picked .bgm-ck__body {
+  transform: translateY(-6px) scale(1.08);
+}
+
+.bgm-target {
+  fill: var(--bgm-mark);
+  fill-opacity: 0.28;
+  stroke: var(--bgm-mark);
+  stroke-width: 3;
+  stroke-dasharray: 7 5;
+  pointer-events: none;
+}
+.bgm-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+.bgm-hit:focus-visible {
+  outline: none;
+  stroke: var(--ink);
+  stroke-width: 3;
+}
+
+.bgm-cube rect {
+  fill: var(--bgm-ivory);
+  stroke: var(--bgm-ivory-edge);
+  stroke-width: 2.5;
+}
+.bgm-cube text {
+  fill: var(--bgm-ivory-edge);
+  font: 900 28px var(--font-plaque);
+  text-anchor: middle;
+}
+.bgm-cube.is-owned rect {
+  stroke: var(--bgm-mark);
+  stroke-width: 4;
+}
+
+.bgm-die {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.bgm-die rect {
+  stroke-width: 2.5;
+}
+.bgm-die--ivory rect {
+  fill: var(--bgm-ivory);
+  stroke: var(--bgm-ivory-edge);
+}
+.bgm-die--ivory circle {
+  fill: var(--bgm-ivory-edge);
+}
+.bgm-die--ebony rect {
+  fill: var(--bgm-ebony);
+  stroke: var(--bgm-ebony-edge);
+}
+.bgm-die--ebony circle {
+  fill: var(--bgm-ebony-edge);
+}
+.bgm-die.is-spent {
+  opacity: 0.3;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bgm-die {
+    animation: bgm-roll 620ms var(--ease-out) var(--dd, 0ms) both;
+  }
+  .bgm-fly > .bgm-ck__body,
+  rect.bgm-fly {
+    animation: bgm-fly 600ms var(--ease-out) var(--fd, 0ms) both;
+  }
+  .bgm-cube {
+    animation: bgm-cube 520ms var(--ease-out) both;
+  }
+}
+@keyframes bgm-roll {
+  from {
+    opacity: 0;
+    transform: translate(-60px, 24px) rotate(-270deg) scale(0.5);
+  }
+  70% {
+    opacity: 1;
+  }
+}
+@keyframes bgm-fly {
+  from {
+    transform: translate(var(--fx), var(--fy)) scale(1.12);
+  }
+}
+@keyframes bgm-cube {
+  from {
+    opacity: 0;
+    transform: scale(0.4) rotate(-90deg);
+  }
+}
+.bgm-cube {
+  transform-box: fill-box;
+}
+
+/* ── TV ─────────────────────────────────────────────────────────────────── */
+.bgm-tv {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 40px 28px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.bgm-tv__head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+.bgm-tv__line {
+  margin: 0;
+  font: 800 40px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.bgm-tv .bgm-clock {
+  font-size: 36px;
+}
+.bgm-tv .bgm-board,
+.bgm-tv-end .bgm-board {
+  flex: 1;
+  aspect-ratio: auto;
+}
+.bgm-tv__body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 440px minmax(0, 1fr);
+  gap: 36px;
+}
+.bgm-tv__side {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+.bgm-tv .bgm-match {
+  font-size: 26px;
+}
+.bgm-plate--tv {
+  gap: 14px;
+  padding: 10px 14px;
+  border-width: 3px;
+}
+.bgm-plate--tv .bgm-plate__tok {
+  width: 72px;
+  height: 72px;
+}
+.bgm-plate--tv .bgm-plate__who {
+  font-size: 26px;
+}
+.bgm-plate--tv .bgm-plate__who b {
+  font-size: 32px;
+}
+.bgm-plate--tv .bgm-plate__score {
+  min-width: 64px;
+  font-size: 48px;
+}
+.bgm-tv .bgm-log {
+  font-size: 24px;
+  gap: 6px;
+}
+.bgm-tv .bgm-log .bgm-dieicon {
+  width: 30px;
+  height: 30px;
+}
+
+/* ── After the match ────────────────────────────────────────────────────── */
+.bgm-reveal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.bgm-reveal__board {
+  aspect-ratio: 960 / 660;
+  width: 100%;
+}
+.bgm-tv-end {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 20px;
+}
+.bgm-sheet {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  font: 600 16px/1.2 var(--font-body);
+}
+.bgm-sheet caption {
+  padding-bottom: 6px;
+  text-align: left;
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.bgm-sheet th,
+.bgm-sheet td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+}
+.bgm-sheet th {
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.bgm-sheet td:nth-child(n + 4),
+.bgm-sheet th:nth-child(n + 4) {
+  text-align: center;
+  font-family: var(--font-plaque);
+  font-weight: 900;
+}
+.bgm-sheet--tv {
+  font-size: 26px;
+}
+.bgm-sheet--tv caption,
+.bgm-sheet--tv th {
+  font-size: 24px;
+}
+.bgm-sheet--tv td {
+  padding: 10px 14px;
+}
+.bgm-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.bgm-dieicon .bgm-die {
+  animation: none;
+}

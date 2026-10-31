@@ -85,6 +85,54 @@ export const CATEGORY_LABEL: Record<GameCategory, string> = {
   mini: 'Mini game',
 };
 
+/**
+ * The home page's shelves, one per kind, in this order: a heading, a line under it, the
+ * tincture its banner is printed in, and a glyph for its shield.
+ */
+export const SHELVES: {
+  kind: GameCategory;
+  title: string;
+  line: string;
+  tint: 'gules' | 'vert' | 'azure' | 'purpure' | 'sable' | 'tenne';
+  glyph: string;
+}[] = [
+  {
+    kind: 'social-deduction',
+    title: 'Hidden roles',
+    line: 'Lie, accuse, survive.',
+    tint: 'gules',
+    glyph: 'avalon',
+  },
+  {
+    kind: 'board',
+    title: 'Board games',
+    line: 'Long evenings and big maps.',
+    tint: 'vert',
+    glyph: 'hexes',
+  },
+  {
+    kind: 'card',
+    title: 'Card games',
+    line: 'Shuffle up and deal.',
+    tint: 'azure',
+    glyph: 'cards',
+  },
+  {
+    kind: 'word',
+    title: 'Word and party',
+    line: 'Clues, guesses and shouting.',
+    tint: 'purpure',
+    glyph: 'tiles',
+  },
+  {
+    kind: 'mini',
+    title: 'Mini games',
+    line: 'A quick round between the big ones.',
+    tint: 'sable',
+    glyph: 'bolt',
+  },
+];
+
 export const COMPLEXITY_LABEL: Record<1 | 2 | 3, string> = { 1: 'Light', 2: 'Medium', 3: 'Heavy' };
 
 /** Why a game can't be played with this many players, or null if it can. */

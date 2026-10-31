@@ -12,6 +12,8 @@ import './shelves.css';
 /** Columns on wide screens. Each shelf takes one per game, so short shelves sit side by side. */
 const COLS = 6;
 
+const shelfOf = (e: CatalogEntry) => SHELVES.find((s) => s.kind === e.meta.category)!;
+
 /** Empty columns after a shelf's last box on a wide screen, when it spans `span` columns. */
 const rest = (count: number, span: number) => span - (count % span || span);
 
@@ -207,11 +209,16 @@ export function GameShelves() {
   );
 }
 
+/**
+ * A game's box, printed in its shelf's colour rather than its own (2026-10-31: "each category
+ * has its own color", as one colour a game was "kind of chaotic"). Its field and emblem stay,
+ * so the boxes on a shelf still tell apart.
+ */
 function Cover({ entry: e, players }: { entry: CatalogEntry; players: number | null }) {
   return (
     <GameCover
       name={e.meta.name}
-      art={e.art}
+      art={{ ...e.art, band: shelfOf(e).tint }}
       players={[e.meta.minPlayers, e.meta.maxPlayers]}
       minutes={e.meta.minutes}
       tagline={e.meta.tagline}

@@ -1,0 +1,666 @@
+/*
+ * Tetra: stones cut in heraldic tinctures, set in a printed well. Flat fills with a printed edge,
+ * no gradients or glows. Colours come from the shell's tokens, so day and dark follow it.
+ * Prefix: ttr.
+ */
+
+.ttr {
+  --ttr-I: var(--azure);
+  --ttr-O: var(--or);
+  --ttr-T: var(--purpure);
+  --ttr-S: var(--vert);
+  --ttr-Z: var(--gules);
+  --ttr-J: var(--tint-indigo);
+  --ttr-L: var(--tenne);
+  --ttr-G: var(--tint-pewter);
+  --ttr-well: color-mix(in oklab, var(--paper) 88%, var(--ink));
+  --ttr-sky: color-mix(in oklab, var(--paper) 70%, var(--ink));
+  --ttr-grid: color-mix(in oklab, var(--paper) 78%, var(--ink));
+  --ttr-edge: color-mix(in oklab, var(--ink) 55%, transparent);
+  --ttr-ghost: color-mix(in oklab, var(--ink) 45%, transparent);
+  --ttr-dim: color-mix(in oklab, var(--paper) 55%, var(--ink));
+  --ttr-owe: var(--gules);
+  --ttr-frame: var(--ink);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+.ttr[data-look='dark'] {
+  --ttr-well: color-mix(in oklab, var(--paper) 90%, black);
+  --ttr-sky: color-mix(in oklab, var(--paper) 75%, black);
+  --ttr-grid: color-mix(in oklab, var(--paper) 80%, var(--ink));
+  --ttr-edge: color-mix(in oklab, black 55%, transparent);
+  --ttr-ghost: color-mix(in oklab, var(--ink) 55%, transparent);
+}
+
+.ttr-well {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ttr-label {
+  font-family: var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------- phone */
+
+.ttr-phone {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-2) var(--space-2);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.ttr-rivals {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 2px;
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  flex: 0 0 auto;
+  height: clamp(84px, 17cqh, 150px);
+}
+
+.ttr-rival {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  justify-items: center;
+  gap: 2px;
+  min-height: 0;
+}
+
+.ttr-rival__well {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: 10 / 22;
+  border: 2px solid var(--ttr-frame);
+}
+
+.ttr-rival--out .ttr-rival__well {
+  opacity: 0.55;
+}
+
+.ttr-rival__owe {
+  position: absolute;
+  left: -6px;
+  bottom: 0;
+  width: 3px;
+  background: var(--ttr-owe);
+}
+
+.ttr-rival__name {
+  font-size: var(--step--1);
+  font-weight: 700;
+  max-width: 9ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ttr-rival__stat {
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+
+.ttr-stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(56px, 1fr) auto minmax(56px, 1fr);
+  gap: var(--space-2);
+  align-items: stretch;
+}
+
+.ttr-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.ttr-frame {
+  position: relative;
+  display: flex;
+  gap: 6px;
+  min-height: 0;
+  height: 100%;
+}
+
+.ttr-meter {
+  position: relative;
+  width: 8px;
+  height: 100%;
+  border: 1px solid var(--ttr-frame);
+  background: var(--ttr-well);
+}
+
+.ttr-meter span {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--ttr-owe);
+  transition: height 160ms var(--ease-out);
+}
+
+.ttr-wellbox {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 10 / 22;
+  max-width: 62vw;
+  border: 3px double var(--ttr-frame);
+  outline: 1px solid var(--ttr-frame);
+  outline-offset: 3px;
+}
+
+.ttr-stone {
+  display: block;
+  width: 100%;
+  max-width: 72px;
+  aspect-ratio: 5 / 3;
+}
+
+.ttr-stone--empty {
+  border: 1px dashed var(--rule);
+}
+
+.ttr-stone--faded {
+  opacity: 0.35;
+}
+
+.ttr-stone__cell {
+  stroke: var(--ttr-edge);
+  stroke-width: 0.08;
+}
+
+.ttr-next {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  align-items: center;
+}
+
+.ttr-next .ttr-stone:not(:first-child) {
+  max-width: 54px;
+}
+
+.ttr-stats {
+  margin: var(--space-3) 0 0;
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  text-align: center;
+}
+
+.ttr-stats dt {
+  font-family: var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.ttr-stats dd {
+  margin: 0;
+  font-size: var(--step-1);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Words over the well. */
+.ttr-shout,
+.ttr-ko,
+.ttr-veil,
+.ttr-count {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.ttr-shout {
+  top: 34%;
+  display: grid;
+  gap: 2px;
+  padding: 4px 12px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+
+.ttr-shout b {
+  font-family: var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--step-1);
+}
+
+.ttr-shout span {
+  font-size: var(--step--1);
+}
+
+.ttr-shout--big {
+  background: var(--gules);
+  color: var(--on-fill);
+  border-color: var(--on-fill);
+}
+
+.ttr-shout--big b {
+  font-size: var(--step-2);
+}
+
+.ttr-ko {
+  top: 18%;
+  padding: 4px 10px;
+  background: var(--sable);
+  color: var(--on-fill);
+  font-family: var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ttr-veil {
+  top: 42%;
+  padding: 6px 14px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+}
+
+.ttr-count {
+  top: 30%;
+  display: grid;
+  justify-items: center;
+}
+
+.ttr-count span {
+  font-family: var(--font-display);
+  font-size: var(--step-5);
+  line-height: 1;
+  color: var(--gules);
+}
+
+.ttr-count small {
+  font-family: var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: var(--step-0);
+}
+
+.ttr-pips {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.ttr-pips i {
+  width: 9px;
+  height: 9px;
+  transform: rotate(45deg);
+  border: 1.5px solid var(--ink);
+}
+
+.ttr-pips i.is-won {
+  background: var(--or);
+}
+
+/* The pad: hold and turns on top, slide and soft drop below, the big drop on the right. */
+.ttr-pad {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) 1.2fr;
+  grid-template-areas:
+    'hold ccw cw hard'
+    'left soft right hard';
+  gap: 6px;
+}
+
+.ttr-key {
+  min-height: 52px;
+  display: grid;
+  place-items: center;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.ttr-key:active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.ttr-key svg {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ttr-key--hold {
+  grid-area: hold;
+}
+.ttr-key--ccw {
+  grid-area: ccw;
+}
+.ttr-key--cw {
+  grid-area: cw;
+}
+.ttr-key--left {
+  grid-area: left;
+}
+.ttr-key--soft {
+  grid-area: soft;
+}
+.ttr-key--right {
+  grid-area: right;
+}
+
+.ttr-key--hard {
+  grid-area: hard;
+  background: var(--gules);
+  color: var(--on-fill);
+}
+
+.ttr-keys {
+  display: none;
+  margin: 0;
+  text-align: center;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+/* A laptop plays with the keyboard: no pad, the key list instead. */
+@media (hover: hover) and (pointer: fine) {
+  .ttr-pad {
+    display: none;
+  }
+  .ttr-keys {
+    display: block;
+  }
+  .ttr-rivals {
+    height: clamp(110px, 20cqh, 190px);
+  }
+}
+
+.ttr-watch {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ttr-watch__line {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ttr-watch__grid {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+.ttr-watch__one {
+  margin: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  min-height: 0;
+  gap: 4px;
+}
+
+.ttr-watch__one .ttr-well {
+  height: 100%;
+  width: auto;
+  aspect-ratio: 10 / 22;
+  border: 2px solid var(--ttr-frame);
+}
+
+/* ---------------------------------------------------------------- TV */
+
+.ttr-tv {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--vh, 1vh) * 2);
+  padding: calc(var(--vh, 1vh) * 2) calc(var(--vw, 1vw) * 2);
+  background: var(--paper);
+}
+
+.ttr-tv__head {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: calc(var(--vw, 1vw) * 2);
+  font-size: max(24px, calc(var(--vh, 1vh) * 3));
+}
+
+.ttr-tv__mode {
+  font-family: var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ttr-tv__clock {
+  font-family: var(--font-display);
+  font-size: max(32px, calc(var(--vh, 1vh) * 5));
+  font-variant-numeric: tabular-nums;
+}
+
+.ttr-tv__feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  justify-self: end;
+  text-align: right;
+  font-size: max(24px, calc(var(--vh, 1vh) * 2.4));
+  color: var(--ink-2);
+}
+
+.ttr-tv__feed .ttr-feed--ko {
+  color: var(--gules);
+  font-weight: 700;
+}
+
+.ttr-tv__grid {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: calc(var(--vw, 1vw) * 2);
+  justify-content: center;
+  align-items: stretch;
+}
+
+.ttr-tv__one {
+  margin: 0;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  justify-items: center;
+  gap: calc(var(--vh, 1vh) * 1);
+}
+
+.ttr-tv__wellbox {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: 10 / 22;
+  border: 4px double var(--ttr-frame);
+}
+
+.ttr-tv__one.is-out .ttr-tv__wellbox {
+  opacity: 0.6;
+}
+
+.ttr-tv__owe {
+  position: absolute;
+  left: -14px;
+  bottom: 0;
+  width: 8px;
+  background: var(--ttr-owe);
+}
+
+.ttr-tv__stamp {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%) rotate(-8deg);
+  padding: 4px 16px;
+  background: var(--paper);
+  border: 3px solid var(--gules);
+  color: var(--gules);
+  font-family: var(--font-display);
+  font-size: max(28px, calc(var(--vh, 1vh) * 5));
+  white-space: nowrap;
+}
+
+.ttr-tv__one figcaption {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-size: max(24px, calc(var(--vh, 1vh) * 2.6));
+  font-variant-numeric: tabular-nums;
+}
+
+.ttr-tv__one figcaption b {
+  font-size: max(26px, calc(var(--vh, 1vh) * 3.2));
+}
+
+.ttr-tv .ttr-pips i {
+  width: max(14px, calc(var(--vh, 1vh) * 1.6));
+  height: max(14px, calc(var(--vh, 1vh) * 1.6));
+}
+
+/* Past four players the TV wells sit in two rows. */
+.ttr-tv__grid[data-count='5'],
+.ttr-tv__grid[data-count='6'],
+.ttr-tv__grid[data-count='7'],
+.ttr-tv__grid[data-count='8'] {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.ttr-count--tv span {
+  font-size: max(120px, calc(var(--vh, 1vh) * 22));
+}
+
+.ttr-count--tv small {
+  font-size: max(28px, calc(var(--vh, 1vh) * 3.5));
+}
+
+.ttr-count--tv {
+  top: 32%;
+  padding: 0 calc(var(--vw, 1vw) * 3);
+  background: var(--paper);
+  border: 4px double var(--ink);
+}
+
+/* ---------------------------------------------------------------- reveal */
+
+.ttr-reveal__rounds {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ttr-reveal__rounds li {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--rule);
+}
+
+.ttr-reveal__n {
+  font-family: var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+
+.ttr-reveal__order {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.ttr-reveal__order .is-first {
+  font-weight: 700;
+  color: var(--vert);
+}
+
+.ttr-reveal--tv {
+  font-size: max(24px, calc(var(--vh, 1vh) * 2.6));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ttr-count span {
+    animation: ttr-pop 900ms var(--ease-out) both;
+  }
+  .ttr-shout,
+  .ttr-ko {
+    animation: ttr-rise 1400ms var(--ease-out) both;
+  }
+}
+
+@keyframes ttr-pop {
+  from {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes ttr-rise {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  15% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  80% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    translate: 0 -10px;
+  }
+}

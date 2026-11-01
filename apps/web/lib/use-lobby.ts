@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
+import { gameUis } from './catalog';
 import { getDeviceToken, getDisplayId } from './identity';
 import { PollingTransport, TransportError } from './transport';
 
@@ -34,6 +35,8 @@ export function useLobby(code: string, role: 'player' | 'display'): LobbyState {
     transport.current = t;
     const stop = t.subscribe(
       (s) => {
+        const game = s.session ? gameUis[s.session.gameId] : undefined;
+        t.setLivePoll(s.status === 'in_game' ? (game?.livePollMs ?? null) : null);
         setSnapshot(s);
         setMissing(false);
       },

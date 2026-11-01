@@ -285,6 +285,14 @@ export const GLYPHS: Record<string, ReactNode> = {
       <circle cx="48" cy="20" r="5" />
     </g>
   ),
+  /** A T-shaped stone falling into the gap of a stacked wall (Tetra). */
+  stones: (
+    <g {...stroke(3.4)}>
+      <path d="M20 8h24v8h-8v8h-8v-8h-8z" fill="currentColor" />
+      <path d="M8 36h20v8h8v-8h20v20H8z" />
+      <path d="M8 46h20M36 46h20M18 36v20M46 36v20M28 46v10M36 46v10" />
+    </g>
+  ),
 };
 
 export function Glyph({ id, size }: { id: string; size?: number | string }) {

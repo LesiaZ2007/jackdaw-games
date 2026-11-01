@@ -108,6 +108,8 @@ export class PollingTransport implements RoomTransport {
   private timerAt: number | null = null;
   private inFlight = false;
   private idlePolls = 0;
+  /** A real-time game's poll interval while it runs (GameUi.livePollMs), or null. */
+  private livePollMs: number | null = null;
   private stopped = false;
   private readonly fetch: typeof fetch;
   private readonly doc: PollingOptions['document'];
@@ -153,6 +155,11 @@ export class PollingTransport implements RoomTransport {
     return snapshot;
   }
 
+  /** Poll every `ms` while a game is running (null for the usual pace). */
+  setLivePoll(ms: number | null) {
+    this.livePollMs = ms === null ? null : Math.max(600, ms);
+  }
+
   refresh() {
     if (this.inFlight || this.stopped) return;
     this.clearTimer();
@@ -178,11 +185,11 @@ export class PollingTransport implements RoomTransport {
   private schedule() {
     if (this.stopped || this.listeners.size === 0) return;
     this.clearTimer();
-    const delay = pollDelay({
-      status: this.snapshot?.status ?? null,
-      idlePolls: this.idlePolls,
-      hidden: Boolean(this.doc?.hidden),
-    });
+    const hidden = Boolean(this.doc?.hidden);
+    const live = this.livePollMs !== null && this.snapshot?.status === 'in_game' && !hidden;
+    const delay = live
+      ? this.livePollMs!
+      : pollDelay({ status: this.snapshot?.status ?? null, idlePolls: this.idlePolls, hidden });
     // A game timer due sooner (the next deal, a turn running out): poll just after it.
     const untilTimer = this.timerAt === null ? Infinity : this.timerAt - serverClock() + 150;
     this.timer = setTimeout(() => void this.poll(), Math.max(100, Math.min(delay, untilTimer)));

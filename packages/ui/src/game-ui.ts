@@ -129,6 +129,12 @@ export interface GameUi {
    * in a flex column); it is a size container named `game` for container queries.
    */
   fit?: boolean;
+  /**
+   * A real-time game (Tetra) polls this often while it runs, in ms, instead of the usual 1.5s, so
+   * everyone's wells on a watching phone or the TV keep up. Keep it at 600 or more: polls are
+   * rate limited.
+   */
+  livePollMs?: number;
 }
 
 export interface LobbySeatsProps {

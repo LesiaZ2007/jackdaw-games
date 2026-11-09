@@ -90,5 +90,4 @@ export const emptyCards = (): Cards => ({
 /** A full hand from one that may lack kinds (games saved before commodities existed). */
 export const fullCards = (c: Partial<Cards>): Cards => ({ ...emptyCards(), ...c });
 
-export const countCards = (c: Partial<Cards>): number =>
-  CARDS.reduce((n, r) => n + (c[r] ?? 0), 0);
+export const countCards = (c: Partial<Cards>): number => CARDS.reduce((n, r) => n + (c[r] ?? 0), 0);

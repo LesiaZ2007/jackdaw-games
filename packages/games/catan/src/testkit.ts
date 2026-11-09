@@ -1,6 +1,6 @@
 import { createRng } from '@jackdaw/engine';
-import { roadSpots, settlementSpots } from './build';
-import { layout } from './geometry';
+import { openingKind } from './bot';
+import { roadSpotsOf, settleSpotsOf, shipSpotsOf } from './spots';
 import { catan, type CatanAction, type CatanOptions, type CatanState } from './rules';
 import { RESOURCES, emptyCards, type Cards, type DevCard } from './types';
 
@@ -26,21 +26,27 @@ export function seedFor(total: number): number {
   }
 }
 
-/** Plays the whole opening: each player takes spread-out legal corners and the first road. */
+/**
+ * Plays the whole opening: each player takes spread-out legal corners and the first road (or,
+ * where a corner has no land road, a ship). Works for every expansion.
+ */
 export function playSetup(s: CatanState): CatanState {
-  const L = layout(s.size);
   let k = 0;
   while (s.phase === 'setup') {
     const pid = s.setup!.order[s.setup!.step]!;
     if (!s.setup!.corner) {
-      const spots = settlementSpots(L, s.buildings, s.roads, pid, true);
-      s = act(s, pid, { type: 'build', kind: 'settlement', at: spots[(k++ * 7) % spots.length]! });
-    } else {
+      const spots = settleSpotsOf(s, pid, true);
       s = act(s, pid, {
         type: 'build',
-        kind: 'road',
-        at: roadSpots(L, s.buildings, s.roads, pid, s.setup!.corner)[0]!,
+        kind: openingKind(s),
+        at: spots[(k++ * 7) % spots.length]!,
       });
+    } else {
+      const corner = s.setup!.corner;
+      const roads = roadSpotsOf(s, pid, corner);
+      s = roads.length
+        ? act(s, pid, { type: 'build', kind: 'road', at: roads[0]! })
+        : act(s, pid, { type: 'build', kind: 'ship', at: shipSpotsOf(s, pid, corner)[0]! });
     }
   }
   return s;

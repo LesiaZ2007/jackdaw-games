@@ -10,7 +10,7 @@
   padding: 7px;
   background: var(--ctn-sea);
   border: 3px solid var(--ctn-walnut);
-  border-radius: 16px;
+  border-radius: 3px;
   outline: none;
   box-shadow:
     inset 0 0 0 5px var(--ctn-sand),
@@ -19,7 +19,7 @@
 }
 /* The voyage sails along the top of the sea; the island starts below it. */
 .ctn .ctn-stage--voyage {
-  padding-top: 62px;
+  padding-top: 46px;
 }
 .ctn .ctn-stage--voyage > .ctn-voyage {
   position: absolute;
@@ -28,7 +28,7 @@
   right: 9px;
   z-index: 2;
   pointer-events: none;
-  border-radius: 10px;
+  border-radius: 3px;
   background: color-mix(in srgb, var(--ctn-sea) 82%, transparent);
 }
 .ctn .ctn-strip,
@@ -36,7 +36,7 @@
 .ctn .ctn-ledger {
   background: var(--ctn-panel);
   border: 2px solid var(--ctn-frame);
-  border-radius: 12px;
+  border-radius: 3px;
   box-shadow: 0 2px 0 var(--ctn-frame-2);
 }
 .ctn .ctn-strip__text b {
@@ -68,7 +68,7 @@
 
 /* Wooden buttons: rounded, a walnut edge with a ledge under it, serif labels. */
 .ctn .jd-plaque {
-  border-radius: 12px;
+  border-radius: 3px;
   border: 2px solid var(--ctn-frame);
   outline: none;
   background: var(--ctn-panel);
@@ -119,7 +119,7 @@
   display: grid;
   place-items: center;
   padding: 0 5px;
-  border-radius: 12px;
+  border-radius: 3px;
   font: 800 14px/1 var(--font-code);
 }
 .ctn .ctn-dock .jd-plaque .ctn-pip {
@@ -255,7 +255,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  border-radius: 10px;
+  border-radius: 3px;
   background: var(--gules);
   color: var(--on-fill);
   border: 1.5px solid var(--ctn-stock);
@@ -284,32 +284,32 @@
   padding: 10px 20px;
   background: var(--ctn-sea);
   border: 3px solid var(--ctn-walnut);
-  border-radius: 20px;
+  border-radius: 4px;
   box-shadow: inset 0 0 0 5px var(--ctn-sand);
 }
 .ctn-voyage--tv .ctn-voyage__label b {
-  font-size: 34px;
+  font-size: 28px;
 }
 .ctn-voyage--tv .ctn-voyage__label small {
-  font-size: 26px;
+  font-size: 24px;
 }
 .ctn-voyage--tv .ctn-voyage__sea {
-  max-height: 84px;
+  max-height: 60px;
 }
 .ctn-voyage--tv .ctn-voyage__odds {
-  gap: 8px;
-  padding: 8px 14px;
-  border-radius: 14px;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 3px;
 }
 .ctn-voyage--tv .ctn-voyage__odds small {
   font-size: 24px;
 }
 .ctn-voyage--tv .ctn-voyage__side svg {
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
 }
 .ctn-voyage--tv .ctn-voyage__side b {
-  font-size: 38px;
+  font-size: 28px;
 }
 
 /* ---------- Your estate ---------- */
@@ -397,7 +397,7 @@
   place-items: center;
   width: 36px;
   height: 36px;
-  border-radius: 9px;
+  border-radius: 3px;
   background: var(--ctn-stock);
   color: var(--ctn-stock-ink);
   border: 1.5px solid var(--ctn-walnut);
@@ -418,7 +418,7 @@
   padding: 0 4px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 3px;
   background: var(--ctn-walnut);
   color: var(--ctn-stock);
   font: 800 13px/1 var(--font-body);
@@ -446,7 +446,7 @@
   min-height: 44px;
   display: flex;
   align-items: center;
-  border-radius: 10px;
+  border-radius: 3px;
   border: 1.5px solid var(--ctn-frame);
   background: var(--ctn-panel);
   color: var(--ink);
@@ -475,7 +475,7 @@
   top: -8px;
   right: -6px;
   padding: 2px 5px;
-  border-radius: 8px;
+  border-radius: 3px;
   background: var(--gules);
   color: var(--on-fill);
   font: 800 11px/1 var(--font-body);
@@ -544,7 +544,7 @@
 .ctn--tv .ctn-tv__board {
   padding: 12px;
   border: 5px solid var(--ctn-walnut);
-  border-radius: 26px;
+  border-radius: 4px;
   outline: none;
   box-shadow:
     inset 0 0 0 9px var(--ctn-sand),
@@ -559,7 +559,7 @@
 .ctn--tv .ctn-tv__news {
   background: var(--ctn-panel);
   border: 3px solid var(--ctn-frame);
-  border-radius: 20px;
+  border-radius: 4px;
   outline: none;
   box-shadow: 0 4px 0 var(--ctn-frame-2);
 }
@@ -569,7 +569,7 @@
     inset 12px 0 0 var(--ctn-own);
 }
 .ctn--tv .ctn-tvp__name {
-  font: 700 38px / 1 var(--font-code);
+  font: 700 28px / 1 var(--font-code);
   text-transform: none;
   letter-spacing: 0.01em;
 }
@@ -578,16 +578,16 @@
   text-transform: none;
 }
 .ctn--tv .ctn-tvp__pts {
-  width: 84px;
-  height: 84px;
+  width: 60px;
+  height: 60px;
   place-content: center;
   border-radius: 50%;
   background: var(--ctn-stock);
   color: var(--ctn-stock-ink);
-  border: 4px solid var(--ctn-walnut);
+  border: 3px solid var(--ctn-walnut);
 }
 .ctn--tv .ctn-tvp__pts b {
-  font-size: 50px;
+  font-size: 34px;
 }
 .ctn--tv .ctn-tvp__pts small {
   display: none;
@@ -619,5 +619,119 @@
   .ctn-chip svg {
     width: 22px;
     height: 22px;
+  }
+}
+
+/* ---------- On a phone the island keeps the room (2026-11-09: "keep the map as large as
+   possible") ---------- */
+
+/* The voyage on one line across the top of the sea: steps to go, the route, the odds. */
+.ctn-voyage__label em {
+  display: none;
+  font: 700 14px/1 var(--font-code);
+  font-style: normal;
+  white-space: nowrap;
+}
+.ctn-voyage--phone {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'label sea odds';
+  gap: 8px;
+  padding: 3px 6px;
+}
+.ctn-voyage--phone .ctn-voyage__label b,
+.ctn-voyage--phone .ctn-voyage__label small {
+  display: none;
+}
+.ctn-voyage--phone .ctn-voyage__label em {
+  display: inline;
+}
+.ctn-voyage--phone .ctn-voyage__sea {
+  max-height: 28px;
+}
+.ctn-voyage--phone .ctn-voyage__odds {
+  padding: 2px 6px;
+}
+.ctn-voyage--phone .ctn-voyage__side svg {
+  width: 16px;
+  height: 16px;
+}
+.ctn-voyage--phone .ctn-voyage__side b {
+  font-size: 17px;
+}
+.ctn-voyage.is-near .ctn-voyage__label em {
+  color: var(--ctn-stock);
+  background: var(--gules);
+  padding: 3px 5px;
+  border-radius: 2px;
+}
+
+/* Your points and knights sit on the tray's top row; the ledger waits for a laptop. */
+.ctn--phone > .ctn-ledger {
+  display: none;
+}
+.ctn .ctn-devrow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+.ctn-devrow__lead {
+  justify-self: start;
+}
+.ctn-devrow__tail {
+  justify-self: end;
+}
+.ctn .ctn-devrow > .ctn-devrow__cards {
+  grid-column: 2;
+}
+.ctn-devrow__lead .ctn-vp {
+  width: 58px;
+  height: 58px;
+}
+.ctn-devrow__lead .ctn-vp__ring {
+  mask: radial-gradient(circle, transparent 21px, var(--ctn-walnut) 21.5px);
+}
+.ctn-devrow__lead .ctn-vp b {
+  font-size: 26px;
+}
+
+@container game (min-width: 760px) and (orientation: landscape) {
+  .ctn-voyage--phone {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: 'label odds' 'sea sea';
+    gap: 4px 8px;
+    padding: 6px 8px 2px;
+  }
+  .ctn-voyage--phone .ctn-voyage__label b,
+  .ctn-voyage--phone .ctn-voyage__label small {
+    display: inline;
+  }
+  .ctn-voyage--phone .ctn-voyage__label em {
+    display: none;
+  }
+  .ctn-voyage--phone .ctn-voyage__sea {
+    max-height: 52px;
+  }
+  .ctn--phone > .ctn-ledger {
+    display: flex;
+  }
+  .ctn-devrow__lead,
+  .ctn-devrow__tail {
+    display: none;
+  }
+}
+@media (max-height: 700px) {
+  .ctn-devrow__lead .ctn-vp {
+    width: 46px;
+    height: 46px;
+  }
+  .ctn-devrow__lead .ctn-vp__ring {
+    mask: radial-gradient(circle, transparent 16px, var(--ctn-walnut) 16.5px);
+  }
+  .ctn-devrow__lead .ctn-vp b {
+    font-size: 20px;
+  }
+  .ctn-devrow__lead .ctn-vp small {
+    font-size: 10px;
   }
 }

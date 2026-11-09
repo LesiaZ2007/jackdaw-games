@@ -213,37 +213,46 @@
   height: 14px;
 }
 
-/* Your place at the table (2026-11-09: "bigger… stacked… a row for the progress cards and a row
-   for the materials… feel like an actual board game"): a walnut tray, your development or
-   progress cards along the top, your materials as piles below. Cards are wide and overlap like
-   a held hand when there are many kinds; a kind you have none of is a faded empty card. */
+/* Your place at the table (2026-11-09: "a row for the progress cards and a row for the materials…
+   cloth/coin/paper in one row and the resources in another… less rounded, like the actual
+   game"): a walnut tray, your development or progress cards along the top, then (Cities &
+   Knights) each commodity beside the track it climbs, then your resources. Printed cards with
+   square corners, neat piles, a clear gap between kinds. */
 .ctn-tray {
+  container: ctn-tray / inline-size;
   position: relative;
   display: grid;
-  gap: 8px;
-  padding: 8px 8px 10px;
+  gap: 10px;
+  padding: 8px 10px 12px;
   background: var(--ctn-walnut);
   border: 2px solid var(--ctn-frame-2);
-  border-radius: 16px;
-  box-shadow:
-    inset 0 2px 6px var(--ctn-card-shade),
-    0 2px 0 var(--ctn-frame-2);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--ctn-walnut-2);
 }
 .ctn-hand {
-  container: ctn-hand / inline-size;
   position: relative;
-  padding-top: 10px;
+  display: grid;
+  gap: 12px;
+  padding-top: 8px;
 }
-.ctn-hand__fan {
-  --cw: clamp(54px, calc((100cqi - 12px) / (1 + (var(--k) - 1) * 0.66)), 76px);
+.ctn-hand__row {
+  /* Five across with a gap between each: as wide as that allows, and on a short screen smaller,
+     so the island keeps its room. */
+  --gap: clamp(8px, 3cqi, 14px);
+  --cw: min(76px, calc((100cqi - 4 * var(--gap) - 8px) / 5), max(44px, 7.2dvh));
   display: flex;
   justify-content: center;
   align-items: flex-end;
+  gap: var(--gap);
 }
-@media (max-height: 700px) {
-  .ctn-hand__fan {
-    --cw: clamp(46px, calc((100cqi - 12px) / (1 + (var(--k) - 1) * 0.66)), 62px);
-  }
+.ctn-hand__row--goods {
+  justify-content: space-around;
+}
+/* A commodity and its track, side by side. */
+.ctn-good {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
 }
 .ctn-pile {
   position: relative;
@@ -254,12 +263,14 @@
   transform: rotate(var(--rot));
   animation: ctn-deal 420ms var(--ease-out) both;
 }
-.ctn-pile + .ctn-pile {
-  margin-left: min(6px, calc((100cqi - 12px - var(--k) * var(--cw)) / (var(--k) - 1)));
+/* An empty place is printed into the tray: square, and it doesn't deal in. */
+.ctn-pile.is-none {
+  transform: none;
+  animation: none;
 }
 @keyframes ctn-deal {
   from {
-    transform: translateY(-14px) rotate(calc(var(--rot) + 8deg));
+    transform: translateY(-14px) rotate(calc(var(--rot) + 6deg));
     opacity: 0.4;
   }
   to {
@@ -267,32 +278,32 @@
     opacity: 1;
   }
 }
+/* A printed card: a cream border round a full picture, the name in the border below it. */
 .ctn-rcard {
   position: absolute;
   inset: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: calc(var(--cw) * 0.05);
-  padding: calc(var(--cw) * 0.07);
-  border-radius: calc(var(--cw) * 0.1);
-  background: var(--ctn-sand);
-  border: 1.5px solid var(--ctn-walnut);
-  box-shadow: 0 3px 6px var(--ctn-card-shade);
-  color: var(--ctn-walnut);
+  gap: 2px;
+  padding: 3px 3px 2px;
+  border-radius: 3px;
+  background: var(--ctn-stock);
+  border: 1px solid var(--ctn-walnut);
+  box-shadow: 0 2px 0 var(--ctn-card-shade);
+  color: var(--ctn-stock-ink);
 }
-/* The cards under the top one: each a little further up and to the right, turned a touch. */
+/* The cards under the top one, squared up behind it: only their edges show. */
 .ctn-rcard--under {
-  transform: translate(calc(var(--l) * 3px), calc(var(--l) * -4px)) rotate(calc(var(--l) * 2.4deg));
+  transform: translate(calc(var(--l) * -2px), calc(var(--l) * -2.5px));
   z-index: -1;
-  box-shadow: 0 1px 2px var(--ctn-card-shade);
+  box-shadow: none;
 }
 .ctn-rcard__art {
   position: relative;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: calc(var(--cw) * 0.06);
-  box-shadow: inset 0 0 0 1px var(--ctn-walnut);
+  border-radius: 1px;
 }
 .ctn-rcard__motif {
   position: absolute;
@@ -305,67 +316,52 @@
 }
 .ctn-rcard__glyph {
   position: relative;
-  width: 66%;
+  grid-area: 1 / 1;
+  width: 84%;
   height: auto;
+  max-height: 84%;
   color: var(--ctn-ribbon);
   filter: drop-shadow(0 1.5px 0 var(--ctn-card-shade));
 }
 .ctn-rcard__name {
   display: block;
-  padding: 2px 0 1px;
-  background: var(--ctn-ribbon);
-  border: 1px solid var(--ctn-walnut);
-  border-radius: 3px;
-  font: 700 clamp(10px, calc(var(--cw) * 0.17), 14px) / 1 var(--font-code);
+  font: 700 clamp(10px, calc(var(--cw) * 0.16), 13px) / 1.15 var(--font-code);
   letter-spacing: 0.02em;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: clip;
 }
-/* Overlapping (eight kinds): what tells a card apart sits on its uncovered left side. */
-.ctn-tray--goods .ctn-pile:not(:last-child) .ctn-rcard__glyph {
-  width: 58%;
-  margin-right: 30%;
-}
-.ctn-tray--goods .ctn-pile:not(:last-child) .ctn-rcard__name {
-  text-align: left;
-  padding-left: 3px;
-}
-/* None of a kind: a faded, empty card in its place. */
+/* None of a kind: its place on the tray, the card only printed faintly into the wood. */
 .ctn-rcard--slot {
-  background: var(--ctn-walnut-2);
-  border: 1.5px dashed color-mix(in srgb, var(--ctn-sand) 55%, var(--ctn-walnut));
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--ctn-sand) 30%, var(--ctn-walnut));
   box-shadow: none;
+  color: color-mix(in srgb, var(--ctn-sand) 40%, var(--ctn-walnut));
 }
 .ctn-rcard--slot .ctn-rcard__art {
-  box-shadow: none;
+  background: var(--ctn-walnut-2);
 }
-.ctn-rcard--slot .ctn-rcard__glyph,
-.ctn-rcard--slot .ctn-rcard__name {
-  color: color-mix(in srgb, var(--ctn-sand) 55%, var(--ctn-walnut));
+.ctn-rcard--slot .ctn-rcard__glyph {
+  color: inherit;
   filter: none;
+  opacity: 0.7;
 }
-.ctn-rcard--slot .ctn-rcard__name {
-  background: none;
-  border-color: transparent;
-}
-/* The count on a number disc, as on the island: big, on the top left, never covered. */
+/* The count on a number disc, as on the island, on the top right corner. */
 .ctn-rcard__n {
   position: absolute;
-  top: -12px;
-  left: -8px;
+  top: -10px;
+  right: -9px;
   z-index: 2;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--ctn-stock);
   color: var(--ctn-stock-ink);
-  border: 2.5px solid var(--ctn-walnut);
-  box-shadow: 0 2px 3px var(--ctn-card-shade);
-  font: 800 19px/1 var(--font-code);
+  border: 2px solid var(--ctn-walnut);
+  box-shadow: 0 2px 0 var(--ctn-card-shade);
+  font: 800 17px/1 var(--font-code);
 }
 .ctn-pile.is-fresh .ctn-rcard:not(.ctn-rcard--under) {
   animation: ctn-card-in 700ms var(--ease-out) 1.9s both;
@@ -387,15 +383,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 12px;
-  padding-top: 4px;
 }
 .ctn-devrow__cards {
   appearance: none;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-height: 44px;
   margin: 0;
   padding: 0;
@@ -406,30 +400,30 @@
 .ctn-pcard {
   position: relative;
   flex: none;
-  width: 58px;
-  height: 76px;
+  width: 50px;
+  height: 66px;
   display: grid;
   grid-template-rows: 1fr auto;
   gap: 3px;
-  padding: 4px;
-  border-radius: 7px;
+  padding: 3px;
+  border-radius: 3px;
   background: var(--ctn-stock);
   color: var(--ctn-stock-ink);
-  border: 1.5px solid var(--ctn-walnut);
-  box-shadow: 0 3px 5px var(--ctn-card-shade);
+  border: 1px solid var(--ctn-walnut);
+  box-shadow: 0 2px 0 var(--ctn-card-shade);
   transform: rotate(var(--rot, 0deg));
   animation: ctn-deal 420ms var(--ease-out) both;
 }
 .ctn-pcard__band {
   display: grid;
   place-items: center;
-  border-radius: 4px;
+  border-radius: 1px;
   background: var(--ctn-walnut-2);
   color: var(--ctn-stock);
 }
 .ctn-pcard__band svg {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
 }
 .ctn-pcard__band path {
   fill: var(--ctn-stock);
@@ -447,77 +441,75 @@
   min-height: 2em;
   display: grid;
   place-items: center;
-  font: 700 10.5px/1 var(--font-code);
+  font: 700 9.5px/1 var(--font-code);
   text-align: center;
   overflow-wrap: anywhere;
 }
 .ctn-pcard__under {
   position: absolute;
-  inset: -1.5px;
+  inset: -1px;
   z-index: -1;
-  border-radius: 7px;
+  border-radius: 3px;
   background: var(--ctn-stock);
-  border: 1.5px solid var(--ctn-walnut);
-  transform: translate(4px, -4px) rotate(3deg);
+  border: 1px solid var(--ctn-walnut);
+  transform: translate(-2px, -3px);
 }
 .ctn-pcard__n {
   position: absolute;
   top: -10px;
   right: -10px;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--ctn-stock);
-  border: 2.5px solid var(--ctn-walnut);
-  font: 800 16px/1 var(--font-code);
+  border: 2px solid var(--ctn-walnut);
+  font: 800 15px/1 var(--font-code);
 }
 /* Playable now: lifted, with a green edge. */
 .ctn-pcard.is-live {
   border-color: var(--vert);
   box-shadow:
     0 0 0 2px var(--vert),
-    0 6px 8px var(--ctn-card-shade);
+    0 4px 0 var(--ctn-card-shade);
   transform: translateY(-3px) rotate(var(--rot, 0deg));
 }
 .ctn-pcard--slot {
   place-items: center;
   grid-template-rows: 1fr;
   background: none;
-  border: 2px dashed var(--ctn-sand);
+  border: 1px solid color-mix(in srgb, var(--ctn-sand) 30%, var(--ctn-walnut));
   box-shadow: none;
-  color: var(--ctn-sand);
-  opacity: 0.45;
-  font: 600 11px/1.1 var(--font-body);
+  color: color-mix(in srgb, var(--ctn-sand) 55%, var(--ctn-walnut));
+  font: 600 13px/1.1 var(--font-body);
   text-align: center;
   animation: none;
 }
 .ctn-pcard--slot:only-child {
   width: auto;
-  height: 36px;
+  height: 34px;
   padding: 0 16px;
 }
-/* Cities & Knights' tracks: three little towers of five steps, a gate on top. */
-.ctn-towers {
-  display: flex;
-  gap: 5px;
-}
+/* Cities & Knights' tracks: a tower of five numbered steps in the track's colour, a gate on top,
+   as tall as the commodity card beside it. */
 .ctn-tower {
   --tk: var(--ctn-science);
   appearance: none;
-  width: 36px;
-  min-height: 72px;
+  flex: none;
+  width: clamp(30px, calc(var(--cw) * 0.62), 46px);
+  /* Exactly as tall as the card beside it. */
+  height: calc(var(--cw) * 1.4);
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  justify-items: center;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 3px;
-  padding: 3px 3px 4px;
-  border-radius: 7px;
+  margin: 0;
+  padding: 3px;
+  border-radius: 3px;
   background: var(--ctn-stock);
   color: var(--ctn-stock-ink);
-  border: 1.5px solid var(--ctn-walnut);
-  box-shadow: 0 3px 5px var(--ctn-card-shade);
+  border: 1px solid var(--ctn-walnut);
+  box-shadow: 0 2px 0 var(--ctn-card-shade);
   cursor: pointer;
 }
 .ctn-tower--trade {
@@ -527,58 +519,85 @@
   --tk: var(--ctn-politics);
 }
 .ctn-tower__gate {
-  width: 26px;
-  height: 20px;
+  height: clamp(13px, calc(var(--cw) * 0.3), 24px);
   display: grid;
   place-items: center;
-  border-radius: 4px;
+  border-radius: 1px;
   background: var(--tk);
 }
 .ctn-tower__gate svg {
-  width: 16px;
-  height: 16px;
+  width: 70%;
+  height: 80%;
 }
 .ctn-tower__gate path {
   fill: var(--ctn-stock);
 }
 .ctn-tower.has-metro .ctn-tower__gate {
   outline: 2px solid var(--ctn-walnut);
-  outline-offset: 1px;
+  outline-offset: -4px;
 }
 .ctn-tower__steps {
   display: grid;
+  grid-template-rows: repeat(5, minmax(0, 1fr));
   gap: 2px;
-  width: 20px;
+  min-height: 0;
 }
 .ctn-tower__steps i {
-  height: 5px;
-  border-radius: 1px;
-  border: 1px solid var(--ctn-walnut-2);
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--ctn-stock-ink) 35%, transparent);
+  min-height: 0;
+  overflow: hidden;
+  font: 700 10px/1 var(--font-code);
+  font-style: normal;
+  color: color-mix(in srgb, var(--ctn-stock-ink) 55%, transparent);
 }
 .ctn-tower__steps i.is-on {
   background: var(--tk);
   border-color: var(--ctn-walnut);
+  color: var(--ctn-stock);
 }
-.ctn-tower__name {
-  font: 700 10px/1 var(--font-code);
+.ctn-tower__steps i.is-top {
+  font-size: 12px;
+  font-weight: 800;
 }
 @media (max-height: 700px) {
   .ctn-tray {
-    gap: 4px;
-    padding: 4px 6px 6px;
+    gap: 6px;
+    padding: 4px 8px 8px;
   }
-  .ctn-devrow:has(> .ctn-devrow__cards > .ctn-pcard--slot:only-child):not(:has(.ctn-towers)) {
-    display: none;
+  .ctn-hand {
+    gap: 8px;
+    padding-top: 6px;
   }
-  .ctn-tower {
-    min-height: 54px;
-  }
-  .ctn-tower__name {
-    display: none;
+  .ctn-hand__row {
+    --cw: min(42px, calc((100cqi - 4 * var(--gap) - 8px) / 5));
   }
   .ctn-pcard {
-    width: 44px;
-    height: 54px;
+    width: 38px;
+    height: 46px;
+  }
+  .ctn-pcard--slot:only-child {
+    height: 30px;
+    font-size: 12px;
+  }
+  .ctn-tower {
+    padding: 2px;
+    gap: 2px;
+  }
+  .ctn-tower__steps {
+    gap: 1px;
+  }
+  .ctn-tower__steps i {
+    font-size: 0;
+  }
+  .ctn-rcard__name {
+    font-size: 9.5px;
+  }
+  .ctn-rcard__n {
+    width: 24px;
+    height: 24px;
+    font-size: 15px;
   }
   .ctn-pcard__name {
     display: none;
@@ -593,8 +612,7 @@
     transition: translate 140ms var(--ease-out);
   }
   .ctn-pile:hover {
-    translate: 0 -8px;
-    z-index: 20 !important;
+    translate: 0 -6px;
   }
   .ctn-devrow:hover .ctn-pcard:not(.ctn-pcard--slot) {
     translate: 0 -4px;
@@ -851,9 +869,10 @@
 
 /* ---------- Sheets ---------- */
 
+/* On the kit's panel: it stays a flex column, so its body scrolls instead of running off the
+   bottom of the screen (2026-11-09: "bottom of trade screen isn't visible"). */
 .ctn-sheet {
-  display: grid;
-  gap: var(--space-4);
+  gap: var(--space-2);
 }
 .ctn-sheet section {
   display: grid;

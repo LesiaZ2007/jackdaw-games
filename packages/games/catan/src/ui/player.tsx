@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { piecesLeft } from '../build';
 import {
   PROGRESS_NAME,
+  TRACKS,
+  TRACK_GOOD,
   WALLS_EACH,
   canAct,
   knightMoves,
@@ -35,7 +37,14 @@ import { YIELD, emptyCards, type Cards } from '../types';
 import { CatanBoard } from './board';
 import { CitySheet, PickSheet, ProgressSheet } from './cksheets';
 import { namer } from './common';
-import { BarbarianTrack, Ledger, PointsSheet, TrackTowers } from './estate';
+import {
+  BarbarianTrack,
+  KnightsChip,
+  Ledger,
+  PointsMedal,
+  PointsSheet,
+  TrackTower,
+} from './estate';
 import { Pip } from './glyphs';
 import { Tray } from './hand';
 import { RESOURCE_NAME, seatColour } from './palette';
@@ -177,6 +186,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const [discardShut, setDiscardShut] = useState(-1);
 
   const acting = seated && t.actor === me && t.phase !== 'discard' && t.phase !== 'robber';
+  const canCommand = acting && t.phase === 'main' && !p.mode && !p.card && !p.sailing;
   const owe = me ? (t.discards[me] ?? 0) : 0;
   const robbing = seated && t.phase === 'robber' && t.robberBy === me;
   const owes = me ? (t.owed[me]?.length ?? 0) : 0;
@@ -867,19 +877,44 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           colour={myColour}
           onPoints={() => setSheet('points')}
           onKnights={() => set({ ...fresh(step), knights: true })}
-          canCommand={acting && t.phase === 'main' && !p.mode && !p.card && !p.sailing}
+          canCommand={canCommand}
         />
       )}
       {seated && (
         <Tray
           hand={hand}
-          goods={!!ck}
           got={me ? (t.produced[me] ?? null) : null}
           gotKey={t.rollSeq}
           dev={ck ? undefined : v!.dev}
           progress={ck ? v!.progress : undefined}
           onCards={() => setSheet('cards')}
-          towers={ck && me ? <TrackTowers t={t} me={me} onCity={() => setSheet('city')} /> : null}
+          lead={me ? <PointsMedal t={t} v={v!} onPoints={() => setSheet('points')} /> : null}
+          tail={
+            ck && me ? (
+              <KnightsChip
+                t={t}
+                me={me}
+                onKnights={() => set({ ...fresh(step), knights: true })}
+                canCommand={canCommand}
+              />
+            ) : null
+          }
+          towers={
+            ck && me
+              ? Object.fromEntries(
+                  TRACKS.map((track) => [
+                    TRACK_GOOD[track],
+                    <TrackTower
+                      key={track}
+                      t={t}
+                      me={me}
+                      track={track}
+                      onCity={() => setSheet('city')}
+                    />,
+                  ]),
+                )
+              : undefined
+          }
         />
       )}
       {dock}

@@ -159,6 +159,35 @@ test('catan: the opening, a roll, a trade and a turn, on phones and the TV', asy
     await expect(mover.getByLabel('A trade waiting for you')).toBeVisible();
   }
 
+  // On a small phone the whole trade sheet can be reached: its body scrolls, so the bank's button
+  // at the end comes on screen (it once ran off the bottom). With enough of a kind, trade it in.
+  await mover.setViewportSize({ width: 375, height: 667 });
+  // The dock's Trade (a proposal may add its count, and an "Open Trade" card of its own).
+  await mover.getByRole('button', { name: /^Trade( \d+)?$/ }).click();
+  const bank = sheet.getByRole('button', { name: /^(Pick what to give and get|Trade \d)/ });
+  await bank.scrollIntoViewIfNeeded();
+  const box = (await bank.boundingBox())!;
+  expect(box.y + box.height).toBeLessThanOrEqual(667);
+  const giveOne = sheet
+    .getByRole('group', { name: 'Give', exact: true })
+    .locator('button:not([disabled])')
+    .first();
+  if (await giveOne.count()) {
+    const before = (await call(request, `/api/lobby/${code}`, byId[moverId]!)).view.hand;
+    await giveOne.click();
+    await sheet
+      .getByRole('group', { name: 'Get', exact: true })
+      .locator('button:not([disabled])')
+      .first()
+      .click();
+    await sheet.getByRole('button', { name: /^Trade \d/ }).click();
+    await expect
+      .poll(async () => (await call(request, `/api/lobby/${code}`, byId[moverId]!)).view.hand)
+      .not.toEqual(before);
+  }
+  await sheet.getByRole('button', { name: 'Close' }).click();
+  await mover.setViewportSize({ width: 390, height: 844 });
+
   // End the turn: the next seat rolls, the TV says so.
   await mover.getByRole('button', { name: 'End', exact: true }).click();
   const next = (await call(request, `/api/lobby/${code}`, null)).tableView;

@@ -53,6 +53,8 @@ const TERRAIN_NAME: Record<Terrain, string> = {
   hills: 'Hills',
   mountains: 'Mountains',
   desert: 'Desert',
+  sea: 'Sea',
+  gold: 'Gold field',
 };
 
 /** How close (in CSS px) a tap must land to an offered spot to pick it. */

@@ -25,6 +25,7 @@ export const PHASE_LABEL: Record<Phase, string> = {
   robber: 'Moving the robber',
   main: 'Trading and building',
   roadBuilding: 'Free roads',
+  pick: 'Choosing',
   over: 'Game over',
 };
 

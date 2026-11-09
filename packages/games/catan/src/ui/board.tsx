@@ -70,6 +70,8 @@ export interface CatanBoardProps {
   chosenEdge?: string | null;
   /** Tiles picked so far (the robber's tile, the Inventor's tokens). */
   picked?: number[];
+  /** What tapping a land tile does, for its label ("Move the robber to", or a card's "Pick"). */
+  tileVerb?: string;
 }
 
 const TERRAIN_NAME: Record<Terrain, string> = {
@@ -204,6 +206,7 @@ export function CatanBoard({
   chosen = null,
   chosenEdge = null,
   picked = [],
+  tileVerb = 'Move the robber to',
 }: CatanBoardProps) {
   const L = layout(board.map ?? board.size);
   const land = (i: number) => board.tiles[i]!.terrain !== 'sea';
@@ -530,7 +533,7 @@ export function CatanBoard({
           className="ctn-spot ctn-spot--tile"
           role="button"
           tabIndex={0}
-          aria-label={land(i) ? `Pick ${tileName(i)}` : 'Move the pirate here'}
+          aria-label={land(i) ? `${tileVerb} ${tileName(i)}` : 'Move the pirate here'}
           onKeyDown={onTile && key(() => onTile(i))}
         />
       ))}

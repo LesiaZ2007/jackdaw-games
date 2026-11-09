@@ -33,7 +33,7 @@
 }
 .ctn-tv__head h2 {
   margin: 0;
-  font: 800 76px / 1 var(--font-display);
+  font: 800 56px / 1 var(--font-display);
 }
 .ctn-tv__head span {
   font: 800 26px / 1 var(--font-plaque);
@@ -44,8 +44,8 @@
 .ctn-tv__turn {
   display: flex;
   align-items: center;
-  gap: 22px;
-  padding: 18px 24px;
+  gap: 18px;
+  padding: 12px 18px;
   background: var(--paper);
   border: 3px solid var(--ink);
   outline: 1.5px solid var(--ink);
@@ -58,20 +58,23 @@
   display: grid;
 }
 .ctn-tv__turn b {
-  font: 800 48px / 1 var(--font-display);
+  font: 800 36px / 1 var(--font-display);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ctn-tv__turn small {
   margin-top: 6px;
-  font: 800 26px / 1.15 var(--font-plaque);
+  font: 800 24px / 1.15 var(--font-plaque);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-2);
 }
 .ctn-tv__turn .ctn-die {
-  --d: 84px;
+  --d: 64px;
   border-width: 3px;
 }
 .ctn-tv__turn .ctn-clock {
@@ -96,8 +99,8 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 18px;
-  padding: 10px 18px;
+  gap: 14px;
+  padding: 6px 14px;
   background: var(--paper);
   border: 2.5px solid var(--ink);
 }
@@ -120,15 +123,15 @@
   min-width: 0;
 }
 .ctn-tvp__name {
-  font: 800 34px / 1 var(--font-plaque);
+  font: 800 28px / 1 var(--font-plaque);
   letter-spacing: 0.03em;
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
 .ctn-tvp__meta {
   display: flex;
-  gap: 20px;
-  font: 800 26px / 1 var(--font-plaque);
+  gap: 16px;
+  font: 800 24px / 1 var(--font-plaque);
   color: var(--ink-2);
 }
 .ctn-tvp__meta > span {
@@ -180,7 +183,7 @@
   display: grid;
   align-content: start;
   gap: 12px;
-  padding: 16px 22px;
+  padding: 12px 18px;
   background: var(--paper);
   border: 2.5px solid var(--ink);
 }
@@ -190,7 +193,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px 22px;
-  font: 800 32px / 1.15 var(--font-plaque);
+  font: 800 26px / 1.15 var(--font-plaque);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -200,7 +203,7 @@
   gap: 10px;
 }
 .ctn-tv__roll .ctn-pip {
-  font-size: 34px;
+  font-size: 28px;
 }
 .ctn-tv__offer {
   margin: 0;
@@ -208,10 +211,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  font: 500 28px / 1.3 var(--font-body);
+  font: 500 24px / 1.3 var(--font-body);
 }
 .ctn-tv__offer .ctn-cardrow {
-  font-size: 30px;
+  font-size: 26px;
 }
 .ctn-tv__log {
   list-style: none;
@@ -219,7 +222,7 @@
   padding: 0;
   display: grid;
   gap: 4px;
-  font: 500 26px / 1.3 var(--font-body);
+  font: 500 24px / 1.3 var(--font-body);
   color: var(--ink-2);
 }
 .ctn-tv__log li:first-child {
@@ -238,10 +241,10 @@
 }
 .ctn-tv__players[data-count='5'] .ctn-tvp__pts b,
 .ctn-tv__players[data-count='6'] .ctn-tvp__pts b {
-  font-size: 52px;
+  font-size: 30px;
 }
 .ctn-tv__players[data-count='6'] .ctn-tvp__name {
-  font-size: 30px;
+  font-size: 24px;
 }
 
 /* ---------- Results ---------- */

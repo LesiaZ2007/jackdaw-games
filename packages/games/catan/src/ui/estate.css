@@ -735,3 +735,68 @@
     font-size: 10px;
   }
 }
+
+/* ---------- Zooming the island on a phone (2026-11-09: "keep the map as large as possible") ---------- */
+
+.ctn-island {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  overflow: hidden;
+  border-radius: 2px;
+}
+.ctn-island.is-zoomed {
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.ctn-island.is-zoomed::-webkit-scrollbar {
+  display: none;
+}
+.ctn-island.is-zoomed > .ctn-board {
+  width: 200%;
+  height: 200%;
+}
+.ctn-zoom {
+  appearance: none;
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 3;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--ctn-stock);
+  color: var(--ctn-stock-ink);
+  border: 2px solid var(--ctn-walnut);
+  box-shadow: 0 2px 0 var(--ctn-frame-2);
+  cursor: pointer;
+}
+.ctn-zoom svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.ctn-zoom[aria-pressed='true'] {
+  background: var(--ctn-walnut);
+  color: var(--ctn-stock);
+}
+/* A laptop shows the island big already. */
+@container game (min-width: 760px) and (orientation: landscape) {
+  .ctn-zoom {
+    display: none;
+  }
+  .ctn-island.is-zoomed {
+    overflow: hidden;
+  }
+  .ctn-island.is-zoomed > .ctn-board {
+    width: 100%;
+    height: 100%;
+  }
+}

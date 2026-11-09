@@ -1,0 +1,623 @@
+/* Catan's own furniture (2026-11-09: "more of a Catan aesthetic… overall more interesting and
+   larger visuals"): the island in a sand-and-walnut frame, parchment panels with rounded
+   corners, serif names, wooden buttons; your estate under the island (points medallion, where
+   the points come from, Cities & Knights' tracks and knights) and the barbarian ship's voyage.
+   Rules are scoped under .ctn so they win over phone.css whichever stylesheet loads first. */
+
+/* ---------- The frame and panels ---------- */
+
+.ctn .ctn-stage {
+  padding: 7px;
+  background: var(--ctn-sea);
+  border: 3px solid var(--ctn-walnut);
+  border-radius: 16px;
+  outline: none;
+  box-shadow:
+    inset 0 0 0 5px var(--ctn-sand),
+    inset 0 0 0 6.5px var(--ctn-walnut),
+    0 3px 0 var(--ctn-frame-2);
+}
+/* The voyage sails along the top of the sea; the island starts below it. */
+.ctn .ctn-stage--voyage {
+  padding-top: 62px;
+}
+.ctn .ctn-stage--voyage > .ctn-voyage {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  right: 9px;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ctn-sea) 82%, transparent);
+}
+.ctn .ctn-strip,
+.ctn .ctn-opp,
+.ctn .ctn-ledger {
+  background: var(--ctn-panel);
+  border: 2px solid var(--ctn-frame);
+  border-radius: 12px;
+  box-shadow: 0 2px 0 var(--ctn-frame-2);
+}
+.ctn .ctn-strip__text b {
+  font: 700 22px/1.05 var(--font-code);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+.ctn .ctn-opp__name {
+  font: 700 16px/1.1 var(--font-code);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+.ctn .ctn-opp.is-acting {
+  box-shadow:
+    0 2px 0 var(--ctn-frame-2),
+    inset 0 -5px 0 var(--ctn-own);
+}
+.ctn .ctn-opp__pts {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ctn-stock);
+  color: var(--ctn-stock-ink);
+  border: 2px solid var(--ctn-walnut);
+  font: 800 19px/1 var(--font-code);
+}
+
+/* Wooden buttons: rounded, a walnut edge with a ledge under it, serif labels. */
+.ctn .jd-plaque {
+  border-radius: 12px;
+  border: 2px solid var(--ctn-frame);
+  outline: none;
+  background: var(--ctn-panel);
+  box-shadow: 0 3px 0 var(--ctn-frame-2);
+  font-family: var(--font-code);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+.ctn .jd-plaque--go {
+  background: var(--vert);
+  color: var(--on-fill);
+}
+.ctn .jd-plaque:active {
+  box-shadow: 0 1px 0 var(--ctn-frame-2);
+  transform: translateY(2px);
+}
+/* Labels stay inside their buttons (2026-11-09: "text often goes beyond the button it's on"): the
+   serif is wider than the shell's condensed caps, so labels wrap, shrink with the number of
+   buttons in a row, and counts sit on the corner as badges. */
+.ctn .jd-plaque {
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.05;
+  overflow-wrap: break-word;
+}
+.ctn .ctn-dock .jd-plaque {
+  position: relative;
+  padding: 0 4px;
+  gap: 4px;
+  font-size: min(19px, 4.6cqi);
+}
+.ctn .ctn-dock--3 .jd-plaque,
+.ctn .ctn-dock--4 .jd-plaque,
+.ctn .ctn-dock--robber .jd-plaque {
+  font-size: min(17px, 4cqi);
+}
+.ctn .ctn-dock--5 .jd-plaque {
+  font-size: min(15px, 3.5cqi);
+}
+.ctn .ctn-dock .ctn-count {
+  position: absolute;
+  top: -10px;
+  right: -6px;
+  min-width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 12px;
+  font: 800 14px/1 var(--font-code);
+}
+.ctn .ctn-dock .jd-plaque .ctn-pip {
+  flex: none;
+}
+
+/* ---------- The barbarians' voyage ---------- */
+
+.ctn-voyage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'label odds' 'sea sea';
+  align-items: center;
+  gap: 4px 8px;
+  padding: 6px 8px 2px;
+  color: var(--ctn-stock);
+}
+.ctn-voyage__label {
+  grid-area: label;
+}
+.ctn-voyage__odds {
+  grid-area: odds;
+}
+.ctn-voyage__sea {
+  grid-area: sea;
+}
+.ctn-voyage__label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  line-height: 1;
+}
+.ctn-voyage__label b {
+  font: 700 16px/1 var(--font-code);
+}
+.ctn-voyage__label small {
+  font: 600 13px/1.2 var(--font-body);
+  opacity: 0.9;
+}
+.ctn-voyage.is-near .ctn-voyage__label small {
+  color: var(--ctn-stock);
+  font-weight: 800;
+}
+.ctn-voyage__sea {
+  width: 100%;
+  height: auto;
+  max-height: 34px;
+  overflow: visible;
+}
+.ctn-voyage__water {
+  fill: var(--ctn-shallow);
+  stroke: var(--ctn-stock);
+  stroke-opacity: 0.55;
+  stroke-width: 1.2;
+}
+.ctn-voyage__wave {
+  fill: none;
+  stroke: var(--ctn-sea-line);
+  stroke-width: 1.2;
+}
+.ctn-voyage__route {
+  stroke: var(--ctn-stock);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 4;
+  stroke-linecap: round;
+}
+.ctn-voyage__step {
+  fill: var(--ctn-sea);
+  stroke: var(--ctn-stock);
+  stroke-width: 1.5;
+}
+.ctn-voyage__step.is-past {
+  fill: var(--ctn-stock);
+}
+.ctn-voyage__coast {
+  fill: var(--ctn-sand);
+  stroke: var(--ctn-walnut);
+  stroke-width: 1.2;
+}
+.ctn-voyage__city,
+.ctn-voyage__cityico {
+  fill: var(--ctn-stock);
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.ctn-voyage.is-near .ctn-voyage__city {
+  fill: var(--gules);
+}
+.ctn-voyage__ship {
+  transition: transform 900ms var(--ease-out);
+}
+.ctn-voyage__hull {
+  fill: var(--ctn-pirate);
+  stroke: var(--ctn-stock);
+  stroke-width: 1;
+}
+.ctn-voyage__mast {
+  stroke: var(--ctn-pirate);
+  stroke-width: 1.6;
+}
+.ctn-voyage__sail {
+  fill: var(--ctn-pirate);
+  stroke: var(--ctn-stock);
+  stroke-width: 0.8;
+}
+.ctn-voyage__flag {
+  fill: var(--gules);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ctn-voyage__hull,
+  .ctn-voyage__sail,
+  .ctn-voyage__mast,
+  .ctn-voyage__flag {
+    animation: ctn-bob 2.6s ease-in-out infinite alternate;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ctn-voyage__ship {
+    transition: none;
+  }
+}
+@keyframes ctn-bob {
+  from {
+    transform: translateY(-1px) rotate(-2deg);
+  }
+  to {
+    transform: translateY(1px) rotate(2deg);
+  }
+}
+.ctn-voyage__odds {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: var(--gules);
+  color: var(--on-fill);
+  border: 1.5px solid var(--ctn-stock);
+}
+.ctn-voyage__odds.is-safe {
+  background: var(--vert);
+}
+.ctn-voyage__odds small {
+  font: 600 13px/1 var(--font-body);
+}
+.ctn-voyage__side {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.ctn-voyage__side svg {
+  width: 18px;
+  height: 18px;
+}
+.ctn-voyage__side b {
+  font: 800 19px/1 var(--font-code);
+}
+/* On the TV: its own band of sea under the title. */
+.ctn-voyage--tv {
+  gap: 6px 20px;
+  padding: 10px 20px;
+  background: var(--ctn-sea);
+  border: 3px solid var(--ctn-walnut);
+  border-radius: 20px;
+  box-shadow: inset 0 0 0 5px var(--ctn-sand);
+}
+.ctn-voyage--tv .ctn-voyage__label b {
+  font-size: 34px;
+}
+.ctn-voyage--tv .ctn-voyage__label small {
+  font-size: 26px;
+}
+.ctn-voyage--tv .ctn-voyage__sea {
+  max-height: 84px;
+}
+.ctn-voyage--tv .ctn-voyage__odds {
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 14px;
+}
+.ctn-voyage--tv .ctn-voyage__odds small {
+  font-size: 24px;
+}
+.ctn-voyage--tv .ctn-voyage__side svg {
+  width: 34px;
+  height: 34px;
+}
+.ctn-voyage--tv .ctn-voyage__side b {
+  font-size: 38px;
+}
+
+/* ---------- Your estate ---------- */
+
+.ctn .ctn-ledger {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 6px 10px;
+}
+/* Your points on a medallion, the ring filling towards the target. */
+.ctn-vp {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 66px;
+  height: 66px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ctn-stock);
+  color: var(--ctn-stock-ink);
+  cursor: pointer;
+  line-height: 1;
+}
+.ctn-vp__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--gules) calc(var(--share) * 360deg),
+    var(--ctn-sand) calc(var(--share) * 360deg)
+  );
+  mask: radial-gradient(circle, transparent 25px, var(--ctn-walnut) 25.5px);
+  box-shadow: 0 0 0 2px var(--ctn-walnut);
+}
+.ctn-vp b {
+  position: relative;
+  font: 800 30px/0.9 var(--font-code);
+}
+.ctn-vp small {
+  position: relative;
+  font: 700 12px/1 var(--font-body);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ctn-vp b {
+    animation: ctn-vp-pop 500ms var(--ease-out);
+  }
+}
+@keyframes ctn-vp-pop {
+  from {
+    transform: scale(1.5);
+  }
+  to {
+    transform: none;
+  }
+}
+.ctn-ledger__pts {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-wrap: wrap;
+}
+.ctn-ledger__pts li {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+}
+.ctn-ledger__pts li > b {
+  font: 800 17px/1 var(--font-code);
+  color: var(--ink);
+}
+.ctn-chip {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: var(--ctn-stock);
+  color: var(--ctn-stock-ink);
+  border: 1.5px solid var(--ctn-walnut);
+}
+.ctn-chip svg {
+  width: 26px;
+  height: 26px;
+}
+.ctn-chip.is-secret {
+  border-style: dashed;
+}
+.ctn-chip i {
+  position: absolute;
+  right: -6px;
+  bottom: -5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--ctn-walnut);
+  color: var(--ctn-stock);
+  font: 800 13px/1 var(--font-body);
+  font-style: normal;
+}
+.ctn-ico-gate path {
+  fill: var(--ctn-stock-ink);
+}
+.ctn-ledger__togo {
+  margin-left: auto;
+  text-align: center;
+}
+.ctn-ledger__togo b {
+  display: block;
+  font: 800 26px/1 var(--font-code);
+}
+.ctn-ledger__togo small {
+  font: 600 12px/1 var(--font-body);
+  color: var(--ink-2);
+}
+
+.ctn-kchip {
+  appearance: none;
+  position: relative;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  border: 1.5px solid var(--ctn-frame);
+  background: var(--ctn-panel);
+  color: var(--ink);
+  cursor: pointer;
+}
+.ctn-kchip {
+  gap: 4px;
+  padding: 3px 8px;
+}
+.ctn-kchip svg {
+  width: 24px;
+  height: 24px;
+}
+.ctn-kchip b {
+  font: 800 20px/1 var(--font-code);
+}
+.ctn-kchip small {
+  font: 700 13px/1 var(--font-code);
+  color: var(--ink-2);
+}
+.ctn-kchip:disabled {
+  cursor: default;
+}
+.ctn-kchip__asleep {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  padding: 2px 5px;
+  border-radius: 8px;
+  background: var(--gules);
+  color: var(--on-fill);
+  font: 800 11px/1 var(--font-body);
+  font-style: normal;
+  white-space: nowrap;
+}
+.ctn-kchip.has-asleep:not(:disabled) {
+  border-color: var(--gules);
+}
+
+/* The points sheet. */
+.ctn-ptsheet__total {
+  margin: 0 0 8px;
+  font: 600 17px/1.2 var(--font-body);
+}
+.ctn-ptsheet__total b {
+  font: 800 30px/1 var(--font-code);
+}
+.ctn-ptsheet {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.ctn-ptsheet li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto 2.4em;
+  align-items: center;
+  gap: 10px;
+  font: 500 16px/1.2 var(--font-body);
+}
+.ctn-ptsheet li.is-none {
+  opacity: 0.5;
+}
+.ctn-ptsheet li small {
+  color: var(--ink-2);
+}
+.ctn-ptsheet__n {
+  font: 600 15px/1 var(--font-body);
+  color: var(--ink-2);
+}
+.ctn-ptsheet li > b {
+  text-align: right;
+  font: 800 20px/1 var(--font-code);
+}
+
+@media (max-height: 700px) {
+  .ctn .ctn-ledger {
+    padding: 4px 8px;
+  }
+  .ctn-vp {
+    width: 52px;
+    height: 52px;
+  }
+  .ctn-vp__ring {
+    mask: radial-gradient(circle, transparent 19px, var(--ctn-walnut) 19.5px);
+  }
+  .ctn-vp b {
+    font-size: 21px;
+  }
+}
+
+/* ---------- The TV, in the same furniture ---------- */
+
+.ctn--tv .ctn-tv__board {
+  padding: 12px;
+  border: 5px solid var(--ctn-walnut);
+  border-radius: 26px;
+  outline: none;
+  box-shadow:
+    inset 0 0 0 9px var(--ctn-sand),
+    inset 0 0 0 11px var(--ctn-walnut),
+    0 5px 0 var(--ctn-frame-2);
+}
+.ctn--tv .ctn-tv__side:has(> .ctn-voyage) {
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+}
+.ctn--tv .ctn-tv__turn,
+.ctn--tv .ctn-tvp,
+.ctn--tv .ctn-tv__news {
+  background: var(--ctn-panel);
+  border: 3px solid var(--ctn-frame);
+  border-radius: 20px;
+  outline: none;
+  box-shadow: 0 4px 0 var(--ctn-frame-2);
+}
+.ctn--tv .ctn-tvp.is-turn {
+  box-shadow:
+    0 4px 0 var(--ctn-frame-2),
+    inset 12px 0 0 var(--ctn-own);
+}
+.ctn--tv .ctn-tvp__name {
+  font: 700 38px / 1 var(--font-code);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+.ctn--tv .ctn-tv__turn b {
+  font-family: var(--font-code);
+  text-transform: none;
+}
+.ctn--tv .ctn-tvp__pts {
+  width: 84px;
+  height: 84px;
+  place-content: center;
+  border-radius: 50%;
+  background: var(--ctn-stock);
+  color: var(--ctn-stock-ink);
+  border: 4px solid var(--ctn-walnut);
+}
+.ctn--tv .ctn-tvp__pts b {
+  font-size: 50px;
+}
+.ctn--tv .ctn-tvp__pts small {
+  display: none;
+}
+
+/* A laptop: the voyage has room to be bigger. */
+@container game (min-width: 760px) and (orientation: landscape) {
+  .ctn-voyage__sea {
+    max-height: 52px;
+  }
+  .ctn .ctn-stage--voyage {
+    padding-top: 84px;
+  }
+  .ctn-voyage__label b {
+    font-size: 20px;
+  }
+  .ctn-voyage__label small {
+    font-size: 15px;
+  }
+}
+@media (max-height: 700px) {
+  .ctn-ledger__pts li > b {
+    font-size: 15px;
+  }
+  .ctn-chip {
+    width: 30px;
+    height: 30px;
+  }
+  .ctn-chip svg {
+    width: 22px;
+    height: 22px;
+  }
+}

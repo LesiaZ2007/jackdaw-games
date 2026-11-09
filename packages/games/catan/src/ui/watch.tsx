@@ -9,6 +9,7 @@ import { logLine, namer } from './common';
 import { Pip } from './glyphs';
 import { RollMoment } from './roll';
 import { CardRow } from './sheets';
+import { BarbarianTrack } from './estate';
 import { Opponents, TurnStrip } from './strip';
 import { revealWords } from './tv';
 import './catan.css';
@@ -58,7 +59,8 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
         />
       )}
       <Opponents t={t} me={null} players={players} reactions={reactions} />
-      <div className="ctn-stage">
+      <div className={t.ck ? 'ctn-stage ctn-stage--voyage' : 'ctn-stage'}>
+        {t.ck && <BarbarianTrack t={t} />}
         <CatanBoard
           board={t.board}
           buildings={t.buildings}

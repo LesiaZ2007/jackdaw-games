@@ -189,9 +189,14 @@ function Harbour({
   );
 }
 
+/** Which island, by expansion: the base game's, or the expansion's name. */
+const islandWords = (expansion: string) =>
+  expansion === 'Base game' ? 'The classic island' : expansion;
+
 /** Catan's seats in Jackdaw's lobby: ships bound for the island, one per player. */
 export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
   seats,
+  options,
   onSeat,
   reactions,
   onAddBot,
@@ -199,7 +204,10 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
   <div className="ctn ctn-muster" aria-label={`${seats.length} of 6 seats taken`}>
     <p className="ctn-muster__title">
       <span>Bound for Catan</span>
-      <small>{seats.length >= 5 ? 'The big island · 5 to 6' : 'The classic island · 3 to 4'}</small>
+      <small>
+        {islandWords(String(options.expansion ?? 'Base game'))}
+        {seats.length >= 5 ? ' · 5 to 6' : ' · 3 to 4'}
+      </small>
     </p>
     <Harbour seats={seats} onSeat={onSeat} reactions={reactions} onAddBot={onAddBot} />
   </div>
@@ -222,7 +230,11 @@ export function CatanTvLobby({
     away: !p.online,
     bot: p.bot,
   }));
-  const points = String(options.points ?? '10');
+  const expansion = String(options.expansion ?? 'Base game');
+  const target =
+    Number(options.points ?? 10) +
+    (expansion.includes('Cities') ? 3 : 0) +
+    (expansion.includes('Seafarers') ? 4 : 0);
   return (
     <div className="ctn ctn-tvmuster">
       <div className="ctn-tvmuster__sea">
@@ -231,7 +243,9 @@ export function CatanTvLobby({
       <aside className="ctn-tvmuster__side">
         <h2 className="ctn-tvmuster__title">Catan</h2>
         <p className="ctn-tvmuster__sub">
-          Build on the island, trade for what you lack. First to {points} points wins.
+          {String(options.expansion ?? 'Base game') !== 'Base game' &&
+            `${String(options.expansion)}. `}
+          Build on the island, trade for what you lack. First to {target} points wins.
         </p>
         {join}
         <p className="ctn-tvmuster__status">{status}</p>

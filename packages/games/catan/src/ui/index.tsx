@@ -25,6 +25,7 @@ export const catanUi: GameUi = {
       'Trade with the others or with the bank (4 for 1, better at a harbour), then build what you can afford.',
       'Roll a 7 and the robber moves: anyone holding more than 7 cards gives half back, and you take a card from someone next to the robber.',
       'Settlements are 1 point, cities 2, and Longest Road and Largest Army 2 each. Development cards bring knights, free roads, plenty, monopolies and hidden points.',
+      'Choose an expansion in the lobby: Seafarers (ships, islands, gold and the pirate), Cities & Knights (commodities, city improvements, knights against the barbarians, progress cards), or both.',
     ],
     credit:
       'Based on CATAN by Klaus Teuber. CATAN is a trademark of CATAN GmbH; this is a fan version for friends, with our own art.',
@@ -41,6 +42,15 @@ export const catanUi: GameUi = {
     ],
   },
   optionHelp: {
+    expansion: {
+      'Base game': 'The classic game.',
+      Seafarers:
+        'A sea map with small islands and gold fields. Ships sail out from your coast, the pirate roams the sea, and your first settlement on each new island is worth 2 more. Played to 4 more points.',
+      'Cities & Knights':
+        'Cities make commodities for three tracks of improvements and metropolises; knights hold off the barbarian ship, and progress cards replace development cards. Played to 3 more points.',
+      'Seafarers + Cities & Knights':
+        'Both at once: the sea map with ships and the pirate, plus knights, barbarians and improvements. Played to 7 more points.',
+    },
     board: {
       Balanced:
         'Tiles and harbours shuffled, numbers laid round the island as in the rulebook, no 6 and 8 side by side.',

@@ -1,6 +1,7 @@
 'use client';
 
 import { Token, useCountdown, type ScreenPlayer } from '@jackdaw/ui';
+import type { EventFace } from '../ck';
 import type { CSSProperties } from 'react';
 import type { CatanTableView, Phase } from '../rules';
 import type { DevCard } from '../types';
@@ -65,26 +66,86 @@ export function Die({ n, red }: { n: number; red?: boolean }) {
   );
 }
 
+/** Cities & Knights' event die: the barbarian ship, or a city gate in a track's colour. */
+export function EventDie({ face }: { face: EventFace }) {
+  return (
+    <span
+      className={
+        face === 'ship' ? 'ctn-die ctn-die--event' : `ctn-die ctn-die--event ctn-fill--${face}`
+      }
+      aria-hidden="true"
+    >
+      <svg viewBox="-12 -12 24 24">
+        {face === 'ship' ? (
+          <>
+            <path d="M-9 2H9L6 7H-6z" className="ctn-evt__ink" />
+            <path d="M-.6 2V-9" className="ctn-evt__line" />
+            <path d="M.6 -8.5 7 0H.6z" className="ctn-evt__ink" />
+          </>
+        ) : (
+          <path d="M-7 8V-2A7 7 0 0 1 7 -2V8H3V0A3 3 0 0 0 -3 0V8z" className="ctn-evt__gate" />
+        )}
+      </svg>
+    </span>
+  );
+}
+
 export function Dice({
   dice,
   seq,
   waiting = false,
+  event = null,
 }: {
   dice: [number, number] | null;
   seq: number;
   /** Hidden while the big roll is gliding up to take their place. */
   waiting?: boolean;
+  /** Cities & Knights: the event die, and the first die is the red one. */
+  event?: EventFace | null;
 }) {
   if (!dice) return null;
   return (
     <span
-      className={waiting ? 'ctn-dice ctn-dice--waiting' : 'ctn-dice'}
+      className={['ctn-dice', waiting && 'ctn-dice--waiting', event && 'ctn-dice--three']
+        .filter(Boolean)
+        .join(' ')}
       key={seq}
       aria-label={`Rolled ${dice[0] + dice[1]}`}
       role="img"
     >
-      <Die n={dice[0]} />
-      <Die n={dice[1]} red />
+      <Die n={dice[0]} red={!!event} />
+      <Die n={dice[1]} red={!event} />
+      {event && <EventDie face={event} />}
+    </span>
+  );
+}
+
+/** Cities & Knights: the barbarian ship's track, and the island's knights against its cities. */
+export function Barbarians({
+  ship,
+  knights,
+  cities,
+}: {
+  ship: number;
+  knights: number;
+  cities: number;
+}) {
+  return (
+    <span
+      className="ctn-barb"
+      role="img"
+      aria-label={`Barbarian ship ${ship} of 7 steps; knights ${knights} against ${cities} cities`}
+    >
+      <span className="ctn-barb__track">
+        {Array.from({ length: 7 }, (_, i) => (
+          <i key={i} className={i < ship ? 'is-on' : i === 6 ? 'is-land' : ''} />
+        ))}
+      </span>
+      <span className={knights >= cities ? 'ctn-barb__odds is-safe' : 'ctn-barb__odds'}>
+        {knights}
+        <small>v</small>
+        {cities}
+      </span>
     </span>
   );
 }

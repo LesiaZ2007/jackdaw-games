@@ -4,7 +4,7 @@ import { PlayerReaction, type ScreenPlayer } from '@jackdaw/ui';
 import type { CSSProperties } from 'react';
 import type { Reaction } from '@jackdaw/engine';
 import type { CatanTableView } from '../rules';
-import { Awards, Clock, Dice, PHASE_LABEL, SeatToken, namer } from './common';
+import { Awards, Barbarians, Clock, Dice, PHASE_LABEL, SeatToken, namer } from './common';
 import { DevGlyph } from './glyphs';
 import { seatColour } from './palette';
 
@@ -26,27 +26,36 @@ export function TurnStrip({
   diceWaiting?: boolean;
 }) {
   const name = namer(players);
-  const who = t.phase === 'setup' || t.phase === 'robber' || t.phase === 'discard' ? null : t.actor;
+  const who =
+    t.phase === 'setup' || t.phase === 'robber' || t.phase === 'discard' || t.phase === 'pick'
+      ? null
+      : t.actor;
   const lead =
-    t.phase === 'discard'
-      ? Object.keys(t.discards).length === 1
-        ? `${t.discards[me ?? ''] ? 'You' : name(Object.keys(t.discards)[0])} must discard`
-        : 'Discarding'
-      : t.phase === 'robber'
-        ? t.robberBy === me
-          ? 'Move the robber'
-          : `${name(t.robberBy)} moves the robber`
-        : t.phase === 'setup'
-          ? t.actor === me
-            ? 'Your placement'
-            : `${name(t.actor)} is placing`
-          : who === me
-            ? t.paired
-              ? 'Your paired turn'
-              : 'Your turn'
-            : t.paired
-              ? `${name(who)} builds alongside`
-              : `${name(who)}’s turn`;
+    t.phase === 'pick'
+      ? t.owed[me ?? '']?.length
+        ? 'Your choice'
+        : 'Choosing'
+      : t.phase === 'discard'
+        ? Object.keys(t.discards).length === 1
+          ? `${t.discards[me ?? ''] ? 'You' : name(Object.keys(t.discards)[0])} must discard`
+          : 'Discarding'
+        : t.phase === 'robber'
+          ? t.robberBy === me
+            ? t.sea
+              ? 'Move the robber or pirate'
+              : 'Move the robber'
+            : `${name(t.robberBy)} moves the ${t.sea ? 'robber or pirate' : 'robber'}`
+          : t.phase === 'setup'
+            ? t.actor === me
+              ? 'Your placement'
+              : `${name(t.actor)} is placing`
+            : who === me
+              ? t.paired
+                ? 'Your paired turn'
+                : 'Your turn'
+              : t.paired
+                ? `${name(who)} builds alongside`
+                : `${name(who)}’s turn`;
   const turnP = players.find((p) => p.id === (who ?? t.actor));
   return (
     <header className="ctn-strip">
@@ -59,13 +68,24 @@ export function TurnStrip({
             : t.phase === 'robber'
               ? 'Pick a tile, then who to rob'
               : t.phase === 'discard'
-                ? 'Anyone over 7 cards gives back half'
+                ? t.ck
+                  ? 'Anyone over their limit gives back half'
+                  : 'Anyone over 7 cards gives back half'
                 : PHASE_LABEL[t.phase]}
           {t.paired && t.phase === 'main' ? ` · ${name(t.turn)}’s turn` : ''}
         </small>
+        {t.ck && (
+          <Barbarians
+            ship={t.ck.ship}
+            knights={Object.values(t.ck.knights)
+              .filter((k) => k.active)
+              .reduce((n, k) => n + k.level, 0)}
+            cities={Object.values(t.buildings).filter((b) => b.city).length}
+          />
+        )}
       </p>
       <Clock at={t.actBy} now={now} />
-      <Dice dice={t.dice} seq={t.rollSeq} waiting={diceWaiting} />
+      <Dice dice={t.dice} seq={t.rollSeq} waiting={diceWaiting} event={t.ck?.event ?? null} />
       {myPoints !== null && (
         <span className="ctn-mypts" title="Your points, with any hidden victory point cards">
           <b>{myPoints}</b>
@@ -113,9 +133,9 @@ export function Opponents({
                   <DevGlyph kind="cards" />
                   {t.handCounts[id]}
                 </span>
-                <span title="Development cards">
+                <span title={t.ck ? 'Progress cards' : 'Development cards'}>
                   <span className="ctn-devchit" aria-hidden="true" />
-                  {t.devCounts[id]}
+                  {t.ck ? t.ck.progressCounts[id] : t.devCounts[id]}
                 </span>
                 <Awards t={t} id={id} />
               </span>

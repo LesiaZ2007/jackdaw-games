@@ -3,7 +3,7 @@
 import { Sheet } from '@jackdaw/ui';
 import type { CSSProperties, ReactNode } from 'react';
 import { piecesLeft } from '../build';
-import { TRACKS, TRACK_NAME, type Track } from '../ck';
+import { TRACKS, TRACK_GOOD, TRACK_NAME, type Track } from '../ck';
 import type { CatanTableView, CatanView } from '../rules';
 import { ISLAND_BONUS } from '../sea';
 import { CITY, DevGlyph, PieceGlyph } from './glyphs';
@@ -341,33 +341,55 @@ export function Ledger({
  */
 export function TrackTower({
   t,
+  v,
   me,
   track,
+  live,
   onCity,
 }: {
   t: CatanTableView;
+  v: CatanView;
   me: string;
   track: Track;
+  /** You could build now (your turn, building). */
+  live: boolean;
   onCity: () => void;
 }) {
   const ck = t.ck!;
   const lvl = ck.levels[me]![track];
   const metro = ck.metros[track];
   const mine = !!metro && t.buildings[metro]?.owner === me;
+  const good = TRACK_GOOD[track];
+  // As the city sheet works it out: one more than the level reached, one less with the crane.
+  const cost = lvl >= 5 ? null : Math.max(0, lvl + 1 - (ck.crane ? 1 : 0));
+  const hasCity = Object.values(t.buildings).some((b) => b.owner === me && b.city);
+  const ready = live && hasCity && cost !== null && (v.hand[good] ?? 0) >= cost;
   return (
     <button
       type="button"
-      className={`ctn-tower ctn-tower--${track}${mine ? ' has-metro' : ''}`}
+      className={['ctn-tower', `ctn-tower--${track}`, mine && 'has-metro', ready && 'can-raise']
+        .filter(Boolean)
+        .join(' ')}
       onClick={onCity}
-      title={TRACK_NAME[track]}
-      aria-label={`${TRACK_NAME[track]} ${lvl} of 5${mine ? ', your metropolis' : ''}. Open your city improvements`}
+      title={cost === null ? TRACK_NAME[track] : `${TRACK_NAME[track]}: next costs ${cost} ${good}`}
+      aria-label={`${TRACK_NAME[track]} ${lvl} of 5${mine ? ', your metropolis' : ''}${
+        cost === null
+          ? ', at the top'
+          : `, next costs ${cost} ${good}${ready ? ', you can raise it now' : ''}`
+      }. Open your city improvements`}
     >
       <span className="ctn-tower__gate" aria-hidden="true">
         <Gate />
+        {cost !== null && <b className="ctn-tower__cost">{cost}</b>}
       </span>
       <span className="ctn-tower__steps" aria-hidden="true">
         {[5, 4, 3, 2, 1].map((n) => (
-          <i key={n} className={n < lvl ? 'is-on' : n === lvl ? 'is-on is-top' : ''}>
+          <i
+            key={n}
+            className={
+              n < lvl ? 'is-on' : n === lvl ? 'is-on is-top' : n === lvl + 1 ? 'is-next' : ''
+            }
+          >
             {n}
           </i>
         ))}

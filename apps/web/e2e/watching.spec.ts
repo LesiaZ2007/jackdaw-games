@@ -6,6 +6,10 @@ const SHOTS = process.env.E2E_SHOTS;
 async function expectWholeTable(page: Page, minWidth: number) {
   const stage = page.locator('.tv-window .tv-stage');
   await expect(stage).toBeVisible();
+  // The stage refits itself after a resize; wait for it rather than measuring the old size.
+  await expect
+    .poll(async () => (await stage.boundingBox())?.width ?? 0)
+    .toBeGreaterThanOrEqual(minWidth);
   const box = (await stage.boundingBox())!;
   const view = page.viewportSize()!;
   expect(box.x).toBeGreaterThanOrEqual(0);

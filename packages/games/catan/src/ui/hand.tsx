@@ -2,7 +2,14 @@
 
 import { useMoment } from '@jackdaw/ui';
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react';
-import { PROGRESS_NAME, PROGRESS_TRACK, type Progress } from '../ck';
+import {
+  PROGRESS_NAME,
+  PROGRESS_TRACK,
+  TRACKS,
+  TRACK_NAME,
+  type Progress,
+  type Track,
+} from '../ck';
 import {
   CARDS,
   COMMODITIES,
@@ -71,6 +78,7 @@ export function Tray({
   towers,
   lead,
   tail,
+  left,
 }: {
   hand: Cards;
   /** What the last roll paid you, shown rising over the hand. */
@@ -88,6 +96,8 @@ export function Tray({
   lead?: ReactNode;
   /** After them (on a phone, your knights). */
   tail?: ReactNode;
+  /** Cards left to draw: the development deck, or each progress deck. */
+  left?: number | Record<Track, number>;
 }) {
   // A new roll shows it again; a refresh doesn't.
   const [fresh, drop] = useMoment(gotKey);
@@ -118,9 +128,17 @@ export function Tray({
       <div className="ctn-devrow">
         {lead && <span className="ctn-devrow__lead">{lead}</span>}
         {progress ? (
-          <ProgressRow cards={progress} onCards={onCards} />
+          <ProgressRow
+            cards={progress}
+            onCards={onCards}
+            left={typeof left === 'object' ? left : undefined}
+          />
         ) : (
-          <DevRow cards={dev ?? []} onCards={onCards} />
+          <DevRow
+            cards={dev ?? []}
+            onCards={onCards}
+            left={typeof left === 'number' ? left : undefined}
+          />
         )}
         {tail && <span className="ctn-devrow__tail">{tail}</span>}
       </div>
@@ -226,9 +244,11 @@ export function ResourceCard({ res }: { res: Card }) {
 function DevRow({
   cards,
   onCards,
+  left,
 }: {
   cards: { card: DevCard; playable: boolean }[];
   onCards: () => void;
+  left?: number;
 }) {
   const kinds = DEV_ORDER.filter((k) => cards.some((c) => c.card === k));
   return (
@@ -238,9 +258,12 @@ function DevRow({
       onClick={onCards}
       aria-label={`Your development cards: ${cards.length}. Open them`}
     >
-      {kinds.length === 0 && (
-        <span className="ctn-pcard ctn-pcard--slot">No development cards</span>
-      )}
+      {kinds.length === 0 &&
+        (left === undefined ? (
+          <span className="ctn-pcard ctn-pcard--slot">No development cards</span>
+        ) : (
+          <Deck n={left} label="development cards left" />
+        ))}
       {kinds.map((k) => {
         const n = cards.filter((c) => c.card === k).length;
         const live = cards.some((c) => c.card === k && c.playable);
@@ -268,9 +291,11 @@ function DevRow({
 function ProgressRow({
   cards,
   onCards,
+  left,
 }: {
   cards: { card: Progress; playable: boolean }[];
   onCards: () => void;
+  left?: Record<Track, number>;
 }) {
   return (
     <button
@@ -292,11 +317,37 @@ function ProgressRow({
           <span className="ctn-pcard__name">{PROGRESS_NAME[c.card]}</span>
         </span>
       ))}
-      {cards.length === 0 && (
-        <span className="ctn-pcard ctn-pcard--slot" aria-hidden="true">
-          No progress cards
-        </span>
-      )}
+      {cards.length === 0 &&
+        (left ? (
+          TRACKS.map((tr) => (
+            <Deck key={tr} n={left[tr]} track={tr} label={`${TRACK_NAME[tr]} cards left`} />
+          ))
+        ) : (
+          <span className="ctn-pcard ctn-pcard--slot" aria-hidden="true">
+            No progress cards
+          </span>
+        ))}
     </button>
+  );
+}
+
+/**
+ * A deck face down on the table, a few cards thick, with how many are left on it: shown in place
+ * of your cards while you hold none.
+ */
+function Deck({ n, track, label }: { n: number; track?: Track; label: string }) {
+  return (
+    <span
+      className={track ? `ctn-deck ctn-deck--${track}` : 'ctn-deck'}
+      title={`${n} ${label}`}
+      aria-hidden="true"
+    >
+      <i className="ctn-deck__card" />
+      <i className="ctn-deck__card" />
+      <span className="ctn-deck__top">
+        {track ? <Gate /> : <DevGlyph kind="knight" />}
+        <b>{n}</b>
+      </span>
+    </span>
   );
 }

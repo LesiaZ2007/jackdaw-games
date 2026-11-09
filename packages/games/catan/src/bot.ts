@@ -21,7 +21,8 @@ import {
   type CatanAction,
   type CatanState,
 } from './rules';
-import { RESOURCES, countCards, type Cards, type Resource } from './types';
+import { roadSpotsOf, settleSpotsOf, shipSpotsOf } from './spots';
+import { CARDS, RESOURCES, countCards, type Card, type Cards, type Resource } from './types';
 
 /**
  * Moves a player could make now: used to play random games in tests, and to finish a step for a
@@ -41,10 +42,15 @@ export function legalMoves(s: CatanState, pid: string): CatanAction[] {
   switch (s.phase) {
     case 'setup':
       return s.setup!.corner
-        ? roadSpots(L, s.buildings, s.roads, pid, s.setup!.corner).map((at) => build('road', at))
-        : best(settlementSpots(L, s.buildings, s.roads, pid, true))
+        ? [
+            ...roadSpotsOf(s, pid, s.setup!.corner).map((at) => build('road', at)),
+            ...shipSpotsOf(s, pid, s.setup!.corner).map((at) => build('ship', at)),
+          ]
+        : best(settleSpotsOf(s, pid, true))
             .slice(0, 3)
-            .map((at) => build('settlement', at));
+            .map((at) => build(openingKind(s), at));
+    case 'pick':
+      return [pickFor(s, pid)];
     case 'roll':
       return [
         { type: 'roll' },
@@ -56,9 +62,12 @@ export function legalMoves(s: CatanState, pid: string): CatanAction[] {
       return robberMoves(s, pid);
     case 'roadBuilding':
       return [
-        ...roadSpots(L, s.buildings, s.roads, pid)
+        ...roadSpotsOf(s, pid)
           .slice(0, 3)
           .map((at) => build('road', at)),
+        ...shipSpotsOf(s, pid)
+          .slice(0, 2)
+          .map((at) => build('ship', at)),
         { type: 'endRoads' },
       ];
     case 'main':
@@ -66,7 +75,27 @@ export function legalMoves(s: CatanState, pid: string): CatanAction[] {
   }
 }
 
-const build = (kind: 'road' | 'settlement' | 'city', at: string): CatanAction => ({
+/** The opening piece: a settlement, or (Cities & Knights) a city the second time round. */
+export const openingKind = (s: CatanState): 'settlement' | 'city' =>
+  s.ck && s.setup && s.setup.step >= s.setup.order.length / 2 ? 'city' : 'settlement';
+
+/** A fair choice for what `pid` owes: the resource they hold least of, or the fullest deck. */
+export function pickFor(s: CatanState, pid: string): CatanAction {
+  const owed = s.owed?.[pid]?.[0];
+  if (owed === 'progress') {
+    const decks = s.ck!.decks;
+    const track = (['science', 'trade', 'politics'] as const).reduce((a, b) =>
+      decks[b].length > decks[a].length ? b : a,
+    );
+    return { type: 'pick', track };
+  }
+  const hand = s.hands[pid]!;
+  const stocked = RESOURCES.filter((r) => s.bank[r] > 0);
+  const resource = (stocked.length ? stocked : RESOURCES).reduce((a, b) => (hand[b] < hand[a] ? b : a));
+  return { type: 'pick', resource };
+}
+
+const build = (kind: 'road' | 'settlement' | 'city' | 'ship', at: string): CatanAction => ({
   type: 'build',
   kind,
   at,
@@ -194,21 +223,25 @@ export function timeUp(s: CatanState, rng: Rng): CatanState {
         next = applyMove(
           next,
           who,
-          build('settlement', rng.pick(settlementSpots(L, s.buildings, s.roads, who, true))),
+          build(openingKind(s), rng.pick(settleSpotsOf(s, who, true))),
           rng,
         );
-      return applyMove(
-        next,
-        who,
-        build('road', rng.pick(roadSpots(L, next.buildings, next.roads, who, next.setup!.corner!))),
-        rng,
-      );
+      const roads = roadSpotsOf(next, who, next.setup!.corner!);
+      return roads.length
+        ? applyMove(next, who, build('road', rng.pick(roads)), rng)
+        : applyMove(next, who, build('ship', rng.pick(shipSpotsOf(next, who, next.setup!.corner!))), rng);
     }
+    case 'pick':
+      return Object.keys(s.owed ?? {}).reduce((next, p) => {
+        let out = next;
+        while (out.phase === 'pick' && out.owed?.[p]?.length) out = applyMove(out, p, pickFor(out, p), rng);
+        return out;
+      }, s);
     case 'roll':
       return applyMove(s, who, { type: 'roll' }, rng);
     case 'discard':
       return Object.keys(s.discards).reduce((next, p) => {
-        const pool = RESOURCES.flatMap((r) => Array<Resource>(next.hands[p]![r]).fill(r));
+        const pool = CARDS.flatMap((r) => Array<Card>(next.hands[p]![r]).fill(r));
         const cards: Partial<Cards> = {};
         for (const r of rng.shuffle(pool).slice(0, next.discards[p]!))
           cards[r] = (cards[r] ?? 0) + 1;

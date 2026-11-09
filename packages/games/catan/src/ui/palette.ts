@@ -1,4 +1,4 @@
-import type { Resource, Terrain } from '../types';
+import type { Card, Resource, Terrain } from '../types';
 
 /**
  * Catan's piece colours, in seat order (the classic four, then green and brown at five and six).
@@ -35,10 +35,13 @@ export const TERRAIN_OF: Record<Resource, Terrain> = {
   ore: 'mountains',
 };
 
-export const RESOURCE_NAME: Record<Resource, string> = {
+export const RESOURCE_NAME: Record<Card, string> = {
   lumber: 'Lumber',
   brick: 'Brick',
   wool: 'Wool',
   grain: 'Grain',
   ore: 'Ore',
+  paper: 'Paper',
+  cloth: 'Cloth',
+  coin: 'Coin',
 };

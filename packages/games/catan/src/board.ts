@@ -16,7 +16,7 @@ export const TOKENS: Record<Size, number[]> = {
   big: [2, 5, 4, 6, 3, 9, 8, 11, 11, 10, 6, 3, 8, 4, 8, 10, 11, 12, 10, 5, 4, 9, 5, 9, 12, 3, 2, 6],
 };
 
-export const TILE_COUNTS: Record<Size, Record<Terrain, number>> = {
+export const TILE_COUNTS: Record<Size, Partial<Record<Terrain, number>>> = {
   classic: { forest: 4, pasture: 4, fields: 4, hills: 3, mountains: 3, desert: 1 },
   big: { forest: 6, pasture: 6, fields: 6, hills: 5, mountains: 5, desert: 2 },
 };

@@ -60,6 +60,21 @@ export function catanBot(ctx: BotContext<CatanView, CatanTableView>): CatanActio
     }
     case 'robber':
       return t.robberBy === me ? robber(L, t, me, pick) : null;
+    case 'pick': {
+      const owed = t.owed[me]?.[0];
+      if (!owed) return null;
+      if (owed === 'progress' && t.ck) {
+        const d = t.ck.deckLeft;
+        const track = (['science', 'trade', 'politics'] as const).reduce((x, y) => (d[y] > d[x] ? y : x));
+        return { type: 'pick', track };
+      }
+      const g = goal(L, t, me, v.hand);
+      const need = missing(v.hand, costOf(g));
+      const want = RESOURCES.filter((r) => t.bank[r] > 0);
+      const r =
+        want.find((x) => (need[x] ?? 0) > 0) ?? want.reduce((x, y) => (v.hand[y] < v.hand[x] ? y : x), want[0] ?? 'grain');
+      return { type: 'pick', resource: r };
+    }
     case 'roll': {
       if (t.actor !== me) return null;
       if (v.dev.some((d) => d.card === 'knight' && d.playable) && robbed(L, t, me))

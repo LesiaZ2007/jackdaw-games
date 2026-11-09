@@ -4,7 +4,7 @@ import { PlayerReaction, type ScreenPlayer } from '@jackdaw/ui';
 import type { CSSProperties } from 'react';
 import type { Reaction } from '@jackdaw/engine';
 import type { CatanTableView } from '../rules';
-import { Awards, Barbarians, Clock, Dice, PHASE_LABEL, SeatToken, namer } from './common';
+import { Awards, Clock, Dice, PHASE_LABEL, SeatToken, namer } from './common';
 import { DevGlyph } from './glyphs';
 import { seatColour } from './palette';
 
@@ -74,15 +74,6 @@ export function TurnStrip({
                 : PHASE_LABEL[t.phase]}
           {t.paired && t.phase === 'main' ? ` · ${name(t.turn)}’s turn` : ''}
         </small>
-        {t.ck && (
-          <Barbarians
-            ship={t.ck.ship}
-            knights={Object.values(t.ck.knights)
-              .filter((k) => k.active)
-              .reduce((n, k) => n + k.level, 0)}
-            cities={Object.values(t.buildings).filter((b) => b.city).length}
-          />
-        )}
       </p>
       <Clock at={t.actBy} now={now} />
       <Dice dice={t.dice} seq={t.rollSeq} waiting={diceWaiting} event={t.ck?.event ?? null} />

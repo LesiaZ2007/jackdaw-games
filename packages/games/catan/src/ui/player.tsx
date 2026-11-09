@@ -35,7 +35,9 @@ import { YIELD, emptyCards, type Cards } from '../types';
 import { CatanBoard } from './board';
 import { CitySheet, PickSheet, ProgressSheet } from './cksheets';
 import { namer } from './common';
-import { Hand } from './hand';
+import { BarbarianTrack, Ledger, PointsSheet, TrackTowers } from './estate';
+import { Pip } from './glyphs';
+import { Tray } from './hand';
 import { RESOURCE_NAME, seatColour } from './palette';
 import {
   BuildSheet,
@@ -168,7 +170,9 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       setBusy(false);
     }
   };
-  const [sheet, setSheet] = useState<'build' | 'trade' | 'cards' | 'city' | 'pick' | null>(null);
+  const [sheet, setSheet] = useState<
+    'build' | 'trade' | 'cards' | 'city' | 'pick' | 'points' | null
+  >(null);
   const [counter, setCounter] = useState<Offer | null>(null);
   const [discardShut, setDiscardShut] = useState(-1);
 
@@ -213,6 +217,10 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       if (p.mode === 'wall') corners = wallSpotsOf(t, me);
     } else if (t.phase === 'main' && p.knights && ck) {
       corners = p.knight ? (p.knightTo ? knightMoves(L, t, p.knight) : []) : myKnights;
+    } else if (t.phase === 'main' && ck && !p.sailing && !p.card) {
+      // Nothing chosen yet: your knights answer a tap (2026-11-09: "I can't figure out how to
+      // activate a knight").
+      corners = myKnights;
     } else if (t.phase === 'main' && p.sailing) {
       edges = p.ship ? (sails[p.ship] ?? []) : Object.keys(sails);
       kind = p.ship ? 'ship' : null;
@@ -281,6 +289,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 
   const onCorner = (c: string) => {
     if (p.knights && !p.knight) set({ knight: c, ghost: null });
+    else if (!p.knights && !p.mode && myKnights.includes(c))
+      set({ ...fresh(step), knights: true, knight: c });
     else set({ ghost: c });
   };
   const onEdge = (e: string) => {
@@ -556,7 +566,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     const nearRobber = !!p.knight && ck.robberLive && L.tiles[t.robber]!.corners.includes(p.knight);
     dock = !k ? (
       <div className="ctn-dock ctn-dock--1">
-        <p className="ctn-hint">Tap one of your knights.</p>
+        <p className="ctn-hint">Tap one of your knights on the island.</p>
         <button type="button" className="jd-plaque" onClick={clear}>
           Done
         </button>
@@ -586,7 +596,11 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       <div className="ctn-dock ctn-dock--4">
         <p className="ctn-hint">
           {['Basic', 'Strong', 'Mighty'][k.level - 1]} knight,{' '}
-          {k.active ? (ready ? 'ready' : 'activated this turn') : 'inactive'}.
+          {k.active
+            ? ready
+              ? 'active: it defends, and can move or chase the robber.'
+              : 'activated this turn: it defends, and acts next turn.'
+            : 'not active: it can’t defend or act until you activate it with 1 grain.'}
         </p>
         <button type="button" className="jd-plaque" onClick={() => set({ knight: null })}>
           Back
@@ -607,7 +621,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
             disabled={busy || (hand.grain ?? 0) < 1}
             onClick={() => send({ type: 'activate', at: p.knight! })}
           >
-            Activate
+            Activate <Pip res="grain" />
           </button>
         )}
         <button
@@ -774,7 +788,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         me={me}
         players={players}
         now={now}
-        myPoints={seated ? v!.points : null}
+        myPoints={null}
         diceWaiting={rolling !== null}
       />
       {rolling !== null && t.dice && (
@@ -789,7 +803,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         />
       )}
       <Opponents t={t} me={me} players={players} reactions={reactions} />
-      <div className="ctn-stage">
+      <div className={ck ? 'ctn-stage ctn-stage--voyage' : 'ctn-stage'}>
+        {ck && <BarbarianTrack t={t} />}
         <CatanBoard
           board={t.board}
           buildings={t.buildings}
@@ -844,18 +859,41 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           />
         )}
       </div>
+      {seated && me && (
+        <Ledger
+          t={t}
+          v={v!}
+          me={me}
+          colour={myColour}
+          onPoints={() => setSheet('points')}
+          onKnights={() => set({ ...fresh(step), knights: true })}
+          canCommand={acting && t.phase === 'main' && !p.mode && !p.card && !p.sailing}
+        />
+      )}
       {seated && (
-        <Hand
+        <Tray
           hand={hand}
           goods={!!ck}
           got={me ? (t.produced[me] ?? null) : null}
           gotKey={t.rollSeq}
+          dev={ck ? undefined : v!.dev}
+          progress={ck ? v!.progress : undefined}
+          onCards={() => setSheet('cards')}
+          towers={ck && me ? <TrackTowers t={t} me={me} onCity={() => setSheet('city')} /> : null}
         />
       )}
       {dock}
 
       {seated && me && (
         <>
+          <PointsSheet
+            open={sheet === 'points'}
+            onClose={() => setSheet(null)}
+            t={t}
+            v={v!}
+            me={me}
+            colour={myColour}
+          />
           <BuildSheet
             open={sheet === 'build'}
             onClose={() => setSheet(null)}

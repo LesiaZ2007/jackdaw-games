@@ -120,36 +120,6 @@ export function Dice({
   );
 }
 
-/** Cities & Knights: the barbarian ship's track, and the island's knights against its cities. */
-export function Barbarians({
-  ship,
-  knights,
-  cities,
-}: {
-  ship: number;
-  knights: number;
-  cities: number;
-}) {
-  return (
-    <span
-      className="ctn-barb"
-      role="img"
-      aria-label={`Barbarian ship ${ship} of 7 steps; knights ${knights} against ${cities} cities`}
-    >
-      <span className="ctn-barb__track">
-        {Array.from({ length: 7 }, (_, i) => (
-          <i key={i} className={i < ship ? 'is-on' : i === 6 ? 'is-land' : ''} />
-        ))}
-      </span>
-      <span className={knights >= cities ? 'ctn-barb__odds is-safe' : 'ctn-barb__odds'}>
-        {knights}
-        <small>v</small>
-        {cities}
-      </span>
-    </span>
-  );
-}
-
 export function Clock({ at, now }: { at: number | null; now: () => number }) {
   const left = useCountdown(at, now);
   if (left === null) return null;

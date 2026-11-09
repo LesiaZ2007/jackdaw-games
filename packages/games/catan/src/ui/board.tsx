@@ -89,7 +89,7 @@ const TERRAIN_NAME: Record<Terrain, string> = {
 const SNAP_PX = 28;
 
 /** The engraved motif on a 20-unit tile of pattern, in the terrain's own ink. */
-function Motif({ t }: { t: Terrain }) {
+export function Motif({ t }: { t: Terrain }) {
   switch (t) {
     case 'forest':
       return (

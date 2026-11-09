@@ -32,13 +32,7 @@ import {
   shipsLeft,
   type SeaState,
 } from './sea';
-import {
-  citySpotsOf,
-  layoutOf,
-  roadSpotsOf,
-  settleSpotsOf,
-  shipSpotsOf,
-} from './spots';
+import { citySpotsOf, layoutOf, roadSpotsOf, settleSpotsOf, shipSpotsOf } from './spots';
 import { awardRoad, longestRoad } from './roads';
 import { trim, validTrade } from './trade';
 import { timeUp } from './bot';
@@ -57,10 +51,8 @@ import {
   ckTurnEnds,
   ckYield,
   canPlayProgress,
-  handLimit,
   newCk,
   occupied,
-  robberLive,
   type CkState,
   type CkTable,
   type Progress,
@@ -69,7 +61,6 @@ import {
 } from './ck';
 import {
   CARDS,
-  RESOURCES,
   YIELD,
   countCards,
   emptyCards,
@@ -180,7 +171,7 @@ export const actionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('discard'), cards }),
   z.object({
     type: z.literal('robber'),
-    tile: z.number().int().min(0).max(40),
+    tile: z.number().int().min(0).max(80),
     victim: pid.nullable(),
   }),
   z.object({ type: z.literal('buy') }),
@@ -212,14 +203,7 @@ export const actionSchema = z.discriminatedUnion('type', [
 export type CatanAction = z.infer<typeof actionSchema>;
 
 export type Phase =
-  | 'setup'
-  | 'roll'
-  | 'discard'
-  | 'robber'
-  | 'main'
-  | 'roadBuilding'
-  | 'pick'
-  | 'over';
+  'setup' | 'roll' | 'discard' | 'robber' | 'main' | 'roadBuilding' | 'pick' | 'over';
 
 /** A choice someone owes before play goes on: a resource from the aqueduct or a gold field, or a
  * progress card deck (a tied Defender of Catan). */
@@ -506,8 +490,11 @@ function setupBuild(s: CatanState, who: string, kind: string, at: string): Catan
   const second = st.step >= st.order.length / 2;
   if (!st.corner) {
     // Cities & Knights: the second opening piece is a city.
-    if (kind !== 'settlement' && !(kind === 'city' && s.ck && second))
-      return refuse('wrong-piece', s.ck && second ? 'Place a city first.' : 'Place a settlement first.');
+    if (kind !== (s.ck && second ? 'city' : 'settlement'))
+      return refuse(
+        'wrong-piece',
+        s.ck && second ? 'Place a city first.' : 'Place a settlement first.',
+      );
     if (!settleSpotsOf(s, who, true).includes(at))
       return refuse('bad-spot', 'You can’t build a settlement there.');
     let next: CatanState = {
@@ -781,7 +768,11 @@ function movePirate(
     victim ? `{actor} moved the pirate and robbed {${victim}}` : '{actor} moved the pirate',
     who,
     victim
-      ? { tag: 'Pirate', tone: 'good', ...(resource ? { secret: `Took ${resource} from {${victim}}` } : {}) }
+      ? {
+          tag: 'Pirate',
+          tone: 'good',
+          ...(resource ? { secret: `Took ${resource} from {${victim}}` } : {}),
+        }
       : {},
   );
 }
@@ -1079,9 +1070,13 @@ function build(s: CatanState, who: string, kind: Kind, at: string): CatanState {
     const sea = s.sea;
     if (!sea) return refuse('no-ships', 'There are no ships in this game.');
     if (!free && !covers(s.hands[who]!, SHIP_COST))
-      return refuse('cant-afford', `You need ${cardsText(missing(s.hands[who]!, SHIP_COST))} more.`);
+      return refuse(
+        'cant-afford',
+        `You need ${cardsText(missing(s.hands[who]!, SHIP_COST))} more.`,
+      );
     if (shipsLeft(sea, who) <= 0) return refuse('no-pieces', 'You have no ships left.');
-    if (!shipSpotsOf(s, who).includes(at)) return refuse('bad-spot', 'You can’t build a ship there.');
+    if (!shipSpotsOf(s, who).includes(at))
+      return refuse('bad-spot', 'You can’t build a ship there.');
     next = free
       ? s
       : {
@@ -1109,7 +1104,11 @@ function build(s: CatanState, who: string, kind: Kind, at: string): CatanState {
     if (!spots.includes(at)) return refuse('bad-spot', `You can’t build a ${kind} there.`);
     next = free
       ? s
-      : { ...s, hands: { ...s.hands, [who]: add(s.hands[who]!, cost, -1) }, bank: add(s.bank, cost) };
+      : {
+          ...s,
+          hands: { ...s.hands, [who]: add(s.hands[who]!, cost, -1) },
+          bank: add(s.bank, cost),
+        };
     if (kind === 'road') next = { ...next, roads: { ...next.roads, [at]: who } };
     else
       next = {
@@ -1129,8 +1128,7 @@ function build(s: CatanState, who: string, kind: Kind, at: string): CatanState {
     const left = next.roadsToBuild - 1;
     const roadsOk =
       piecesLeft(next.buildings, next.roads, who).road > 0 && roadSpotsOf(next, who).length > 0;
-    const shipsOk =
-      !!next.sea && shipsLeft(next.sea, who) > 0 && shipSpotsOf(next, who).length > 0;
+    const shipsOk = !!next.sea && shipsLeft(next.sea, who) > 0 && shipSpotsOf(next, who).length > 0;
     const more = left > 0 && (roadsOk || shipsOk);
     next = { ...next, roadsToBuild: more ? left : 0, phase: more ? 'roadBuilding' : 'main' };
   }
@@ -1369,6 +1367,7 @@ function getTableView(s: CatanState): CatanTableView {
       seq: s.robbery.seq,
       thief: s.robbery.thief,
       victim: s.robbery.victim,
+      ...(s.robbery.pirate ? { pirate: true } : {}),
       took: s.robbery.resource !== null,
     },
     award: s.award,
@@ -1465,6 +1464,13 @@ export interface CatanReveal {
   /** Everyone who shares the win, when the host ended the game on a tie. */
   winners?: string[];
   rounds: number;
+  /** The expansions' pieces, as the game ended. */
+  ships?: Roads;
+  pirate?: number | null;
+  ckKnights?: CkState['knights'];
+  walls?: string[];
+  metros?: CkState['metros'];
+  merchant?: CkState['merchant'];
 }
 
 export function breakdown(s: CatanState, pid: string): PointsBreakdown {
@@ -1483,7 +1489,9 @@ export function breakdown(s: CatanState, pid: string): PointsBreakdown {
     total: points(s, pid, true),
   };
   if (s.ck) {
-    out.metros = Object.values(s.ck.metros).filter((c) => c && s.buildings[c]?.owner === pid).length;
+    out.metros = Object.values(s.ck.metros).filter(
+      (c) => c && s.buildings[c]?.owner === pid,
+    ).length;
     out.defender = s.ck.defenders[pid] ?? 0;
     out.progress = (s.ck.shown[pid]?.length ?? 0) + (s.ck.merchant?.owner === pid ? 1 : 0);
   }
@@ -1505,7 +1513,8 @@ export function partialResult(s: CatanState): GameResult | null {
   if (s.phase === 'over') return getResult(s);
   if (s.phase === 'setup') return null;
   const pts = Object.fromEntries(s.seats.map((p) => [p, points(s, p, true)]));
-  if (s.seats.every((p) => pts[p] === 2)) return null;
+  // Nothing built past the opening pieces (2 points; 3 when the second piece is a city).
+  if (s.seats.every((p) => pts[p] === (s.ck ? 3 : 2))) return null;
   const top = Math.max(...Object.values(pts));
   return resultFor(
     s,
@@ -1530,6 +1539,15 @@ function resultFor(s: CatanState, winners: string[], early = false): GameResult 
     winner: winners[0]!,
     ...(winners.length > 1 ? { winners } : {}),
     rounds: s.round,
+    ...(s.sea ? { ships: s.sea.ships, pirate: s.sea.pirate } : {}),
+    ...(s.ck
+      ? {
+          ckKnights: s.ck.knights,
+          walls: s.ck.walls,
+          metros: s.ck.metros,
+          merchant: s.ck.merchant,
+        }
+      : {}),
   };
   const highlights: NonNullable<GameResult['highlights']> = [];
   const holder = s.longest.holder;

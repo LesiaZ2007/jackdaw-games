@@ -74,7 +74,7 @@ export const pips = (n: number): number => 6 - Math.abs(7 - n);
 const isRed = (n: number | null) => n === 6 || n === 8;
 
 export function redsTouch(board: Board): boolean {
-  const L = layout(board.size);
+  const L = layout(board.map ?? board.size);
   return board.tiles.some(
     (t, i) => isRed(t.number) && L.tiles[i]!.neighbours.some((n) => isRed(board.tiles[n]!.number)),
   );

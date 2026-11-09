@@ -19,24 +19,49 @@ export const SHIPS_EACH = 15;
 export const ISLAND_BONUS = 2;
 
 /**
- * The sea maps, row by row as `layout` lays them out (rows centred): L the main island, I a
- * small island, G a gold field, S sea. The main island is the classic (or big) island's shape.
+ * The sea maps, row by row as `layout` lays them out (rows centred, widths alternating): L the
+ * main island, I a small island, G a gold field, S sea. The main island (the classic or big
+ * island's shape) sits at the top, a strait below it and the small islands beyond, so the map
+ * stands upright on a phone.
  */
 const TEMPLATES: Record<'seaClassic' | 'seaBig', string[]> = {
-  seaClassic: ['LLLSIIS', 'LLLLSIGS', 'LLLLLSSSI', 'LLLLSSSG', 'LLLSIIS'],
-  seaBig: ['LLLSIISS', 'LLLLSIGSS', 'LLLLLSSSIS', 'LLLLLLSSIGS', 'LLLLLSSSIS', 'LLLLSGISS', 'LLLSIISS'],
+  seaClassic: ['SLLLSI', 'SLLLLSI', 'LLLLLS', 'SLLLLSS', 'SLLLSS', 'SSSSSSS', 'IGSIGS', 'IISSIIS'],
+  seaBig: [
+    'SSLLLSI',
+    'SSLLLLSI',
+    'SLLLLLS',
+    'SLLLLLLS',
+    'SLLLLLS',
+    'SSLLLLSS',
+    'SSLLLSS',
+    'SSSSSSSS',
+    'IGSGSII',
+    'IISIISGI',
+  ],
 };
 
 const ISLAND_TERRAINS: Record<Size, Terrain[]> = {
-  classic: ['forest', 'pasture', 'fields', 'hills', 'mountains', 'pasture'],
-  big: ['forest', 'forest', 'pasture', 'pasture', 'fields', 'hills', 'hills', 'mountains', 'mountains'],
+  classic: ['forest', 'pasture', 'fields', 'hills', 'mountains', 'pasture', 'forest', 'mountains'],
+  big: [
+    'forest',
+    'forest',
+    'pasture',
+    'pasture',
+    'fields',
+    'fields',
+    'hills',
+    'hills',
+    'mountains',
+    'mountains',
+  ],
 };
 const ISLAND_TOKENS: Record<Size, number[]> = {
-  classic: [3, 4, 5, 6, 8, 9, 10, 11],
-  big: [2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 4, 10],
+  classic: [3, 4, 5, 6, 8, 9, 10, 11, 2, 12],
+  big: [2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 4, 10, 5],
 };
 
-export const seaKey = (size: Size): 'seaClassic' | 'seaBig' => (size === 'big' ? 'seaBig' : 'seaClassic');
+export const seaKey = (size: Size): 'seaClassic' | 'seaBig' =>
+  size === 'big' ? 'seaBig' : 'seaClassic';
 
 export const isSea = (b: Pick<Board, 'tiles'>, t: number) => b.tiles[t]!.terrain === 'sea';
 export const isLand = (b: Pick<Board, 'tiles'>, t: number) => !isSea(b, t);
@@ -53,7 +78,9 @@ export function makeSeaBoard(size: Size, rng: Rng): Board {
     terrain: c === 'S' ? 'sea' : c === 'G' ? 'gold' : c === 'L' ? main.pop()! : isle.pop()!,
     number: null,
   }));
-  const numbered = tiles.flatMap((t, i) => (t.terrain === 'sea' || t.terrain === 'desert' ? [] : [i]));
+  const numbered = tiles.flatMap((t, i) =>
+    t.terrain === 'sea' || t.terrain === 'desert' ? [] : [i],
+  );
   const pool = [...TOKENS[size], ...ISLAND_TOKENS[size]];
   let board: Board = { size, map: key, tiles, harbours: [] };
   for (let tries = 0; tries < 500; tries++) {
@@ -74,7 +101,9 @@ export function makeSeaBoard(size: Size, rng: Rng): Board {
     L.edges,
     L.corners,
     HARBOUR_KINDS[size].length,
-    (e) => e.tiles.some((t) => home[t] === 0) && (e.tiles.length === 1 || e.tiles.some((t) => isSea(board, t))),
+    (e) =>
+      e.tiles.some((t) => home[t] === 0) &&
+      (e.tiles.length === 1 || e.tiles.some((t) => isSea(board, t))),
     centre,
   );
   const kinds = rng.shuffle(HARBOUR_KINDS[size]);
@@ -171,14 +200,17 @@ export function openShip(L: Layout, s: Placed, e: string): boolean {
   const owner = ships[e];
   if (!owner) return false;
   const loose = (c: string) =>
-    s.buildings[c]?.owner !== owner && !L.corners[c]!.edges.some((f) => f !== e && ships[f] === owner);
+    s.buildings[c]?.owner !== owner &&
+    !L.corners[c]!.edges.some((f) => f !== e && ships[f] === owner);
   return loose(L.edges[e]!.a) || loose(L.edges[e]!.b);
 }
 
 /** Ships `pid` may sail this turn, and where each may go. */
 export function sailMoves(
   L: Layout,
-  s: Placed & { sea?: { ships: Roads; pirate: number | null; built?: string[]; moved?: boolean } | null },
+  s: Placed & {
+    sea?: { ships: Roads; pirate: number | null; built?: string[]; moved?: boolean } | null;
+  },
   pid: string,
 ): Record<string, string[]> {
   const sea = s.sea;
@@ -203,7 +235,11 @@ export const pirateSpots = (board: Board, pirate: number | null): number[] =>
 
 /** Players with a ship beside a sea tile, other than `who`. */
 export function shipOwnersAt(L: Layout, ships: Roads, tile: number, who: string): string[] {
-  return [...new Set(L.tiles[tile]!.edges.map((e) => ships[e]).filter((p): p is string => !!p && p !== who))];
+  return [
+    ...new Set(
+      L.tiles[tile]!.edges.map((e) => ships[e]).filter((p): p is string => !!p && p !== who),
+    ),
+  ];
 }
 
 export const seaPoints = (sea: Pick<SeaState, 'bonus'>, pid: string): number =>

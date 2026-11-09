@@ -26,6 +26,4 @@ export function validTrade(give: Partial<Cards>, want: Partial<Cards>): string |
 
 /** Drops zero counts, so offers read cleanly. */
 export const trim = (c: Partial<Cards>): Partial<Cards> =>
-  Object.fromEntries(
-    CARDS.filter((r) => (c[r] ?? 0) > 0).map((r) => [r, c[r]]),
-  ) as Partial<Cards>;
+  Object.fromEntries(CARDS.filter((r) => (c[r] ?? 0) > 0).map((r) => [r, c[r]])) as Partial<Cards>;

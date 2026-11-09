@@ -58,8 +58,9 @@ export interface Layout {
 const ROWS: Record<MapKey, number[]> = {
   classic: [3, 4, 5, 4, 3],
   big: [3, 4, 5, 6, 5, 4, 3],
-  seaClassic: [7, 8, 9, 8, 7],
-  seaBig: [8, 9, 10, 11, 10, 9, 8],
+  // Sea maps alternate row widths, so the frame is a rectangle taller than it's wide.
+  seaClassic: [6, 7, 6, 7, 6, 7, 6, 7],
+  seaBig: [7, 8, 7, 8, 7, 8, 7, 8, 7, 8],
 };
 /** Harbour slots round the coast (sea maps place theirs round the main island instead). */
 const HARBOURS: Record<MapKey, number> = { classic: 9, big: 11, seaClassic: 0, seaBig: 0 };

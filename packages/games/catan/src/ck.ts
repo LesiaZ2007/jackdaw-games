@@ -11,6 +11,7 @@ import {
   points,
   recountRoads,
   refuse,
+  robberTiles,
   type CatanAction,
   type CatanState,
   type Phase,
@@ -19,7 +20,6 @@ import {
   CARDS,
   COMMODITIES,
   GOOD,
-  RESOURCES,
   YIELD,
   countCards,
   emptyCards,
@@ -220,7 +220,6 @@ export const SHIP_STEPS = 7;
 export const PROGRESS_HAND = 4;
 export const COMMODITY_COUNT: Record<Size, number> = { classic: 12, big: 18 };
 
-
 export interface Attack {
   seq: number;
   strength: number;
@@ -347,7 +346,9 @@ const withCk = (s: CatanState, patch: Partial<CkState>): CatanState => ({
 export const robberLive = (s: Pick<CatanState, 'ck'>): boolean => !s.ck || s.ck.attacks > 0;
 
 /** Buildings with knights added, so knights block other players' roads and road trails. */
-export function occupied(s: Pick<CatanState, 'buildings'> & { ck?: { knights: Record<string, Knight> } | null }): Buildings {
+export function occupied(
+  s: Pick<CatanState, 'buildings'> & { ck?: { knights: Record<string, Knight> } | null },
+): Buildings {
   if (!s.ck) return s.buildings;
   const out: Buildings = { ...s.buildings };
   for (const [c, k] of Object.entries(s.ck.knights)) out[c] = { owner: k.owner, city: false };
@@ -406,7 +407,10 @@ export function knightMoves(L: Layout, s: Board, from: string): string[] {
 /** Whether a knight's turn is free: active, and not woken this turn. */
 export const canAct = (k: Knight, turnSeq: number): boolean => k.active && k.woke !== turnSeq;
 
-export function knightsLeft(ck: Pick<CkState, 'knights'>, pid: string): Record<KnightLevel, number> {
+export function knightsLeft(
+  ck: Pick<CkState, 'knights'>,
+  pid: string,
+): Record<KnightLevel, number> {
   const mine = Object.values(ck.knights).filter((k) => k.owner === pid);
   const n = (l: KnightLevel) => KNIGHTS_EACH - mine.filter((k) => k.level === l).length;
   return { 1: n(1), 2: n(2), 3: n(3) };
@@ -441,7 +445,10 @@ export function improveCost(ck: CkState, pid: string, track: Track): number | nu
 
 /** The fewest pips first: the city least missed. */
 const cityPips = (L: Layout, s: CatanState, c: string) =>
-  L.corners[c]!.tiles.reduce((n, t) => n + (s.board.tiles[t]!.number ? pips(s.board.tiles[t]!.number!) : 0), 0);
+  L.corners[c]!.tiles.reduce(
+    (n, t) => n + (s.board.tiles[t]!.number ? pips(s.board.tiles[t]!.number!) : 0),
+    0,
+  );
 
 /** Moves a metropolis to `pid`'s richest plain city, if they have one. */
 function giveMetro(s: CatanState, pid: string, track: Track): CatanState {
@@ -453,7 +460,7 @@ function giveMetro(s: CatanState, pid: string, track: Track): CatanState {
   );
   if (!cities.length) return s;
   const at = cities.reduce((a, b) => (cityPips(L, s, b) > cityPips(L, s, a) ? b : a));
-  const from = ck.metros[track] ? s.buildings[ck.metros[track]!]?.owner ?? null : null;
+  const from = ck.metros[track] ? (s.buildings[ck.metros[track]!]?.owner ?? null) : null;
   const n = seq(s);
   const next = withCk(
     { ...s, eventSeq: n, award: { seq: n, kind: track, from, to: pid } },
@@ -490,7 +497,8 @@ function improve(s: CatanState, who: string, track: Track): CatanState {
     const corner = ck.metros[track];
     const holder = corner ? s.buildings[corner]?.owner : null;
     const holderLvl = holder ? ck.levels[holder]![track] : 0;
-    if (!corner || (holder !== who && lvl === 5 && holderLvl < 5)) next = giveMetro(next, who, track);
+    if (!corner || (holder !== who && lvl === 5 && holderLvl < 5))
+      next = giveMetro(next, who, track);
   }
   return next;
 }
@@ -499,7 +507,8 @@ function buildKnight(s: CatanState, who: string, at: string): CatanState {
   const L = layoutOf(s);
   if (!covers(s.hands[who]!, CK_COSTS.knight))
     return refuse('cant-afford', 'A knight takes 1 wool and 1 ore.');
-  if (knightsLeft(s.ck!, who)[1] <= 0) return refuse('no-pieces', 'You have no basic knights left.');
+  if (knightsLeft(s.ck!, who)[1] <= 0)
+    return refuse('no-pieces', 'You have no basic knights left.');
   if (!knightSpots(L, s, who).includes(at))
     return refuse('bad-spot', 'A knight stands on an empty corner on your road.');
   const next = withCk(
@@ -516,9 +525,11 @@ function buildKnight(s: CatanState, who: string, at: string): CatanState {
 function buildWall(s: CatanState, who: string, at: string, free: boolean): CatanState {
   const ck = s.ck!;
   const b = s.buildings[at];
-  if (!b || b.owner !== who || !b.city) return refuse('bad-spot', 'A wall goes round one of your cities.');
+  if (!b || b.owner !== who || !b.city)
+    return refuse('bad-spot', 'A wall goes round one of your cities.');
   if (ck.walls.includes(at)) return refuse('bad-spot', 'That city has a wall already.');
-  if (wallsOf(s, ck.walls, who) >= WALLS_EACH) return refuse('no-pieces', 'You have no walls left.');
+  if (wallsOf(s, ck.walls, who) >= WALLS_EACH)
+    return refuse('no-pieces', 'You have no walls left.');
   if (!free && !covers(s.hands[who]!, CK_COSTS.wall))
     return refuse('cant-afford', 'A city wall takes 2 brick.');
   const paid = free
@@ -563,7 +574,8 @@ function promote(s: CatanState, who: string, at: string): CatanState {
   const to = (k.level + 1) as KnightLevel;
   if (to === 3 && ck.levels[who]!.politics < 3)
     return refuse('fortress', 'Mighty knights need Politics at 3 (the fortress).');
-  if (knightsLeft(ck, who)[to] <= 0) return refuse('no-pieces', 'You have none of those knights left.');
+  if (knightsLeft(ck, who)[to] <= 0)
+    return refuse('no-pieces', 'You have none of those knights left.');
   const free = ck.smith > 0;
   if (!free && !covers(s.hands[who]!, CK_COSTS.promote))
     return refuse('cant-afford', 'Promoting takes 1 wool and 1 ore.');
@@ -592,7 +604,10 @@ function relocate(s: CatanState, k: Knight, from: string): { s: CatanState; to: 
 function moveKnight(s: CatanState, who: string, from: string, to: string): CatanState {
   const k = knightAt(s, who, from);
   if (!canAct(k, s.turnSeq))
-    return refuse('inactive', k.active ? 'A knight can’t act on the turn it was activated.' : 'Activate the knight first.');
+    return refuse(
+      'inactive',
+      k.active ? 'A knight can’t act on the turn it was activated.' : 'Activate the knight first.',
+    );
   if (!knightMoves(layoutOf(s), s, from).includes(to))
     return refuse('bad-spot', 'The knight can’t reach there along your roads.');
   const ck = s.ck!;
@@ -646,7 +661,11 @@ export function ckRoll(
     { ...s, dice, rollSeq: s.rollSeq + 1, produced: {}, owed: {} },
     { event: face },
   );
-  next = logged(next, `{actor} rolled ${total}${face === 'ship' ? ', and the ship sails' : ''}`, who);
+  next = logged(
+    next,
+    `{actor} rolled ${total}${face === 'ship' ? ', and the ship sails' : ''}`,
+    who,
+  );
   next = face === 'ship' ? sail(next) : drawProgress(next, face, dice[0], who);
   let phase: Phase;
   if (total === 7) {
@@ -678,7 +697,10 @@ export function owedOrOn(s: CatanState, phase: Phase): CatanState {
 }
 
 /** Production in Cities & Knights: a city on forest, pasture or mountains takes a commodity. */
-export function ckYield(terrain: CatanState['board']['tiles'][number]['terrain'], city: boolean): Partial<Cards> {
+export function ckYield(
+  terrain: CatanState['board']['tiles'][number]['terrain'],
+  city: boolean,
+): Partial<Cards> {
   const r = YIELD[terrain];
   if (!r) return {};
   if (!city) return { [r]: 1 };
@@ -815,7 +837,7 @@ type PickAction = Extract<CatanAction, { type: 'pick' }>;
 export function pickOwed(s: CatanState, who: string, a: PickAction): CatanState {
   const mine = s.owed?.[who] ?? [];
   if (!mine.length) return refuse('nothing-owed', 'You have nothing to choose.');
-  let next = s;
+  let next: CatanState;
   if (mine[0] === 'progress') {
     const ck = s.ck!;
     const t = a.track;
@@ -856,7 +878,13 @@ type ProgressAction = Extract<CatanAction, { type: 'progress' }>;
 const visiblePoints = (s: CatanState, p: string) => points(s, p, false);
 
 /** Takes `n` cards at random from `from` to `to`. */
-function takeRandom(s: CatanState, from: string, to: string, n: number, rng: Rng): { s: CatanState; took: Partial<Cards> } {
+function takeRandom(
+  s: CatanState,
+  from: string,
+  to: string,
+  n: number,
+  rng: Rng,
+): { s: CatanState; took: Partial<Cards> } {
   let hands = s.hands;
   const took: Partial<Cards> = {};
   for (let k = 0; k < n; k++) {
@@ -922,7 +950,13 @@ export function canPlayProgress(s: CatanState, pid: string, card: Progress): boo
   return s.phase === 'main';
 }
 
-export function ckProgress(s: CatanState, who: string, a: ProgressAction, rng: Rng, produce: (s: CatanState, total: number) => CatanState): CatanState {
+export function ckProgress(
+  s: CatanState,
+  who: string,
+  a: ProgressAction,
+  rng: Rng,
+  produce: (s: CatanState, total: number) => CatanState,
+): CatanState {
   const ck = s.ck!;
   const card = a.card;
   const i = ck.hands[who]!.indexOf(card);
@@ -930,7 +964,9 @@ export function ckProgress(s: CatanState, who: string, a: ProgressAction, rng: R
   if (!canPlayProgress(s, who, card))
     return refuse(
       'wrong-phase',
-      card === 'alchemist' ? 'The Alchemist is played before you roll.' : 'Play progress cards after you roll.',
+      card === 'alchemist'
+        ? 'The Alchemist is played before you roll.'
+        : 'Play progress cards after you roll.',
     );
   const L = layoutOf(s);
   const n = seq(s);
@@ -992,10 +1028,12 @@ export function ckProgress(s: CatanState, who: string, a: ProgressAction, rng: R
     case 'medicine': {
       const at = a.at;
       const b = at ? next.buildings[at] : undefined;
-      if (!at || !b || b.owner !== who || b.city) return refuse('pick', 'Pick one of your settlements.');
+      if (!at || !b || b.owner !== who || b.city)
+        return refuse('pick', 'Pick one of your settlements.');
       if (!covers(next.hands[who]!, CK_COSTS.medicine))
         return refuse('cant-afford', 'Medicine takes 2 ore and 1 grain.');
-      const citiesLeft = 4 - Object.values(next.buildings).filter((x) => x.owner === who && x.city).length;
+      const citiesLeft =
+        4 - Object.values(next.buildings).filter((x) => x.owner === who && x.city).length;
       if (citiesLeft <= 0) return refuse('no-pieces', 'You have no cities left.');
       next = {
         ...next,
@@ -1070,10 +1108,16 @@ export function ckProgress(s: CatanState, who: string, a: ProgressAction, rng: R
       return told(`${took} ${r}`, { tone: took ? 'good' : undefined });
     }
     case 'bishop': {
-      if (!robberLive(next)) return refuse('asleep', 'The robber stays put until the barbarians land.');
+      if (!robberLive(next))
+        return refuse('asleep', 'The robber stays put until the barbarians land.');
       const t = a.tile;
-      if (t === undefined || t === next.robber || !next.board.tiles[t])
-        return refuse('bad-tile', 'Move the robber to a different tile.');
+      if (
+        t === undefined ||
+        t === next.robber ||
+        !next.board.tiles[t] ||
+        !robberTiles(next, who).includes(t)
+      )
+        return refuse('bad-tile', 'Move the robber to a different land tile.');
       next = { ...next, robber: t };
       const owners = [...new Set(L.tiles[t]!.corners.map((c) => next.buildings[c]?.owner))].filter(
         (p): p is string => !!p && p !== who,
@@ -1139,7 +1183,9 @@ export function ckProgress(s: CatanState, who: string, a: ProgressAction, rng: R
       }
       next = told(
         Object.keys(discards).length
-          ? `${Object.keys(discards).map((p) => `{${p}}`).join(' and ')} discard half`
+          ? `${Object.keys(discards)
+              .map((p) => `{${p}}`)
+              .join(' and ')} discard half`
           : 'nobody had to discard',
       );
       return Object.keys(discards).length
@@ -1193,7 +1239,10 @@ export function ckProgress(s: CatanState, who: string, a: ProgressAction, rng: R
 
 // ---------- Turn actions ----------
 
-type CkMove = Extract<CatanAction, { type: 'improve' | 'activate' | 'promote' | 'knight' | 'chase' }>;
+type CkMove = Extract<
+  CatanAction,
+  { type: 'improve' | 'activate' | 'promote' | 'knight' | 'chase' }
+>;
 
 export function ckAct(s: CatanState, who: string, a: CkMove): CatanState {
   if (!s.ck) return refuse('no-expansion', 'That’s a Cities & Knights move.');
@@ -1214,7 +1263,12 @@ export function ckAct(s: CatanState, who: string, a: CkMove): CatanState {
   }
 }
 
-export function ckBuild(s: CatanState, who: string, kind: 'wall' | 'knight', at: string): CatanState {
+export function ckBuild(
+  s: CatanState,
+  who: string,
+  kind: 'wall' | 'knight',
+  at: string,
+): CatanState {
   if (!s.ck) return refuse('no-expansion', 'That’s a Cities & Knights piece.');
   return kind === 'wall' ? buildWall(s, who, at, false) : buildKnight(s, who, at);
 }
@@ -1231,7 +1285,10 @@ export function ckRatio(
   if (ck.fleet === give) r = Math.min(r, 2);
   if (isCommodity(give)) {
     if (ck.levels[pid]!.trade >= 3) r = Math.min(r, 2);
-  } else if (ck.merchant?.owner === pid && YIELD[s.board.tiles[ck.merchant.tile]!.terrain] === give) {
+  } else if (
+    ck.merchant?.owner === pid &&
+    YIELD[s.board.tiles[ck.merchant.tile]!.terrain] === give
+  ) {
     r = Math.min(r, 2);
   }
   return r;
@@ -1240,6 +1297,3 @@ export function ckRatio(
 /** Resets the turn's one-turn cards. */
 export const ckTurnEnds = (s: CatanState): CatanState =>
   s.ck ? withCk(s, { crane: false, fleet: null, smith: 0 }) : s;
-
-export const emptyGoods = (): Partial<Cards> => emptyCards();
-export const ALL_RESOURCES = RESOURCES;

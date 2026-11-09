@@ -29,5 +29,7 @@ export function awardMoment(tv: CatanTableView, me: string | null): Moment | nul
   if (!a || (a.kind !== 'road' && a.kind !== 'army')) return null;
   const outcome =
     me === null ? (a.to ? 'reveal' : null) : me === a.to ? 'win' : me === a.from ? 'loss' : null;
-  return outcome && { key: a.seq, outcome, kind: a.kind as 'road' | 'army', who: a.to, other: a.from };
+  return (
+    outcome && { key: a.seq, outcome, kind: a.kind as 'road' | 'army', who: a.to, other: a.from }
+  );
 }

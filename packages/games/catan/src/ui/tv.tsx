@@ -10,9 +10,10 @@ import {
 import type { CSSProperties } from 'react';
 import { awardMoment, robberyMoment, type Moment } from '../moments';
 import type { CatanTableView } from '../rules';
-import { RESOURCES } from '../types';
+import { TRACKS } from '../ck';
+import { CARDS } from '../types';
 import { CatanBoard } from './board';
-import { Clock, Dice, PHASE_LABEL, SeatToken, logLine, namer } from './common';
+import { Barbarians, Clock, Dice, PHASE_LABEL, SeatToken, logLine, namer } from './common';
 import { DevGlyph, Pip } from './glyphs';
 import { RollMoment } from './roll';
 import { CardRow } from './sheets';
@@ -51,7 +52,14 @@ export const TvScreen: GameUi['TvScreen'] = ({
   const award = !rob && freshAward ? awardMoment(t, null) : null;
   const who = t.phase === 'robber' ? t.robberBy : t.phase === 'discard' ? null : t.actor;
   const total = t.dice ? t.dice[0] + t.dice[1] : null;
-  const paid = Object.entries(t.produced).filter(([, c]) => RESOURCES.some((r) => c[r]));
+  const paid = Object.entries(t.produced).filter(([, c]) => CARDS.some((r) => c[r]));
+  const ck = t.ck;
+  const strength = (id: string) =>
+    ck
+      ? Object.values(ck.knights)
+          .filter((k) => k.owner === id && k.active)
+          .reduce((n, k) => n + k.level, 0)
+      : 0;
   const offers = t.phase === 'main' ? t.offers : [];
 
   return (
@@ -67,6 +75,12 @@ export const TvScreen: GameUi['TvScreen'] = ({
           flyers
           label="The island"
           pad={0.8}
+          ships={t.sea?.ships}
+          pirate={t.sea?.pirate ?? null}
+          knights={ck?.knights}
+          walls={ck?.walls}
+          metros={ck?.metros}
+          merchant={ck?.merchant ?? null}
         />
       </div>
       <aside className="ctn-tv__side">
@@ -75,6 +89,13 @@ export const TvScreen: GameUi['TvScreen'] = ({
           <span>
             {t.phase === 'setup' ? 'Opening placements' : `Round ${t.round}`} · first to {t.target}
           </span>
+          {ck && (
+            <Barbarians
+              ship={ck.ship}
+              knights={t.seats.reduce((n, id) => n + strength(id), 0)}
+              cities={Object.values(t.buildings).filter((b) => b.city).length}
+            />
+          )}
         </header>
         <section className="ctn-tv__turn">
           <SeatToken p={players.find((p) => p.id === (who ?? t.turn))} seats={t.seats} size={84} />
@@ -93,7 +114,12 @@ export const TvScreen: GameUi['TvScreen'] = ({
             </small>
           </p>
           <Clock at={t.actBy} now={now} />
-          <Dice dice={t.dice} seq={t.rollSeq} waiting={rolling !== null} />
+          <Dice
+            dice={t.dice}
+            seq={t.rollSeq}
+            waiting={rolling !== null}
+            event={t.ck?.event ?? null}
+          />
         </section>
         <ol className="ctn-tv__players" data-count={t.seats.length}>
           {t.seats.map((id) => {
@@ -111,19 +137,26 @@ export const TvScreen: GameUi['TvScreen'] = ({
                 </span>
                 <span className="ctn-tvp__body">
                   <span className="ctn-tvp__name">{name(id)}</span>
-                  <span className="ctn-tvp__meta">
+                  <span className={ck ? 'ctn-tvp__meta ctn-tvp__meta--ck' : 'ctn-tvp__meta'}>
                     <span title="Resource cards">
                       <DevGlyph kind="cards" />
                       {t.handCounts[id]}
                     </span>
-                    <span title="Development cards">
+                    <span title={ck ? 'Progress cards' : 'Development cards'}>
                       <span className="ctn-devchit" aria-hidden="true" />
-                      {t.devCounts[id]}
+                      {ck ? ck.progressCounts[id] : t.devCounts[id]}
                     </span>
-                    <span title="Knights played">
+                    <span title={ck ? 'Active knight strength' : 'Knights played'}>
                       <DevGlyph kind="knight" />
-                      {t.knights[id]}
+                      {ck ? strength(id) : t.knights[id]}
                     </span>
+                    {ck &&
+                      TRACKS.map((track) => (
+                        <span key={track} title={`${track} improvements`} className="ctn-lvl">
+                          <i className={`ctn-fill--${track}`} aria-hidden="true" />
+                          {ck.levels[id]![track]}
+                        </span>
+                      ))}
                     <span title="Longest road">
                       <DevGlyph kind="longroad" />
                       {t.longest.lengths[id] ?? 0}
@@ -152,7 +185,7 @@ export const TvScreen: GameUi['TvScreen'] = ({
                 paid.map(([id, c]) => (
                   <span key={id} className="ctn-tv__gain">
                     {name(id)}
-                    {RESOURCES.filter((r) => c[r]).map((r) => (
+                    {CARDS.filter((r) => c[r]).map((r) => (
                       <Pip key={r} res={r} n={c[r]} />
                     ))}
                   </span>
@@ -184,6 +217,8 @@ export const TvScreen: GameUi['TvScreen'] = ({
           dice={t.dice}
           seq={t.rollSeq}
           target=".ctn-tv__turn .ctn-dice"
+          event={t.ck?.event ?? null}
+          robberSleeps={!!t.ck && !t.ck.robberLive}
           tv
           onDone={rolled}
         />

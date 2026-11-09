@@ -68,7 +68,16 @@ test('catan: the opening, a roll, a trade and a turn, on phones and the TV', asy
   for (const k of keys) {
     const s = await call(request, `/api/lobby/${code}`, k);
     byId[s.me] = k;
-    expect(s.view.hand).toEqual({ lumber: 0, brick: 0, wool: 0, grain: 0, ore: 0 });
+    expect(s.view.hand).toEqual({
+      lumber: 0,
+      brick: 0,
+      wool: 0,
+      grain: 0,
+      ore: 0,
+      paper: 0,
+      cloth: 0,
+      coin: 0,
+    });
   }
 
   const order: string[] = pub.tableView.setup.order;

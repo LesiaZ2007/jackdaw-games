@@ -11,28 +11,63 @@ import { DEV_DECK, RESOURCE_COUNT, makeBoard, type BoardStyle } from './board';
 import {
   COSTS,
   bankRatio,
-  citySpots,
   harboursOf,
   missing,
   piecesLeft,
-  roadSpots,
-  settlementSpots,
   type Buildings,
   type Piece,
   type Roads,
 } from './build';
+import {
+  SHIP_COST,
+  isSea,
+  islandOf,
+  makeSeaBoard,
+  newSea,
+  openShip,
+  pirateSpots,
+  sailMoves,
+  seaPoints,
+  shipOwnersAt,
+  shipsLeft,
+  type SeaState,
+} from './sea';
+import { citySpotsOf, layoutOf, roadSpotsOf, settleSpotsOf, shipSpotsOf } from './spots';
 import { awardRoad, longestRoad } from './roads';
 import { trim, validTrade } from './trade';
 import { timeUp } from './bot';
 import { catanBot } from './robot';
-import { layout, type Layout } from './geometry';
 import { meta } from './meta';
 import {
-  RESOURCES,
+  COMMODITY_COUNT,
+  ckAct,
+  ckBuild,
+  pickOwed,
+  ckPoints,
+  ckProgress,
+  ckRatio,
+  ckRoll,
+  ckTable,
+  ckTurnEnds,
+  ckYield,
+  canPlayProgress,
+  newCk,
+  occupied,
+  type CkState,
+  type CkTable,
+  type Progress,
+  owedOrOn,
+  type Track,
+} from './ck';
+import {
+  CARDS,
   YIELD,
   countCards,
   emptyCards,
+  fullCards,
+  isCommodity,
   type Board,
+  type Card,
   type Cards,
   type DevCard,
   type Resource,
@@ -48,7 +83,18 @@ import {
 
 const CLOCKS = ['Off', '1 minute', '2 minutes', '3 minutes'] as const;
 
+export const EXPANSIONS = [
+  'Base game',
+  'Seafarers',
+  'Cities & Knights',
+  'Seafarers + Cities & Knights',
+] as const;
+export type Expansion = (typeof EXPANSIONS)[number];
+export const hasCk = (e: string | undefined) => !!e && e.includes('Cities');
+export const hasSea = (e: string | undefined) => !!e && e.includes('Seafarers');
+
 export const optionsSchema = z.object({
+  expansion: z.enum(EXPANSIONS).describe('Expansion'),
   board: z.enum(['Balanced', 'Random', 'Beginner']).describe('Board'),
   points: z.enum(['10', '8', '12']).describe('Points to win'),
   robber: z.enum(['Standard', 'Friendly']).describe('Robber'),
@@ -57,17 +103,75 @@ export const optionsSchema = z.object({
 export type CatanOptions = z.infer<typeof optionsSchema>;
 
 const resource = z.enum(['lumber', 'brick', 'wool', 'grain', 'ore']);
-const cards = z.partialRecord(resource, z.number().int().min(0).max(120));
+const card = z.enum(['lumber', 'brick', 'wool', 'grain', 'ore', 'paper', 'cloth', 'coin']);
+const cards = z.partialRecord(card, z.number().int().min(0).max(120));
 const id = z.string().min(1).max(12);
 const pid = z.string().min(1).max(64);
+const track = z.enum(['science', 'trade', 'politics']);
+const die = z.number().int().min(1).max(6);
+const progress = z.enum([
+  'alchemist',
+  'inventor',
+  'crane',
+  'engineer',
+  'irrigation',
+  'medicine',
+  'mining',
+  'printer',
+  'roadBuilding',
+  'smith',
+  'commercialHarbor',
+  'masterMerchant',
+  'merchant',
+  'merchantFleet',
+  'resourceMonopoly',
+  'tradeMonopoly',
+  'bishop',
+  'constitution',
+  'deserter',
+  'diplomat',
+  'intrigue',
+  'saboteur',
+  'spy',
+  'warlord',
+  'wedding',
+]);
 
 export const actionSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('build'), kind: z.enum(['road', 'settlement', 'city']), at: id }),
+  z.object({
+    type: z.literal('build'),
+    kind: z.enum(['road', 'settlement', 'city', 'wall', 'knight', 'ship']),
+    at: id,
+  }),
   z.object({ type: z.literal('roll') }),
+  // Cities & Knights
+  z.object({ type: z.literal('improve'), track }),
+  z.object({ type: z.literal('activate'), at: id }),
+  z.object({ type: z.literal('promote'), at: id }),
+  z.object({ type: z.literal('knight'), from: id, to: id }),
+  z.object({ type: z.literal('chase'), from: id }),
+  z.object({
+    type: z.literal('progress'),
+    card: progress,
+    resource: card.optional(),
+    dice: z.tuple([die, die]).optional(),
+    tiles: z.tuple([z.number().int().min(0).max(80), z.number().int().min(0).max(80)]).optional(),
+    tile: z.number().int().min(0).max(80).optional(),
+    at: id.optional(),
+    victim: pid.optional(),
+  }),
+  z.object({ type: z.literal('pick'), resource: resource.optional(), track: track.optional() }),
+  // Seafarers
+  z.object({ type: z.literal('sail'), from: id, to: id }),
+  z.object({
+    type: z.literal('pirate'),
+    tile: z.number().int().min(0).max(80),
+    victim: pid.nullable(),
+  }),
   z.object({ type: z.literal('discard'), cards }),
   z.object({
     type: z.literal('robber'),
-    tile: z.number().int().min(0).max(40),
+    tile: z.number().int().min(0).max(80),
     victim: pid.nullable(),
   }),
   z.object({ type: z.literal('buy') }),
@@ -90,15 +194,20 @@ export const actionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('withdraw'), offer: z.number().int() }),
   z.object({
     type: z.literal('bank'),
-    give: resource,
-    get: resource,
+    give: card,
+    get: card,
     n: z.number().int().min(1).max(20),
   }),
   z.object({ type: z.literal('endTurn') }),
 ]);
 export type CatanAction = z.infer<typeof actionSchema>;
 
-export type Phase = 'setup' | 'roll' | 'discard' | 'robber' | 'main' | 'roadBuilding' | 'over';
+export type Phase =
+  'setup' | 'roll' | 'discard' | 'robber' | 'main' | 'roadBuilding' | 'pick' | 'over';
+
+/** A choice someone owes before play goes on: a resource from the aqueduct or a gold field, or a
+ * progress card deck (a tied Defender of Catan). */
+export type Owed = 'aqueduct' | 'gold' | 'progress';
 
 /** A trade on the table. `give` is what its maker gives, `want` what they want back. */
 export interface Offer {
@@ -120,13 +229,16 @@ export interface Robbery {
   seq: number;
   thief: string;
   victim: string | null;
-  resource: Resource | null;
+  resource: Card | null;
+  /** Robbed by the pirate (Seafarers). */
+  pirate?: boolean;
 }
 
 /** Longest Road or Largest Army changing hands (either side may be nobody). */
 export interface AwardChange {
   seq: number;
-  kind: 'road' | 'army';
+  /** Longest Road, Largest Army, or (Cities & Knights) a track's metropolis. */
+  kind: 'road' | 'army' | Track;
   from: string | null;
   to: string | null;
 }
@@ -182,11 +294,20 @@ export interface CatanState {
   eventSeq: number;
   robbery: Robbery | null;
   award: AwardChange | null;
-  monopoly: { seq: number; pid: string; resource: Resource; took: number } | null;
+  monopoly: { seq: number; pid: string; resource: Card; took: number } | null;
   best: { haul: { pid: string; n: number } | null };
   log: RecapEvent[];
   actBy: number | null;
   winner: string | null;
+  /** Cities & Knights, when chosen. */
+  ck?: CkState;
+  /** Seafarers, when chosen. */
+  sea?: SeaState;
+  /** Choices owed in the `pick` phase, and where play goes after them. */
+  owed?: Record<string, Owed[]>;
+  owedNext?: Phase;
+  /** Where play goes once everyone has discarded (absent: the robber). */
+  afterDiscard?: 'robber' | 'main';
 }
 
 export interface CatanTableView {
@@ -233,6 +354,9 @@ export interface CatanTableView {
   winner: string | null;
   /** Everyone's victory point cards, once the game is over. */
   vpCards: Record<string, number> | null;
+  ck: CkTable | null;
+  sea: SeaState | null;
+  owed: Record<string, Owed[]>;
 }
 
 export interface CatanView {
@@ -242,7 +366,9 @@ export interface CatanView {
   /** Points including your hidden victory point cards. */
   points: number;
   /** The card you took or lost in the last robbery, if you were in it. */
-  stolen: { seq: number; resource: Resource; role: 'thief' | 'victim' } | null;
+  stolen: { seq: number; resource: Card; role: 'thief' | 'victim' } | null;
+  /** Cities & Knights: your progress cards, and whether each can be played now. */
+  progress: { card: Progress; playable: boolean }[];
 }
 
 const LOG_KEEP = 1500;
@@ -252,7 +378,7 @@ export const refuse = (code: string, message: string): never => {
   throw new GameError(code, message);
 };
 
-export const layoutOf = (s: { size: Size }): Layout => layout(s.size);
+export { layoutOf };
 
 /** Who acts now: the paired player in their phase, else the player whose turn it is. */
 export const actor = (s: CatanState): string =>
@@ -263,6 +389,8 @@ export function points(s: CatanState, pid: string, withHidden: boolean): number 
   let n = 0;
   for (const b of Object.values(s.buildings)) if (b.owner === pid) n += b.city ? 2 : 1;
   if (s.longest.holder === pid) n += 2;
+  if (s.sea) n += seaPoints(s.sea, pid);
+  if (s.ck) return n + ckPoints(s.ck, pid, s.buildings);
   if (s.army === pid) n += 2;
   if (withHidden) n += (s.dev[pid] ?? []).filter((d) => d.card === 'victoryPoint').length;
   return n;
@@ -271,22 +399,23 @@ export function points(s: CatanState, pid: string, withHidden: boolean): number 
 type Chip = Pick<RecapEvent, 'tag' | 'tone' | 'key' | 'secret'>;
 
 /** Adds an event to the log. `chip` carries the recap's chip, tone, turning point and secret. */
-function logged(s: CatanState, text: string, who?: string, chip: Chip = {}): CatanState {
+export function logged(s: CatanState, text: string, who?: string, chip: Chip = {}): CatanState {
   const ev: RecapEvent = { round: s.round, text, ...(who ? { actor: who } : {}), ...chip };
   return { ...s, log: [...s.log, ev].slice(-LOG_KEEP) };
 }
 
-const add = (a: Cards, b: Partial<Cards>, sign = 1): Cards => {
-  const out = { ...a };
-  for (const r of RESOURCES) out[r] += sign * (b[r] ?? 0);
+export const add = (a: Cards, b: Partial<Cards>, sign = 1): Cards => {
+  const out = fullCards(a);
+  for (const r of CARDS) out[r] += sign * (b[r] ?? 0);
   return out;
 };
 
-const covers = (hand: Cards, c: Partial<Cards>) => RESOURCES.every((r) => hand[r] >= (c[r] ?? 0));
+export const covers = (hand: Cards, c: Partial<Cards>) =>
+  CARDS.every((r) => (hand[r] ?? 0) >= (c[r] ?? 0));
 
 /** "2 wool and 1 ore". */
 export function cardsText(c: Partial<Cards>): string {
-  const parts = RESOURCES.filter((r) => c[r]).map((r) => `${c[r]} ${r}`);
+  const parts = CARDS.filter((r) => c[r]).map((r) => `${c[r]} ${r}`);
   return parts.length > 1
     ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`
     : (parts[0] ?? 'nothing');
@@ -294,18 +423,23 @@ export function cardsText(c: Partial<Cards>): string {
 
 function setup({ playerIds, options, rng }: Parameters<CatanModule['setup']>[0]): CatanState {
   const size: Size = playerIds.length >= 5 ? 'big' : 'classic';
-  const board = makeBoard(size, options.board as BoardStyle, rng);
+  const ck = hasCk(options.expansion);
+  const sea = hasSea(options.expansion);
+  const board = sea ? makeSeaBoard(size, rng) : makeBoard(size, options.board as BoardStyle, rng);
   const first = rng.int(playerIds.length);
   const ordered = [...playerIds.slice(first), ...playerIds.slice(0, first)];
-  const deck = rng.shuffle(
-    Object.entries(DEV_DECK[size]).flatMap(([c, n]) => Array<DevCard>(n).fill(c as DevCard)),
-  );
+  const deck = ck
+    ? []
+    : rng.shuffle(
+        Object.entries(DEV_DECK[size]).flatMap(([c, n]) => Array<DevCard>(n).fill(c as DevCard)),
+      );
   const n = RESOURCE_COUNT[size];
+  const g = ck ? COMMODITY_COUNT[size] : 0;
   const s: CatanState = {
     size,
     board,
     seats: playerIds,
-    target: Number(options.points),
+    target: Number(options.points) + (ck ? 3 : 0) + (sea ? 4 : 0),
     friendly: options.robber === 'Friendly',
     turnSecs: options.turnTimer === 'Off' ? 0 : Number.parseInt(options.turnTimer, 10) * 60,
     phase: 'setup',
@@ -319,7 +453,7 @@ function setup({ playerIds, options, rng }: Parameters<CatanModule['setup']>[0])
     rollSeq: 0,
     produced: {},
     hands: Object.fromEntries(playerIds.map((p) => [p, emptyCards()])),
-    bank: { lumber: n, brick: n, wool: n, grain: n, ore: n },
+    bank: { lumber: n, brick: n, wool: n, grain: n, ore: n, paper: g, cloth: g, coin: g },
     dev: Object.fromEntries(playerIds.map((p) => [p, []])),
     deck,
     devPlayed: false,
@@ -343,6 +477,8 @@ function setup({ playerIds, options, rng }: Parameters<CatanModule['setup']>[0])
     log: [],
     actBy: null,
     winner: null,
+    ...(ck ? { ck: newCk(playerIds, rng) } : {}),
+    ...(sea ? { sea: newSea(playerIds) } : {}),
   };
   return logged(s, '{actor} places first', ordered[0]);
 }
@@ -351,16 +487,22 @@ function setup({ playerIds, options, rng }: Parameters<CatanModule['setup']>[0])
 function setupBuild(s: CatanState, who: string, kind: string, at: string): CatanState {
   const L = layoutOf(s);
   const st = s.setup!;
+  const second = st.step >= st.order.length / 2;
   if (!st.corner) {
-    if (kind !== 'settlement') return refuse('wrong-piece', 'Place a settlement first.');
-    if (!settlementSpots(L, s.buildings, s.roads, who, true).includes(at))
+    // Cities & Knights: the second opening piece is a city.
+    if (kind !== (s.ck && second ? 'city' : 'settlement'))
+      return refuse(
+        'wrong-piece',
+        s.ck && second ? 'Place a city first.' : 'Place a settlement first.',
+      );
+    if (!settleSpotsOf(s, who, true).includes(at))
       return refuse('bad-spot', 'You can’t build a settlement there.');
     let next: CatanState = {
       ...s,
-      buildings: { ...s.buildings, [at]: { owner: who, city: false } },
+      buildings: { ...s.buildings, [at]: { owner: who, city: !!s.ck && second } },
       setup: { ...st, corner: at },
     };
-    if (st.step >= st.order.length / 2) {
+    if (second) {
       const take = emptyCards();
       for (const t of L.corners[at]!.tiles) {
         const r = YIELD[s.board.tiles[t]!.terrain];
@@ -374,19 +516,27 @@ function setupBuild(s: CatanState, who: string, kind: string, at: string): Catan
     }
     return next;
   }
-  if (kind !== 'road') return refuse('wrong-piece', 'Now place a road beside your settlement.');
-  if (!roadSpots(L, s.buildings, s.roads, who, st.corner).includes(at))
-    return refuse('bad-spot', 'The road must touch the settlement you just placed.');
-  const roads = { ...s.roads, [at]: who };
+  let placed: CatanState;
+  if (kind === 'ship' && s.sea) {
+    if (!shipSpotsOf(s, who, st.corner).includes(at))
+      return refuse('bad-spot', 'The ship must touch the settlement you just placed.');
+    placed = { ...s, sea: { ...s.sea, ships: { ...s.sea.ships, [at]: who } } };
+  } else {
+    if (kind !== 'road') return refuse('wrong-piece', 'Now place a road beside your settlement.');
+    if (!roadSpotsOf(s, who, st.corner).includes(at))
+      return refuse('bad-spot', 'The road must touch the settlement you just placed.');
+    placed = { ...s, roads: { ...s.roads, [at]: who } };
+  }
   const step = st.step + 1;
-  if (step < st.order.length) return { ...s, roads, setup: { ...st, step, corner: null } };
+  if (step < st.order.length) return { ...placed, setup: { ...st, step, corner: null } };
   return logged(
-    { ...s, roads, setup: null, phase: 'roll', turn: st.order[0]!, turnSeq: 1, round: 1 },
+    { ...placed, setup: null, phase: 'roll', turn: st.order[0]!, turnSeq: 1, round: 1 },
     'Round 1',
   );
 }
 
 function roll(s: CatanState, who: string, rng: Rng): CatanState {
+  if (s.ck) return ckRoll(s, who, rng, produce);
   const dice: [number, number] = [rng.int(6) + 1, rng.int(6) + 1];
   const total = dice[0] + dice[1];
   let next: CatanState = { ...s, dice, rollSeq: s.rollSeq + 1, produced: {} };
@@ -403,29 +553,42 @@ function roll(s: CatanState, who: string, rng: Rng): CatanState {
       phase: Object.keys(discards).length ? 'discard' : 'robber',
       robberBy: who,
       afterRobber: 'main',
+      afterDiscard: 'robber',
     };
   }
-  return { ...produce(next, total), phase: 'main' };
+  return owedOrOn(produce({ ...next, owed: {} }, total), 'main');
 }
 
 /** Pays out a roll. A resource the bank can't cover goes to nobody, unless only one is owed it. */
 function produce(s: CatanState, total: number): CatanState {
   const L = layoutOf(s);
-  const owed: Partial<Record<Resource, Record<string, number>>> = {};
+  const owed: Partial<Record<Card, Record<string, number>>> = {};
+  const gold: Record<string, number> = {};
   s.board.tiles.forEach((t, i) => {
-    const r = YIELD[t.terrain];
-    if (t.number !== total || i === s.robber || !r) return;
+    if (t.number !== total || i === s.robber) return;
     for (const c of L.tiles[i]!.corners) {
       const b = s.buildings[c];
       if (!b) continue;
-      const m = (owed[r] ??= {});
-      m[b.owner] = (m[b.owner] ?? 0) + (b.city ? 2 : 1);
+      if (t.terrain === 'gold') {
+        gold[b.owner] = (gold[b.owner] ?? 0) + (b.city ? 2 : 1);
+        continue;
+      }
+      const yields: Partial<Cards> = s.ck
+        ? ckYield(t.terrain, b.city)
+        : YIELD[t.terrain]
+          ? { [YIELD[t.terrain]!]: b.city ? 2 : 1 }
+          : {};
+      for (const r of CARDS) {
+        if (!yields[r]) continue;
+        const m = (owed[r] ??= {});
+        m[b.owner] = (m[b.owner] ?? 0) + yields[r];
+      }
     }
   });
   const hands = { ...s.hands };
   const bank = { ...s.bank };
   const produced: Record<string, Partial<Cards>> = {};
-  for (const r of RESOURCES) {
+  for (const r of CARDS) {
     const m = owed[r];
     if (!m) continue;
     const owners = Object.keys(m);
@@ -444,7 +607,11 @@ function produce(s: CatanState, total: number): CatanState {
     const n = countCards(c);
     if (!best.haul || n > best.haul.n) best = { ...best, haul: { pid: p, n } };
   }
-  return { ...s, hands, bank, produced, best };
+  // Gold fields: one resource of your choice for each card owed, chosen in the pick phase.
+  const picks = { ...s.owed };
+  for (const [p, k] of Object.entries(gold))
+    picks[p] = [...(picks[p] ?? []), ...Array<Owed>(k).fill('gold')];
+  return { ...s, hands, bank, produced, best, owed: picks };
 }
 
 function discard(s: CatanState, who: string, c: Partial<Cards>): CatanState {
@@ -465,7 +632,7 @@ function discard(s: CatanState, who: string, c: Partial<Cards>): CatanState {
     who,
     { tag: `-${owe}`, tone: 'bad' },
   );
-  return Object.keys(discards).length ? next : { ...next, phase: 'robber' };
+  return Object.keys(discards).length ? next : { ...next, phase: s.afterDiscard ?? 'robber' };
 }
 
 /** Tiles the robber may move to (a friendly robber spares players on 2 points or fewer). */
@@ -480,7 +647,7 @@ export function robberSpots(
   pointsOf: (pid: string) => number,
 ): number[] {
   const L = layoutOf(s);
-  const all = s.board.tiles.map((_, i) => i).filter((i) => i !== s.robber);
+  const all = s.board.tiles.map((_, i) => i).filter((i) => i !== s.robber && !isSea(s.board, i));
   if (!s.friendly) return all;
   const spared = (i: number) =>
     L.tiles[i]!.corners.some((c) => {
@@ -493,7 +660,7 @@ export function robberSpots(
 
 /** Players with a building on a tile, other than `who`. */
 export function victimsAt(
-  s: Pick<CatanState, 'size' | 'buildings'>,
+  s: Pick<CatanState, 'size' | 'board' | 'buildings'>,
   tile: number,
   who: string,
 ): string[] {
@@ -524,9 +691,9 @@ function moveRobber(
   if (victim === null && victims.some((p) => countCards(s.hands[p]!) > 0))
     return refuse('pick-victim', 'Choose who to rob.');
   let hands = s.hands;
-  let resource: Resource | null = null;
+  let resource: Card | null = null;
   if (victim && countCards(s.hands[victim]!) > 0) {
-    const pool = RESOURCES.flatMap((r) => Array<Resource>(s.hands[victim]![r]).fill(r));
+    const pool = CARDS.flatMap((r) => Array<Card>(s.hands[victim]![r]).fill(r));
     resource = rng.pick(pool);
     hands = {
       ...hands,
@@ -558,6 +725,77 @@ function moveRobber(
   );
 }
 
+/** Seafarers: the pirate sails to a sea tile and robs someone with a ship beside it. */
+function movePirate(
+  s: CatanState,
+  who: string,
+  tile: number,
+  victim: string | null,
+  rng: Rng,
+): CatanState {
+  const sea = s.sea;
+  if (!sea) return refuse('no-pirate', 'There’s no pirate in this game.');
+  if (!pirateSpots(s.board, sea.pirate).includes(tile))
+    return refuse('bad-tile', 'The pirate sails to a different sea tile.');
+  const L = layoutOf(s);
+  const victims = shipOwnersAt(L, sea.ships, tile, who);
+  if (victim !== null && !victims.includes(victim))
+    return refuse('bad-victim', 'You can only rob a player with a ship beside the pirate.');
+  if (victim === null && victims.some((p) => countCards(s.hands[p]!) > 0))
+    return refuse('pick-victim', 'Choose who to rob.');
+  let hands = s.hands;
+  let resource: Card | null = null;
+  if (victim && countCards(s.hands[victim]!) > 0) {
+    const pool = CARDS.flatMap((r) => Array<Card>(s.hands[victim]![r]).fill(r));
+    resource = rng.pick(pool);
+    hands = {
+      ...hands,
+      [victim]: { ...hands[victim]!, [resource]: hands[victim]![resource] - 1 },
+      [who]: { ...hands[who]!, [resource]: hands[who]![resource] + 1 },
+    };
+  }
+  const seq = s.eventSeq + 1;
+  return logged(
+    {
+      ...s,
+      hands,
+      sea: { ...sea, pirate: tile },
+      phase: s.afterRobber,
+      robberBy: null,
+      eventSeq: seq,
+      robbery: { seq, thief: who, victim, resource, pirate: true },
+    },
+    victim ? `{actor} moved the pirate and robbed {${victim}}` : '{actor} moved the pirate',
+    who,
+    victim
+      ? {
+          tag: 'Pirate',
+          tone: 'good',
+          ...(resource ? { secret: `Took ${resource} from {${victim}}` } : {}),
+        }
+      : {},
+  );
+}
+
+/** Seafarers: the end ship of a line sails to another edge, once a turn. */
+function sail(s: CatanState, who: string, from: string, to: string): CatanState {
+  const sea = s.sea;
+  if (!sea) return refuse('no-ships', 'There are no ships in this game.');
+  if (sea.ships[from] !== who) return refuse('no-ship', 'Pick one of your ships.');
+  if (sea.moved) return refuse('moved', 'You’ve sailed a ship this turn already.');
+  if (sea.built.includes(from)) return refuse('new', 'A ship can’t sail on the turn it was built.');
+  if (!openShip(layoutOf(s), s, from))
+    return refuse('closed', 'Only the ship at the open end of a line can sail.');
+  const moves = sailMoves(layoutOf(s), s, who)[from] ?? [];
+  if (!moves.includes(to)) return refuse('bad-spot', 'The ship can’t sail there.');
+  const ships = { ...sea.ships };
+  delete ships[from];
+  ships[to] = who;
+  return recountRoads(
+    logged({ ...s, sea: { ...sea, ships, moved: true } }, '{actor} sailed a ship', who),
+  );
+}
+
 function applyAction(s: CatanState, who: string, a: CatanAction, rng: Rng): CatanState {
   if (s.phase === 'over') return refuse('over', 'The game is over.');
   if (!s.seats.includes(who)) return refuse('not-playing', 'You’re not in this game.');
@@ -566,27 +804,38 @@ function applyAction(s: CatanState, who: string, a: CatanAction, rng: Rng): Cata
     if (a.type !== 'build') return refuse('wrong-phase', 'Place your opening pieces first.');
     return setupBuild(s, who, a.kind, a.at);
   }
+  if (a.type === 'pick') {
+    if (s.phase !== 'pick') return refuse('wrong-phase', 'There’s nothing to choose now.');
+    return pickOwed(s, who, a);
+  }
+  if (s.phase === 'pick') return refuse('wrong-phase', 'Waiting for choices.');
   if (a.type === 'discard') {
     if (s.phase !== 'discard') return refuse('wrong-phase', 'Nobody is discarding now.');
     return discard(s, who, a.cards);
   }
   if (s.phase === 'discard') return refuse('wrong-phase', 'Waiting for discards.');
   if (s.phase === 'robber') {
-    if (a.type !== 'robber') return refuse('wrong-phase', 'Move the robber first.');
+    if (a.type !== 'robber' && a.type !== 'pirate')
+      return refuse('wrong-phase', 'Move the robber first.');
     if (who !== s.robberBy) return refuse('not-your-turn', 'It’s not your robber to move.');
+    if (a.type === 'pirate') return movePirate(s, who, a.tile, a.victim, rng);
     return moveRobber(s, who, a.tile, a.victim, rng);
   }
-  if (a.type === 'robber') return refuse('wrong-phase', 'The robber isn’t moving now.');
+  if (a.type === 'robber' || a.type === 'pirate')
+    return refuse('wrong-phase', 'The robber isn’t moving now.');
   if (a.type === 'answer' || a.type === 'counter' || a.type === 'propose' || a.type === 'withdraw')
     return respond(s, who, a);
   if (who !== actor(s)) return refuse('not-your-turn', 'It’s not your turn.');
   if (s.phase === 'roll') {
     if (a.type === 'roll') return roll(s, who, rng);
-    if (a.type === 'play' && a.card === 'knight') return play(s, who, a);
+    if (a.type === 'play' && a.card === 'knight' && !s.ck) return play(s, who, a);
+    if (a.type === 'progress' && a.card === 'alchemist' && s.ck)
+      return ckProgress(s, who, a, rng, produce);
     return refuse('wrong-phase', 'Roll the dice first.');
   }
   if (s.phase === 'roadBuilding') {
-    if (a.type === 'build' && a.kind === 'road') return build(s, who, 'road', a.at);
+    if (a.type === 'build' && (a.kind === 'road' || (a.kind === 'ship' && s.sea)))
+      return build(s, who, a.kind, a.at);
     if (a.type === 'endRoads') return { ...s, phase: 'main', roadsToBuild: 0 };
     return refuse('wrong-phase', 'Place your free roads first.');
   }
@@ -598,9 +847,23 @@ function applyAction(s: CatanState, who: string, a: CatanAction, rng: Rng): Cata
     case 'build':
       return build(s, who, a.kind, a.at);
     case 'buy':
+      if (s.ck) return refuse('no-dev', 'Cities & Knights has progress cards instead.');
       return buy(s, who);
     case 'play':
+      if (s.ck) return refuse('no-dev', 'Cities & Knights has progress cards instead.');
       return play(s, who, a);
+    case 'improve':
+    case 'activate':
+    case 'promote':
+    case 'knight':
+    case 'chase':
+      return ckAct(s, who, a);
+    case 'progress':
+      if (!s.ck) return refuse('no-expansion', 'That’s a Cities & Knights card.');
+      return ckProgress(s, who, a, rng, produce);
+    case 'sail':
+      if (s.paired) return refuse('paired', 'Ships sail on your own turn.');
+      return sail(s, who, a.from, a.to);
     case 'endTurn':
       return endTurn(s);
     case 'offer':
@@ -731,10 +994,29 @@ function accept(s: CatanState, who: string, id: number, partner: string): CatanS
   );
 }
 
-function bank(s: CatanState, who: string, give: Resource, get: Resource, n: number): CatanState {
+/** How many of `give` the bank wants for one card. */
+export function rateFor(
+  s: Pick<CatanState, 'size' | 'board' | 'buildings'> & {
+    ck?: Pick<CkState, 'levels' | 'merchant' | 'fleet'> | null;
+  },
+  who: string,
+  give: Card,
+): number {
+  const kinds = harboursOf(layoutOf(s), s.board, s.buildings, who);
+  const harbour = isCommodity(give)
+    ? kinds.includes('any')
+      ? 3
+      : 4
+    : bankRatio(kinds, give as Resource);
+  return s.ck ? ckRatio({ ...s, ck: s.ck }, who, give, harbour) : harbour;
+}
+
+function bank(s: CatanState, who: string, give: Card, get: Card, n: number): CatanState {
   if (s.phase !== 'main') return refuse('wrong-phase', 'You can’t trade right now.');
   if (give === get) return refuse('bad-trade', 'Pick a different resource to get.');
-  const ratio = bankRatio(harboursOf(layoutOf(s), s.board, s.buildings, who), give);
+  if (!s.ck && (isCommodity(give) || isCommodity(get)))
+    return refuse('bad-trade', 'There are no commodities in this game.');
+  const ratio = rateFor(s, who, give);
   if (s.hands[who]![give] < ratio * n)
     return refuse('cant-afford', `That takes ${ratio * n} ${give}.`);
   if (s.bank[get] < n) return refuse('bank-short', `The bank has only ${s.bank[get]} ${get}.`);
@@ -752,10 +1034,10 @@ function bank(s: CatanState, who: string, give: Resource, get: Resource, n: numb
 }
 
 /** Recounts every road and moves Longest Road if it should change hands. */
-function recountRoads(s: CatanState): CatanState {
+export function recountRoads(s: CatanState): CatanState {
   const L = layoutOf(s);
   const lengths = Object.fromEntries(
-    s.seats.map((p) => [p, longestRoad(L, s.buildings, s.roads, p)]),
+    s.seats.map((p) => [p, longestRoad(L, occupied(s), s.roads, p, s.sea?.ships)]),
   );
   const holder = awardRoad(s.longest.holder, lengths);
   const next = { ...s, longest: { holder, lengths } };
@@ -778,46 +1060,92 @@ function recountRoads(s: CatanState): CatanState {
     : logged(moved, 'Nobody holds Longest Road now');
 }
 
-function build(s: CatanState, who: string, kind: Piece, at: string): CatanState {
-  const L = layoutOf(s);
+type Kind = Piece | 'wall' | 'knight' | 'ship';
+
+function build(s: CatanState, who: string, kind: Kind, at: string): CatanState {
+  if (kind === 'wall' || kind === 'knight') return ckBuild(s, who, kind, at);
   const free = s.phase === 'roadBuilding';
-  const cost = COSTS[kind];
-  if (!free && !covers(s.hands[who]!, cost))
-    return refuse('cant-afford', `You need ${cardsText(missing(s.hands[who]!, cost))} more.`);
-  if (piecesLeft(s.buildings, s.roads, who)[kind] <= 0)
-    return refuse('no-pieces', `You have no ${kind === 'city' ? 'cities' : `${kind}s`} left.`);
-  const spots =
-    kind === 'road'
-      ? roadSpots(L, s.buildings, s.roads, who)
-      : kind === 'settlement'
-        ? settlementSpots(L, s.buildings, s.roads, who, false)
-        : citySpots(s.buildings, who);
-  if (!spots.includes(at)) return refuse('bad-spot', `You can’t build a ${kind} there.`);
-  let next: CatanState = free
-    ? s
-    : { ...s, hands: { ...s.hands, [who]: add(s.hands[who]!, cost, -1) }, bank: add(s.bank, cost) };
-  if (kind === 'road') next = { ...next, roads: { ...next.roads, [at]: who } };
-  else
+  let next: CatanState;
+  if (kind === 'ship') {
+    const sea = s.sea;
+    if (!sea) return refuse('no-ships', 'There are no ships in this game.');
+    if (!free && !covers(s.hands[who]!, SHIP_COST))
+      return refuse(
+        'cant-afford',
+        `You need ${cardsText(missing(s.hands[who]!, SHIP_COST))} more.`,
+      );
+    if (shipsLeft(sea, who) <= 0) return refuse('no-pieces', 'You have no ships left.');
+    if (!shipSpotsOf(s, who).includes(at))
+      return refuse('bad-spot', 'You can’t build a ship there.');
+    next = free
+      ? s
+      : {
+          ...s,
+          hands: { ...s.hands, [who]: add(s.hands[who]!, SHIP_COST, -1) },
+          bank: add(s.bank, SHIP_COST),
+        };
     next = {
       ...next,
-      buildings: { ...next.buildings, [at]: { owner: who, city: kind === 'city' } },
+      sea: { ...sea, ships: { ...sea.ships, [at]: who }, built: [...sea.built, at] },
     };
-  next = logged(
-    next,
-    `{actor} built a ${kind}`,
-    who,
-    kind === 'road' ? {} : { tag: kind === 'city' ? 'City' : 'Settlement', tone: 'good' },
-  );
-  if (kind !== 'city') next = recountRoads(next);
+    next = recountRoads(logged(next, '{actor} built a ship', who));
+  } else {
+    const cost = COSTS[kind];
+    if (!free && !covers(s.hands[who]!, cost))
+      return refuse('cant-afford', `You need ${cardsText(missing(s.hands[who]!, cost))} more.`);
+    if (piecesLeft(s.buildings, s.roads, who)[kind] <= 0)
+      return refuse('no-pieces', `You have no ${kind === 'city' ? 'cities' : `${kind}s`} left.`);
+    const spots =
+      kind === 'road'
+        ? roadSpotsOf(s, who)
+        : kind === 'settlement'
+          ? settleSpotsOf(s, who, false)
+          : citySpotsOf(s, who);
+    if (!spots.includes(at)) return refuse('bad-spot', `You can’t build a ${kind} there.`);
+    next = free
+      ? s
+      : {
+          ...s,
+          hands: { ...s.hands, [who]: add(s.hands[who]!, cost, -1) },
+          bank: add(s.bank, cost),
+        };
+    if (kind === 'road') next = { ...next, roads: { ...next.roads, [at]: who } };
+    else
+      next = {
+        ...next,
+        buildings: { ...next.buildings, [at]: { owner: who, city: kind === 'city' } },
+      };
+    next = logged(
+      next,
+      `{actor} built a ${kind}`,
+      who,
+      kind === 'road' ? {} : { tag: kind === 'city' ? 'City' : 'Settlement', tone: 'good' },
+    );
+    if (kind === 'settlement' && next.sea) next = islandBonus(next, who, at);
+    if (kind !== 'city') next = recountRoads(next);
+  }
   if (free) {
     const left = next.roadsToBuild - 1;
-    const more =
-      left > 0 &&
-      piecesLeft(next.buildings, next.roads, who).road > 0 &&
-      roadSpots(L, next.buildings, next.roads, who).length > 0;
+    const roadsOk =
+      piecesLeft(next.buildings, next.roads, who).road > 0 && roadSpotsOf(next, who).length > 0;
+    const shipsOk = !!next.sea && shipsLeft(next.sea, who) > 0 && shipSpotsOf(next, who).length > 0;
+    const more = left > 0 && (roadsOk || shipsOk);
     next = { ...next, roadsToBuild: more ? left : 0, phase: more ? 'roadBuilding' : 'main' };
   }
   return next;
+}
+
+/** Seafarers: your first settlement on each small island is worth two more points. */
+function islandBonus(s: CatanState, who: string, at: string): CatanState {
+  const sea = s.sea!;
+  const isle = islandOf(layoutOf(s), s.board, at);
+  if (isle <= 0 || sea.bonus[who]!.includes(isle)) return s;
+  return logged(
+    { ...s, sea: { ...sea, bonus: { ...sea.bonus, [who]: [...sea.bonus[who]!, isle] } } },
+    '{actor} settled a new island: 2 more points',
+    who,
+    { tag: 'New island', tone: 'good', key: true },
+  );
 }
 
 function buy(s: CatanState, who: string): CatanState {
@@ -888,9 +1216,13 @@ function play(s: CatanState, who: string, a: PlayAction): CatanState {
       };
     }
     case 'roadBuilding': {
-      const L = layoutOf(next);
-      const n = Math.min(2, piecesLeft(next.buildings, next.roads, who).road);
-      const can = n > 0 && roadSpots(L, next.buildings, next.roads, who).length > 0;
+      const roads = Math.min(2, piecesLeft(next.buildings, next.roads, who).road);
+      const ships = next.sea ? shipsLeft(next.sea, who) : 0;
+      const n = Math.min(2, roads + ships);
+      const can =
+        n > 0 &&
+        ((roads > 0 && roadSpotsOf(next, who).length > 0) ||
+          (ships > 0 && shipSpotsOf(next, who).length > 0));
       return logged(
         { ...next, phase: can ? 'roadBuilding' : 'main', roadsToBuild: can ? n : 0 },
         '{actor} played road building',
@@ -937,13 +1269,14 @@ function play(s: CatanState, who: string, a: PlayAction): CatanState {
 function endTurn(s: CatanState): CatanState {
   const n = s.seats.length;
   const i = s.seats.indexOf(s.turn);
-  const base = {
-    ...s,
+  const base: CatanState = {
+    ...ckTurnEnds(s),
     offers: [],
     tradeTries: 0,
     devPlayed: false,
     turnSeq: s.turnSeq + 1,
     produced: {},
+    ...(s.sea ? { sea: { ...s.sea, built: [], moved: false } } : {}),
   };
   if (n >= 5 && !s.paired) {
     const paired = s.seats[(i + 3) % n]!;
@@ -1034,6 +1367,7 @@ function getTableView(s: CatanState): CatanTableView {
       seq: s.robbery.seq,
       thief: s.robbery.thief,
       victim: s.robbery.victim,
+      ...(s.robbery.pirate ? { pirate: true } : {}),
       took: s.robbery.resource !== null,
     },
     award: s.award,
@@ -1048,6 +1382,9 @@ function getTableView(s: CatanState): CatanTableView {
           s.seats.map((p) => [p, s.dev[p]!.filter((d) => d.card === 'victoryPoint').length]),
         )
       : null,
+    ck: s.ck ? ckTable(s.ck, s.seats) : null,
+    sea: s.sea ?? null,
+    owed: s.owed ?? {},
   };
 }
 
@@ -1073,6 +1410,10 @@ function getPlayerView(s: CatanState, who: string): CatanView {
     dev: (s.dev[who] ?? []).map((d) => ({ card: d.card, playable: canPlay(s, who, d) })),
     points: s.seats.includes(who) ? points(s, who, true) : 0,
     stolen: r && role ? { seq: r.seq, resource: r.resource!, role } : null,
+    progress: (s.ck?.hands[who] ?? []).map((card) => ({
+      card,
+      playable: canPlayProgress(s, who, card),
+    })),
   };
 }
 
@@ -1082,6 +1423,8 @@ export function waitingOn(s: CatanState): string[] {
       return [];
     case 'discard':
       return Object.keys(s.discards);
+    case 'pick':
+      return Object.keys(s.owed ?? {});
     case 'robber':
       return [s.robberBy!];
     default:
@@ -1096,6 +1439,12 @@ export interface PointsBreakdown {
   road: number;
   army: number;
   vp: number;
+  /** Cities & Knights: metropolises, defender points, and printer, constitution and merchant. */
+  metros?: number;
+  defender?: number;
+  progress?: number;
+  /** Seafarers: new islands. */
+  islands?: number;
   total: number;
 }
 
@@ -1115,6 +1464,13 @@ export interface CatanReveal {
   /** Everyone who shares the win, when the host ended the game on a tie. */
   winners?: string[];
   rounds: number;
+  /** The expansions' pieces, as the game ended. */
+  ships?: Roads;
+  pirate?: number | null;
+  ckKnights?: CkState['knights'];
+  walls?: string[];
+  metros?: CkState['metros'];
+  merchant?: CkState['merchant'];
 }
 
 export function breakdown(s: CatanState, pid: string): PointsBreakdown {
@@ -1124,14 +1480,23 @@ export function breakdown(s: CatanState, pid: string): PointsBreakdown {
   const road = s.longest.holder === pid ? 2 : 0;
   const army = s.army === pid ? 2 : 0;
   const vp = s.dev[pid]!.filter((d) => d.card === 'victoryPoint').length;
-  return {
+  const out: PointsBreakdown = {
     settlements,
     cities,
     road,
-    army,
+    army: s.ck ? 0 : army,
     vp,
-    total: settlements + cities * 2 + road + army + vp,
+    total: points(s, pid, true),
   };
+  if (s.ck) {
+    out.metros = Object.values(s.ck.metros).filter(
+      (c) => c && s.buildings[c]?.owner === pid,
+    ).length;
+    out.defender = s.ck.defenders[pid] ?? 0;
+    out.progress = (s.ck.shown[pid]?.length ?? 0) + (s.ck.merchant?.owner === pid ? 1 : 0);
+  }
+  if (s.sea) out.islands = s.sea.bonus[pid]?.length ?? 0;
+  return out;
 }
 
 function getResult(s: CatanState): GameResult | null {
@@ -1148,7 +1513,8 @@ export function partialResult(s: CatanState): GameResult | null {
   if (s.phase === 'over') return getResult(s);
   if (s.phase === 'setup') return null;
   const pts = Object.fromEntries(s.seats.map((p) => [p, points(s, p, true)]));
-  if (s.seats.every((p) => pts[p] === 2)) return null;
+  // Nothing built past the opening pieces (2 points; 3 when the second piece is a city).
+  if (s.seats.every((p) => pts[p] === (s.ck ? 3 : 2))) return null;
   const top = Math.max(...Object.values(pts));
   return resultFor(
     s,
@@ -1173,6 +1539,15 @@ function resultFor(s: CatanState, winners: string[], early = false): GameResult 
     winner: winners[0]!,
     ...(winners.length > 1 ? { winners } : {}),
     rounds: s.round,
+    ...(s.sea ? { ships: s.sea.ships, pirate: s.sea.pirate } : {}),
+    ...(s.ck
+      ? {
+          ckKnights: s.ck.knights,
+          walls: s.ck.walls,
+          metros: s.ck.metros,
+          merchant: s.ck.merchant,
+        }
+      : {}),
   };
   const highlights: NonNullable<GameResult['highlights']> = [];
   const holder = s.longest.holder;
@@ -1231,11 +1606,16 @@ function announce(prev: CatanState | null, next: CatanState): string[] {
   const a = next.award;
   if (a && a.seq !== prev.award?.seq) {
     if (a.kind === 'army') lines.push(`{${a.to}} takes Largest Army`);
-    else lines.push(a.to ? `{${a.to}} takes Longest Road` : 'Longest Road is set aside');
+    else if (a.kind === 'road')
+      lines.push(a.to ? `{${a.to}} takes Longest Road` : 'Longest Road is set aside');
+    else lines.push(`{${a.to}} raises a metropolis`);
   }
   const m = next.monopoly;
   if (m && m.seq !== prev.monopoly?.seq)
     lines.push(`{${m.pid}} played monopoly and took ${m.took} ${m.resource}`);
+  const at = next.ck?.attack;
+  if (at && at.seq !== prev.ck?.attack?.seq)
+    lines.push(at.won ? 'The barbarians are beaten back' : 'The barbarians pillage the island');
   if (next.winner && !prev.winner)
     lines.push(`{${next.winner}} wins with ${points(next, next.winner, true)} points`);
   return lines;
@@ -1243,7 +1623,17 @@ function announce(prev: CatanState | null, next: CatanState): string[] {
 
 /** Which step the clock is timing: a new one gets a fresh deadline. */
 const clockKey = (s: CatanState) =>
-  `${s.turnSeq}|${s.phase}|${s.setup?.step ?? ''}|${s.setup?.corner ? 1 : 0}`;
+  `${s.turnSeq}|${s.phase}|${s.setup?.step ?? ''}|${s.setup?.corner ? 1 : 0}|${s.rollSeq}`;
+
+/** Games saved before commodities existed have hands without them. */
+function upgrade(s: CatanState): CatanState {
+  if (s.bank.paper !== undefined) return s;
+  return {
+    ...s,
+    bank: fullCards(s.bank),
+    hands: Object.fromEntries(Object.entries(s.hands).map(([p, h]) => [p, fullCards(h)])),
+  };
+}
 
 function stamp(prev: CatanState | null, s: CatanState, now: number): CatanState {
   if (!s.turnSecs || s.phase === 'over') return s.actBy === null ? s : { ...s, actBy: null };
@@ -1283,20 +1673,30 @@ export const catan: CatanModule = {
   meta,
   optionsSchema,
   actionSchema,
-  defaultOptions: () => ({ board: 'Balanced', points: '10', robber: 'Standard', turnTimer: 'Off' }),
+  defaultOptions: () => ({
+    expansion: 'Base game',
+    board: 'Balanced',
+    points: '10',
+    robber: 'Standard',
+    turnTimer: 'Off',
+  }),
   setup: (ctx) => stamp(null, setup(ctx), ctx.now),
-  getPlayerView,
-  getTableView,
-  applyAction: (s, who, a, rng, now) =>
-    stamp(s, rolled(s, dated(s, applyMove(s, who, a, rng), now)), now),
-  getResult,
-  partialResult,
+  getPlayerView: (s, who) => getPlayerView(upgrade(s), who),
+  getTableView: (s) => getTableView(upgrade(s)),
+  applyAction: (s0, who, a, rng, now) => {
+    const s = upgrade(s0);
+    return stamp(s, rolled(s, dated(s, applyMove(s, who, a, rng), now)), now);
+  },
+  getResult: (s) => getResult(upgrade(s)),
+  partialResult: (s) => partialResult(upgrade(s)),
   bot: catanBot,
   botDelayMs: botPace,
   announce,
   waitingOn,
   nextTimer: (s) =>
     s.turnSecs && s.actBy !== null && s.phase !== 'over' ? { id: 'turn', at: s.actBy } : null,
-  onTimer: (s, timer, rng, now) =>
-    timer !== 'turn' || s.phase === 'over' ? s : stamp(s, rolled(s, timeUp(s, rng)), now),
+  onTimer: (s0, timer, rng, now) => {
+    const s = upgrade(s0);
+    return timer !== 'turn' || s.phase === 'over' ? s : stamp(s, rolled(s, timeUp(s, rng)), now);
+  },
 };

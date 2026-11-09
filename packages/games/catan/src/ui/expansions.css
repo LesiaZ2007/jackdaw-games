@@ -1,0 +1,420 @@
+/* Catan's expansions, printed like the island: Seafarers' open sea, gold fields, ships and the
+   pirate; Cities & Knights' knights, walls, metropolis banners, the merchant, commodities and the
+   three tracks (science green, trade yellow, politics blue, as on the event die's city gates). */
+
+.ctn,
+.ctn-board {
+  /* Bronze ground with bright nuggets, so a gold field never reads as wheat. */
+  --ctn-gold: #8a5f1c;
+  --ctn-gold-ink: #f2cf55;
+  --ctn-science: #3f7a48;
+  --ctn-trade: #d1a12a;
+  --ctn-politics: var(--azure);
+  --ctn-paper: #a88a52;
+  --ctn-cloth: #8a5a8e;
+  --ctn-coin: #66655e;
+  --ctn-pirate: #1d1d1c;
+  --ctn-ship-ink: var(--ctn-stock-ink);
+}
+
+.ctn-fill--gold {
+  fill: var(--ctn-gold);
+  background: var(--ctn-gold);
+}
+.ctn-motif--gold {
+  --ink: var(--ctn-gold-ink);
+}
+.ctn-fill--sea {
+  fill: var(--ctn-sea);
+  background: var(--ctn-sea);
+}
+.ctn-fill--paper {
+  fill: var(--ctn-paper);
+  background: var(--ctn-paper);
+}
+.ctn-fill--cloth {
+  fill: var(--ctn-cloth);
+  background: var(--ctn-cloth);
+}
+.ctn-fill--coin {
+  fill: var(--ctn-coin);
+  background: var(--ctn-coin);
+}
+.ctn-fill--science {
+  fill: var(--ctn-science);
+  background: var(--ctn-science);
+}
+.ctn-fill--trade {
+  fill: var(--ctn-trade);
+  background: var(--ctn-trade);
+}
+.ctn-fill--politics {
+  fill: var(--ctn-politics);
+  background: var(--ctn-politics);
+}
+
+/* Open water on a sea map: a faint printed grid, so ships' edges read. */
+.ctn-sea-hex {
+  fill: none;
+  stroke: var(--ctn-sea-line);
+  stroke-width: 0.02;
+  stroke-dasharray: 0.06 0.06;
+  opacity: 0.7;
+}
+
+.ctn-ship__hull {
+  stroke: var(--ctn-ship-ink);
+  stroke-width: 0.025;
+  stroke-linejoin: round;
+}
+.ctn-ship__mast {
+  stroke: var(--ctn-ship-ink);
+  stroke-width: 0.025;
+}
+.ctn-ship__sail {
+  fill: var(--ctn-stock);
+  stroke: var(--ctn-ship-ink);
+  stroke-width: 0.018;
+}
+.ctn-pirate .ctn-ship__sail {
+  fill: var(--ctn-pirate);
+  stroke: var(--ctn-stock);
+}
+.ctn-pirate .ctn-ship__hull {
+  stroke: var(--ctn-stock);
+}
+
+.ctn-knight__shield {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.025;
+  stroke-linejoin: round;
+  opacity: 0.55;
+}
+.ctn-knight__bar {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.03;
+  stroke-linecap: round;
+  opacity: 0.6;
+}
+.ctn-knight--on .ctn-knight__shield {
+  opacity: 1;
+  stroke-width: 0.045;
+}
+.ctn-knight--on .ctn-knight__bar {
+  opacity: 1;
+}
+
+.ctn-wall {
+  fill: var(--ctn-stock);
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.03;
+  stroke-dasharray: 0.05 0.025;
+}
+.ctn-metro__pole {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 1.4;
+}
+.ctn-metro path:last-child {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 1;
+}
+.ctn-merchant path {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 0.025;
+}
+.ctn-chosen {
+  fill: none;
+  stroke: var(--ctn-stock);
+  stroke-width: 0.05;
+  stroke-dasharray: 0.08 0.05;
+}
+
+/* ---------- Phone and TV furniture ---------- */
+
+/* Eight cards in a hand, in one row: narrower cards, smaller names. (Scoped under .ctn so these
+   win over the phone's own rules whichever stylesheet loads first.) */
+.ctn .ctn-hand--goods {
+  grid-template-columns: repeat(8, minmax(0, 52px));
+  gap: 4px;
+}
+.ctn .ctn-hand--goods .ctn-rcard {
+  padding: 3px 2px;
+}
+.ctn .ctn-hand--goods .ctn-rcard__name {
+  font-size: 9px;
+  letter-spacing: 0;
+}
+.ctn .ctn-hand--goods .ctn-rcard__art svg {
+  width: 22px;
+  height: 22px;
+}
+.ctn .ctn-picker--goods,
+.ctn .ctn-onepick--goods {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.ctn .ctn-dock--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ctn .ctn-dock--3 > .ctn-hint,
+.ctn .ctn-dock--4 > .ctn-hint {
+  grid-column: 1 / -1;
+}
+.ctn .ctn-dock--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.ctn .ctn-dock--5 .jd-plaque,
+.ctn .ctn-dock--3 .jd-plaque {
+  position: relative;
+  min-width: 0;
+  gap: 4px;
+  padding: 0 3px;
+  font-size: min(16px, 3.6cqi);
+  white-space: normal;
+  line-height: 1.05;
+}
+.ctn .ctn-dock--5 .ctn-count {
+  position: absolute;
+  top: -9px;
+  right: -5px;
+  font-size: 13px;
+  padding: 3px 5px;
+}
+
+/* The event die: a ship, or a city gate in its track's colour. */
+.ctn .ctn-die--event {
+  grid-template: 1fr / 1fr;
+  place-items: center;
+  padding: calc(var(--d) * 0.08);
+}
+.ctn .ctn-die--event.ctn-fill--science {
+  background: var(--ctn-science);
+}
+.ctn .ctn-die--event.ctn-fill--trade {
+  background: var(--ctn-trade);
+}
+.ctn .ctn-die--event.ctn-fill--politics {
+  background: var(--ctn-politics);
+}
+.ctn-die--event svg {
+  width: 100%;
+  height: 100%;
+}
+/* Three dice in the phone's strip: a size smaller, so the turn still reads. */
+.ctn-strip .ctn-dice--three .ctn-die {
+  --d: 26px;
+}
+.ctn-strip__text .ctn-barb {
+  margin-top: 2px;
+}
+.ctn-evt__ink {
+  fill: var(--ctn-stock-ink);
+}
+.ctn-evt__line {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 1.6;
+}
+.ctn-evt__gate {
+  fill: var(--ctn-stock);
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 1.4;
+}
+.ctn-roll__die--c {
+  animation: ctn-roll-tumble-a 900ms 120ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+.ctn-roll__event {
+  font: 600 15px/1.2 var(--font-body);
+}
+.ctn-roll--tv .ctn-roll__event {
+  font-size: 34px;
+}
+
+/* The barbarian ship's seven steps, and knights against cities. */
+.ctn-barb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ctn-barb__track {
+  display: inline-flex;
+  gap: 2px;
+}
+.ctn-barb__track i {
+  width: 7px;
+  height: 7px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+}
+.ctn-barb__track i.is-on {
+  background: var(--sable);
+}
+.ctn-barb__track i.is-land {
+  border-color: var(--gules);
+}
+.ctn-barb__odds {
+  font: 800 14px/1 var(--font-code);
+  color: var(--gules);
+}
+.ctn-barb__odds.is-safe {
+  color: var(--vert);
+}
+.ctn-barb__odds small {
+  margin: 0 2px;
+  font-weight: 500;
+  font-size: 0.8em;
+  color: var(--ink);
+}
+.ctn-tv__head .ctn-barb__track i {
+  width: 22px;
+  height: 22px;
+  border-width: 3px;
+}
+.ctn-tv__head .ctn-barb__odds {
+  font-size: 34px;
+}
+
+.ctn-lvl {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.ctn-lvl i {
+  width: 0.7em;
+  height: 0.7em;
+  border: 1px solid var(--ink);
+}
+
+/* City improvements: three printed tracks of five steps. */
+.ctn-tracks {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.ctn-track {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1.5px solid var(--rule);
+}
+.ctn-track__flag {
+  align-self: stretch;
+}
+.ctn-track__text {
+  display: grid;
+  gap: 3px;
+}
+.ctn-track__text small {
+  color: var(--ink-soft, var(--ink));
+  line-height: 1.25;
+}
+.ctn-track__steps {
+  display: inline-flex;
+  gap: 3px;
+}
+.ctn-track__steps i {
+  width: 16px;
+  height: 8px;
+  border: 1.5px solid var(--ink);
+}
+.ctn-track--science .ctn-track__steps i.is-on {
+  background: var(--ctn-science);
+}
+.ctn-track--trade .ctn-track__steps i.is-on {
+  background: var(--ctn-trade);
+}
+.ctn-track--politics .ctn-track__steps i.is-on {
+  background: var(--ctn-politics);
+}
+.ctn-track .jd-plaque .ctn-pip {
+  margin-left: 4px;
+}
+
+.ctn .ctn-dev__art.ctn-fill--science,
+.ctn .ctn-dev__art.ctn-fill--trade,
+.ctn .ctn-dev__art.ctn-fill--politics {
+  font: 700 26px/1 var(--font-plaque);
+  color: var(--ctn-stock);
+}
+.ctn .ctn-dev__art.ctn-fill--science {
+  background: var(--ctn-science);
+}
+.ctn .ctn-dev__art.ctn-fill--trade {
+  background: var(--ctn-trade);
+}
+.ctn .ctn-dev__art.ctn-fill--politics {
+  background: var(--ctn-politics);
+}
+
+.ctn-dicepick {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: var(--space-2);
+}
+.ctn .ctn-dicepick .ctn-die {
+  --d: 44px;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  font: 800 20px/1 var(--font-code);
+  color: var(--ctn-stock-ink);
+  cursor: pointer;
+}
+.ctn-dicepick .ctn-die--red {
+  color: var(--ctn-stock);
+}
+.ctn-dicepick .ctn-die--yellow {
+  background: var(--ctn-trade);
+}
+.ctn-dicepick .ctn-die.is-on {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.ctn-decks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.ctn-deck {
+  min-height: 88px;
+  display: grid;
+  place-content: center;
+  gap: 4px;
+  border: 2px solid var(--ink);
+  color: var(--ctn-stock);
+  font: 700 18px/1.1 var(--font-plaque);
+  cursor: pointer;
+}
+.ctn-deck small {
+  font: 500 13px/1 var(--font-body);
+}
+.ctn-deck:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Tiles picked on the board (the robber's tile, the Inventor's tokens). */
+.ctn-picked {
+  fill: none;
+  stroke: var(--ctn-stock);
+  stroke-width: 0.07;
+}
+.ctn-piece__line {
+  stroke: var(--ctn-stock-ink);
+  stroke-width: 1.6;
+  fill: none;
+}
+
+/* Cities & Knights' longer stat row on the TV: three track levels join it, so it packs closer. */
+.ctn .ctn-tvp__meta--ck {
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+.ctn .ctn-tvp__meta--ck .ctn-lvl {
+  gap: 4px;
+}

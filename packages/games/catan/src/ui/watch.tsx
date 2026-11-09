@@ -3,7 +3,7 @@
 import { VerdictMoment, useMoment, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import { awardMoment, robberyMoment } from '../moments';
 import type { CatanTableView } from '../rules';
-import { RESOURCES } from '../types';
+import { CARDS } from '../types';
 import { CatanBoard } from './board';
 import { logLine, namer } from './common';
 import { Pip } from './glyphs';
@@ -34,7 +34,7 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
   const rob = freshRob ? robberyMoment(t, null) : null;
   const award = !rob && freshAward ? awardMoment(t, null) : null;
   const total = t.dice ? t.dice[0] + t.dice[1] : null;
-  const paid = Object.entries(t.produced).filter(([, c]) => RESOURCES.some((r) => c[r]));
+  const paid = Object.entries(t.produced).filter(([, c]) => CARDS.some((r) => c[r]));
   const offers = t.phase === 'main' ? t.offers.slice(-1) : [];
   const last = t.log[t.log.length - 1];
 
@@ -68,6 +68,12 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
           roll={total ? { total, seq: t.rollSeq } : null}
           label="The island"
           pad={0.95}
+          ships={t.sea?.ships}
+          pirate={t.sea?.pirate ?? null}
+          knights={t.ck?.knights}
+          walls={t.ck?.walls}
+          metros={t.ck?.metros}
+          merchant={t.ck?.merchant ?? null}
         />
       </div>
       <section className="ctn-watch" aria-live="polite">
@@ -80,7 +86,7 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
               paid.map(([id, c]) => (
                 <span key={id} className="ctn-watch__gain">
                   {name(id)}
-                  {RESOURCES.filter((r) => c[r]).map((r) => (
+                  {CARDS.filter((r) => c[r]).map((r) => (
                     <Pip key={r} res={r} n={c[r]} />
                   ))}
                 </span>

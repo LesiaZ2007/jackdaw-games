@@ -2,7 +2,7 @@
 
 import { useMoment } from '@jackdaw/ui';
 import { useEffect, useRef } from 'react';
-import { RESOURCES, countCards, type Cards } from '../types';
+import { CARDS, RESOURCES, countCards, type Card, type Cards } from '../types';
 import { Pip, ResourceGlyph } from './glyphs';
 import { RESOURCE_NAME, TERRAIN_OF } from './palette';
 
@@ -11,8 +11,11 @@ export function Hand({
   hand,
   got,
   gotKey,
+  goods = false,
 }: {
   hand: Cards;
+  /** Cities & Knights: show the three commodities too. */
+  goods?: boolean;
   /** What the last roll paid you, shown rising over the hand. */
   got: Partial<Cards> | null;
   gotKey: number;
@@ -30,23 +33,23 @@ export function Hand({
     return () => clearTimeout(t);
   }, [fresh]);
   return (
-    <div className="ctn-hand" aria-label="Your cards">
+    <div className={goods ? 'ctn-hand ctn-hand--goods' : 'ctn-hand'} aria-label="Your cards">
       {fresh !== null && got && countCards(got) > 0 && (
         <p className="ctn-got" key={gotKey}>
           You got
-          {RESOURCES.filter((r) => got[r]).map((r) => (
+          {CARDS.filter((r) => got[r]).map((r) => (
             <Pip key={r} res={r} n={got[r]} />
           ))}
         </p>
       )}
-      {RESOURCES.map((r) => (
-        <ResourceCard key={r} res={r} n={hand[r]} />
+      {(goods ? CARDS : RESOURCES).map((r) => (
+        <ResourceCard key={r} res={r} n={hand[r] ?? 0} />
       ))}
     </div>
   );
 }
 
-export function ResourceCard({ res, n }: { res: (typeof RESOURCES)[number]; n: number }) {
+export function ResourceCard({ res, n }: { res: Card; n: number }) {
   return (
     <span
       className={n ? 'ctn-rcard' : 'ctn-rcard is-none'}

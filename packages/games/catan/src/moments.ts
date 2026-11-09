@@ -26,8 +26,10 @@ export function robberyMoment(tv: CatanTableView, me: string | null): Moment | n
 /** Longest Road or Largest Army changed hands: the new holder wins, the old one loses. */
 export function awardMoment(tv: CatanTableView, me: string | null): Moment | null {
   const a = tv.award;
-  if (!a) return null;
+  if (!a || (a.kind !== 'road' && a.kind !== 'army')) return null;
   const outcome =
     me === null ? (a.to ? 'reveal' : null) : me === a.to ? 'win' : me === a.from ? 'loss' : null;
-  return outcome && { key: a.seq, outcome, kind: a.kind, who: a.to, other: a.from };
+  return (
+    outcome && { key: a.seq, outcome, kind: a.kind as 'road' | 'army', who: a.to, other: a.from }
+  );
 }

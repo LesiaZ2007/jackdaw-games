@@ -3,11 +3,13 @@
 import { useId, useRef, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { pips } from '../board';
 import type { Buildings, Roads } from '../build';
+import type { Knight, Track } from '../ck';
 import { layout } from '../geometry';
 import { YIELD, type Board, type Terrain } from '../types';
 import { CITY, SETTLEMENT, resourceArt } from './glyphs';
 import { seatColour } from './palette';
 import './catan.css';
+import './expansions.css';
 
 /**
  * The island, printed: tiles in their terrain inks with an engraved motif, shallows and an inked
@@ -16,7 +18,17 @@ import './catan.css';
  * When a move is being chosen only the legal spots are drawn, and a tap snaps to the nearest one.
  */
 
-export type Spot = { kind: 'road' | 'settlement' | 'city'; at: string };
+export type Spot = {
+  kind: 'road' | 'settlement' | 'city' | 'ship' | 'knight' | 'wall';
+  at: string;
+};
+
+/** Each track's metropolis banner colour (the city gates on the event die). */
+export const TRACK_COLOUR: Record<Track, string> = {
+  science: 'var(--ctn-science)',
+  trade: 'var(--ctn-trade)',
+  politics: 'var(--ctn-politics)',
+};
 
 export interface CatanBoardProps {
   board: Board;
@@ -44,6 +56,22 @@ export interface CatanBoardProps {
   /** Sea round the island, in tile sides. */
   pad?: number;
   className?: string;
+  /** Seafarers: ships by edge, and the pirate's sea tile. */
+  ships?: Roads;
+  pirate?: number | null;
+  /** Cities & Knights: knights by corner, walled cities, metropolises and the merchant. */
+  knights?: Record<string, Knight>;
+  walls?: string[];
+  metros?: Partial<Record<Track, string>>;
+  merchant?: { tile: number; owner: string } | null;
+  /** A corner to ring as chosen (a knight about to move). */
+  chosen?: string | null;
+  /** An edge to ring as chosen (a ship about to sail). */
+  chosenEdge?: string | null;
+  /** Tiles picked so far (the robber's tile, the Inventor's tokens). */
+  picked?: number[];
+  /** What tapping a land tile does, for its label ("Move the robber to", or a card's "Pick"). */
+  tileVerb?: string;
 }
 
 const TERRAIN_NAME: Record<Terrain, string> = {
@@ -53,6 +81,8 @@ const TERRAIN_NAME: Record<Terrain, string> = {
   hills: 'Hills',
   mountains: 'Mountains',
   desert: 'Desert',
+  sea: 'Sea',
+  gold: 'Gold field',
 };
 
 /** How close (in CSS px) a tap must land to an offered spot to pick it. */
@@ -114,6 +144,19 @@ function Motif({ t }: { t: Terrain }) {
           <path d="M5 3l1.4 4" className="ctn-hi" strokeWidth=".8" />
         </>
       );
+    case 'gold':
+      return (
+        <>
+          <g className="ctn-ink-fill">
+            <path d="M3 6l2.4-1.6 2.6 1 .4 2.2-2.6 1.2-2.6-.8z" />
+            <path d="M12 15l2-1.4 2.4.8.2 2-2.2 1-2.4-.6z" />
+            <path d="M14 4l1.2-.8 1.4.6.1 1.2-1.3.5-1.3-.4z" />
+          </g>
+          <path d="M3.6 5.6l1.6-1" className="ctn-hi" strokeWidth=".6" />
+        </>
+      );
+    case 'sea':
+      return null;
     case 'desert':
       return (
         <>
@@ -132,7 +175,7 @@ function Motif({ t }: { t: Terrain }) {
   }
 }
 
-const TERRAINS: Terrain[] = ['forest', 'pasture', 'fields', 'hills', 'mountains', 'desert'];
+const TERRAINS: Terrain[] = ['forest', 'pasture', 'fields', 'hills', 'mountains', 'desert', 'gold'];
 const MOTIF = 0.32;
 
 export function CatanBoard({
@@ -154,8 +197,22 @@ export function CatanBoard({
   label,
   pad = 1,
   className,
+  ships = {},
+  pirate = null,
+  knights = {},
+  walls = [],
+  metros = {},
+  merchant = null,
+  chosen = null,
+  chosenEdge = null,
+  picked = [],
+  tileVerb = 'Move the robber to',
 }: CatanBoardProps) {
-  const L = layout(board.size);
+  const L = layout(board.map ?? board.size);
+  const land = (i: number) => board.tiles[i]!.terrain !== 'sea';
+  const metroOf: Record<string, Track> = Object.fromEntries(
+    Object.entries(metros).flatMap(([t, c]) => (c ? [[c, t as Track]] : [])),
+  );
   const uid = useId().replace(/:/g, '');
   const svg = useRef<SVGSVGElement>(null);
   const [bx0, by0, bx1, by1] = L.bounds;
@@ -286,18 +343,21 @@ export function CatanBoard({
       </defs>
       <rect x={vb[0]} y={vb[1]} width={vb[2]} height={vb[3]} className="ctn-sea" />
       <rect x={vb[0]} y={vb[1]} width={vb[2]} height={vb[3]} fill={`url(#${uid}-sea)`} />
-      {L.tiles.map((_, i) => (
-        <polygon key={`sh${i}`} points={poly(i, 1.28)} className="ctn-shallow" />
-      ))}
-      {L.tiles.map((_, i) => (
-        <polygon key={`se${i}`} points={poly(i, 1.03)} className="ctn-seam" />
-      ))}
+      {L.tiles.map((_, i) =>
+        land(i) ? <polygon key={`sh${i}`} points={poly(i, 1.28)} className="ctn-shallow" /> : null,
+      )}
+      {L.tiles.map((_, i) =>
+        land(i) ? <polygon key={`se${i}`} points={poly(i, 1.03)} className="ctn-seam" /> : null,
+      )}
+      {L.tiles.map((_, i) =>
+        land(i) ? null : <polygon key={`sx${i}`} points={poly(i, 1)} className="ctn-sea-hex" />,
+      )}
 
       {/* Harbours: two piers to the corners they serve, and the plaque out at sea. */}
       {board.harbours.map((h) => {
         const e = L.edges[h.edge]!;
         const m = mid(h.edge);
-        const t = L.tiles[e.tiles[0]!]!;
+        const t = L.tiles[e.tiles.find(land) ?? e.tiles[0]!]!;
         const len = Math.hypot(m.x - t.x, m.y - t.y);
         const at = { x: m.x + ((m.x - t.x) / len) * 0.62, y: m.y + ((m.y - t.y) / len) * 0.62 };
         const res = h.kind === 'any' ? null : h.kind;
@@ -344,13 +404,15 @@ export function CatanBoard({
         );
       })}
 
-      {board.tiles.map((t, i) => (
-        <g key={`t${i}`}>
-          <polygon points={poly(i, 0.965)} className={`ctn-tile ctn-fill--${t.terrain}`} />
-          <polygon points={poly(i, 0.965)} fill={`url(#${uid}-${t.terrain})`} />
-          <title>{tileName(i)}</title>
-        </g>
-      ))}
+      {board.tiles.map((t, i) =>
+        land(i) ? (
+          <g key={`t${i}`}>
+            <polygon points={poly(i, 0.965)} className={`ctn-tile ctn-fill--${t.terrain}`} />
+            <polygon points={poly(i, 0.965)} fill={`url(#${uid}-${t.terrain})`} />
+            <title>{tileName(i)}</title>
+          </g>
+        ) : null,
+      )}
       {paying.map((i) => (
         <polygon key={`p${roll!.seq}-${i}`} points={poly(i, 0.86)} className="ctn-paying" />
       ))}
@@ -392,9 +454,75 @@ export function CatanBoard({
         </g>
       )}
 
+      {pirate !== null && pirate >= 0 && (
+        <g
+          transform={`translate(${L.tiles[pirate]!.x} ${L.tiles[pirate]!.y})`}
+          className="ctn-pirate"
+        >
+          <ellipse cx="0" cy=".2" rx=".3" ry=".06" className="ctn-shadow" />
+          {shipShape('var(--ctn-pirate)', 1.5)}
+          <title>The pirate</title>
+        </g>
+      )}
+      {merchant && (
+        <g
+          transform={`translate(${L.tiles[merchant.tile]!.x - 0.38} ${L.tiles[merchant.tile]!.y + 0.02})`}
+          className="ctn-merchant"
+        >
+          <ellipse cx="0" cy=".2" rx=".13" ry=".04" className="ctn-shadow" />
+          <path
+            d="M-.12 .2 L-.05 -.06 A.07 .07 0 1 1 .05 -.06 L.12 .2 Z"
+            style={{ fill: seatColour(merchant.owner, seats) }}
+          />
+          <title>The merchant</title>
+        </g>
+      )}
       {Object.entries(roads).map(([id, owner]) => road(id, seatColour(owner, seats)))}
+      {Object.entries(ships).map(([id, owner]) => (
+        <g key={`s${id}`} transform={`translate(${mid(id).x} ${mid(id).y})`}>
+          {shipShape(seatColour(owner, seats))}
+        </g>
+      ))}
       {Object.entries(buildings).map(([c, b]) => (
-        <g key={c}>{building(corner(c).x, corner(c).y, seatColour(b.owner, seats), b.city)}</g>
+        <g key={c}>
+          {walls.includes(c) && (
+            <rect
+              x={corner(c).x - 0.27}
+              y={corner(c).y - 0.04}
+              width=".54"
+              height=".3"
+              rx=".05"
+              className="ctn-wall"
+            />
+          )}
+          {building(
+            corner(c).x,
+            corner(c).y,
+            seatColour(b.owner, seats),
+            b.city,
+            metroOf[c] ? (
+              <g className="ctn-metro">
+                <path d="M-1.5 -11 V-24" className="ctn-metro__pole" />
+                <path
+                  d="M-1.5 -24 h10 l-3 3.5 3 3.5 h-10z"
+                  style={{ fill: TRACK_COLOUR[metroOf[c]] }}
+                />
+              </g>
+            ) : undefined,
+          )}
+        </g>
+      ))}
+      {Object.entries(knights).map(([c, k]) => (
+        <g key={`k${c}`}>{knightToken(corner(c).x, corner(c).y, seatColour(k.owner, seats), k)}</g>
+      ))}
+      {chosen && (
+        <circle cx={corner(chosen).x} cy={corner(chosen).y} r=".3" className="ctn-chosen" />
+      )}
+      {chosenEdge && (
+        <circle cx={mid(chosenEdge).x} cy={mid(chosenEdge).y} r=".3" className="ctn-chosen" />
+      )}
+      {picked.map((i) => (
+        <polygon key={`pk${i}`} points={poly(i, 0.86)} className="ctn-picked" />
       ))}
 
       {/* What can be picked now. */}
@@ -405,7 +533,7 @@ export function CatanBoard({
           className="ctn-spot ctn-spot--tile"
           role="button"
           tabIndex={0}
-          aria-label={`Move the robber to ${tileName(i)}`}
+          aria-label={land(i) ? `${tileVerb} ${tileName(i)}` : 'Move the pirate here'}
           onKeyDown={onTile && key(() => onTile(i))}
         />
       ))}
@@ -443,7 +571,21 @@ export function CatanBoard({
         ),
       )}
       {ghost && ghost.kind === 'road' && road(ghost.at, ghostColour ?? 'var(--rule)', 'ctn-ghost')}
-      {ghost && ghost.kind !== 'road' && (
+      {ghost && ghost.kind === 'ship' && (
+        <g className="ctn-ghost" transform={`translate(${mid(ghost.at).x} ${mid(ghost.at).y})`}>
+          {shipShape(ghostColour ?? 'var(--rule)')}
+        </g>
+      )}
+      {ghost && ghost.kind === 'knight' && (
+        <g className="ctn-ghost">
+          {knightToken(corner(ghost.at).x, corner(ghost.at).y, ghostColour ?? 'var(--rule)', {
+            owner: '',
+            level: 1,
+            active: false,
+          })}
+        </g>
+      )}
+      {ghost && ghost.kind !== 'road' && ghost.kind !== 'ship' && ghost.kind !== 'knight' && (
         <g className="ctn-ghost">
           <circle
             cx={corner(ghost.at).x}
@@ -455,7 +597,7 @@ export function CatanBoard({
             corner(ghost.at).x,
             corner(ghost.at).y,
             ghostColour ?? 'var(--rule)',
-            ghost.kind === 'city',
+            ghost.kind === 'city' || ghost.kind === 'wall',
           )}
         </g>
       )}
@@ -501,6 +643,45 @@ export function CatanBoard({
           }),
         )}
     </svg>
+  );
+}
+
+/** A ship, upright, about a third of a tile long: hull, mast and sail. */
+function shipShape(colour: string, k = 1) {
+  return (
+    <g transform={`scale(${k})`} className="ctn-ship">
+      <path d="M-.2 .02 H.2 L.13 .12 H-.13 Z" style={{ fill: colour }} className="ctn-ship__hull" />
+      <path d="M-.01 .02 V-.2" className="ctn-ship__mast" />
+      <path d="M.01 -.19 L.15 -.02 H.01 Z" className="ctn-ship__sail" />
+    </g>
+  );
+}
+
+/** A knight: a shield in the seat colour with one bar per strength; inked and raised when
+ * active, pale when not. */
+function knightToken(x: number, y: number, colour: string, k: Knight) {
+  return (
+    <g
+      transform={`translate(${x} ${y})`}
+      className={k.active ? 'ctn-knight ctn-knight--on' : 'ctn-knight'}
+    >
+      <circle cx=".015" cy=".025" r=".17" className="ctn-shadow" />
+      <path
+        d="M-.15 -.13 H.15 V.02 Q.15 .14 0 .19 Q-.15 .14 -.15 .02 Z"
+        style={{ fill: colour }}
+        className="ctn-knight__shield"
+      />
+      {Array.from({ length: k.level }, (_, i) => (
+        <path
+          key={i}
+          d={`M-.09 ${(-0.07 + i * 0.07).toFixed(2)} H.09`}
+          className="ctn-knight__bar"
+        />
+      ))}
+      <title>
+        {`${['Basic', 'Strong', 'Mighty'][k.level - 1]} knight, ${k.active ? 'active' : 'inactive'}`}
+      </title>
+    </g>
   );
 }
 

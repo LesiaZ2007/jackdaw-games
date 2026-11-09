@@ -1,10 +1,34 @@
 import type { ReactNode } from 'react';
-import type { DevCard, Resource } from '../types';
+import type { Card, DevCard } from '../types';
 import { RESOURCE_NAME, TERRAIN_OF } from './palette';
 
 /** Original line art for the resources, development cards and pieces, on a 24-unit grid. */
 
-const RES: Record<Resource, ReactNode> = {
+const RES: Record<Card, ReactNode> = {
+  paper: (
+    <g stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity=".25">
+      <path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7" />
+      <path d="M6 4a2 2 0 0 0-2 2v1h4V6a2 2 0 0 0-2-2zM7 20a2 2 0 0 0 2-2v-1H5v1a2 2 0 0 0 2 2z" />
+      <path d="M10 9h6M10 12h6M10 15h4" fill="none" strokeWidth="1.1" />
+    </g>
+  ),
+  cloth: (
+    <g stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity=".25">
+      <ellipse cx="7" cy="12" rx="3" ry="7" />
+      <path d="M7 5h11c1.7 0 3 3.1 3 7s-1.3 7-3 7H7" />
+      <path d="M12 5.5c1.4 1.6 2 4 2 6.5s-.6 4.9-2 6.5" fill="none" strokeWidth="1" />
+    </g>
+  ),
+  coin: (
+    <g stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity=".25">
+      <ellipse cx="12" cy="17" rx="7" ry="2.6" />
+      <path d="M5 17v-3.4M19 17v-3.4" fill="none" />
+      <ellipse cx="12" cy="13.6" rx="7" ry="2.6" />
+      <ellipse cx="12" cy="8" rx="5" ry="2" />
+      <path d="M7 8v-2.4M17 8v-2.4" fill="none" />
+      <ellipse cx="12" cy="5.6" rx="5" ry="2" />
+    </g>
+  ),
   lumber: (
     <>
       <g stroke="currentColor" strokeWidth="1.6" fill="currentColor" fillOpacity=".25">
@@ -117,7 +141,7 @@ const DEV: Record<DevCard | 'army' | 'longroad' | 'cards', ReactNode> = {
   ),
 };
 
-export function ResourceGlyph({ res, className }: { res: Resource; className?: string }) {
+export function ResourceGlyph({ res, className }: { res: Card; className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
       {RES[res]}
@@ -126,7 +150,7 @@ export function ResourceGlyph({ res, className }: { res: Resource; className?: s
 }
 
 /** The raw glyph, to place inside another SVG. */
-export const resourceArt = (res: Resource) => RES[res];
+export const resourceArt = (res: Card) => RES[res];
 
 export function DevGlyph({ kind, className }: { kind: keyof typeof DEV; className?: string }) {
   return (
@@ -137,7 +161,7 @@ export function DevGlyph({ kind, className }: { kind: keyof typeof DEV; classNam
 }
 
 /** A small printed square in the resource's colour with its glyph: costs, offers, gains. */
-export function Pip({ res, n }: { res: Resource; n?: number }) {
+export function Pip({ res, n }: { res: Card; n?: number }) {
   return (
     <span className={`ctn-pip ctn-fill--${TERRAIN_OF[res]}`} title={RESOURCE_NAME[res]}>
       <ResourceGlyph res={res} />
@@ -159,7 +183,7 @@ export function PieceGlyph({
   kind,
   colour,
 }: {
-  kind: 'road' | 'settlement' | 'city' | 'dev';
+  kind: 'road' | 'settlement' | 'city' | 'dev' | 'ship' | 'knight' | 'wall';
   colour: string;
 }) {
   return (
@@ -191,6 +215,30 @@ export function PieceGlyph({
       )}
       {kind === 'city' && <path d={CITY} style={{ fill: colour }} className="ctn-piece__body" />}
       {kind === 'dev' && <rect x="-6" y="-9" width="12" height="18" className="ctn-piece__card" />}
+      {kind === 'ship' && (
+        <>
+          <path d="M-10 1H10L6.5 7h-13z" style={{ fill: colour }} className="ctn-piece__body" />
+          <path d="M-.5 1V-10" className="ctn-piece__line" />
+          <path d="M.5 -9.5 7.5 -1H.5z" className="ctn-piece__card" />
+        </>
+      )}
+      {kind === 'knight' && (
+        <>
+          <path
+            d="M-8 -8H8V1Q8 7 0 10Q-8 7 -8 1Z"
+            style={{ fill: colour }}
+            className="ctn-piece__body"
+          />
+          <path d="M-4.5 -3.5H4.5" className="ctn-piece__line" />
+        </>
+      )}
+      {kind === 'wall' && (
+        <path
+          d="M-10 8V-2h3v-3h3v3h2v-3h3v3h2v-3h3v3h3V8z"
+          style={{ fill: colour }}
+          className="ctn-piece__body"
+        />
+      )}
     </svg>
   );
 }

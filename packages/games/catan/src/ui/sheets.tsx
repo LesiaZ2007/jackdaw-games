@@ -2,33 +2,56 @@
 
 import { Sheet, type ScreenPlayer } from '@jackdaw/ui';
 import { useState, type ReactNode } from 'react';
-import { COSTS, bankRatio, canAfford, harboursOf, missing } from '../build';
-import { layout } from '../geometry';
+import { COSTS, canAfford, missing } from '../build';
+import { CK_COSTS } from '../ck';
+import { SHIP_COST } from '../sea';
 import {
   cardsText,
+  rateFor,
   type CatanAction,
   type CatanTableView,
   type CatanView,
   type Offer,
 } from '../rules';
 import { validTrade, waitingForYou } from '../trade';
-import { RESOURCES, countCards, type Cards, type DevCard, type Resource } from '../types';
+import {
+  CARDS,
+  RESOURCES,
+  countCards,
+  type Card,
+  type Cards,
+  type DevCard,
+  type Resource,
+} from '../types';
 import { DEV_NAME, DEV_TEXT, SeatToken, namer } from './common';
 import { DevGlyph, PieceGlyph, Pip, ResourceGlyph } from './glyphs';
 import { RESOURCE_NAME, TERRAIN_OF } from './palette';
 
 type Send = (a: CatanAction) => Promise<boolean>;
-type Kind = 'road' | 'settlement' | 'city';
+export type Kind = 'road' | 'settlement' | 'city' | 'ship' | 'knight' | 'wall';
+
+/** What each thing in the Build sheet costs. */
+export const BUILD_COSTS: Record<Kind | 'dev', Partial<Cards>> = {
+  ...COSTS,
+  ship: SHIP_COST,
+  knight: CK_COSTS.knight,
+  wall: CK_COSTS.wall,
+};
 
 const none = (): Partial<Cards> => ({});
 const sum = (c: Partial<Cards>) => countCards(c);
-const covers = (hand: Cards, c: Partial<Cards>) => RESOURCES.every((r) => hand[r] >= (c[r] ?? 0));
+const covers = (hand: Cards, c: Partial<Cards>) =>
+  CARDS.every((r) => (hand[r] ?? 0) >= (c[r] ?? 0));
+
+/** The card kinds in play: the five resources, and (Cities & Knights) the commodities. */
+export const kindsOf = (t: Pick<CatanTableView, 'ck'>): readonly Card[] =>
+  t.ck ? CARDS : RESOURCES;
 
 /** Cards as a row of pips: "[wool]2 [ore]". */
 export function CardRow({ cards }: { cards: Partial<Cards> }) {
   return (
     <span className="ctn-cardrow">
-      {RESOURCES.filter((r) => cards[r]).map((r) => (
+      {CARDS.filter((r) => cards[r]).map((r) => (
         <Pip key={r} res={r} n={cards[r]} />
       ))}
     </span>
@@ -41,16 +64,18 @@ function Picker({
   value,
   onChange,
   max,
+  kinds = RESOURCES,
 }: {
   label: string;
   value: Partial<Cards>;
   onChange: (c: Partial<Cards>) => void;
   max?: Partial<Cards>;
+  kinds?: readonly Card[];
 }) {
   return (
-    <fieldset className="ctn-picker">
+    <fieldset className={kinds.length > 5 ? 'ctn-picker ctn-picker--goods' : 'ctn-picker'}>
       <legend className="ctn-label">{label}</legend>
-      {RESOURCES.map((r) => {
+      {kinds.map((r) => {
         const n = value[r] ?? 0;
         const cap = max ? (max[r] ?? 0) : 19;
         return (
@@ -83,24 +108,26 @@ function Picker({
   );
 }
 
-/** One resource chosen from the five. */
-function OnePick({
+/** One card kind chosen (the five resources unless `kinds` says otherwise). */
+export function OnePick<C extends Card = Resource>({
   value,
   onChange,
   label,
   disabled,
   note,
+  kinds = RESOURCES as readonly C[],
 }: {
-  value: Resource | null;
-  onChange: (r: Resource) => void;
+  value: C | null;
+  onChange: (r: C) => void;
   label: string;
-  disabled?: (r: Resource) => boolean;
-  note?: (r: Resource) => string;
+  disabled?: (r: C) => boolean;
+  note?: (r: C) => string;
+  kinds?: readonly C[];
 }) {
   return (
-    <fieldset className="ctn-onepick">
+    <fieldset className={kinds.length > 5 ? 'ctn-onepick ctn-onepick--goods' : 'ctn-onepick'}>
       <legend className="ctn-label">{label}</legend>
-      {RESOURCES.map((r) => (
+      {kinds.map((r) => (
         <button
           key={r}
           type="button"
@@ -131,24 +158,33 @@ export function BuildSheet({
   options,
   seatColourOfMe,
   onPick,
+  extra,
 }: {
   open: boolean;
   onClose: () => void;
   options: BuildOption[];
   seatColourOfMe: string;
   onPick: (kind: Kind | 'dev') => void;
+  /** More below the list (Seafarers: sail a ship). */
+  extra?: ReactNode;
 }) {
   const label: Record<BuildOption['kind'], string> = {
     road: 'Road',
     settlement: 'Settlement',
     city: 'City',
     dev: 'Development card',
+    ship: 'Ship',
+    knight: 'Knight',
+    wall: 'City wall',
   };
   const worth: Record<BuildOption['kind'], string> = {
     road: 'Joins your network. Five in a row can win Longest Road.',
     settlement: '1 point. Takes cards from the tiles it touches.',
     city: '2 points. Takes two cards instead of one.',
     dev: 'A knight, a progress card or a hidden point.',
+    ship: 'Sails along the sea from your coast, toward new islands.',
+    knight: 'Defends against the barbarians once activated (1 grain).',
+    wall: 'Hold 2 more cards on a 7.',
   };
   return (
     <Sheet open={open} onClose={onClose} title="Build" className="ctn ctn-sheet">
@@ -166,11 +202,12 @@ export function BuildSheet({
                 <b>{label[o.kind]}</b>
                 <small>{o.why ?? worth[o.kind]}</small>
               </span>
-              <CardRow cards={COSTS[o.kind]} />
+              <CardRow cards={BUILD_COSTS[o.kind]} />
             </button>
           </li>
         ))}
       </ul>
+      {extra}
     </Sheet>
   );
 }
@@ -178,23 +215,33 @@ export function BuildSheet({
 /** Why each piece can or can't be built, from what you hold and what's on the board. */
 export function buildOptions(
   hand: Cards,
-  spots: Record<Kind, number>,
-  left: Record<Kind, number>,
+  spots: Partial<Record<Kind, number>>,
+  left: Partial<Record<Kind, number>>,
   deckLeft: number,
+  kinds: readonly (Kind | 'dev')[] = ['road', 'settlement', 'city', 'dev'],
 ): BuildOption[] {
+  const plural: Record<Kind, string> = {
+    road: 'roads',
+    settlement: 'settlements',
+    city: 'cities',
+    ship: 'ships',
+    knight: 'basic knights',
+    wall: 'walls',
+  };
   const why = (kind: Kind | 'dev'): string | null => {
     if (kind === 'dev' && !deckLeft) return 'None left in the deck.';
-    if (kind !== 'dev' && left[kind] <= 0)
-      return `You have no ${kind === 'city' ? 'cities' : `${kind}s`} left.`;
-    if (!canAfford(hand, COSTS[kind]))
-      return `You need ${cardsText(missing(hand, COSTS[kind]))} more.`;
+    if (kind !== 'dev' && (left[kind] ?? 0) <= 0) return `You have no ${plural[kind]} left.`;
+    if (!canAfford(hand, BUILD_COSTS[kind]))
+      return `You need ${cardsText(missing(hand, BUILD_COSTS[kind]))} more.`;
     if (kind !== 'dev' && !spots[kind])
       return kind === 'city'
         ? 'Build a settlement to upgrade first.'
-        : 'There’s nowhere to build one yet.';
+        : kind === 'wall'
+          ? 'Walls go round cities without one.'
+          : 'There’s nowhere to build one yet.';
     return null;
   };
-  return (['road', 'settlement', 'city', 'dev'] as const).map((kind) => ({ kind, why: why(kind) }));
+  return kinds.map((kind) => ({ kind, why: why(kind) }));
 }
 
 /* ---------- Trade ---------- */
@@ -256,12 +303,12 @@ export function TradeSheet({
   const [give, setGive] = useState<Partial<Cards>>(start?.give ?? none());
   const [want, setWant] = useState<Partial<Cards>>(start?.want ?? none());
   const [to, setTo] = useState<string | null>(null);
-  const [bankGive, setBankGive] = useState<Resource | null>(null);
-  const [bankGet, setBankGet] = useState<Resource | null>(null);
+  const [bankGive, setBankGive] = useState<Card | null>(null);
+  const [bankGet, setBankGet] = useState<Card | null>(null);
   const bad = validTrade(give, want);
   const short = !covers(v.hand, give);
-  const L = layout(t.size);
-  const ratio = (r: Resource) => bankRatio(harboursOf(L, t.board, t.buildings, me), r);
+  const kinds = kindsOf(t);
+  const ratio = (r: Card) => rateFor(t, me, r);
 
   const reset = () => {
     setGive(none());
@@ -293,8 +340,8 @@ export function TradeSheet({
     >
       {canPlayers && (mine || t.turn !== me) && (
         <section className="ctn-trade__make">
-          <Picker label="You give" value={give} onChange={setGive} max={v.hand} />
-          <Picker label="You want" value={want} onChange={setWant} />
+          <Picker label="You give" value={give} onChange={setGive} max={v.hand} kinds={kinds} />
+          <Picker label="You want" value={want} onChange={setWant} kinds={kinds} />
           {mine && !start && (
             <fieldset className="ctn-to">
               <legend className="ctn-label">Offer to</legend>
@@ -409,15 +456,17 @@ export function TradeSheet({
       {canBank && (
         <section className="ctn-trade__bank">
           <h3 className="ctn-label">Trade with the bank</h3>
-          <OnePick
+          <OnePick<Card>
             label="Give"
+            kinds={kinds}
             value={bankGive}
             onChange={setBankGive}
             disabled={(r) => v.hand[r] < ratio(r)}
             note={(r) => `${ratio(r)} for 1`}
           />
-          <OnePick
+          <OnePick<Card>
             label="Get"
+            kinds={kinds}
             value={bankGet}
             onChange={setBankGet}
             disabled={(r) => r === bankGive || t.bank[r] < 1}
@@ -719,6 +768,7 @@ export function DiscardSheet({
   owe,
   send,
   busy,
+  why = 'A 7 was rolled',
 }: {
   open: boolean;
   onClose: () => void;
@@ -726,15 +776,22 @@ export function DiscardSheet({
   owe: number;
   send: Send;
   busy: boolean;
+  why?: string;
 }) {
   const [cards, setCards] = useState<Partial<Cards>>(none());
   const n = sum(cards);
   return (
     <Sheet open={open} onClose={onClose} title={`Discard ${owe}`} className="ctn ctn-sheet">
       <p className="ctn-trade__why">
-        A 7 was rolled and you hold {countCards(hand)} cards: give back half to the bank.
+        {why} and you hold {countCards(hand)} cards: give back half to the bank.
       </p>
-      <Picker label={`Chosen ${n} of ${owe}`} value={cards} onChange={setCards} max={hand} />
+      <Picker
+        label={`Chosen ${n} of ${owe}`}
+        value={cards}
+        onChange={setCards}
+        max={hand}
+        kinds={CARDS.some((r) => !RESOURCES.includes(r as Resource) && hand[r]) ? CARDS : RESOURCES}
+      />
       <button
         type="button"
         className="jd-plaque jd-plaque--go ctn-wide"

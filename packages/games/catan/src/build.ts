@@ -1,5 +1,5 @@
 import type { Layout } from './geometry';
-import { RESOURCES, type Board, type Cards, type HarbourKind, type Resource } from './types';
+import { CARDS, type Board, type Cards, type HarbourKind, type Resource } from './types';
 
 /** Where pieces may go, what they cost, and what harbours a player can use. */
 
@@ -21,13 +21,13 @@ export const COSTS: Record<Piece | 'dev', Partial<Cards>> = {
 export const PIECES: Record<Piece, number> = { road: 15, settlement: 5, city: 4 };
 
 export const canAfford = (hand: Cards, cost: Partial<Cards>): boolean =>
-  RESOURCES.every((r) => hand[r] >= (cost[r] ?? 0));
+  CARDS.every((r) => (hand[r] ?? 0) >= (cost[r] ?? 0));
 
 /** What a hand is short of for a cost. */
 export function missing(hand: Cards, cost: Partial<Cards>): Partial<Cards> {
   const out: Partial<Cards> = {};
-  for (const r of RESOURCES) {
-    const short = (cost[r] ?? 0) - hand[r];
+  for (const r of CARDS) {
+    const short = (cost[r] ?? 0) - (hand[r] ?? 0);
     if (short > 0) out[r] = short;
   }
   return out;

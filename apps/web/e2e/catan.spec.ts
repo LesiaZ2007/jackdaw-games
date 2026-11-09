@@ -162,7 +162,8 @@ test('catan: the opening, a roll, a trade and a turn, on phones and the TV', asy
   // On a small phone the whole trade sheet can be reached: its body scrolls, so the bank's button
   // at the end comes on screen (it once ran off the bottom). With enough of a kind, trade it in.
   await mover.setViewportSize({ width: 375, height: 667 });
-  await mover.getByRole('button', { name: 'Trade' }).click();
+  // The dock's Trade (a proposal may add its count, and an "Open Trade" card of its own).
+  await mover.getByRole('button', { name: /^Trade( \d+)?$/ }).click();
   const bank = sheet.getByRole('button', { name: /^(Pick what to give and get|Trade \d)/ });
   await bank.scrollIntoViewIfNeeded();
   const box = (await bank.boundingBox())!;

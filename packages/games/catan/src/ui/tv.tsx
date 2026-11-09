@@ -13,7 +13,8 @@ import type { CatanTableView } from '../rules';
 import { TRACKS } from '../ck';
 import { CARDS } from '../types';
 import { CatanBoard } from './board';
-import { Barbarians, Clock, Dice, PHASE_LABEL, SeatToken, logLine, namer } from './common';
+import { BarbarianTrack } from './estate';
+import { Clock, Dice, PHASE_LABEL, SeatToken, logLine, namer } from './common';
 import { DevGlyph, Pip } from './glyphs';
 import { RollMoment } from './roll';
 import { CardRow } from './sheets';
@@ -89,14 +90,8 @@ export const TvScreen: GameUi['TvScreen'] = ({
           <span>
             {t.phase === 'setup' ? 'Opening placements' : `Round ${t.round}`} · first to {t.target}
           </span>
-          {ck && (
-            <Barbarians
-              ship={ck.ship}
-              knights={t.seats.reduce((n, id) => n + strength(id), 0)}
-              cities={Object.values(t.buildings).filter((b) => b.city).length}
-            />
-          )}
         </header>
+        {ck && <BarbarianTrack t={t} size="tv" />}
         <section className="ctn-tv__turn">
           <SeatToken p={players.find((p) => p.id === (who ?? t.turn))} seats={t.seats} size={84} />
           <p>

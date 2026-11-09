@@ -33,6 +33,37 @@
   --ctn-pc-orange: #c8702a;
   --ctn-pc-green: #3f7a48;
   --ctn-pc-brown: #6a4a30;
+  /* Catan's own furniture (2026-11-09: "more of a Catan aesthetic"): sand-gold card rims and
+     the island's frame, walnut edges, a cream ribbon for names. */
+  --ctn-sand: #e8d29a;
+  --ctn-sand-2: #d2ac5c;
+  --ctn-walnut: #5d3f22;
+  --ctn-walnut-2: #7d5732;
+  --ctn-ribbon: #f8efd4;
+  --ctn-card-motif: rgba(29, 29, 28, 0.2);
+  --ctn-card-shade: rgba(45, 28, 10, 0.35);
+}
+
+/* Panels and buttons: parchment by day, walnut by night. */
+.ctn {
+  --ctn-panel: #fbf3dc;
+  --ctn-panel-2: #f1e2b8;
+  --ctn-frame: var(--ctn-walnut);
+  --ctn-frame-2: var(--ctn-walnut-2);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .ctn {
+    --ctn-panel: #2e261c;
+    --ctn-panel-2: #3a2f20;
+    --ctn-frame: #b48a4a;
+    --ctn-frame-2: #8a6a3a;
+  }
+}
+:root[data-theme='dark'] .ctn {
+  --ctn-panel: #2e261c;
+  --ctn-panel-2: #3a2f20;
+  --ctn-frame: #b48a4a;
+  --ctn-frame-2: #8a6a3a;
 }
 
 .ctn {

@@ -131,23 +131,6 @@
 
 /* ---------- Phone and TV furniture ---------- */
 
-/* Eight cards in a hand, in one row: narrower cards, smaller names. (Scoped under .ctn so these
-   win over the phone's own rules whichever stylesheet loads first.) */
-.ctn .ctn-hand--goods {
-  grid-template-columns: repeat(8, minmax(0, 52px));
-  gap: 4px;
-}
-.ctn .ctn-hand--goods .ctn-rcard {
-  padding: 3px 2px;
-}
-.ctn .ctn-hand--goods .ctn-rcard__name {
-  font-size: 9px;
-  letter-spacing: 0;
-}
-.ctn .ctn-hand--goods .ctn-rcard__art svg {
-  width: 22px;
-  height: 22px;
-}
 .ctn .ctn-picker--goods,
 .ctn .ctn-onepick--goods {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -204,9 +187,6 @@
 .ctn-strip .ctn-dice--three .ctn-die {
   --d: 26px;
 }
-.ctn-strip__text .ctn-barb {
-  margin-top: 2px;
-}
 .ctn-evt__ink {
   fill: var(--ctn-stock-ink);
 }
@@ -226,50 +206,6 @@
   font: 600 15px/1.2 var(--font-body);
 }
 .ctn-roll--tv .ctn-roll__event {
-  font-size: 34px;
-}
-
-/* The barbarian ship's seven steps, and knights against cities. */
-.ctn-barb {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.ctn-barb__track {
-  display: inline-flex;
-  gap: 2px;
-}
-.ctn-barb__track i {
-  width: 7px;
-  height: 7px;
-  border: 1.5px solid var(--ink);
-  background: var(--paper);
-}
-.ctn-barb__track i.is-on {
-  background: var(--sable);
-}
-.ctn-barb__track i.is-land {
-  border-color: var(--gules);
-}
-.ctn-barb__odds {
-  font: 800 14px/1 var(--font-code);
-  color: var(--gules);
-}
-.ctn-barb__odds.is-safe {
-  color: var(--vert);
-}
-.ctn-barb__odds small {
-  margin: 0 2px;
-  font-weight: 500;
-  font-size: 0.8em;
-  color: var(--ink);
-}
-.ctn-tv__head .ctn-barb__track i {
-  width: 22px;
-  height: 22px;
-  border-width: 3px;
-}
-.ctn-tv__head .ctn-barb__odds {
   font-size: 34px;
 }
 

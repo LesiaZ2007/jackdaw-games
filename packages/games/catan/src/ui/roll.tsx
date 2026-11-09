@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
-import { Die } from './common';
+import type { EventFace } from '../ck';
+import { Die, EventDie } from './common';
 import './roll.css';
 
 /**
@@ -10,15 +11,23 @@ import './roll.css';
  * live, so it lands on the phone's strip and the TV's turn card alike). Tap to skip it; reduced
  * motion skips it altogether. `onDone` runs once it has landed.
  */
+const EVENTS: EventFace[] = ['ship', 'science', 'ship', 'trade', 'ship', 'politics'];
+
 export function RollMoment({
   dice,
   seq,
   target,
   tv = false,
   onDone,
+  event = null,
+  robberSleeps = false,
 }: {
   dice: [number, number];
   seq: number;
+  /** Cities & Knights: the event die (the first number die is then the red one). */
+  event?: EventFace | null;
+  /** Before the barbarians first land, a 7 doesn't move the robber. */
+  robberSleeps?: boolean;
   /** A selector for the dice it lands on. */
   target: string;
   tv?: boolean;
@@ -84,15 +93,27 @@ export function RollMoment({
         onAnimationEnd={(e) => e.animationName === 'ctn-roll-glide' && done.current()}
       >
         <span className="ctn-roll__die ctn-roll__die--a">
-          <Die n={face(0)} />
+          <Die n={face(0)} red={!!event} />
         </span>
         <span className="ctn-roll__die ctn-roll__die--b">
-          <Die n={face(1)} red />
+          <Die n={face(1)} red={!event} />
         </span>
+        {event && (
+          <span className="ctn-roll__die ctn-roll__die--c">
+            <EventDie face={tick >= TUMBLE ? event : EVENTS[(seq + tick) % 6]!} />
+          </span>
+        )}
       </div>
       <p className={total === 7 ? 'ctn-roll__total ctn-roll__total--seven' : 'ctn-roll__total'}>
         <b>{total}</b>
-        {total === 7 && <span>The robber moves</span>}
+        {total === 7 && <span>{robberSleeps ? 'Discard over the limit' : 'The robber moves'}</span>}
+        {event && total !== 7 && (
+          <span className="ctn-roll__event">
+            {event === 'ship'
+              ? 'The barbarian ship sails on'
+              : `${event[0]!.toUpperCase()}${event.slice(1)} gate: progress cards`}
+          </span>
+        )}
       </p>
     </div>
   );

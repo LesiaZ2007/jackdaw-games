@@ -1,4 +1,4 @@
-import type { Resource, Terrain } from '../types';
+import type { Card, Commodity, Terrain } from '../types';
 
 /**
  * Catan's piece colours, in seat order (the classic four, then green and brown at five and six).
@@ -27,18 +27,25 @@ export const seatColour = (pid: string, seats: readonly string[]): string => {
   return c ? `var(--ctn-pc-${c})` : 'var(--rule)';
 };
 
-export const TERRAIN_OF: Record<Resource, Terrain> = {
+/** The fill behind a card's glyph: its terrain's colour, or (commodities) its own. */
+export const TERRAIN_OF: Record<Card, Terrain | Commodity> = {
   lumber: 'forest',
   brick: 'hills',
   wool: 'pasture',
   grain: 'fields',
   ore: 'mountains',
+  paper: 'paper',
+  cloth: 'cloth',
+  coin: 'coin',
 };
 
-export const RESOURCE_NAME: Record<Resource, string> = {
+export const RESOURCE_NAME: Record<Card, string> = {
   lumber: 'Lumber',
   brick: 'Brick',
   wool: 'Wool',
   grain: 'Grain',
   ore: 'Ore',
+  paper: 'Paper',
+  cloth: 'Cloth',
+  coin: 'Coin',
 };

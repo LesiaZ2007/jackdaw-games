@@ -10,6 +10,9 @@ import './tv.css';
 /** How everyone made their points, the winner first. */
 function Scores({ r, players }: { r: CatanReveal; players: ScreenPlayer[] }) {
   const order = [...r.seats].sort((a, b) => r.points[b]!.total - r.points[a]!.total);
+  const first = r.points[r.seats[0]!]!;
+  const ck = first.metros !== undefined;
+  const sea = first.islands !== undefined;
   return (
     <table className="ctn-scores">
       <thead>
@@ -22,10 +25,29 @@ function Scores({ r, players }: { r: CatanReveal; players: ScreenPlayer[] }) {
           <th scope="col" title="Longest Road">
             Road
           </th>
-          <th scope="col" title="Largest Army">
-            Army
-          </th>
-          <th scope="col" title="Victory point cards">
+          {ck ? (
+            <>
+              <th scope="col" title="Metropolises">
+                Metro
+              </th>
+              <th scope="col" title="Defender of Catan">
+                Def.
+              </th>
+            </>
+          ) : (
+            <th scope="col" title="Largest Army">
+              Army
+            </th>
+          )}
+          {sea && (
+            <th scope="col" title="New islands settled">
+              Isles
+            </th>
+          )}
+          <th
+            scope="col"
+            title={ck ? 'Printer, Constitution and the merchant' : 'Victory point cards'}
+          >
             Cards
           </th>
           <th scope="col">Points</th>
@@ -49,8 +71,16 @@ function Scores({ r, players }: { r: CatanReveal; players: ScreenPlayer[] }) {
               <td>{pt.settlements}</td>
               <td>{pt.cities}</td>
               <td>{pt.road ? '2' : '–'}</td>
-              <td>{pt.army ? '2' : '–'}</td>
-              <td>{pt.vp || '–'}</td>
+              {ck ? (
+                <>
+                  <td>{pt.metros ? pt.metros * 2 : '–'}</td>
+                  <td>{pt.defender || '–'}</td>
+                </>
+              ) : (
+                <td>{pt.army ? '2' : '–'}</td>
+              )}
+              {sea && <td>{pt.islands ? pt.islands * 2 : '–'}</td>}
+              <td>{(ck ? pt.progress : pt.vp) || '–'}</td>
               <td className="ctn-scores__total">{pt.total}</td>
             </tr>
           );
@@ -73,6 +103,12 @@ export const Reveal: NonNullable<GameUi['Reveal']> = ({ result, players }) => {
           roads={r.roads}
           robber={r.robber}
           seats={r.seats}
+          ships={r.ships}
+          pirate={r.pirate ?? null}
+          knights={r.ckKnights}
+          walls={r.walls}
+          metros={r.metros}
+          merchant={r.merchant ?? null}
           label="The island at the end"
           pad={0.9}
         />
@@ -93,6 +129,12 @@ export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result, players }) =
           roads={r.roads}
           robber={r.robber}
           seats={r.seats}
+          ships={r.ships}
+          pirate={r.pirate ?? null}
+          knights={r.ckKnights}
+          walls={r.walls}
+          metros={r.metros}
+          merchant={r.merchant ?? null}
           label="The island at the end"
           pad={0.8}
         />

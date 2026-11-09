@@ -1,5 +1,8 @@
 import type { Size } from './types';
 
+/** Which grid: the classic or big island, or (Seafarers) a sea map of the same size. */
+export type MapKey = Size | 'seaClassic' | 'seaBig';
+
 /**
  * The island's shape: pointy-top hexes of side 1, rows 3-4-5-4-3 (classic) or 3-4-5-6-5-4-3
  * (big). Tiles are numbered by row, top to bottom, then left to right. Corners and edges get short
@@ -38,6 +41,7 @@ export interface LayoutTile {
 
 export interface Layout {
   size: Size;
+  key: MapKey;
   tiles: LayoutTile[];
   corners: Record<string, Corner>;
   edges: Record<string, Edge>;
@@ -51,22 +55,30 @@ export interface Layout {
   bounds: [number, number, number, number];
 }
 
-const ROWS: Record<Size, number[]> = { classic: [3, 4, 5, 4, 3], big: [3, 4, 5, 6, 5, 4, 3] };
-const HARBOURS: Record<Size, number> = { classic: 9, big: 11 };
+const ROWS: Record<MapKey, number[]> = {
+  classic: [3, 4, 5, 4, 3],
+  big: [3, 4, 5, 6, 5, 4, 3],
+  // Sea maps alternate row widths, so the frame is a rectangle taller than it's wide.
+  seaClassic: [6, 7, 6, 7, 6, 7, 6, 7],
+  seaBig: [7, 8, 7, 8, 7, 8, 7, 8, 7, 8],
+};
+/** Harbour slots round the coast (sea maps place theirs round the main island instead). */
+const HARBOURS: Record<MapKey, number> = { classic: 9, big: 11, seaClassic: 0, seaBig: 0 };
 const SQ3 = Math.sqrt(3);
 
-const cache = new Map<Size, Layout>();
+const cache = new Map<MapKey, Layout>();
 
-export function layout(size: Size): Layout {
-  const hit = cache.get(size);
+export function layout(map: MapKey): Layout {
+  const hit = cache.get(map);
   if (hit) return hit;
-  const built = build(size);
-  cache.set(size, built);
+  const built = build(map);
+  cache.set(map, built);
   return built;
 }
 
-function build(size: Size): Layout {
-  const rows = ROWS[size];
+function build(map: MapKey): Layout {
+  const size: Size = map === 'big' || map === 'seaBig' ? 'big' : 'classic';
+  const rows = ROWS[map];
   const mid = (rows.length - 1) / 2;
   const centres: { x: number; y: number; row: number }[] = [];
   rows.forEach((w, row) => {
@@ -143,26 +155,33 @@ function build(size: Size): Layout {
   const ys = Object.values(corners).map((c) => c.y);
   return {
     size,
+    key: map,
     tiles,
     corners,
     edges,
     cornerIds: Object.keys(corners),
     edgeIds: Object.keys(edges),
-    harbourSlots: harbourSlots(edges, corners, HARBOURS[size]),
+    harbourSlots: HARBOURS[map] ? harbourSlots(edges, corners, HARBOURS[map]) : [],
     spiral: spiral(tiles),
     bounds: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)],
   };
 }
 
 /** `n` coastal edges spread evenly round the coast, never two on one corner. */
-function harbourSlots(edges: Record<string, Edge>, corners: Record<string, Corner>, n: number) {
+export function harbourSlots(
+  edges: Record<string, Edge>,
+  corners: Record<string, Corner>,
+  n: number,
+  isCoast: (e: Edge) => boolean = (e) => e.tiles.length === 1,
+  centre: { x: number; y: number } = { x: 0, y: 0 },
+) {
   const coast = Object.values(edges)
-    .filter((e) => e.tiles.length === 1)
+    .filter(isCoast)
     .map((e) => ({
       e,
       ang: Math.atan2(
-        (corners[e.a]!.y + corners[e.b]!.y) / 2,
-        (corners[e.a]!.x + corners[e.b]!.x) / 2,
+        (corners[e.a]!.y + corners[e.b]!.y) / 2 - centre.y,
+        (corners[e.a]!.x + corners[e.b]!.x) / 2 - centre.x,
       ),
     }))
     .sort((p, q) => p.ang - q.ang)

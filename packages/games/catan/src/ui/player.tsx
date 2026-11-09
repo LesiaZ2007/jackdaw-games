@@ -1,10 +1,12 @@
 'use client';
 
 import { VerdictMoment, useMoment, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { piecesLeft } from '../build';
 import {
   PROGRESS_NAME,
+  TRACKS,
+  TRACK_GOOD,
   WALLS_EACH,
   canAct,
   knightMoves,
@@ -35,7 +37,14 @@ import { YIELD, emptyCards, type Cards } from '../types';
 import { CatanBoard } from './board';
 import { CitySheet, PickSheet, ProgressSheet } from './cksheets';
 import { namer } from './common';
-import { BarbarianTrack, Ledger, PointsSheet, TrackTowers } from './estate';
+import {
+  BarbarianTrack,
+  KnightsChip,
+  Ledger,
+  PointsMedal,
+  PointsSheet,
+  TrackTower,
+} from './estate';
 import { Pip } from './glyphs';
 import { Tray } from './hand';
 import { RESOURCE_NAME, seatColour } from './palette';
@@ -175,8 +184,18 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   >(null);
   const [counter, setCounter] = useState<Offer | null>(null);
   const [discardShut, setDiscardShut] = useState(-1);
+  // A phone can blow the island up to twice its size and pan it with a finger.
+  const [zoomed, setZoomed] = useState(false);
+  const island = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = island.current;
+    if (!zoomed || !el) return;
+    el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+    el.scrollTop = (el.scrollHeight - el.clientHeight) / 2;
+  }, [zoomed]);
 
   const acting = seated && t.actor === me && t.phase !== 'discard' && t.phase !== 'robber';
+  const canCommand = acting && t.phase === 'main' && !p.mode && !p.card && !p.sailing;
   const owe = me ? (t.discards[me] ?? 0) : 0;
   const robbing = seated && t.phase === 'robber' && t.robberBy === me;
   const owes = me ? (t.owed[me]?.length ?? 0) : 0;
@@ -805,34 +824,50 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       <Opponents t={t} me={me} players={players} reactions={reactions} />
       <div className={ck ? 'ctn-stage ctn-stage--voyage' : 'ctn-stage'}>
         {ck && <BarbarianTrack t={t} />}
-        <CatanBoard
-          board={t.board}
-          buildings={t.buildings}
-          roads={t.roads}
-          robber={t.robber}
-          seats={t.seats}
-          corners={corners}
-          edges={edges}
-          tiles={tiles}
-          ghost={ghost && ghostKind ? { kind: ghostKind, at: ghost } : null}
-          ghostColour={myColour}
-          roll={t.dice ? { total: t.dice[0] + t.dice[1], seq: t.rollSeq } : null}
-          onCorner={onCorner}
-          onEdge={onEdge}
-          onTile={onTile}
-          label="The island"
-          pad={0.95}
-          ships={sea?.ships}
-          pirate={sea?.pirate ?? null}
-          knights={ck?.knights}
-          walls={ck?.walls}
-          metros={ck?.metros}
-          merchant={ck?.merchant ?? null}
-          chosen={p.knight ?? (p.card === 'intrigue' ? ghost : null)}
-          chosenEdge={p.ship}
-          picked={p.card === 'inventor' ? p.tiles2 : tile !== null ? [tile] : []}
-          tileVerb={p.card ? 'Pick' : 'Move the robber to'}
-        />
+        <div ref={island} className={zoomed ? 'ctn-island is-zoomed' : 'ctn-island'}>
+          <CatanBoard
+            board={t.board}
+            buildings={t.buildings}
+            roads={t.roads}
+            robber={t.robber}
+            seats={t.seats}
+            corners={corners}
+            edges={edges}
+            tiles={tiles}
+            ghost={ghost && ghostKind ? { kind: ghostKind, at: ghost } : null}
+            ghostColour={myColour}
+            roll={t.dice ? { total: t.dice[0] + t.dice[1], seq: t.rollSeq } : null}
+            onCorner={onCorner}
+            onEdge={onEdge}
+            onTile={onTile}
+            label="The island"
+            pad={0.95}
+            ships={sea?.ships}
+            pirate={sea?.pirate ?? null}
+            knights={ck?.knights}
+            walls={ck?.walls}
+            metros={ck?.metros}
+            merchant={ck?.merchant ?? null}
+            chosen={p.knight ?? (p.card === 'intrigue' ? ghost : null)}
+            chosenEdge={p.ship}
+            picked={p.card === 'inventor' ? p.tiles2 : tile !== null ? [tile] : []}
+            tileVerb={p.card ? 'Pick' : 'Move the robber to'}
+          />
+        </div>
+        <button
+          type="button"
+          className="ctn-zoom"
+          aria-pressed={zoomed}
+          aria-label={zoomed ? 'Show the whole island' : 'Zoom in on the island'}
+          onClick={() => setZoomed((z) => !z)}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="10" cy="10" r="6.5" />
+            <path d="M15 15l6 6" />
+            <path d="M7 10h6" />
+            {!zoomed && <path d="M10 7v6" />}
+          </svg>
+        </button>
         {seated && me && (
           <OfferCard
             t={t}
@@ -867,19 +902,47 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           colour={myColour}
           onPoints={() => setSheet('points')}
           onKnights={() => set({ ...fresh(step), knights: true })}
-          canCommand={acting && t.phase === 'main' && !p.mode && !p.card && !p.sailing}
+          canCommand={canCommand}
         />
       )}
       {seated && (
         <Tray
           hand={hand}
-          goods={!!ck}
           got={me ? (t.produced[me] ?? null) : null}
           gotKey={t.rollSeq}
           dev={ck ? undefined : v!.dev}
           progress={ck ? v!.progress : undefined}
           onCards={() => setSheet('cards')}
-          towers={ck && me ? <TrackTowers t={t} me={me} onCity={() => setSheet('city')} /> : null}
+          left={ck ? ck.deckLeft : t.deckLeft}
+          lead={me ? <PointsMedal t={t} v={v!} onPoints={() => setSheet('points')} /> : null}
+          tail={
+            ck && me ? (
+              <KnightsChip
+                t={t}
+                me={me}
+                onKnights={() => set({ ...fresh(step), knights: true })}
+                canCommand={canCommand}
+              />
+            ) : null
+          }
+          towers={
+            ck && me
+              ? Object.fromEntries(
+                  TRACKS.map((track) => [
+                    TRACK_GOOD[track],
+                    <TrackTower
+                      key={track}
+                      t={t}
+                      v={v!}
+                      me={me}
+                      track={track}
+                      live={acting && t.phase === 'main'}
+                      onCity={() => setSheet('city')}
+                    />,
+                  ]),
+                )
+              : undefined
+          }
         />
       )}
       {dock}

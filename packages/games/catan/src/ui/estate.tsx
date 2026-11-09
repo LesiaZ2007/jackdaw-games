@@ -3,7 +3,7 @@
 import { Sheet } from '@jackdaw/ui';
 import type { CSSProperties, ReactNode } from 'react';
 import { piecesLeft } from '../build';
-import { TRACKS, TRACK_NAME } from '../ck';
+import { TRACKS, TRACK_GOOD, TRACK_NAME, type Track } from '../ck';
 import type { CatanTableView, CatanView } from '../rules';
 import { ISLAND_BONUS } from '../sea';
 import { CITY, DevGlyph, PieceGlyph } from './glyphs';
@@ -161,6 +161,7 @@ export function BarbarianTrack({
       <span className="ctn-voyage__label" aria-hidden="true">
         <b>Barbarians</b>
         <small>{left === 1 ? 'land next ship' : `${left} steps away`}</small>
+        <em>{left === 1 ? 'Next!' : `${left} steps`}</em>
       </span>
       <svg viewBox="0 0 300 40" className="ctn-voyage__sea" aria-hidden="true">
         <rect x="0" y="0" width="300" height="40" rx="8" className="ctn-voyage__water" />
@@ -214,9 +215,79 @@ export function BarbarianTrack({
   );
 }
 
+/** Your points on a medallion, the ring filling towards the target; a tap shows where they come from. */
+export function PointsMedal({
+  t,
+  v,
+  onPoints,
+}: {
+  t: CatanTableView;
+  v: CatanView;
+  onPoints: () => void;
+}) {
+  const total = v.points;
+  return (
+    <button
+      type="button"
+      className="ctn-vp"
+      style={{ '--share': Math.min(1, total / t.target) } as CSSProperties}
+      onClick={onPoints}
+      aria-label={`${total} of ${t.target} victory points. See where they come from`}
+    >
+      <span className="ctn-vp__ring" aria-hidden="true" />
+      <b>{total}</b>
+      <small>of {t.target}</small>
+    </button>
+  );
+}
+
+/** Cities & Knights: your knights' active strength; a tap picks one to command. */
+export function KnightsChip({
+  t,
+  me,
+  onKnights,
+  canCommand,
+}: {
+  t: CatanTableView;
+  me: string;
+  onKnights: () => void;
+  /** Your knights can be given orders now (your turn, building). */
+  canCommand: boolean;
+}) {
+  const mineK = Object.values(t.ck!.knights).filter((k) => k.owner === me);
+  const ready = mineK.filter((k) => k.active).reduce((n, k) => n + k.level, 0);
+  const all = mineK.reduce((n, k) => n + k.level, 0);
+  const asleep = mineK.filter((k) => !k.active).length;
+  return (
+    <button
+      type="button"
+      className={asleep ? 'ctn-kchip has-asleep' : 'ctn-kchip'}
+      onClick={onKnights}
+      disabled={!canCommand || !mineK.length}
+      aria-label={
+        mineK.length
+          ? `Your knights: strength ${ready} active of ${all}${asleep ? `, ${asleep} not activated` : ''}. Command a knight`
+          : 'No knights yet'
+      }
+    >
+      <DevGlyph kind="knight" />
+      <span aria-hidden="true">
+        <b>{ready}</b>
+        <small>/{all}</small>
+      </span>
+      {asleep > 0 && (
+        <i className="ctn-kchip__asleep" aria-hidden="true">
+          {asleep} off
+        </i>
+      )}
+    </button>
+  );
+}
+
 /**
- * Your estate, under the island: your points on a medallion with where they come from, and with
- * Cities & Knights your tracks, progress cards by colour and knights. Each part opens its sheet.
+ * Your estate on a laptop, beside the island: your points medallion, where the points come from
+ * and (Cities & Knights) your knights. On a phone the medallion and knights sit on the tray, so
+ * the island keeps the room.
  */
 export function Ledger({
   t,
@@ -233,30 +304,13 @@ export function Ledger({
   colour: string;
   onPoints: () => void;
   onKnights: () => void;
-  /** Your knights can be given orders now (your turn, building). */
   canCommand: boolean;
 }) {
   const rows = pointRows(t, v, me, colour).filter((r) => r.count > 0);
   const total = v.points;
-  const ck = t.ck;
-  const share = Math.min(1, total / t.target);
-  const mineK = ck ? Object.values(ck.knights).filter((k) => k.owner === me) : [];
-  const ready = mineK.filter((k) => k.active).reduce((n, k) => n + k.level, 0);
-  const all = mineK.reduce((n, k) => n + k.level, 0);
-  const asleep = mineK.filter((k) => !k.active).length;
   return (
-    <section className={ck ? 'ctn-ledger ctn-ledger--ck' : 'ctn-ledger'} aria-label="Your estate">
-      <button
-        type="button"
-        className="ctn-vp"
-        style={{ '--share': share } as CSSProperties}
-        onClick={onPoints}
-        aria-label={`${total} of ${t.target} victory points. See where they come from`}
-      >
-        <span className="ctn-vp__ring" aria-hidden="true" />
-        <b>{total}</b>
-        <small>of {t.target}</small>
-      </button>
+    <section className={t.ck ? 'ctn-ledger ctn-ledger--ck' : 'ctn-ledger'} aria-label="Your estate">
+      <PointsMedal t={t} v={v} onPoints={onPoints} />
       <ul className="ctn-ledger__pts" aria-label="Where your points come from">
         {rows.map((r) => (
           <li key={r.key} title={`${r.label}: ${r.points} ${r.points === 1 ? 'point' : 'points'}`}>
@@ -275,77 +329,72 @@ export function Ledger({
           <small>to win</small>
         </li>
       </ul>
-      {ck && (
-        <button
-          type="button"
-          className={asleep ? 'ctn-kchip has-asleep' : 'ctn-kchip'}
-          onClick={onKnights}
-          disabled={!canCommand || !mineK.length}
-          aria-label={
-            mineK.length
-              ? `Your knights: strength ${ready} active of ${all}${asleep ? `, ${asleep} not activated` : ''}. Command a knight`
-              : 'No knights yet'
-          }
-        >
-          <DevGlyph kind="knight" />
-          <span aria-hidden="true">
-            <b>{ready}</b>
-            <small>/{all}</small>
-          </span>
-          {asleep > 0 && (
-            <i className="ctn-kchip__asleep" aria-hidden="true">
-              {asleep} off
-            </i>
-          )}
-        </button>
-      )}
+      {t.ck && <KnightsChip t={t} me={me} onKnights={onKnights} canCommand={canCommand} />}
     </section>
   );
 }
 
 /**
- * Cities & Knights: your three tracks as little towers of five steps in their colours, a gate on
- * top (a banner on it for a metropolis you hold). A tap opens your city improvements.
+ * Cities & Knights: one of your tracks as a tower of five numbered steps in its colour, a gate on
+ * top (ringed for a metropolis you hold). It stands beside the commodity that climbs it, as on
+ * the improvement chart. A tap opens your city improvements.
  */
-export function TrackTowers({
+export function TrackTower({
   t,
+  v,
   me,
+  track,
+  live,
   onCity,
 }: {
   t: CatanTableView;
+  v: CatanView;
   me: string;
+  track: Track;
+  /** You could build now (your turn, building). */
+  live: boolean;
   onCity: () => void;
 }) {
   const ck = t.ck!;
+  const lvl = ck.levels[me]![track];
+  const metro = ck.metros[track];
+  const mine = !!metro && t.buildings[metro]?.owner === me;
+  const good = TRACK_GOOD[track];
+  // As the city sheet works it out: one more than the level reached, one less with the crane.
+  const cost = lvl >= 5 ? null : Math.max(0, lvl + 1 - (ck.crane ? 1 : 0));
+  const hasCity = Object.values(t.buildings).some((b) => b.owner === me && b.city);
+  const ready = live && hasCity && cost !== null && (v.hand[good] ?? 0) >= cost;
   return (
-    <span className="ctn-towers">
-      {TRACKS.map((track) => {
-        const lvl = ck.levels[me]![track];
-        const metro = ck.metros[track];
-        const mine = !!metro && t.buildings[metro]?.owner === me;
-        return (
-          <button
-            key={track}
-            type="button"
-            className={`ctn-tower ctn-tower--${track}${mine ? ' has-metro' : ''}`}
-            onClick={onCity}
-            aria-label={`${TRACK_NAME[track]} ${lvl} of 5${mine ? ', your metropolis' : ''}. Open your city improvements`}
+    <button
+      type="button"
+      className={['ctn-tower', `ctn-tower--${track}`, mine && 'has-metro', ready && 'can-raise']
+        .filter(Boolean)
+        .join(' ')}
+      onClick={onCity}
+      title={cost === null ? TRACK_NAME[track] : `${TRACK_NAME[track]}: next costs ${cost} ${good}`}
+      aria-label={`${TRACK_NAME[track]} ${lvl} of 5${mine ? ', your metropolis' : ''}${
+        cost === null
+          ? ', at the top'
+          : `, next costs ${cost} ${good}${ready ? ', you can raise it now' : ''}`
+      }. Open your city improvements`}
+    >
+      <span className="ctn-tower__gate" aria-hidden="true">
+        <Gate />
+        {cost !== null && <b className="ctn-tower__cost">{cost}</b>}
+      </span>
+      <span className="ctn-tower__steps" aria-hidden="true">
+        {[5, 4, 3, 2, 1].map((n) => (
+          <i
+            key={n}
+            className={
+              n < lvl ? 'is-on' : n === lvl ? 'is-on is-top' : n === lvl + 1 ? 'is-next' : ''
+            }
           >
-            <span className="ctn-tower__gate" aria-hidden="true">
-              <Gate />
-            </span>
-            <span className="ctn-tower__steps" aria-hidden="true">
-              {[5, 4, 3, 2, 1].map((n) => (
-                <i key={n} className={n <= lvl ? 'is-on' : ''} />
-              ))}
-            </span>
-            <span className="ctn-tower__name" aria-hidden="true">
-              {TRACK_NAME[track].slice(0, 3)}
-            </span>
-          </button>
-        );
-      })}
-    </span>
+            {n}
+          </i>
+        ))}
+      </span>
+    </button>
   );
 }
 

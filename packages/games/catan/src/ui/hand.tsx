@@ -2,13 +2,22 @@
 
 import { useMoment } from '@jackdaw/ui';
 import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react';
-import { PROGRESS_NAME, PROGRESS_TRACK, type Progress } from '../ck';
+import {
+  PROGRESS_NAME,
+  PROGRESS_TRACK,
+  TRACKS,
+  TRACK_NAME,
+  type Progress,
+  type Track,
+} from '../ck';
 import {
   CARDS,
+  COMMODITIES,
   RESOURCES,
   countCards,
   type Card,
   type Cards,
+  type Commodity,
   type DevCard,
   type Terrain,
 } from '../types';
@@ -30,7 +39,7 @@ const MOTIF_OF: Record<Card, Terrain> = {
   coin: 'mountains',
 };
 
-/** A pile never lies quite straight: each kind its own small tilt, as if dropped on the table. */
+/** A pile never lies quite straight: each kind its own slight tilt, as if set down by hand. */
 const TILT: Record<Card | DevCard, number> = {
   lumber: -1.4,
   brick: 1,
@@ -53,37 +62,42 @@ const MAX_LAYERS = 4;
 const DEV_ORDER: DevCard[] = ['knight', 'roadBuilding', 'yearOfPlenty', 'monopoly', 'victoryPoint'];
 
 /**
- * Your place at the table (2026-11-09: "bigger, and as if they're stacked on one another… a row
- * for the progress cards and a row for the materials… feel like an actual board game"): a
- * walnut tray with your development or progress cards in one row and your materials in the
- * other. Each kind of material is a pile a few cards deep with its count on a number disc; a
- * kind you have none of keeps its place as an empty, faded card. Cards overlap like a held hand
- * when there are many kinds, so they never get thin.
+ * Your place at the table (2026-11-09: "a row for the progress cards and a row for the materials…
+ * cloth/coin/paper in one row and the resources in another… less rounded, like the actual game"):
+ * a walnut tray with your development or progress cards along the top, then (Cities & Knights)
+ * each commodity standing beside the track it climbs, then your five resources. Each kind is a
+ * neat pile with its count on a number disc; a kind you have none of keeps its place, faded.
  */
 export function Tray({
   hand,
   got,
   gotKey,
-  goods = false,
   dev,
   progress,
   onCards,
   towers,
+  lead,
+  tail,
+  left,
 }: {
   hand: Cards;
   /** What the last roll paid you, shown rising over the hand. */
   got: Partial<Cards> | null;
   gotKey: number;
-  /** Cities & Knights: the three commodities count too. */
-  goods?: boolean;
   /** The base game's development cards. */
   dev?: { card: DevCard; playable: boolean }[];
   /** Cities & Knights' progress cards. */
   progress?: { card: Progress; playable: boolean }[];
   /** Opens your cards, to play one. */
   onCards: () => void;
-  /** Cities & Knights: your tracks, at the start of the progress cards' row. */
-  towers?: ReactNode;
+  /** Cities & Knights: each commodity's track, which stands beside it. */
+  towers?: Partial<Record<Commodity, ReactNode>>;
+  /** Before your cards on the top row (on a phone, your points). */
+  lead?: ReactNode;
+  /** After them (on a phone, your knights). */
+  tail?: ReactNode;
+  /** Cards left to draw: the development deck, or each progress deck. */
+  left?: number | Record<Track, number>;
 }) {
   // A new roll shows it again; a refresh doesn't.
   const [fresh, drop] = useMoment(gotKey);
@@ -97,17 +111,36 @@ export function Tray({
     const t = setTimeout(() => dropRef.current(), 4600);
     return () => clearTimeout(t);
   }, [fresh]);
-  const kinds = goods ? CARDS : RESOURCES;
+  const kinds = towers ? CARDS : RESOURCES;
   const total = kinds.reduce((n, r) => n + (hand[r] ?? 0), 0);
+  const pile = (r: Card) => (
+    <CardPile
+      // A new count deals the pile again, so a change is felt.
+      key={`${r}-${hand[r] ?? 0}`}
+      res={r}
+      n={hand[r] ?? 0}
+      fresh={fresh !== null && !!got?.[r]}
+      style={{ '--rot': `${TILT[r]}deg` } as CSSProperties}
+    />
+  );
   return (
-    <div className={goods ? 'ctn-tray ctn-tray--goods' : 'ctn-tray'}>
+    <div className={towers ? 'ctn-tray ctn-tray--goods' : 'ctn-tray'}>
       <div className="ctn-devrow">
-        {towers}
+        {lead && <span className="ctn-devrow__lead">{lead}</span>}
         {progress ? (
-          <ProgressRow cards={progress} onCards={onCards} />
+          <ProgressRow
+            cards={progress}
+            onCards={onCards}
+            left={typeof left === 'object' ? left : undefined}
+          />
         ) : (
-          <DevRow cards={dev ?? []} onCards={onCards} />
+          <DevRow
+            cards={dev ?? []}
+            onCards={onCards}
+            left={typeof left === 'number' ? left : undefined}
+          />
         )}
+        {tail && <span className="ctn-devrow__tail">{tail}</span>}
       </div>
       <div className="ctn-hand" aria-label={`Your materials: ${total} cards`}>
         {fresh !== null && got && countCards(got) > 0 && (
@@ -118,24 +151,17 @@ export function Tray({
             ))}
           </p>
         )}
-        <div className="ctn-hand__fan" style={{ '--k': kinds.length } as CSSProperties}>
-          {kinds.map((r, i) => (
-            <CardPile
-              // A new count deals the pile again, so a change is felt.
-              key={`${r}-${hand[r] ?? 0}`}
-              res={r}
-              n={hand[r] ?? 0}
-              fresh={fresh !== null && !!got?.[r]}
-              // Held cards lie over the empty places beside them.
-              style={
-                {
-                  '--rot': `${TILT[r]}deg`,
-                  zIndex: (hand[r] ?? 0) > 0 ? 10 + i : i,
-                } as CSSProperties
-              }
-            />
-          ))}
-        </div>
+        {towers && (
+          <div className="ctn-hand__row ctn-hand__row--goods">
+            {COMMODITIES.map((c) => (
+              <span key={c} className="ctn-good">
+                {pile(c)}
+                {towers[c]}
+              </span>
+            ))}
+          </div>
+        )}
+        <div className="ctn-hand__row">{RESOURCES.map(pile)}</div>
       </div>
     </div>
   );
@@ -218,9 +244,11 @@ export function ResourceCard({ res }: { res: Card }) {
 function DevRow({
   cards,
   onCards,
+  left,
 }: {
   cards: { card: DevCard; playable: boolean }[];
   onCards: () => void;
+  left?: number;
 }) {
   const kinds = DEV_ORDER.filter((k) => cards.some((c) => c.card === k));
   return (
@@ -230,9 +258,12 @@ function DevRow({
       onClick={onCards}
       aria-label={`Your development cards: ${cards.length}. Open them`}
     >
-      {kinds.length === 0 && (
-        <span className="ctn-pcard ctn-pcard--slot">No development cards</span>
-      )}
+      {kinds.length === 0 &&
+        (left === undefined ? (
+          <span className="ctn-pcard ctn-pcard--slot">No development cards</span>
+        ) : (
+          <Deck n={left} label="development cards left" />
+        ))}
       {kinds.map((k) => {
         const n = cards.filter((c) => c.card === k).length;
         const live = cards.some((c) => c.card === k && c.playable);
@@ -260,9 +291,11 @@ function DevRow({
 function ProgressRow({
   cards,
   onCards,
+  left,
 }: {
   cards: { card: Progress; playable: boolean }[];
   onCards: () => void;
+  left?: Record<Track, number>;
 }) {
   return (
     <button
@@ -284,11 +317,37 @@ function ProgressRow({
           <span className="ctn-pcard__name">{PROGRESS_NAME[c.card]}</span>
         </span>
       ))}
-      {cards.length === 0 && (
-        <span className="ctn-pcard ctn-pcard--slot" aria-hidden="true">
-          No progress cards
-        </span>
-      )}
+      {cards.length === 0 &&
+        (left ? (
+          TRACKS.map((tr) => (
+            <Deck key={tr} n={left[tr]} track={tr} label={`${TRACK_NAME[tr]} cards left`} />
+          ))
+        ) : (
+          <span className="ctn-pcard ctn-pcard--slot" aria-hidden="true">
+            No progress cards
+          </span>
+        ))}
     </button>
+  );
+}
+
+/**
+ * A deck face down on the table, a few cards thick, with how many are left on it: shown in place
+ * of your cards while you hold none.
+ */
+function Deck({ n, track, label }: { n: number; track?: Track; label: string }) {
+  return (
+    <span
+      className={track ? `ctn-deck ctn-deck--${track}` : 'ctn-deck'}
+      title={`${n} ${label}`}
+      aria-hidden="true"
+    >
+      <i className="ctn-deck__card" />
+      <i className="ctn-deck__card" />
+      <span className="ctn-deck__top">
+        {track ? <Gate /> : <DevGlyph kind="knight" />}
+        <b>{n}</b>
+      </span>
+    </span>
   );
 }

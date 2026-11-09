@@ -816,6 +816,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           chosen={p.knight ?? (p.card === 'intrigue' ? ghost : null)}
           chosenEdge={p.ship}
           picked={p.card === 'inventor' ? p.tiles2 : tile !== null ? [tile] : []}
+          tileVerb={p.card ? 'Pick' : 'Move the robber to'}
         />
         {seated && me && (
           <OfferCard

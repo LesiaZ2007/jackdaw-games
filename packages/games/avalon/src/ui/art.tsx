@@ -140,8 +140,8 @@ export function ShieldMark({ size = 14 }: { size?: number }) {
   );
 }
 
-// Avalon's own reaction drawings (components/reactionIcons.js): line art in the text colour with
-// a brass accent, rather than the Jackdaw kit's heraldic colours.
+// Avalon's own reaction drawings (components/reactionIcons.js): line art in the text color with
+// a brass accent, rather than the Jackdaw kit's heraldic colors.
 const reactLine = { ...line, strokeWidth: 4.5 };
 const reactFill = { fill: 'currentColor', opacity: 0.18 };
 const reactAccent = 'var(--brass-hi)';

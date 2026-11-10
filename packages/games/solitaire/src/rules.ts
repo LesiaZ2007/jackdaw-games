@@ -55,7 +55,7 @@ export type Move = Exclude<SolitaireAction, { type: 'draw' }>;
 export interface Column {
   /** Face down, bottom first. */
   down: Card[];
-  /** Face up, bottom first: always a run down in alternating colours. */
+  /** Face up, bottom first: always a run down in alternating colors. */
   up: Card[];
 }
 
@@ -181,7 +181,7 @@ const downs = (col: Layout['cols'][number]) =>
   typeof col.down === 'number' ? col.down : col.down.length;
 
 /** The foundation this card goes on: its index, -1 for a new one (an ace), or null. */
-export function foundationFor(fs: readonly Spot[], c: Card): number | null {
+function foundationFor(fs: readonly Spot[], c: Card): number | null {
   const rank = rankOf(c);
   if (rank === 1) return -1;
   const i = fs.findIndex((f) => f.suit === suitOf(c) && f.count === rank - 1);
@@ -190,7 +190,7 @@ export function foundationFor(fs: readonly Spot[], c: Card): number | null {
 
 export const canGoUp = (fs: readonly Spot[], c: Card) => foundationFor(fs, c) !== null;
 
-/** True if `c` can go on this column: a king on an empty one, else down a rank and across colour. */
+/** True if `c` can go on this column: a king on an empty one, else down a rank and across color. */
 export function fits(col: Layout['cols'][number], c: Card): boolean {
   const top = col.up.at(-1);
   if (!top) return downs(col) === 0 && rankOf(c) === 13;
@@ -630,7 +630,7 @@ function resultOf(s: SolitaireState, early: boolean): GameResult | null {
 // ── Bot ───────────────────────────────────────────────────────────────────────
 
 /** How long a bot takes over each move, in ms, by level; turning the stock goes quicker. */
-export const BOT_PACE: Record<BotLevel, number> = { easy: 3200, normal: 2200, hard: 1400 };
+const BOT_PACE: Record<BotLevel, number> = { easy: 3200, normal: 2200, hard: 1400 };
 
 function botScore(m: Move, v: SolitairePlayerView): number {
   if (m.type === 'up') return 100 - rankOf(m.card);

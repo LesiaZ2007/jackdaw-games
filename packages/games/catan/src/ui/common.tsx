@@ -55,7 +55,7 @@ const PIPS: Record<number, number[]> = {
   6: [1, 3, 4, 6, 7, 9],
 };
 
-/** A die: cream with ink pips, or gules with cream pips (Catan's two colours of dice). */
+/** A die: cream with ink pips, or gules with cream pips (Catan's two colors of dice). */
 export function Die({ n, red }: { n: number; red?: boolean }) {
   return (
     <span className={red ? 'ctn-die ctn-die--red' : 'ctn-die'} aria-hidden="true">
@@ -66,7 +66,7 @@ export function Die({ n, red }: { n: number; red?: boolean }) {
   );
 }
 
-/** Cities & Knights' event die: the barbarian ship, or a city gate in a track's colour. */
+/** Cities & Knights' event die: the barbarian ship, or a city gate in a track's color. */
 export function EventDie({ face }: { face: EventFace }) {
   return (
     <span
@@ -135,7 +135,7 @@ export function Clock({ at, now }: { at: number | null; now: () => number }) {
   );
 }
 
-/** A player's token ringed in their piece colour. */
+/** A player's token ringed in their piece color. */
 export function SeatToken({
   p,
   seats,

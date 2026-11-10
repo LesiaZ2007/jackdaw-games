@@ -6,7 +6,7 @@ import { chips } from './pieces';
 import './poker.css';
 
 /**
- * The poker lobby's seats: the same card table as the game, with everyone round the rail in seat
+ * The poker lobby's seats: the same card table as the game, with everyone around the rail in seat
  * order (you at the bottom, as you'll sit) and the empty seats waiting. The felt shows the stakes.
  * The host gets a "+" on each empty seat to seat a computer player, and those are tagged "Bot".
  */
@@ -20,7 +20,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
 }) => {
   const n = Math.max(max, seats.length);
   const mine = seats.findIndex((s) => s.me);
-  // Rotate so you're at the bottom; empty seats follow the last player round the table.
+  // Rotate so you're at the bottom; empty seats follow the last player around the table.
   const start = mine >= 0 ? mine : 0;
   const order = Array.from({ length: n }, (_, k) => seats[(start + k) % n] ?? null);
   const stack = Number(options.stack ?? 1000);

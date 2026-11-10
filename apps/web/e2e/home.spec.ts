@@ -12,11 +12,11 @@ test('the code chits on the home page take typing, and Join opens that lobby', a
   await page.waitForURL(/\/r\/ABCD$/);
 });
 
-test('the token on the home page opens the crest and colour picker and remembers the choice', async ({
+test('the token on the home page opens the crest and color picker and remembers the choice', async ({
   page,
 }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Change your crest and colour' }).click();
+  await page.getByRole('button', { name: 'Change your crest and color' }).click();
   const sheet = page.getByRole('dialog', { name: 'Your token' });
   await sheet.getByRole('button', { name: 'Owl' }).click();
   await sheet.getByRole('button', { name: 'Ochre' }).click();
@@ -25,14 +25,14 @@ test('the token on the home page opens the crest and colour picker and remembers
   const saved = await page.evaluate(() => localStorage.getItem('jackdaw:avatar'));
   expect(JSON.parse(saved!)).toEqual({ crest: 'owl', tint: 'ochre' });
   await page.reload();
-  await page.getByRole('button', { name: 'Change your crest and colour' }).click();
+  await page.getByRole('button', { name: 'Change your crest and color' }).click();
   await expect(
     page.getByRole('dialog', { name: 'Your token' }).getByRole('button', { name: 'Owl' }),
   ).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('Browse the games scrolls down to the games, which filter by kind', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
   const games = page.getByRole('heading', { name: 'The games', level: 2 });
   await expect(games).not.toBeInViewport();

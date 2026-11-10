@@ -90,7 +90,7 @@ export function makeSeaBoard(size: Size, rng: Rng): Board {
     board = { size, map: key, tiles: next, harbours: [] };
     if (!redsTouch(board)) break;
   }
-  // Harbours round the main island's coast, spread evenly by angle from its middle.
+  // Harbors around the main island's coast, spread evenly by angle from its middle.
   const home = islands(board);
   const mainTiles = board.tiles.flatMap((_, i) => (home[i] === 0 ? [i] : []));
   const centre = {

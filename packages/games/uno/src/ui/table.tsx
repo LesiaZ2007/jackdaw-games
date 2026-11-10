@@ -44,7 +44,7 @@ export function flashOf(m: Move | undefined): string | null {
 
 /**
  * The table seen from above: a printed paper mat with the draw pile and the discard pile in the
- * middle, ringed in the colour in play, with arrows turning the way play goes. Everyone sits round
+ * middle, ringed in the color in play, with arrows turning the way play goes. Everyone sits round
  * the rim with their token, name, how many cards they hold, and their score in a longer game;
  * whoever is looking sits at the bottom. The phone's table (the TV draws its own, in tv.tsx).
  */
@@ -174,7 +174,7 @@ export function UnoTable({
                 {count}
               </span>
             </span>
-            <span className="uno-seat__name">
+            <span className="uno-seat__name" title={name(id)}>
               {id === me ? 'You' : name(id)}
               {t.target > 0 && (
                 <span className="uno-seat__score" aria-label={`${t.scores[id] ?? 0} points`}>

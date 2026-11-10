@@ -2,7 +2,7 @@ import type { Owner } from './board';
 import type { MapDef } from './maps';
 import type { RiskTableView, RiskView } from './rules';
 
-/** Territories `pid` can see through the fog of war: their own and every neighbour of one. */
+/** Territories `pid` can see through the fog of war: their own and every neighbor of one. */
 export function visibleTo(map: MapDef, owner: Owner, pid: string): Set<string> {
   const seen = new Set<string>();
   for (const t of map.territories) {

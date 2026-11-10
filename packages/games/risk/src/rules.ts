@@ -222,7 +222,7 @@ export interface RiskView {
 
 /**
  * What one player sees through the fog: owners and armies on their own territories and their
- * neighbours, and the parts of the turn that would give positions away (only to whoever they
+ * neighbors, and the parts of the turn that would give positions away (only to whoever they
  * concern). `seen` lays it over the table view.
  */
 export interface FogSight {
@@ -240,7 +240,7 @@ export interface FogSight {
 const LOG_KEEP = 1000;
 const LOG_SHOWN = 12;
 
-export const mapOf = (s: { map: MapId }): MapDef => getMap(s.map);
+const mapOf = (s: { map: MapId }): MapDef => getMap(s.map);
 
 function turnSecsOf(o: RiskOptions): number {
   return o.turnTimer === 'Off' ? 0 : Number.parseInt(o.turnTimer, 10) * 60;
@@ -998,7 +998,7 @@ export function legalMoves(s: RiskState, pid: string): RiskAction[] {
 /** Everything safe to show once the game is over. */
 export interface RiskReveal {
   map: MapId;
-  /** Seat order, which sets each army's colour. */
+  /** Seat order, which sets each army's color. */
   seats: string[];
   owner: Owner;
   armies: Armies;

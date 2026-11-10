@@ -1,6 +1,6 @@
 /*
  * Monopoly: the classic board, printed. Cream card stock, charcoal ink, the eight group inks on
- * the colour bands, spot-colour drawings on the specials, and a pale green centre with the two
+ * the color bands, spot-color drawings on the specials, and a pale green centre with the two
  * card piles. The board is printed, so it looks the same by day and in the dark; the panels round
  * it follow the shell through data-look. Flat fills only: no gradients, no glows. Jackdaw's bar
  * is not restyled here.
@@ -180,7 +180,7 @@ button.mnp-sp {
   }
 }
 
-/* The specials are printed on tinted stock so the board has colour all round. */
+/* The specials are printed on tinted stock so the board has color all round. */
 .mnp-sp--chance {
   background: color-mix(in srgb, var(--mnp-chance) 14%, var(--mnp-card));
 }
@@ -207,7 +207,7 @@ button.mnp-sp {
   background: color-mix(in srgb, var(--mnp-orange) 14%, var(--mnp-card));
 }
 
-/* The colour band sits on the inner edge, facing the centre. */
+/* The color band sits on the inner edge, facing the centre. */
 .mnp-sp--b {
   flex-direction: column;
 }
@@ -373,7 +373,7 @@ button.mnp-sp {
   max-height: 58%;
 }
 
-/* Chance prints a big question mark, each in its own colour. */
+/* Chance prints a big question mark, each in its own color. */
 .mnp-q {
   display: inline-block;
   font: 800 max(14px, 5.4cqmin) / 1 var(--font-display);
@@ -1815,7 +1815,7 @@ button.mnp-sp {
   min-width: 0;
 }
 .mnp-tv .mnp-face {
-  font-size: 22px;
+  font-size: 24px;
   letter-spacing: 0;
   line-height: 0.92;
 }
@@ -1993,9 +1993,9 @@ button.mnp-sp {
   font-size: 24px;
 }
 .mnp-pop--tv .mnp-pop__bank {
-  width: 64px;
-  height: 64px;
-  font-size: 18px;
+  width: 76px;
+  height: 76px;
+  font-size: 24px;
 }
 .mnp-pop--tv .mnp-pop__notes {
   width: 140px;
@@ -2272,7 +2272,7 @@ button.mnp-sp {
   --mnp-hotel-roof: #8e231d;
 }
 
-/* Houses and hotels drawn as buildings on the colour band. */
+/* Houses and hotels drawn as buildings on the color band. */
 .mnp-built {
   display: flex;
   align-items: center;
@@ -2316,7 +2316,7 @@ button.mnp-sp {
   height: 11px;
 }
 
-/* A whole colour set in one player's hands wears a gold border. */
+/* A whole color set in one player's hands wears a gold border. */
 .mnp-sp.is-set {
   box-shadow: inset 0 0 0 3px var(--mnp-gold);
 }
@@ -2339,7 +2339,7 @@ button.mnp-sp {
     inset 0 0 0 6px var(--or);
 }
 
-/* The side columns print sideways, as on the real board: the name by the colour band, the
+/* The side columns print sideways, as on the real board: the name by the color band, the
    price at the outer edge, reading toward the centre on the left and the other way on the right. */
 .mnp-sp--l:not(.mnp-sp--corner) .mnp-face,
 .mnp-sp--r:not(.mnp-sp--corner) .mnp-face {
@@ -2398,7 +2398,7 @@ button.mnp-sp {
 }
 .mnp-tt__cell .mnp-chip {
   --band: inherit;
-  min-height: 40px;
+  min-height: 44px;
   font-size: 12px;
 }
 .mnp-tt__money {

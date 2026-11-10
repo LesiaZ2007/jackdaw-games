@@ -14,7 +14,7 @@ import type { Spectrum } from './spectrums';
  *
  * Psychic: of the two cards, the clue in clues.ts that sits nearest the target ("Bath water" at
  * 68 on Cold to Hot). Guesser: a clue it knows from the table goes near its spot, a clue that
- * names one end goes towards that end, anything else lands somewhere sensible; always with a
+ * names one end goes toward that end, anything else lands somewhere sensible; always with a
  * little wobble, as a person's hand has. On a shared dial the first bot to move sets it and the
  * rest agree, so bots never tug the dial back and forth. The other team calls left or right by
  * where it would have put the dial.

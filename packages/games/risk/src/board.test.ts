@@ -35,7 +35,7 @@ describe('attacking and moving', () => {
   const owner = board(['alaska', 'alberta', 'ontario', 'quebec']);
   const armies = Object.fromEntries(ids.map((t) => [t, 3]));
 
-  it('targets enemy neighbours, from a territory with 2 or more armies', () => {
+  it('targets enemy neighbors, from a territory with 2 or more armies', () => {
     expect(attackTargets(map, owner, armies, 'a', 'alaska').sort()).toEqual([
       'kamchatka',
       'northwest-territory',

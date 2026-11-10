@@ -18,7 +18,7 @@ export const riskUi: GameUi = {
   art: { band: 'tenne', field: 'checky', glyph: 'banners' },
   about: {
     description:
-      'Build up armies, attack your neighbours and try to take over the map. Play the classic world map or our own island kingdom. With secret missions the first person to finish theirs wins, which keeps it to about an hour. World domination goes until one player owns everything.',
+      'Build up armies, attack your neighbors and try to take over the map. Play the classic world map or our own island kingdom. With secret missions the first person to finish theirs wins, which keeps it to about an hour. World domination goes until one player owns everything.',
     steps: [
       'Territories are handed out at random and your armies are spread across them (or everyone places their own, all at once).',
       'At the start of your turn you get new armies: a third of your territories (at least 3), plus extra for whole continents and traded-in cards.',

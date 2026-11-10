@@ -337,7 +337,7 @@ const named = (s: Pick<MafiaState, 'roles'>, id: string) =>
   `${brace(id)} (the ${ROLE_INFO[s.roles[id]!].name})`;
 
 /**
- * What a recap event happened to, so its colour can be settled once the winners are known:
+ * What a recap event happened to, so its color can be settled once the winners are known:
  * `about` are the players it touched and `harm` says whether it hurt them (a death) or helped
  * them (a save). It is good for the winners when it hurt their opponents or helped themselves.
  */
@@ -891,8 +891,8 @@ const sideLost = (s: MafiaState, pack: boolean) => {
 };
 
 /**
- * Colours an event once the winners are known: good if it hurt only players who lost or helped
- * only players who won (and bad the other way round); mixed or unknown events stay plain.
+ * Colors an event once the winners are known: good if it hurt only players who lost or helped
+ * only players who won (and bad the other way around); mixed or unknown events stay plain.
  */
 function withTone(e: RecapEvent, winners: string[]): RecapEvent {
   const d = e.data as (Partial<Touch> & { kind?: string }) | undefined;

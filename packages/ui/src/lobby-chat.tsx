@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import type { LobbyChat, ScreenPlayer } from './game-ui';
+import { cx } from './util';
 import './lobby-chat.css';
-
-const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
 
 /**
  * Table talk for a game's own lobby (see `GameLobbyProps.chat`): a drawer from the right that the
@@ -83,7 +82,8 @@ export function LobbyChatPanel({
                 style={
                   tint
                     ? ({
-                        '--lc-name': `var(--lc-name-${tint}, var(--tint-${tint}))`,
+                        '--lc-tint': `var(--tint-${tint})`,
+                        '--lc-name-hook': `var(--lc-name-${tint})`,
                       } as CSSProperties)
                     : undefined
                 }

@@ -1,7 +1,7 @@
 /*
  * Game covers: a boxed set seen from the front. The lid carries the game's heraldic field and
  * emblem; a paper plate below it carries the name; the box's side and bottom edge (in a darker
- * shade of the game's colour) give it depth. Imported by cover.tsx.
+ * shade of the game's color) give it depth. Imported by cover.tsx.
  */
 .jd-cover {
   --edge: 7px;
@@ -19,7 +19,7 @@
   font: inherit;
   background: var(--paper);
   border: 2px solid var(--ink);
-  /* the box's right side and bottom edge, printed in the game's own colour */
+  /* the box's right side and bottom edge, printed in the game's own color */
   box-shadow:
     1px 1px 0 0 var(--ink),
     var(--edge) var(--edge) 0 -1px var(--box-side),

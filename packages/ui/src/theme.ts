@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 /**
  * Day or dark, as chosen in the Jackdaw shell. A manual choice lives on `<html data-theme>`
@@ -30,15 +30,31 @@ function subscribe(onChange: () => void) {
   };
 }
 
+/**
+ * Point the browser chrome (`<meta name="theme-color">`) at the table color now in force. The
+ * layout's two metas follow the device setting only, so a manual choice would leave them
+ * mismatched; this sets every one of them to the live `--table` value.
+ */
+export function syncThemeColor() {
+  const table = getComputedStyle(document.documentElement).getPropertyValue('--table').trim();
+  if (!table) return;
+  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
+    meta.content = table;
+  }
+}
+
 /** The look in force right now; re-renders when the player or the device switches it. */
 export function useTheme(): Theme {
   // The server can't know the device's choice; it renders day and the client corrects it.
-  return useSyncExternalStore(subscribe, read, () => 'light');
+  const theme = useSyncExternalStore<Theme>(subscribe, read, () => 'light');
+  useEffect(syncThemeColor, [theme]);
+  return theme;
 }
 
 /** Switch every Jackdaw screen (and every game) to this look, and remember it on this device. */
 export function setTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
+  syncThemeColor();
   try {
     localStorage.setItem(STORAGE_KEY, theme);
   } catch {

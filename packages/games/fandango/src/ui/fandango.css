@@ -1,7 +1,7 @@
 /*
  * Fandango: a page from a printed puzzle book, suns and moons inked on it. The board is printed,
  * so it stays the same by day and in the dark; the frame round it follows the shell. All of the
- * game's colours are in this token block. No gradients, no glows.
+ * game's colors are in this token block. No gradients, no glows.
  */
 
 .fd {
@@ -62,8 +62,8 @@
 .fd-cell.is-bad {
   background: repeating-linear-gradient(
     -45deg,
-    rgba(179, 38, 30, 0.16) 0 4px,
-    rgba(179, 38, 30, 0.04) 4px 9px
+    color-mix(in srgb, var(--fd-bad) 16%, transparent) 0 4px,
+    color-mix(in srgb, var(--fd-bad) 4%, transparent) 4px 9px
   );
 }
 .fd-cell.is-given.is-bad {

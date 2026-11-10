@@ -117,7 +117,7 @@ describe('setup', () => {
   });
 
   it('lays seven columns with none to six face down', () => {
-    // The deck backwards, so no ace lands face up and nothing is put up.
+    // The deck backward, so no ace lands face up and nothing is put up.
     const s = setup(['Wren', 'Rook'], 1, (d) => [...d].reverse(), 1_000);
     expect(s.pulls).toBe(0);
     expect(s.foundations).toEqual([]);
@@ -347,7 +347,7 @@ describe('move', () => {
       Wren: seat({ cols: [col(['9s']), col(['9c']), col(['8d'])] }),
       Magpie: busy(),
     });
-    // Same colour, same rank, wrong rank.
+    // Same color, same rank, wrong rank.
     for (const to of [1, 2]) {
       expect(refused(() => act(s, 'Wren', { type: 'move', from: 0, card: '9s', to })).code).toBe(
         'no_fit',

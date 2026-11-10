@@ -5,7 +5,7 @@ import { meta } from './meta';
 
 /**
  * Avalon, linked (docs/avalon/LINK.md). Jackdaw is the lobby; the live Avalon app runs the game.
- * The options are Avalon's own settings, flattened so the shell can summarise them. Start opens a
+ * The options are Avalon's own settings, flattened so the shell can summarize them. Start opens a
  * room in the Avalon app with everyone seated (`link.ts`), and the state is just that room and
  * each player's seat in it. A seat is a password for that player's place at the table, so it
  * only ever goes to its own player.

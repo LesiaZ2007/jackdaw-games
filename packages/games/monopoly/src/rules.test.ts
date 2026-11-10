@@ -714,7 +714,7 @@ describe('rent', () => {
     expect(rentCollected(s, 1, 2, 3)).toBe(2);
   });
 
-  it('a full colour set with no houses pays double', () => {
+  it('a full color set with no houses pays double', () => {
     const s = edit(base(), (d) => own(d, 'wren', [1, 3]));
     expect(rentCollected(s, 1, 2, 3)).toBe(4);
     expect(rentCollected(s, 3, 1, 2)).toBe(8);
@@ -841,7 +841,7 @@ describe('building', () => {
     expect(deed(s, 3)!.houses).toBe(1);
   });
 
-  it('needs the whole colour group', () => {
+  it('needs the whole color group', () => {
     const s = edit(base(), (d) => {
       own(d, 'wren', [1]);
       own(d, 'rook', [3]);
@@ -1255,7 +1255,7 @@ describe('trades', () => {
     expect(codeOf(() => offer(s, 'wren', 'rook', { deeds: [39] }, {}))).toBe('BAD_TRADE');
   });
 
-  it('rejects trading a deed whose colour group has buildings', () => {
+  it('rejects trading a deed whose color group has buildings', () => {
     const s = edit(base(THREE), (d) => {
       own(d, 'wren', [1, 3], 1);
     });
@@ -1416,7 +1416,7 @@ describe('game end', () => {
     expect(JSON.stringify(game.getTableView(shown))).not.toContain('Left with');
   });
 
-  it('recaps completing a colour set', () => {
+  it('recaps completing a color set', () => {
     const s = edit(base(), (d) => {
       own(d, 'wren', [1]);
       seat(d, 'wren').pos = 1;

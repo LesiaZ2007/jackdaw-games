@@ -2,9 +2,8 @@
 
 import { PlayerReaction, Token, useTheme, type GameTvLobbyProps } from '@jackdaw/ui';
 import { defaultOptions, optionsSchema } from '../rules';
-import type { Team } from '../teams';
+import { arrangementFor, type Team } from '../teams';
 import { CardMark } from './art';
-import { arrangementFor } from './lobby';
 import { TeamFiles } from './teams';
 import './codenames.css';
 
@@ -23,7 +22,10 @@ export function CodenamesTvLobby({
   const look = useTheme();
   const parsed = optionsSchema.safeParse({ ...defaultOptions(), ...raw });
   const opts = parsed.success ? parsed.data : defaultOptions();
-  const { teams, spymasters } = arrangementFor(opts, players);
+  const { teams, spymasters } = arrangementFor(
+    opts,
+    players.map((p) => p.id),
+  );
   const unplaced = players.filter((p) => !teams[p.id]);
 
   return (

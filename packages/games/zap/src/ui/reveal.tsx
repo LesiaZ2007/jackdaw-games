@@ -1,9 +1,8 @@
 'use client';
 
 import type { CSSProperties } from 'react';
-import { Token, useTheme, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
+import { Token, clockMs, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { ZapReveal } from '../rules';
-import { clock } from '../time';
 import { Board } from './board';
 import { place } from './race';
 import './zap.css';
@@ -59,7 +58,7 @@ function Podium({
                 {id === me && <small> (you)</small>}
               </span>
               <span className="zp-podium__total">
-                {all ? clock(times.at(-1)! - rv.startedAt) : `${times.length} of ${rv.count}`}
+                {all ? clockMs(times.at(-1)! - rv.startedAt) : `${times.length} of ${rv.count}`}
                 <small>{all ? (rv.count === 1 ? 'Solved' : `All ${rv.count}`) : 'Solved'}</small>
               </span>
               {rv.count > 1 && (
@@ -70,7 +69,7 @@ function Podium({
                       className={`zp-split${best[i]?.id === id ? ' is-best' : ''}${ms === undefined ? ' is-none' : ''}`}
                     >
                       <span>{i + 1}</span>
-                      {ms === undefined ? '–' : clock(ms)}
+                      {ms === undefined ? '–' : clockMs(ms)}
                     </li>
                   ))}
                 </ol>
@@ -101,14 +100,14 @@ function Facts({ rv }: { rv: ZapReveal }) {
     [
       done.length === rv.count ? 'Total' : 'Solved',
       done.length === rv.count
-        ? clock(times.at(-1)! - rv.startedAt)
+        ? clockMs(times.at(-1)! - rv.startedAt)
         : `${done.length} of ${rv.count}`,
     ],
   ];
   if (done.length > 1) {
     const fast = Math.min(...done);
-    facts.push(['Fastest', `${clock(fast)} · No. ${mine.indexOf(fast) + 1}`]);
-    facts.push(['Average', clock(done.reduce((a, b) => a + b, 0) / done.length)]);
+    facts.push(['Fastest', `${clockMs(fast)} · No. ${mine.indexOf(fast) + 1}`]);
+    facts.push(['Average', clockMs(done.reduce((a, b) => a + b, 0) / done.length)]);
   }
   const used = (rv.helped ?? []).reduce((a, b) => a + b, 0);
   if (used) facts.push(['Hints', String(used)]);
@@ -150,7 +149,7 @@ function Answers({
               <b>Puzzle {i + 1}</b>
               {best[i] && (
                 <span>
-                  {race ? `${name(best[i]!.id)} ${clock(best[i]!.ms)}` : clock(best[i]!.ms)}
+                  {race ? `${name(best[i]!.id)} ${clockMs(best[i]!.ms)}` : clockMs(best[i]!.ms)}
                 </span>
               )}
             </figcaption>
@@ -163,9 +162,8 @@ function Answers({
 
 export const Reveal: NonNullable<GameUi['Reveal']> = ({ result, players, me }) => {
   const rv = result.reveal as ZapReveal;
-  const look = useTheme();
   return (
-    <div className="zp zp-reveal" data-look={look}>
+    <div className="zp zp-reveal">
       {rv.order.length > 1 ? <Podium rv={rv} players={players} me={me} /> : <Facts rv={rv} />}
       <section className="zp-reveal__part" aria-label="The answers">
         <h3 className="jd-display zp-reveal__h">{rv.count === 1 ? 'The answer' : 'The answers'}</h3>
@@ -189,7 +187,6 @@ function fitColumns(n: number, aspect = 2): number {
 /** On the TV the platform lists the standings; this shows the fastest solve and every answer. */
 export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result, players }) => {
   const rv = result.reveal as ZapReveal;
-  const look = useTheme();
   let quickest: { id: string; ms: number; n: number } | null = null;
   for (const [i, b] of fastest(rv).entries()) {
     if (b && (!quickest || b.ms < quickest.ms)) quickest = { ...b, n: i + 1 };
@@ -197,13 +194,13 @@ export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result, players }) =
   const name = (id: string) => players.find((p) => p.id === id)?.name ?? 'Someone';
   const cols = fitColumns(rv.count);
   return (
-    <div className="zp zp-tv-end" data-look={look}>
+    <div className="zp zp-tv-end">
       {quickest && (
         <p className="zp-tv-end__fact">
           <span>Fastest puzzle</span>
           <b>
             {rv.order.length > 1 ? `${name(quickest.id)}, ` : ''}No. {quickest.n} in{' '}
-            {clock(quickest.ms)}
+            {clockMs(quickest.ms)}
           </b>
         </p>
       )}

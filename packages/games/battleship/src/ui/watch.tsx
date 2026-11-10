@@ -66,7 +66,7 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
                 <PlayerReaction reactions={reactions} playerId={id} />
               </span>
               <span className="bs-name__text">
-                <b>{name(id)}</b>
+                <b title={name(id)}>{name(id)}</b>
               </span>
             </span>
           );

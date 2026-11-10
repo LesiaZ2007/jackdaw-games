@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { BirdMark, Lid } from '@jackdaw/ui';
 import { catalog } from '@/lib/catalog';
 
-/** About Jackdaw, with the credits its licences ask for. */
+/** About Jackdaw, with the credits its licenses ask for. */
 export function About() {
   return (
     <main className="cat-about">
       <Lid className="cat-about__lid">
         <BirdMark width={96} height={96} />
-        <h1 className="jd-display">About Jackdaw</h1>
+        <h1 className="jd-h1">About Jackdaw</h1>
         <p>
           Jackdaw is a private compendium of games for friends in one room. Everyone plays on their
           own phone, and a TV can show the table. No accounts: open a lobby, share the four letters,
@@ -19,7 +19,7 @@ export function About() {
       </Lid>
 
       <section className="cat-about__section" aria-labelledby="credits">
-        <h2 id="credits" className="jd-display">
+        <h2 id="credits" className="jd-h2">
           Credits
         </h2>
         <ul className="cat-credits">
@@ -48,7 +48,7 @@ export function About() {
       </section>
 
       <section className="cat-about__section" aria-labelledby="games">
-        <h2 id="games" className="jd-display">
+        <h2 id="games" className="jd-h2">
           The games
         </h2>
         <ul className="cat-credits">
@@ -60,7 +60,7 @@ export function About() {
         </ul>
         <p className="cat-credit">
           Game names and rules belong to their creators. Where a game&rsquo;s credit above names
-          someone else&rsquo;s word list or art, it&rsquo;s used under the licence given there;
+          someone else&rsquo;s word list or art, it&rsquo;s used under the license given there;
           everything else was made for Jackdaw.
         </p>
       </section>
@@ -69,7 +69,7 @@ export function About() {
         <Link href="/" className="jd-plaque jd-plaque--small">
           Back home
         </Link>
-        <Link href="/games" className="home-link">
+        <Link href="/games" className="jd-link">
           Browse the games
         </Link>
       </nav>

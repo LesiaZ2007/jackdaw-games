@@ -546,7 +546,7 @@ function defenceTarget(t: T): number {
   return 0;
 }
 
-/** One move to raise defence: wake a knight, promote one, or raise a new one. */
+/** One move to raise defense: wake a knight, promote one, or raise a new one. */
 function defend(
   L: Layout,
   t: T,
@@ -985,7 +985,7 @@ function turn(
   }
 
   if (t.ck) {
-    // Cities & Knights spends the rest on its defence, walls and promotions.
+    // Cities & Knights spends the rest on its defense, walls and promotions.
     const spare = countCards(hand) > limit - 2;
     if (!slip()) {
       const target = defenceTarget(t) + (spare ? 2 : 0);

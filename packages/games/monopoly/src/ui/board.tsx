@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Token, type ScreenPlayer } from '@jackdaw/ui';
+import { prefersReducedMotion, Token, type ScreenPlayer } from '@jackdaw/ui';
 import {
   ArtArrow,
   ArtBag,
@@ -30,7 +30,7 @@ import {
 } from '../board';
 import type { Holding, MonopolyTableView, MoveEvent } from '../rules';
 
-/** Printed inks for the colour groups. The same by day and in the dark. */
+/** Printed inks for the color groups. The same by day and in the dark. */
 export const GROUP_INK: Record<Group, string> = {
   brown: 'var(--mnp-brown)',
   sky: 'var(--mnp-sky)',
@@ -112,11 +112,8 @@ export function cellOf(space: number): { row: number; col: number; side: 'b' | '
   return { row: 1 + (space - 30), col: 11, side: 'r' };
 }
 
-const reduced = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 /**
- * Where each token is drawn. A token walks round the board one space at a time when it moves by
+ * Where each token is drawn. A token walks around the board one space at a time when it moves by
  * the dice, and jumps straight there when it's sent (to Jail, or by a card).
  */
 export interface Walk {
@@ -138,7 +135,7 @@ export function useWalk(t: MonopolyTableView): Walk {
       jump: {},
       step: prev.step + 1,
     });
-    if (reduced()) {
+    if (prefersReducedMotion()) {
       const now = window.setTimeout(() => setShown(settle), 0);
       return () => window.clearTimeout(now);
     }
@@ -211,7 +208,7 @@ const UNIT = 100 / TRACK;
 
 /**
  * The printed board: forty spaces round a pale green centre. Owned deeds carry a stripe in the
- * owner's tint on their outer edge, buildings sit on the colour band, a mortgaged deed is
+ * owner's tint on their outer edge, buildings sit on the color band, a mortgaged deed is
  * stamped. The tokens stand on a layer above, so they glide from space to space with a hop.
  * `children` fill the centre.
  */

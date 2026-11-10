@@ -166,8 +166,8 @@ function SpymasterDesk({
   if (!myTurn) {
     return (
       <p className="cn-act__wait">
-        You&rsquo;re {TEAM_NAME[v.myTeam!]}&rsquo;s spymaster. The coloured corners are the key:
-        only you and {name(v.spymasters[v.myTeam === 'red' ? 'blue' : 'red'])} can see them.
+        You&rsquo;re {TEAM_NAME[v.myTeam!]}&rsquo;s spymaster. The colored corners are the key: only
+        you and {name(v.spymasters[v.myTeam === 'red' ? 'blue' : 'red'])} can see them.
         {v.phase === 'guess' && v.myTeam === v.turn
           ? ' Your team is guessing now. Keep a straight face.'
           : ' Wait for your turn to give a clue.'}
@@ -275,7 +275,7 @@ function OperativeDesk({
       ) : (
         <p className="cn-act__wait">
           Tap a word to suggest it to your team. It&rsquo;s guessed when most of you agree, or hold
-          a word to guess it straight away.
+          a word to guess it right away.
           {!guessed && ' You can end your turn after the first guess.'}
         </p>
       )}

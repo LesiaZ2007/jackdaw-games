@@ -36,7 +36,7 @@ const asState = (t: MonopolyTableView) => t as unknown as MonopolyState;
 
 type Send = (action: MonopolyAction) => Promise<boolean>;
 
-/** A title deed, as printed: the colour band, the rents, the costs. */
+/** A title deed, as printed: the color band, the rents, the costs. */
 export function DeedCard({
   t,
   space,
@@ -161,7 +161,7 @@ const SPECIAL: Record<string, string> = {
   tax: 'Pay the bank.',
 };
 
-/** Your deeds, a colour group at a time, with what you can build, sell or mortgage. */
+/** Your deeds, a color group at a time, with what you can build, sell or mortgage. */
 export function Estate({ t, me, send }: { t: MonopolyPlayerView; me: string; send: Send }) {
   const [busy, setBusy] = useState(false);
   const state = asState(t);
@@ -380,7 +380,7 @@ interface Column {
   cards: number;
 }
 
-/** The sets in board order: the eight colours, the railroads, the utilities. */
+/** The sets in board order: the eight colors, the railroads, the utilities. */
 const SET_ORDER: number[][] = [
   ...GROUPS.map((g) => setOf(DEEDS.find((d) => streetAt(d)?.group === g)!)),
   RAILROADS.slice(),

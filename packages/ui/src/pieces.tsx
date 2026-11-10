@@ -5,6 +5,7 @@ import type { Reaction } from '@jackdaw/engine';
 import { Crest } from './crests';
 import { Glyph, Icon } from './icons';
 import { PlayerReaction } from './reactions';
+import { cx, range } from './util';
 
 /** Heraldic fills for chits and box lids, as CSS variable names from tokens.css. */
 export type Heraldic = 'gules' | 'azure' | 'vert' | 'sable' | 'purpure' | 'tenne';
@@ -18,7 +19,6 @@ export interface GameArt {
   glyph: string;
 }
 
-const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
 const vars = (v: Record<string, string | number>) => v as CSSProperties;
 
 /** A printed panel with a double rule and fleuron corners. */
@@ -348,14 +348,12 @@ export interface BoxLidProps {
   players: [number, number];
   minutes: [number, number];
   tagline?: string;
-  /** Why it can't be played right now, e.g. "Needs 5 to 15 players". Greys the lid. */
+  /** Why it can't be played right now, e.g. "Needs 5 to 15 players". Grays the lid. */
   unfit?: string | null;
   selected?: boolean;
   onClick?: () => void;
   artWidth?: number;
 }
-
-const range = ([a, b]: [number, number]) => (a === b ? `${a}` : `${a}–${b}`);
 
 /** A game, drawn as a box lid: a heraldic field behind its emblem, then name and box-side facts. */
 export function BoxLid({

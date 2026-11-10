@@ -13,7 +13,8 @@ import {
 import { checkKings } from '../puzzle';
 import { ranking, type KingsAction, type KingsPlayerView } from '../rules';
 import { clock } from '../time';
-import { Board, KingMark, type Mark } from './board';
+import { Board, KingMark } from './board';
+import type { Mark } from '../marks';
 import { PlayerCard, Spectate } from './card';
 import { place, Race, useTick } from './race';
 import { findMistake, nextStep, type Hint } from '../hints';
@@ -305,7 +306,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           {solo ? (
             v.puzzle && (
               <p className="kg-rules">
-                One king in every row, every column and every colour. Kings can&rsquo;t touch, not
+                One king in every row, every column and every color. Kings can&rsquo;t touch, not
                 even at a corner. Tap once to cross a square out, twice for a king.
               </p>
             )

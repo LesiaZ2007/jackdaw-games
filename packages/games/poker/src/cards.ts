@@ -14,18 +14,6 @@ export const FULL_DECK: Card[] = SUITS.flatMap((s) => [...RANKS].map((r) => r + 
 export const rankOf = (c: Card) => RANKS.indexOf(c[0]!) + 2;
 export const suitOf = (c: Card) => c[1] as Suit;
 
-export const CATEGORY = [
-  'High card',
-  'Pair',
-  'Two pair',
-  'Three of a kind',
-  'Straight',
-  'Flush',
-  'Full house',
-  'Four of a kind',
-  'Straight flush',
-] as const;
-
 /** A hand's strength: category first, then tie-breaking ranks. Compare with `compareScore`. */
 export type Score = number[];
 

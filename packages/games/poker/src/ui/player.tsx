@@ -121,7 +121,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         ? bestHand([...v.hole, ...v.board]).name
         : startingHandName(v.hole);
   const folded = v.folded.includes(v.me);
-  // Still in the hand with chips to bet: the betting dock stays up, greyed out until your turn.
+  // Still in the hand with chips to bet: the betting dock stays up, grayed out until your turn.
   const inHand = !done && !folded && v.hole.length === 2 && choices(v, v.me).stack > 0;
 
   return (
@@ -215,7 +215,7 @@ function Waiting({
 
 /**
  * Between hands: a countdown, then the server deals the next hand by itself (or shows who won
- * after the last). Anyone can deal straight away, and a player out of chips may buy back in if the
+ * after the last). Anyone can deal right away, and a player out of chips may buy back in if the
  * table allows.
  */
 function NextHand({
@@ -262,7 +262,7 @@ function NextHand({
 
 /**
  * Fold, check or call, and a raise with its amount. It stays on screen while you're in the hand:
- * anything you can't do right now is greyed out (all of it while someone else is acting).
+ * anything you can't do right now is grayed out (all of it while someone else is acting).
  */
 function Betting({
   t,
@@ -291,7 +291,7 @@ function Betting({
     { label: 'All in', to: c.max },
   ]
     .map((p) => ({ ...p, to: clamp(p.to, c.minTo, c.max) }))
-    // ½ pot and Pot are greyed out when they come to the same as Min or All in.
+    // ½ pot and Pot are grayed out when they come to the same as Min or All in.
     .map((p, i, all) => ({
       ...p,
       same:

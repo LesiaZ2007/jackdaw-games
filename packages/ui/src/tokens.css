@@ -1,6 +1,6 @@
 /*
  * Jackdaw design tokens. Nothing on screen should use a
- * literal colour, font or size that isn't defined here.
+ * literal color, font or size that isn't defined here.
  *
  * Fonts are loaded by the app (next/font) into --ff-* variables; the stacks below fall back
  * to similar system faces if they're missing.

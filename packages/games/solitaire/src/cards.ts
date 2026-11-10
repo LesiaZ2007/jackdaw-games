@@ -26,6 +26,6 @@ export const cardText = (c: Card) => `${RANK_NAME[rankOf(c)]} of ${SUIT_NAME[sui
 export const cardShort = (c: Card) =>
   `${c[0] === 'T' ? '10' : c[0]}${{ s: '♠', h: '♥', d: '♦', c: '♣' }[suitOf(c)]}`;
 
-/** True if `c` can go on `under` in a tableau column: one lower and the other colour. */
+/** True if `c` can go on `under` in a tableau column: one lower and the other color. */
 export const stacks = (c: Card, under: Card) =>
   rankOf(c) === rankOf(under) - 1 && isRed(c) !== isRed(under);

@@ -1,4 +1,9 @@
-import { CreateLobbyRequest, LobbyCode, RedeemRejoinRequest } from '@jackdaw/engine';
+import {
+  CreateLobbyRequest,
+  LobbyCode,
+  RedeemRejoinRequest,
+  REJOIN_CODE_LENGTH,
+} from '@jackdaw/engine';
 import { RoomError, toErrorBody } from './errors';
 import { isValidDisplayId, isValidToken, type RoomRuntime } from './runtime';
 
@@ -17,6 +22,9 @@ import { isValidDisplayId, isValidToken, type RoomRuntime } from './runtime';
 export const TOKEN_HEADER = 'x-player-token';
 export const DISPLAY_HEADER = 'x-display-id';
 
+/** Request bodies are tiny (a message, a name); anything bigger is refused before parsing. */
+export const MAX_BODY_BYTES = 32 * 1024;
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -33,7 +41,7 @@ function errorResponse(e: unknown): Response {
 function requireToken(req: Request): string {
   const token = req.headers.get(TOKEN_HEADER);
   if (!isValidToken(token))
-    throw new RoomError(401, 'BAD_REQUEST', 'Missing or invalid player token.');
+    throw new RoomError(401, 'UNAUTHORIZED', 'Missing or invalid player token.');
   return token;
 }
 
@@ -44,17 +52,35 @@ function parseCode(raw: string): string {
 }
 
 async function readJson(req: Request): Promise<unknown> {
+  const tooLarge = () => new RoomError(413, 'TOO_LARGE', 'That request is too large.');
+  const declared = Number(req.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) throw tooLarge();
+  let text: string;
   try {
-    return await req.json();
+    text = await req.text();
+  } catch {
+    throw new RoomError(400, 'BAD_REQUEST', 'The request body must be JSON.');
+  }
+  if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) throw tooLarge();
+  try {
+    return JSON.parse(text);
   } catch {
     throw new RoomError(400, 'BAD_REQUEST', 'The request body must be JSON.');
   }
 }
 
-/** The client's address as Vercel (or any proxy in front) reports it. */
-function clientIp(req: Request): string | null {
+/**
+ * The client's address as Vercel (or any proxy in front) reports it. Without any address header
+ * every such request shares one 'unknown' bucket, so the address limits still apply.
+ */
+export function clientIp(req: Request): string {
   const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  return req.headers.get('x-real-ip') || forwarded || null;
+  return (
+    req.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip')?.trim() ||
+    forwarded ||
+    'unknown'
+  );
 }
 
 export function createHttpHandlers(runtime: RoomRuntime) {
@@ -62,13 +88,16 @@ export function createHttpHandlers(runtime: RoomRuntime) {
    * Runs a request for one lobby. An address that keeps asking for lobbies that don't exist
    * (guessing codes) is turned away for a while.
    */
-  async function forLobby(req: Request, handle: () => Promise<Response>): Promise<Response> {
+  async function forLobby(
+    req: Request,
+    handle: (ip: string) => Promise<Response>,
+  ): Promise<Response> {
     const ip = clientIp(req);
     try {
-      if (ip) runtime.checkAddress(ip);
-      return await handle();
+      runtime.checkAddress(ip);
+      return await handle(ip);
     } catch (e) {
-      if (ip && e instanceof RoomError && e.code === 'NOT_FOUND') runtime.noteMiss(ip);
+      if (e instanceof RoomError && e.code === 'NOT_FOUND') runtime.noteMiss(ip);
       return errorResponse(e);
     }
   }
@@ -87,7 +116,7 @@ export function createHttpHandlers(runtime: RoomRuntime) {
     },
 
     async getLobby(req: Request, rawCode: string): Promise<Response> {
-      return forLobby(req, async () => {
+      return forLobby(req, async (ip) => {
         const code = parseCode(rawCode);
         const token = req.headers.get(TOKEN_HEADER);
         const displayId = req.headers.get(DISPLAY_HEADER);
@@ -99,6 +128,7 @@ export function createHttpHandlers(runtime: RoomRuntime) {
             {
               token: isValidToken(token) ? token : null,
               displayId: isValidDisplayId(displayId) ? displayId : null,
+              ip,
             },
             since,
           ),
@@ -107,39 +137,57 @@ export function createHttpHandlers(runtime: RoomRuntime) {
     },
 
     async postLobby(req: Request, rawCode: string): Promise<Response> {
-      return forLobby(req, async () => {
+      return forLobby(req, async (ip) => {
         const code = parseCode(rawCode);
         const token = requireToken(req);
         return json(
-          await runtime.post(code, token, await readJson(req), { origin: new URL(req.url).origin }),
+          await runtime.post(code, token, await readJson(req), {
+            origin: new URL(req.url).origin,
+            ip,
+          }),
         );
       });
     },
 
     async getStats(req: Request, rawCode: string): Promise<Response> {
-      return forLobby(req, async () => {
-        return json(await runtime.stats(parseCode(rawCode)));
+      return forLobby(req, async (ip) => {
+        const token = req.headers.get(TOKEN_HEADER);
+        return json(
+          await runtime.stats(parseCode(rawCode), {
+            token: isValidToken(token) ? token : null,
+            ip,
+          }),
+        );
       });
     },
 
     async setPush(req: Request, rawCode: string): Promise<Response> {
-      return forLobby(req, async () => {
+      return forLobby(req, async (ip) => {
         const code = parseCode(rawCode);
         const token = requireToken(req);
-        const body = (await readJson(req)) as { subscription?: unknown } | null;
-        await runtime.setPush(code, token, body?.subscription ?? null);
+        const body = await readJson(req);
+        if (typeof body !== 'object' || body === null || Array.isArray(body))
+          throw new RoomError(400, 'BAD_REQUEST', 'The request body must be a JSON object.');
+        const { subscription } = body as { subscription?: unknown };
+        await runtime.setPush(code, token, subscription ?? null, { ip });
         return json({ ok: true });
       });
     },
 
     async rejoin(req: Request, rawCode: string): Promise<Response> {
-      return forLobby(req, async () => {
+      return forLobby(req, async (ip) => {
         const code = parseCode(rawCode);
         const token = requireToken(req);
         const body = RedeemRejoinRequest.safeParse(await readJson(req));
-        if (!body.success)
-          throw new RoomError(400, 'REJOIN_INVALID', 'Rejoin codes are 6 letters.');
-        return json(await runtime.redeemRejoin(code, token, body.data.rejoinCode));
+        if (!body.success) {
+          runtime.noteMiss(ip);
+          throw new RoomError(
+            400,
+            'REJOIN_INVALID',
+            `Rejoin codes are ${REJOIN_CODE_LENGTH} letters.`,
+          );
+        }
+        return json(await runtime.redeemRejoin(code, token, body.data.rejoinCode, { ip }));
       });
     },
   };

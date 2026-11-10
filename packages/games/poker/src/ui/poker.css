@@ -176,7 +176,7 @@
 /* ── The table ─────────────────────────────────────────────────────────── */
 .pk-table {
   --pk-tok: clamp(30px, 11cqw, 60px);
-  --pk-board-card: min(13cqw, 64px);
+  --pk-board-card: min(11cqw, 64px);
   container-type: inline-size;
   position: relative;
   /* As big as fits above your cards and the betting controls. */
@@ -209,7 +209,7 @@
 }
 .pk-board {
   display: flex;
-  gap: 1.2cqw;
+  gap: 1cqw;
 }
 .pk-board .pk-card {
   --w: var(--pk-board-card);
@@ -225,6 +225,8 @@
   display: grid;
   gap: 2px;
   max-width: 52cqw;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
   font: 800 clamp(16px, 5cqw, 30px) / 1.1 var(--font-plaque);
   letter-spacing: 0.03em;
 }
@@ -253,12 +255,18 @@
 .pk-seat__tok {
   position: relative;
   display: inline-grid;
+  /* The token's die-cut ring and the turn ring reach past its edge: keep them off the name plate. */
+  margin-bottom: calc(var(--pk-tok) * 0.14);
 }
 .pk-seat .jd-token {
   --z: var(--pk-tok);
 }
 .pk-seat__name {
-  max-width: 100%;
+  /* Above the token's ring (a positioned box paints over a plain one), and wider than the seat so
+     a long name keeps its letters; only a very long one is cut, and its full name is the title. */
+  position: relative;
+  z-index: 1;
+  max-width: calc(var(--pk-tok) * 3.1);
   padding: 1px 6px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -282,9 +290,14 @@
   color: var(--paper);
 }
 .pk-seat--turn .jd-token {
-  outline: 3px solid var(--or);
+  outline: 5px solid var(--or);
   outline-offset: calc(var(--pk-tok) * 0.12);
   animation: pk-turn 1.4s var(--ease-out) infinite;
+}
+/* The name plate takes the same gold, so whose turn it is reads even with the ring still. */
+.pk-seat--turn .pk-seat__name {
+  outline: 3px solid var(--or);
+  outline-offset: 1px;
 }
 @keyframes pk-turn {
   50% {
@@ -363,7 +376,7 @@
   }
 }
 
-/* ── The lobby: everyone round the table before the deal ──────────────── */
+/* ── The lobby: everyone around the table before the deal ──────────────── */
 .pk-table--lobby {
   width: min(100%, 560px);
   margin: 18px auto 34px;
@@ -387,7 +400,7 @@
   color: var(--pk-on-felt-faint);
 }
 .pk-seat .pk-addseat .jd-addseat__ring {
-  width: max(36px, var(--pk-tok));
+  width: max(44px, var(--pk-tok));
   background: color-mix(in srgb, var(--sable) 70%, var(--vert));
 }
 /* the ring takes the empty seat's place (which stays, unseen, to keep the seat's size) */
@@ -469,6 +482,10 @@
   color: var(--ink-2);
   font-weight: 700;
 }
+.pk-dock__wait > span:first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 /* A turn timer: the seconds left, in a small printed tag that turns gules near the end. */
 .pk-clock {
   min-width: 3.2em;
@@ -503,7 +520,7 @@
   gap: var(--space-1);
 }
 .pk-dock__presets button {
-  min-height: 40px;
+  min-height: 44px;
   border: 1.5px solid var(--ink);
   background: var(--paper);
   color: var(--ink);
@@ -516,7 +533,7 @@
   background: var(--ink);
   color: var(--paper);
 }
-/* What you can't do right now is greyed out, not hidden. */
+/* What you can't do right now is grayed out, not hidden. */
 .pk-dock__presets button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -529,6 +546,7 @@
   display: grid;
   grid-template-columns: 44px 1fr 44px;
   align-items: stretch;
+  min-height: 44px;
   border: 2px solid var(--ink);
   background: var(--paper);
 }
@@ -563,10 +581,13 @@
 }
 .pk--tv .pk__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 32px;
+  gap: 8px 32px;
 }
 .pk--tv .pk__head h2 {
+  min-width: 0;
+  text-wrap: balance;
   margin: 0;
   font-size: 68px;
   line-height: 1;
@@ -612,7 +633,10 @@
 }
 .pk-table--tv .pk-seat__stack,
 .pk-table--tv .pk-tag,
-.pk-table--tv .pk-bet {
+.pk-table--tv .pk-bet,
+.pk-table--tv .pk-seat__bot,
+.pk-table--tv .pk-seat .jd-outcome,
+.pk-table--tv .pk-seat [class*='jd-chip'] {
   font-size: clamp(24px, 1.9cqw, 34px);
   --pk-chip-font: clamp(24px, 1.9cqw, 34px);
 }

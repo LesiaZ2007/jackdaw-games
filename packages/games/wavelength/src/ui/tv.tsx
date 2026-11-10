@@ -65,7 +65,15 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
 
       {panel('sun')}
 
-      <div className={t.phase === 'clue' ? 'wl-tv__board has-offer' : 'wl-tv__board'}>
+      <div
+        className={
+          t.phase === 'clue'
+            ? 'wl-tv__board has-offer'
+            : shown && last
+              ? 'wl-tv__board has-stamp'
+              : 'wl-tv__board'
+        }
+      >
         <Dial
           size="tv"
           spectrum={cardOf(t)}

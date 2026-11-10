@@ -95,7 +95,7 @@ export const CHANCE: readonly Card[] = [
 
 export const CHEST: readonly Card[] = [
   card('chest', 1, 'Advance to GO. Collect $200.', { t: 'advance', to: 0 }),
-  card('chest', 2, 'Bank error in your favour. Collect $200.', {
+  card('chest', 2, 'Bank error in your favor. Collect $200.', {
     t: 'collect',
     n: 200,
   }),
@@ -152,7 +152,7 @@ const TOWN_TEXT: Readonly<Record<string, string>> = {
   chance14: 'Stroll up to Crown Terrace.',
   chance15: 'You are made mayor. Pay each player $50.',
   chance16: 'Your loan to the mill comes good. Collect $150.',
-  chest2: 'The counting house errs in your favour. Collect $200.',
+  chest2: 'The counting house errs in your favor. Collect $200.',
   chest3: 'The physician calls. Pay $50.',
   chest4: 'You sell your share in a wool ship. Collect $50.',
   chest7: 'The harvest fair pays out. Collect $100.',

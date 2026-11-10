@@ -31,7 +31,7 @@ const stroke = (w: number) => ({
 
 /**
  * The Jackdaw mark: "Black bird" by OpenMoji (openmoji.org), line variant, CC BY-SA 4.0.
- * Lines take the current colour, so it is ink by day and cream in dark mode. Pass a heavier
+ * Lines take the current color, so it is ink by day and cream in dark mode. Pass a heavier
  * `weight` when drawing it small.
  */
 export function BirdMark({ weight = 2.2, ...props }: IconProps & { weight?: number }) {

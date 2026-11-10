@@ -168,8 +168,7 @@
   color: var(--on-fill);
 }
 .rps-tv__card--loss {
-  opacity: 0.55;
-  border: 3px dashed var(--rule);
+  border-color: var(--ink-2);
 }
 @keyframes rps-tv-flip {
   from {

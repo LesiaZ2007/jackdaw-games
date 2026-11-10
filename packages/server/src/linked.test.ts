@@ -77,7 +77,7 @@ function fakeLink() {
 
 const TOKENS = { ana: 'token-ana-0123456789', ben: 'token-ben-0123456789' };
 
-async function lobbyWithLink(opts: { withLink?: boolean } = {}) {
+async function lobbyWithLink(opts: { withLink?: boolean; linkCooldownMs?: number } = {}) {
   let t = 1_000_000;
   const clock = { now: () => t, advance: (ms: number) => (t += ms) };
   const fake = fakeLink();
@@ -87,6 +87,7 @@ async function lobbyWithLink(opts: { withLink?: boolean } = {}) {
     links: opts.withLink === false ? {} : { far: fake.link },
     now: clock.now,
     readCacheMs: 0,
+    linkCooldownMs: opts.linkCooldownMs,
     sleep: () => new Promise((r) => setTimeout(r, 1)),
   });
   const { code } = await runtime.create({ token: TOKENS.ana, name: 'Jay', gameId: 'far' });
@@ -201,12 +202,13 @@ describe('linked games', () => {
   });
 
   it('ends the game in its app too when the host ends it here, even if that call fails', async () => {
-    const { runtime, code, fake } = await lobbyWithLink();
+    const { runtime, code, clock, fake } = await lobbyWithLink();
     await runtime.post(code, TOKENS.ana, { type: 'start' });
     const back = await runtime.post(code, TOKENS.ana, { type: 'endGame' });
     expect(back.status).toBe('waiting');
     expect(fake.ended.map((s) => s.room)).toEqual(['ROOM1']);
 
+    clock.advance(10_000); // Past the cooldown between starts.
     await runtime.post(code, TOKENS.ana, { type: 'start' });
     fake.failWith('Far Game is down.');
     const again = await runtime.post(code, TOKENS.ana, { type: 'endGame' });
@@ -232,8 +234,21 @@ describe('linked games', () => {
     expect(fake.ended.map((s) => s.room)).toEqual(['ROOM1']);
   });
 
+  it('makes a lobby wait between starts so Start and End loops cannot hammer the other app', async () => {
+    const { runtime, code, clock, fake } = await lobbyWithLink();
+    await runtime.post(code, TOKENS.ana, { type: 'start' });
+    await runtime.post(code, TOKENS.ana, { type: 'endGame' });
+    await expect(runtime.post(code, TOKENS.ana, { type: 'start' })).rejects.toMatchObject({
+      code: 'RATE_LIMITED',
+    });
+    expect(fake.calls).toHaveLength(1);
+    clock.advance(10_001);
+    expect((await runtime.post(code, TOKENS.ana, { type: 'start' })).status).toBe('in_game');
+    expect(fake.calls).toHaveLength(2);
+  });
+
   it('closes the extra room when two Starts race and only one can begin', async () => {
-    const { runtime, code, fake } = await lobbyWithLink();
+    const { runtime, code, fake } = await lobbyWithLink({ linkCooldownMs: 0 });
     const outcomes = await Promise.allSettled([
       runtime.post(code, TOKENS.ana, { type: 'start' }),
       runtime.post(code, TOKENS.ana, { type: 'start' }),

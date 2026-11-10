@@ -53,7 +53,7 @@
     display: grid;
   }
 }
-/* The host's End game: a stop square on phones, spelt out from tablets up. */
+/* The host's End game: a stop square on phones, spelled out from tablets up. */
 .lobby-bar__end {
   color: var(--gules);
 }
@@ -106,7 +106,7 @@
   padding: 0 5px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--gules);
   color: var(--on-fill);
   box-shadow: 0 0 0 2px var(--table);
@@ -171,13 +171,14 @@
   gap: var(--space-3);
   margin-bottom: var(--space-3);
 }
-.section-head h2 {
-  font-size: var(--step-2);
-}
 .section-head > span {
   color: var(--ink-2);
   font-size: 17px;
   text-align: right;
+}
+/* "Finding lobby ABCD…" while the first poll is out */
+.lobby-status {
+  font-size: 16px;
 }
 
 /* ── Waiting room ── */
@@ -187,14 +188,8 @@
   max-width: 1080px;
   margin-inline: auto;
 }
-.waiting__manage,
-.waiting__change {
+.waiting__manage {
   margin-top: var(--space-1);
-}
-.waiting__hint {
-  margin: 0;
-  color: var(--ink-2);
-  font-size: 17px;
 }
 /* ── You, under the seat track ── */
 .waiting__react {
@@ -214,6 +209,7 @@
   gap: 2px;
 }
 .you-strip__who b {
+  overflow-wrap: anywhere;
   font: 800 20px/1.1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -225,18 +221,6 @@
 }
 .you-strip .waiting__manage {
   margin-top: 0;
-}
-.waiting__chosen {
-  display: grid;
-  gap: var(--space-3);
-  justify-items: start;
-}
-.waiting__chosen .jd-box {
-  max-width: 560px;
-}
-.shelf {
-  display: grid;
-  gap: var(--space-2);
 }
 .waiting__history {
   display: grid;
@@ -401,11 +385,13 @@
 .options__toggle {
   appearance: none;
   min-width: var(--tap);
-  height: var(--tap);
+  /* a tap tall, and taller when a long choice wraps onto a second line */
+  min-height: var(--tap);
   border: 2px solid var(--ink);
   background: var(--paper);
   color: var(--ink);
-  font: 800 22px var(--font-plaque);
+  font: 800 22px/1.1 var(--font-plaque);
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 .options__stepper button:disabled,
@@ -480,7 +466,7 @@
   gap: 4px;
 }
 .options__choices button {
-  padding: 0 12px;
+  padding: 6px 12px;
   font-size: 16px;
   text-transform: uppercase;
 }
@@ -490,7 +476,7 @@
   color: var(--paper);
 }
 .options__toggle {
-  padding: 0 14px;
+  padding: 6px 14px;
   font-size: 16px;
   text-transform: uppercase;
 }
@@ -604,6 +590,18 @@
   margin: 0;
   color: var(--danger);
   font-weight: 700;
+}
+/* Removed by the host and asking to come back: the token waits while they decide. */
+.join-card__asking {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  text-align: center;
+}
+.join-card__asking p {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--ink-2);
 }
 
 /* ── Game shell ── */
@@ -748,11 +746,9 @@
 .chat__who {
   grid-column: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   text-align: right;
-  font: 800 17px/1.4 var(--font-plaque);
+  font: 800 18px/1.4 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--who);
@@ -796,6 +792,15 @@
 }
 .chat-sheet {
   height: 80dvh;
+}
+/* The kit's Sheet body holds the chat, which scrolls its own list and keeps the form in view. */
+.chat-sheet .jd-sheet__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
 }
 .chat-sheet__body {
   flex: 1;
@@ -887,6 +892,7 @@
   font: 700 18px/1.2 var(--font-body);
   cursor: pointer;
   text-align: left;
+  overflow-wrap: anywhere;
 }
 .pad__who .jd-token {
   --ring-bg: var(--paper);
@@ -1036,8 +1042,12 @@
   width: 100%;
   font-weight: 700;
 }
+.menu__toggle {
+  min-width: 0;
+}
 .menu__toggle .jd-plaque {
   min-width: 76px;
+  flex: none;
 }
 .menu__toggle .jd-plaque[aria-pressed='true'] {
   background: var(--vert);
@@ -1068,7 +1078,7 @@
   --ring-bg: var(--paper);
 }
 
-/* ── Changing your name, crest and colour ── */
+/* ── Changing your name, crest and color ── */
 .me-sheet {
   display: grid;
   gap: var(--space-5);
@@ -1084,6 +1094,8 @@
 }
 .me-sheet__who > b {
   align-self: center;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font: 800 24px var(--font-plaque);
   text-transform: uppercase;
 }

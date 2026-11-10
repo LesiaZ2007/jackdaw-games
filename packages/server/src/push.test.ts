@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { b64urlDecode, b64urlEncode, encryptPush, sendPush, vapidAuth } from './push';
+import {
+  b64urlDecode,
+  b64urlEncode,
+  encryptPush,
+  isPushSubscription,
+  sendPush,
+  vapidAuth,
+} from './push';
 
 // RFC 8291, Appendix A: the example message, keys and salt, and the body they must produce.
 const rfc = {
@@ -78,8 +85,29 @@ describe('web push', () => {
     const headers = seen[0]!.headers as Record<string, string>;
     expect(headers['content-encoding']).toBe('aes128gcm');
     expect(headers.authorization).toMatch(/^vapid t=/);
+    // The endpoint came from a client: no redirects, and a short timeout.
+    expect(seen[0]!.redirect).toBe('manual');
+    expect(seen[0]!.signal).toBeInstanceOf(AbortSignal);
     expect(
       await sendPush(sub, msg, keys, { fetch: async () => new Response(null, { status: 410 }) }),
     ).toBe('gone');
+    expect(
+      await sendPush(sub, msg, keys, { fetch: async () => new Response(null, { status: 302 }) }),
+    ).toBe('failed');
+  });
+
+  it('accepts only well-formed subscription keys', () => {
+    const endpoint = 'https://fcm.googleapis.com/fcm/send/abc';
+    const good = { endpoint, keys: { p256dh: rfc.uaPublic, auth: rfc.auth } };
+    expect(isPushSubscription(good)).toBe(true);
+    const bad = (keys: { p256dh: string; auth: string }) => isPushSubscription({ endpoint, keys });
+    expect(bad({ ...good.keys, p256dh: 'p256' })).toBe(false);
+    expect(bad({ ...good.keys, auth: 'auth' })).toBe(false);
+    // 65 bytes, but not an uncompressed point (first byte 0x05 instead of 0x04).
+    const wrongLead = b64urlEncode(new Uint8Array([5, ...b64urlDecode(rfc.uaPublic).slice(1)]));
+    expect(bad({ ...good.keys, p256dh: wrongLead })).toBe(false);
+    expect(bad({ ...good.keys, p256dh: rfc.uaPublic + '!' })).toBe(false);
+    expect(isPushSubscription('nope')).toBe(false);
+    expect(isPushSubscription(null)).toBe(false);
   });
 });

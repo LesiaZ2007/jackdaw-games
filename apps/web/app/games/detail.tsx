@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { GameCategory } from '@jackdaw/engine';
-import { Glyph, Plaque } from '@jackdaw/ui';
+import { Glyph, Plaque, range } from '@jackdaw/ui';
 import { COMPLEXITY_LABEL, type CatalogEntry } from '@/lib/catalog';
 import { rememberedAvatar, rememberedName, rememberName } from '@/lib/identity';
 import { createLobby } from '@/lib/use-lobby';
@@ -16,8 +16,6 @@ const KIND_SPEC: Record<GameCategory, [string, string]> = {
   board: ['Board', 'game'],
   mini: ['Mini', 'game'],
 };
-
-const range = ([a, b]: [number, number]) => (a === b ? `${a}` : `${a}–${b}`);
 
 /**
  * Everything about one game: banner, facts, pictures, how a round goes, and a button to start a
@@ -215,7 +213,7 @@ export function StartLobby({
       ) : (
         <p className="cat-dock__note">
           Playing as <b>{name}</b>.{' '}
-          <button type="button" className="cat-linkbtn" onClick={() => setEditing(true)}>
+          <button type="button" className="jd-link" onClick={() => setEditing(true)}>
             Change
           </button>
         </p>

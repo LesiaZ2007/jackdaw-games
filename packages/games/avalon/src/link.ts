@@ -37,7 +37,7 @@ const AVALON_ICONS = [
 ];
 
 /**
- * Jackdaw's tint ids in the order of Avalon's AVATAR_TINTS (the same 15 colours), so a tint
+ * Jackdaw's tint ids in the order of Avalon's AVATAR_TINTS (the same 15 colors), so a tint
  * crosses over as its index. A test checks this against @jackdaw/ui's TINT_CHOICES.
  */
 export const AVALON_TINT_ORDER = [

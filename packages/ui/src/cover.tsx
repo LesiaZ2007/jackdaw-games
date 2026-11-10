@@ -3,10 +3,8 @@
 import type { ComponentType, CSSProperties, ReactNode } from 'react';
 import { Glyph, Icon } from './icons';
 import type { GameArt } from './pieces';
+import { cx, range } from './util';
 import './cover.css';
-
-const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
-const range = ([a, b]: [number, number]) => (a === b ? `${a}` : `${a}–${b}`);
 
 /** A link component the app supplies (Next's Link), so the kit never imports a router. */
 export type CoverLink = ComponentType<{
@@ -27,7 +25,7 @@ export interface GameCoverProps {
   kind?: string;
   /** Not built yet: a "Coming soon" sash across the corner. */
   soon?: boolean;
-  /** Why it can't be played right now, e.g. "Needs 5 to 15 players". Greys the cover. */
+  /** Why it can't be played right now, e.g. "Needs 5 to 15 players". Grays the cover. */
   unfit?: string | null;
   selected?: boolean;
   /** Opens a page: rendered as a link (pass `link` for client-side navigation). */

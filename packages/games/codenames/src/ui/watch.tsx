@@ -12,7 +12,7 @@ import './codenames.css';
 
 /**
  * Codenames for someone watching on a phone: the phone's own turn header, team folders and board,
- * then the clues so far. Only uncovered colours, as on the TV: it gets the table view.
+ * then the clues so far. Only uncovered colors, as on the TV: it gets the table view.
  */
 export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
   tableView,

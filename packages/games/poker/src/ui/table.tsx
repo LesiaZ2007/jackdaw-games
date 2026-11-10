@@ -29,8 +29,8 @@ function lastMove(t: PokerTableView, id: string): ActionLine | undefined {
 
 /**
  * The card table seen from above: a green baize oval on a dark rail, the five shared cards and
- * the pot in the middle, and everyone's seat round the rail with their stack, their bet pushed
- * towards the middle, and the button. Whoever is looking sits at the bottom. Shared by the phone
+ * the pot in the middle, and everyone's seat around the rail with their stack, their bet pushed
+ * toward the middle, and the button. Whoever is looking sits at the bottom. Shared by the phone
  * and the TV, which only differ in shape and size.
  */
 export function PokerTable({
@@ -147,7 +147,9 @@ export function PokerTable({
                   </span>
                 )}
               </span>
-              <span className="pk-seat__name">{id === me ? 'You' : name(id)}</span>
+              <span className="pk-seat__name" title={name(id)}>
+                {id === me ? 'You' : name(id)}
+              </span>
               <span className="pk-seat__stack">
                 {out && (t.stacks[id] ?? 0) === 0 ? 'Out' : chips(t.stacks[id] ?? 0)}
               </span>

@@ -94,7 +94,7 @@ If they decline and the auction option is on, the deed goes to auction:
 ## Rent
 
 - **Streets** charge the rent in the board's table for their house count (bare, one to four
-  houses, then a hotel). A bare deed in a full colour group charges double.
+  houses, then a hotel). A bare deed in a full color group charges double.
 - **Railroads** charge $25, doubled for each further railroad the owner holds: $50, $100, $200.
 - **Utilities** charge the dice total times four, or times ten if the owner holds both.
 - **Cards** change this. A Chance card that sends you to the nearest railroad charges double rent
@@ -104,7 +104,7 @@ If they decline and the auction option is on, the deed goes to auction:
 
 ## Building
 
-A house can go on a street only when its owner holds the whole colour group, and no deed in
+A house can go on a street only when its owner holds the whole color group, and no deed in
 the group is mortgaged. Railroads and utilities cannot be built on.
 
 - Build evenly. A street may not get a house while another in its group has fewer.
@@ -146,7 +146,7 @@ Any player may offer any other player cash, deeds and Jail cards, on both sides.
 offer is refused.
 
 - Cash must be in hand when the offer is made.
-- A deed must be owned by the side giving it, and must have no buildings in its colour group.
+- A deed must be owned by the side giving it, and must have no buildings in its color group.
   Mortgaged deeds may be traded.
 - A player has one open offer at a time. A new one replaces the old.
 - The recipient accepts or rejects, and the proposer may cancel. Acceptance checks both sides

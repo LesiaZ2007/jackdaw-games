@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 
 /*
- * The board's drawings: flat spot colours with an ink outline, like a printed board. They're
+ * The board's drawings: flat spot colors with an ink outline, like a printed board. They're
  * drawn on a 48 box and take their size from the space they sit in.
  */
 
@@ -197,13 +197,13 @@ export const ArtBank = () => (
   </Pic>
 );
 
-/** The three Chance spaces each print the question mark in their own colour, as on the board. */
+/** The three Chance spaces each print the question mark in their own color, as on the board. */
 export function ChanceMark({ space }: { space: number }) {
   const tone = space === 7 ? 'pink' : space === 22 ? 'navy' : 'orange';
   return <span className={`mnp-q mnp-q--${tone}`}>?</span>;
 }
 
-/** A deck face down: a few cards stacked, its colour, its emblem. */
+/** A deck face down: a few cards stacked, its color, its emblem. */
 export function Pile({ deck, count = 3 }: { deck: 'chance' | 'chest'; count?: number }) {
   return (
     <span

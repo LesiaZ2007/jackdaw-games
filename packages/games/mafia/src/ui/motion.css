@@ -112,13 +112,13 @@
 }
 
 /* The city's windows flick on and off at night. */
-.is-night .mf-sky__win:nth-child(3n) {
+.mf-is-night .mf-sky__win:nth-child(3n) {
   animation: mf-flick 9s steps(1) infinite;
 }
-.is-night .mf-sky__win:nth-child(4n + 1) {
+.mf-is-night .mf-sky__win:nth-child(4n + 1) {
   animation: mf-flick 13s steps(1) 2.4s infinite;
 }
-.is-night .mf-sky__win:nth-child(5n + 2) {
+.mf-is-night .mf-sky__win:nth-child(5n + 2) {
   animation: mf-flick 7s steps(1) 5s infinite;
 }
 @keyframes mf-flick {
@@ -139,7 +139,7 @@
   opacity: 0;
   fill: var(--mf-win);
 }
-.is-night .mf-sky__eyes g {
+.mf-is-night .mf-sky__eyes g {
   transform-box: fill-box;
   transform-origin: center;
   animation: mf-eyes 7s steps(1) infinite;
@@ -202,17 +202,17 @@
   }
 }
 .mf-curtain__word {
-  font: 900 clamp(44px, 13vw, 96px) / 0.9 var(--font-plaque);
+  font: 900 clamp(44px, calc(13 * var(--vw, 1vw)), 96px) / 0.9 var(--font-plaque);
   letter-spacing: 0.02em;
   text-transform: uppercase;
   text-align: center;
 }
 .mf--village .mf-curtain__word {
-  font: 800 clamp(48px, 14vw, 104px) / 0.9 var(--font-display);
+  font: 800 clamp(48px, calc(14 * var(--vw, 1vw)), 104px) / 0.9 var(--font-display);
   text-transform: none;
 }
 .mf-curtain__small {
-  font: 800 clamp(14px, 3.6vw, 22px) var(--font-plaque);
+  font: 800 clamp(14px, calc(3.6 * var(--vw, 1vw)), 22px) var(--font-plaque);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   opacity: 0.8;
@@ -291,7 +291,7 @@
   }
   15%,
   80% {
-    background: color-mix(in srgb, #0d0d10 62%, transparent);
+    background: color-mix(in srgb, var(--mf-scrim) 62%, transparent);
   }
 }
 .mf-curtain__paper {
@@ -304,12 +304,12 @@
   justify-items: center;
   gap: 2%;
   padding: 3%;
-  background: #e8e2d2;
-  color: #18171b;
-  border: 3px solid #18171b;
-  outline: 1px solid #18171b;
+  background: var(--mf-news);
+  color: var(--mf-news-ink);
+  border: 3px solid var(--mf-news-ink);
+  outline: 1px solid var(--mf-news-ink);
   outline-offset: -10px;
-  box-shadow: 0 30px 60px -30px #000;
+  box-shadow: 0 30px 60px -30px var(--mf-shade);
   animation: mf-spin-in 2.5s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 .mf-curtain--over .mf-curtain__paper {
@@ -338,31 +338,31 @@
 .mf-curtain__mast {
   width: 100%;
   text-align: center;
-  font: 800 clamp(22px, 6vw, 64px) / 1 var(--font-display);
-  border-bottom: 5px double #18171b;
+  font: 800 clamp(22px, calc(6 * var(--vw, 1vw)), 64px) / 1 var(--font-display);
+  border-bottom: 5px double var(--mf-news-ink);
   padding-bottom: 2%;
 }
 .mf-curtain__extra {
   padding: 0.1em 0.6em;
-  background: #b0261c;
-  color: #f6f0e1;
-  font: 900 clamp(14px, 3.4vw, 34px) var(--font-plaque);
+  background: var(--mf-news-red);
+  color: var(--mf-cream);
+  font: 900 clamp(14px, calc(3.4 * var(--vw, 1vw)), 34px) var(--font-plaque);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 .mf-curtain.is-pack .mf-curtain__paper {
-  background: #18171b;
-  color: #e8e2d2;
-  border-color: #b0261c;
-  outline-color: #b0261c;
+  background: var(--mf-news-ink);
+  color: var(--mf-news);
+  border-color: var(--mf-news-red);
+  outline-color: var(--mf-news-red);
 }
 .mf-curtain.is-pack .mf-curtain__mast {
-  border-color: #e8e2d2;
+  border-color: var(--mf-news);
 }
 .mf-curtain__paper .mf-curtain__head {
   align-self: center;
   text-align: center;
-  font: 900 clamp(34px, 9vw, 120px) / 0.88 var(--font-plaque);
+  font: 900 clamp(34px, calc(9 * var(--vw, 1vw)), 120px) / 0.88 var(--font-plaque);
   text-transform: uppercase;
 }
 .mf-curtain__cols {
@@ -372,12 +372,23 @@
   opacity: 0.22;
   mask: linear-gradient(
     to right,
-    #000 0 31%,
+    var(--mf-shade) 0 31%,
     transparent 31% 34.5%,
-    #000 34.5% 65.5%,
+    var(--mf-shade) 34.5% 65.5%,
     transparent 65.5% 69%,
-    #000 69%
+    var(--mf-shade) 69%
   );
+}
+
+/* On the TV the curtain's small type has a 24px floor and grows with the stage. */
+.mf-tv .mf-curtain__small {
+  font-size: clamp(24px, calc(3.6 * var(--vw, 1vw)), 40px);
+}
+.mf-tv .mf-curtain__mast {
+  font-size: clamp(32px, calc(6 * var(--vw, 1vw)), 96px);
+}
+.mf-tv .mf-curtain__extra {
+  font-size: clamp(24px, calc(3.4 * var(--vw, 1vw)), 48px);
 }
 
 /* The news, in the village: the sun climbs over the trees (a blood moon if the wolves won). */
@@ -392,16 +403,16 @@
   display: grid;
   place-content: center;
   justify-items: center;
-  background: #e4dcc6;
-  color: #201d17;
+  background: var(--mf-linen);
+  color: var(--mf-linen-ink);
   animation: mf-sheet-fade 2.5s ease both;
 }
 .mf--village .mf-curtain--over .mf-curtain__sheet {
   animation-duration: 3.2s;
 }
 .mf--village .mf-curtain.is-pack .mf-curtain__sheet {
-  background: #141a2a;
-  color: #e8e0cc;
+  background: var(--mf-dusk);
+  color: var(--mf-dusk-ink);
 }
 .mf-curtain__rise {
   position: absolute;
@@ -422,14 +433,14 @@
   height: 100%;
 }
 .mf-sun__rays {
-  stroke: #a77d2c;
+  stroke: var(--mf-sun-ray);
   stroke-width: 4;
   stroke-linecap: round;
   transform-origin: 50px 50px;
   animation: mf-turn 14s linear infinite;
 }
 .mf-sun__disc {
-  fill: #c9962f;
+  fill: var(--mf-sun);
 }
 @keyframes mf-turn {
   to {
@@ -439,7 +450,7 @@
 .mf-curtain__blood {
   width: 100%;
   height: 100%;
-  fill: #8e2a22;
+  fill: var(--mf-blood);
 }
 .mf--village .mf-curtain__sheet .mf-curtain__head {
   position: relative;
@@ -447,16 +458,16 @@
   margin-bottom: 18%;
   padding: 0 6%;
   text-align: center;
-  font: 800 clamp(40px, 10vw, 118px) / 0.95 var(--font-display);
+  font: 800 clamp(40px, calc(10 * var(--vw, 1vw)), 118px) / 0.95 var(--font-display);
   animation: mf-pull 1s 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .mf--village .mf-curtain__sheet .mf-sky__town,
 .mf--village .mf-curtain__sheet .mf-sky__trees {
-  fill: #2a3326;
+  fill: var(--mf-forest);
 }
 .mf--village .mf-curtain.is-pack .mf-sky__town,
 .mf--village .mf-curtain.is-pack .mf-sky__trees {
-  fill: #0a0d17;
+  fill: var(--mf-void);
 }
 
 /* ── Headlines off the press ───────────────────────────────────────────── */

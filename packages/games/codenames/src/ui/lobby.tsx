@@ -14,36 +14,9 @@ import {
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import { defaultOptions, optionsSchema, type CodenamesOptions } from '../rules';
-import { other, TEAM_NAME, TEAMS, type Team } from '../teams';
+import { arrangementFor, shuffleTeams, TEAM_NAME, TEAMS, type Team } from '../teams';
 import { CardMark, Lens } from './art';
 import './codenames.css';
-
-/** Only the arrangement of players who are still here, with spymasters kept on their team. */
-export function arrangementFor(options: CodenamesOptions, players: ScreenPlayer[]) {
-  const here = new Set(players.map((p) => p.id));
-  const teams = Object.fromEntries(
-    Object.entries(options.teams).filter(([id]) => here.has(id)),
-  ) as Record<string, Team>;
-  const spymasters: Partial<Record<Team, string>> = {};
-  for (const t of TEAMS) {
-    const id = options.spymasters[t];
-    if (id && teams[id] === t) spymasters[t] = id;
-  }
-  return { teams, spymasters };
-}
-
-/** A fresh random split: alternate down a shuffled table, the first of each side spymaster. */
-function shuffled(players: ScreenPlayer[]) {
-  const seed = crypto.getRandomValues(new Uint32Array(1))[0]!;
-  const rng = createRng(seed);
-  const order = rng.shuffle(players.map((p) => p.id));
-  const first = rng.pick(TEAMS);
-  const teams: Record<string, Team> = {};
-  order.forEach((id, i) => (teams[id] = i % 2 === 0 ? first : other(first)));
-  const spymasters: Partial<Record<Team, string>> = {};
-  for (const id of order) if (!spymasters[teams[id]!]) spymasters[teams[id]!] = id;
-  return { teams, spymasters };
-}
 
 /**
  * Codenames' own lobby: the table splits into two case files, red and blue. Each file has its
@@ -70,7 +43,10 @@ export function CodenamesLobby({
   const look = useTheme();
   const parsed = optionsSchema.safeParse({ ...defaultOptions(), ...raw });
   const opts = parsed.success ? parsed.data : defaultOptions();
-  const { teams, spymasters } = arrangementFor(opts, players);
+  const { teams, spymasters } = arrangementFor(
+    opts,
+    players.map((p) => p.id),
+  );
   const [picked, setPicked] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const pickedPlayer = players.find((p) => p.id === picked) ?? null;
@@ -134,7 +110,7 @@ export function CodenamesLobby({
           isHost
             ? `${p.name}${p.id === me ? ' (you)' : ''}${p.bot ? ', computer player' : ''}: choose where they play`
             : p.id === me
-              ? `${p.name} (you): change your name, crest or colour`
+              ? `${p.name} (you): change your name, crest or color`
               : `${p.name}${p.bot ? ', computer player' : ''}`
         }
       >
@@ -158,7 +134,7 @@ export function CodenamesLobby({
             </span>
           )}
         </span>
-        <span className="cn-agent__name" style={{ viewTransitionName: t.name }}>
+        <span className="cn-agent__name" title={p.name} style={{ viewTransitionName: t.name }}>
           {p.name}
           {p.id === me && <small> (you)</small>}
         </span>
@@ -337,7 +313,18 @@ export function CodenamesLobby({
           </label>
           {isHost && (
             <div className="cn-brief__actions">
-              <button type="button" className="cn-btn" onClick={() => save(shuffled(players))}>
+              <button
+                type="button"
+                className="cn-btn"
+                onClick={() =>
+                  save(
+                    shuffleTeams(
+                      players.map((p) => p.id),
+                      createRng(crypto.getRandomValues(new Uint32Array(1))[0]!),
+                    ),
+                  )
+                }
+              >
                 Shuffle teams
               </button>
               <button

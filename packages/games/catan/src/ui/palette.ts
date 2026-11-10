@@ -1,8 +1,8 @@
 import type { Card, Commodity, Terrain } from '../types';
 
 /**
- * Catan's piece colours, in seat order (the classic four, then green and brown at five and six).
- * The colours themselves are tokens at the top of catan.css.
+ * Catan's piece colors, in seat order (the classic four, then green and brown at five and six).
+ * The colors themselves are tokens at the top of catan.css.
  */
 export const SEAT_COLOURS = ['red', 'blue', 'white', 'orange', 'green', 'brown'] as const;
 export type SeatColour = (typeof SEAT_COLOURS)[number];
@@ -21,13 +21,13 @@ export function seatColourOf(pid: string, seats: readonly string[]): SeatColour 
   return i < 0 ? null : SEAT_COLOURS[i % SEAT_COLOURS.length]!;
 }
 
-/** The CSS colour of a seat's pieces. */
+/** The CSS color of a seat's pieces. */
 export const seatColour = (pid: string, seats: readonly string[]): string => {
   const c = seatColourOf(pid, seats);
   return c ? `var(--ctn-pc-${c})` : 'var(--rule)';
 };
 
-/** The fill behind a card's glyph: its terrain's colour, or (commodities) its own. */
+/** The fill behind a card's glyph: its terrain's color, or (commodities) its own. */
 export const TERRAIN_OF: Record<Card, Terrain | Commodity> = {
   lumber: 'forest',
   brick: 'hills',

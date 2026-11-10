@@ -20,7 +20,7 @@ export default function TvEntry() {
     <main className="tv-entry">
       <Lid className="tv-entry__lid">
         <BirdMark width={120} height={120} />
-        <h1 className="jd-display tv-entry__title">Show a lobby on this screen</h1>
+        <h1 className="jd-h1">Show a lobby on this screen</h1>
         <p className="tv-entry__note">
           Type the four letters from any phone in the lobby. This screen shows the table for
           everyone; it takes no seat and never sees anyone&apos;s secrets.

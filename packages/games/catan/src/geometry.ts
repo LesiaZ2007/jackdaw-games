@@ -47,7 +47,7 @@ export interface Layout {
   edges: Record<string, Edge>;
   cornerIds: string[];
   edgeIds: string[];
-  /** Coastal edges where harbours go, round the coast. */
+  /** Coastal edges where harbors go, around the coast. */
   harbourSlots: string[];
   /** Tile order for laying number tokens: outer ring first, counter-clockwise, inward. */
   spiral: number[];
@@ -62,7 +62,7 @@ const ROWS: Record<MapKey, number[]> = {
   seaClassic: [6, 7, 6, 7, 6, 7, 6, 7],
   seaBig: [7, 8, 7, 8, 7, 8, 7, 8, 7, 8],
 };
-/** Harbour slots round the coast (sea maps place theirs round the main island instead). */
+/** Harbor slots around the coast (sea maps place theirs around the main island instead). */
 const HARBOURS: Record<MapKey, number> = { classic: 9, big: 11, seaClassic: 0, seaBig: 0 };
 const SQ3 = Math.sqrt(3);
 
@@ -167,7 +167,7 @@ function build(map: MapKey): Layout {
   };
 }
 
-/** `n` coastal edges spread evenly round the coast, never two on one corner. */
+/** `n` coastal edges spread evenly around the coast, never two on one corner. */
 export function harbourSlots(
   edges: Record<string, Edge>,
   corners: Record<string, Corner>,
@@ -200,7 +200,7 @@ export function harbourSlots(
 }
 
 /**
- * Peel the island ring by ring (tiles with fewer than six neighbours left are the ring), each
+ * Peel the island ring by ring (tiles with fewer than six neighbors left are the ring), each
  * ring counter-clockwise on screen, starting next to where the last ring ended (the first starts
  * at the top-left tile).
  */

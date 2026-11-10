@@ -76,7 +76,7 @@ export function StatsSheet({
 
   return (
     <Sheet open={open} onClose={onClose} title="Game stats" className="pad">
-      <div className="pad__tabs" role="tablist">
+      <div className="pad__tabs" role="tablist" aria-label="Stats view">
         {(['players', 'games', 'tonight'] as const).map((t) => (
           <button
             key={t}
@@ -128,7 +128,11 @@ export function StatsSheet({
                   <td>{p.wins}</td>
                   <td>{p.losses}</td>
                   <td>
-                    <span className="pad__bar" aria-label={`${pct(p.wins, p.played)} percent`}>
+                    <span
+                      className="pad__bar"
+                      role="img"
+                      aria-label={`${pct(p.wins, p.played)} percent`}
+                    >
                       <i style={{ width: `${pct(p.wins, p.played)}%` }} />
                     </span>
                   </td>

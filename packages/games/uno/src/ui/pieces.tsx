@@ -4,7 +4,7 @@ import { useId, type CSSProperties, type ReactNode } from 'react';
 import { BirdMark } from '@jackdaw/ui';
 import { cardName, cardOf, type Colour, type Face } from '../cards';
 
-/** The four quarters of a wild's shield, in the deck's colour order. */
+/** The four quarters of a wild's shield, in the deck's color order. */
 function Quartered({ children }: { children?: ReactNode }) {
   const clip = `uno-shield-${useId().replace(/:/g, '')}`;
   return (
@@ -70,7 +70,7 @@ function Index({ face }: { face: Face }) {
 }
 
 /**
- * A printed card: cream stock with a field in its colour (gules, or, vert, azure) inside a cream
+ * A printed card: cream stock with a field in its color (gules, or, vert, azure) inside a cream
  * double rule, the number or mark large in the middle and small in the corners. Wilds are sable
  * with a quartered shield. Face down it shows the sable back with the jackdaw. `w` is its width.
  */
@@ -78,7 +78,7 @@ export function GameCard({
   id,
   w,
   down = false,
-  /** Called colour, shown on a wild that's been played. */
+  /** Called color, shown on a wild that's been played. */
   called,
   can,
   dim,
@@ -165,7 +165,7 @@ export function GameCard({
   );
 }
 
-/** A small round swatch in a colour, for the colour picker and the colour in play. */
+/** A small round swatch in a color, for the color picker and the color in play. */
 export function Swatch({ colour }: { colour: Colour }) {
   return <span className={`uno-swatch uno-swatch--${colour}`} aria-hidden="true" />;
 }

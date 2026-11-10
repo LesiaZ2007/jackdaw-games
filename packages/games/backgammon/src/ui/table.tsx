@@ -10,7 +10,7 @@ import type { TurnLog } from '../rules';
  * Checkers are turned ivory and ebony. Drawn as one SVG so it scales from a phone to a TV.
  *
  * The board turns to the viewer: their home board is always bottom right and their checkers
- * travel anticlockwise to it. A TV sees it from Ivory's side.
+ * travel counterclockwise to it. A TV sees it from Ivory's side.
  */
 
 /** A place on the board: an absolute point 'p1'..'p24', the bar, or borne off. */
@@ -55,7 +55,7 @@ function stepFor(n: number, room: number): number {
   return Math.min(2 * R, (room - 2 * R) / (n - 1));
 }
 
-/** Centre of the k-th checker (0 at the base) of a stack of n at a place. */
+/** Center of the k-th checker (0 at the base) of a stack of n at a place. */
 function slot(
   viewer: Side,
   key: LocKey,

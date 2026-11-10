@@ -2,7 +2,7 @@ import type { ReactNode, SVGProps } from 'react';
 
 /**
  * Player crests: heraldic charges ported unchanged from Avalon (components/crests.js), so a
- * player's crest looks the same in Jackdaw and in Avalon. Lines take the current colour;
+ * player's crest looks the same in Jackdaw and in Avalon. Lines take the current color;
  * accents use a pale brass.
  */
 const line: SVGProps<SVGPathElement> = {

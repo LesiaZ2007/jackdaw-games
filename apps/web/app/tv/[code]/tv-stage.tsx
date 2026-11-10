@@ -7,6 +7,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react';
+import { ReconnectingStrip } from '@jackdaw/ui';
 import './stage.css';
 
 const W = 1920;
@@ -33,7 +34,16 @@ const windowSize = () => `${window.innerWidth}x${window.innerHeight}`;
  * night so far) is a second screen of at least the same height; scrolling snaps between them,
  * so each one takes over the display. Without it the stage never scrolls.
  */
-export function TvStage({ children, below }: { children: ReactNode; below?: ReactNode }) {
+export function TvStage({
+  children,
+  below,
+  reconnecting,
+}: {
+  children: ReactNode;
+  below?: ReactNode;
+  /** Polls are failing: show the sticky "Reconnecting…" strip over the first screen. */
+  reconnecting?: boolean;
+}) {
   const size = useSyncExternalStore(subscribeResize, windowSize, () => `${W}x${H}`);
   const [vw, vh] = size.split('x').map(Number) as [number, number];
   const scale = Math.min(vw / W, vh / H);
@@ -58,6 +68,7 @@ export function TvStage({ children, below }: { children: ReactNode; below?: Reac
           style={{ width: sw, transform: `scale(${scale})`, ...stageUnits(sw, sh) }}
         >
           <div className="tv-screen" style={{ height: sh }}>
+            {reconnecting && <ReconnectingStrip tv />}
             {children}
           </div>
           <div className="tv-below" style={{ minHeight: sh }}>
@@ -80,6 +91,7 @@ export function TvStage({ children, below }: { children: ReactNode; below?: Reac
           ...stageUnits(fw, fh),
         }}
       >
+        {reconnecting && <ReconnectingStrip tv />}
         {children}
       </div>
     </div>

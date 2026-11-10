@@ -1,6 +1,6 @@
 'use client';
 
-import { OutcomeChip, Token, useCountdown, type ScreenPlayer } from '@jackdaw/ui';
+import { OutcomeChip, Token, clockSeconds, useCountdown, type ScreenPlayer } from '@jackdaw/ui';
 import { useEffect, useState } from 'react';
 import { NEUTRAL, continentsHeld, territoriesOf } from '../board';
 import type { MapDef } from '../maps';
@@ -38,17 +38,13 @@ export function strength(t: RiskTableView, id: string) {
 export const territoryName = (map: MapDef, t: string) =>
   map.territories.find((x) => x.id === t)?.name ?? t;
 
-/** m:ss, for the turn clock. */
-export const clock = (secs: number) =>
-  `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-
 /**
  * The turn clock, ticking in its own component: re-rendering the whole screen every second would
  * keep restarting a VerdictMoment's timer, so it would never clear itself.
  */
 export function TurnClock({ at, now }: { at: number | null; now: () => number }) {
   const secs = useCountdown(at, now);
-  return secs === null ? null : <span className="rk-turn__clock">{clock(secs)}</span>;
+  return secs === null ? null : <span className="rk-turn__clock">{clockSeconds(secs)}</span>;
 }
 
 const PIPS: Record<number, [number, number][]> = {
@@ -217,7 +213,7 @@ export function DiceStrip({
 }
 
 /**
- * Each continent, what it's worth and who holds all of it (their army colour in the swatch). In
+ * Each continent, what it's worth and who holds all of it (their army color in the swatch). In
  * fog of war a continent you can't see all of is "In the fog".
  */
 export function Continents({

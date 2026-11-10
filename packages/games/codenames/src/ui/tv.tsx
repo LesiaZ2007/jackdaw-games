@@ -12,7 +12,7 @@ import './codenames.css';
 
 /**
  * Codenames on the TV: the board as big as the screen allows, with the team files, the clue in
- * play and the clues so far beside it. Only uncovered colours, ever: the TV gets the table view.
+ * play and the clues so far beside it. Only uncovered colors, ever: the TV gets the table view.
  */
 export const TvScreen: GameUi['TvScreen'] = ({ tableView, players, reactions }) => {
   const t = tableView as CodenamesTableView;

@@ -22,7 +22,7 @@ export const catanUi: GameUi = {
     steps: [
       'Everyone places two settlements and two roads, going round and back. The second settlement gives you your first cards.',
       'On your turn roll the dice. Every settlement next to a tile with that number takes a card, every city two.',
-      'Trade with the others or with the bank (4 for 1, better at a harbour), then build what you can afford.',
+      'Trade with the others or with the bank (4 for 1, better at a harbor), then build what you can afford.',
       'Roll a 7 and the robber moves: anyone holding more than 7 cards gives half back, and you take a card from someone next to the robber.',
       'Settlements are 1 point, cities 2, and Longest Road and Largest Army 2 each. Development cards bring knights, free roads, plenty, monopolies and hidden points.',
       'Choose an expansion in the lobby: Seafarers (ships, islands, gold and the pirate), Cities & Knights (commodities, city improvements, knights against the barbarians, progress cards), or both.',
@@ -53,7 +53,7 @@ export const catanUi: GameUi = {
     },
     board: {
       Balanced:
-        'Tiles and harbours shuffled, numbers laid round the island as in the rulebook, no 6 and 8 side by side.',
+        'Tiles and harbors shuffled, numbers laid around the island as in the rulebook, no 6 and 8 side by side.',
       Random: 'Everything shuffled, numbers too. A 6 and an 8 still never touch.',
       Beginner:
         'The rulebook’s starting island, the same every time. With five or six players you get a balanced one.',

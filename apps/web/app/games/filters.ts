@@ -57,7 +57,7 @@ export function fitsLength([min, max]: [number, number], length: Length): boolea
   return max > 45;
 }
 
-/** Kind, length and rules filters hide games; the player count only greys them (with a reason). */
+/** Kind, length and rules filters hide games; the player count only grays them (with a reason). */
 export function matches(meta: GameMeta, f: Filters): boolean {
   if (f.kind && meta.category !== f.kind) return false;
   if (f.length && !fitsLength(meta.minutes, f.length)) return false;

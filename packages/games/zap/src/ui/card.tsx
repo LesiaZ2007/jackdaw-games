@@ -2,9 +2,8 @@
 
 import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Reaction } from '@jackdaw/engine';
-import { PlayerReaction, Token, useMoment, type ScreenPlayer } from '@jackdaw/ui';
+import { PlayerReaction, Token, clockMs, useMoment, type ScreenPlayer } from '@jackdaw/ui';
 import { since, type ZapTableView } from '../rules';
-import { clock } from '../time';
 import { BoltMark, Board } from './board';
 import { place } from './race';
 
@@ -71,13 +70,15 @@ export function PlayerCard({
           )}
           <PlayerReaction reactions={reactions} playerId={id} />
         </span>
-        <span className="zp-card__name">{name}</span>
+        <span className="zp-card__name" title={name}>
+          {name}
+        </span>
         <span className="zp-card__time">
           {done
-            ? clock(times.at(-1)! - t.startedAt)
+            ? clockMs(times.at(-1)! - t.startedAt)
             : t.over
               ? `${solved}/${t.count}`
-              : clock(now() - since(t, id))}
+              : clockMs(now() - since(t, id))}
         </span>
       </header>
 
@@ -99,7 +100,7 @@ export function PlayerCard({
         {fresh !== null && fresh > 0 && (
           <span className="zp-stamp" key={fresh} onAnimationEnd={dismiss} role="status">
             <b>{done ? 'Finished' : 'Solved'}</b>
-            <span>{clock(lastMs)}</span>
+            <span>{clockMs(lastMs)}</span>
           </span>
         )}
       </div>

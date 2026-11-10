@@ -30,6 +30,7 @@ export const rpsUi: GameUi = {
       },
     ],
   },
+  fit: true,
   optionHelp: {
     rounds: 'How many throws before the scores are added up. Each round takes a few seconds.',
   },

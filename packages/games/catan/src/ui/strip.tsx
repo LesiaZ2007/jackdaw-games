@@ -87,7 +87,7 @@ export function TurnStrip({
   );
 }
 
-/** Everyone else: token in their colour, name, cards, development cards, awards and points. */
+/** Everyone else: token in their color, name, cards, development cards, awards and points. */
 export function Opponents({
   t,
   me,
@@ -118,7 +118,9 @@ export function Opponents({
               <PlayerReaction reactions={reactions} playerId={id} name={name(id)} size={28} />
             </span>
             <span className="ctn-opp__body">
-              <span className="ctn-opp__name">{name(id)}</span>
+              <span className="ctn-opp__name" title={name(id)}>
+                {name(id)}
+              </span>
               <span className="ctn-opp__meta">
                 <span title="Resource cards">
                   <DevGlyph kind="cards" />

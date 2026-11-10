@@ -17,10 +17,32 @@ export const LobbyCode = z
   .transform((s) => s.trim().toUpperCase())
   .pipe(z.string().regex(new RegExp(`^[${CODE_ALPHABET}]{4}$`), 'Lobby codes are 4 letters'));
 
+/**
+ * A name as shown: compatibility-normalized (NFKC), with control, format (zero-width, bidi
+ * override) and blank-filler characters removed and spacing collapsed, then length-checked.
+ */
 export const PlayerName = z
   .string()
-  .transform((s) => s.replace(/\s+/g, ' ').trim())
+  .max(200, 'Names can be up to 20 characters')
+  .transform((s) =>
+    s
+      .normalize('NFKC')
+      .replace(/\s+/gu, ' ')
+      .replace(/[\p{C}⠀ㅤᅟᅠﾠ]+/gu, '')
+      .replace(/\s+/gu, ' ')
+      .trim(),
+  )
   .pipe(z.string().min(1, 'Pick a name').max(20, 'Names can be up to 20 characters'));
+
+/** Longest id string a client may send (player and session ids are about 10 characters). */
+export const ID_MAX = 64;
+/** Limits on `setOptions`, so a lobby document can't be bloated through it. */
+export const OPTIONS_MAX_BYTES = 4096;
+export const OPTIONS_MAX_KEYS = 40;
+const GameOptionsInput = z
+  .record(z.string().max(64), z.unknown())
+  .refine((o) => Object.keys(o).length <= OPTIONS_MAX_KEYS, 'Too many options.')
+  .refine((o) => JSON.stringify(o).length <= OPTIONS_MAX_BYTES, 'Those options are too large.');
 
 export const Avatar = z.object({
   crest: z.string().min(1).max(32),
@@ -55,21 +77,21 @@ export const REACTION_GAP_MS = 800;
 export const ClientMessage = z.discriminatedUnion('type', [
   z.object({ type: z.literal('join'), name: PlayerName, avatar: Avatar.optional() }),
   z.object({ type: z.literal('setGame'), gameId: z.string().min(1).max(40).nullable() }),
-  z.object({ type: z.literal('setOptions'), options: z.record(z.string(), z.unknown()) }),
+  z.object({ type: z.literal('setOptions'), options: GameOptionsInput }),
   /** `look` is the starter's day/dark choice, for games played in another app (Avalon). */
   z.object({ type: z.literal('start'), look: z.enum(['light', 'dark']).optional() }),
   z.object({
     type: z.literal('action'),
     /** The session the player was looking at; actions from an earlier game are rejected. */
-    sessionId: z.string(),
+    sessionId: z.string().min(1).max(ID_MAX),
     /** Last seq the player saw. Must not be ahead of the server. */
     seq: z.number().int().nonnegative(),
     action: z.unknown(),
   }),
   z.object({ type: z.literal('playAgain'), look: z.enum(['light', 'dark']).optional() }),
   z.object({ type: z.literal('backToLobby') }),
-  z.object({ type: z.literal('kick'), playerId: z.string() }),
-  z.object({ type: z.literal('transferHost'), playerId: z.string() }),
+  z.object({ type: z.literal('kick'), playerId: z.string().min(1).max(ID_MAX) }),
+  z.object({ type: z.literal('transferHost'), playerId: z.string().min(1).max(ID_MAX) }),
   z.object({ type: z.literal('leave') }),
   // Platform features carried over from Avalon (kickoff decision).
   z.object({ type: z.literal('rename'), name: PlayerName }),
@@ -85,6 +107,14 @@ export const ClientMessage = z.discriminatedUnion('type', [
   z.object({ type: z.literal('addBot') }),
   // Added 2026-10-24 ("set difficulty level with bots", "game wide"): every bot's level.
   z.object({ type: z.literal('setBotLevel'), level: BotLevel }),
+  // Added 2026-11 (security review): the host closes the lobby to new players, or reopens it.
+  z.object({ type: z.literal('setLocked'), locked: z.boolean() }),
+  // The host answers a removed player who is asking to come back (see `LobbySnapshot.knocks`).
+  z.object({
+    type: z.literal('answerKnock'),
+    id: z.string().min(1).max(ID_MAX),
+    allow: z.boolean(),
+  }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessage>;
 
@@ -97,11 +127,13 @@ export const CreateLobbyRequest = z.object({
 });
 
 /** Body for moving a seat to this device with a rejoin code. */
+export const REJOIN_CODE_LENGTH = 6;
 export const RedeemRejoinRequest = z.object({
   rejoinCode: z
     .string()
+    .max(64)
     .transform((s) => s.trim().toUpperCase())
-    .pipe(z.string().regex(/^[A-Z]{6}$/)),
+    .pipe(z.string().regex(new RegExp(`^[A-Z]{${REJOIN_CODE_LENGTH}}$`))),
 });
 
 export type LobbyStatus = 'waiting' | 'in_game' | 'results';
@@ -203,6 +235,10 @@ export interface LobbySnapshot {
   tableView?: unknown;
   /** Final result and full reveal, once the game is over. */
   results?: GameResult & { gameId: string };
+  /** Present (true) when the host has locked the lobby to new players. */
+  locked?: true;
+  /** Host only: removed players asking to come back; answer with `answerKnock`. */
+  knocks?: { id: string; name: string; avatar: Avatar }[];
   /** The caller's own active rejoin code, if they made one. */
   rejoinCode?: { code: string; expiresAt: number };
 }
@@ -223,6 +259,14 @@ export type ErrorCode =
   | 'NAME_TAKEN'
   | 'RATE_LIMITED'
   | 'REJOIN_INVALID'
+  | 'UNAUTHORIZED'
+  | 'BUSY'
+  | 'NOT_SET_UP'
+  | 'LOCKED'
+  | 'ASK_HOST'
+  | 'BLOCKED'
+  | 'INTERNAL'
+  | 'TOO_LARGE'
   // Game modules add their own codes, e.g. NOT_YOUR_TURN.
   | (string & {});
 

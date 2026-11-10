@@ -4,13 +4,29 @@
  * mugshot placards against a line-up's height chart; at night the page turns to the night
  * edition. The village (Werewolf) is a woodcut chapbook, linen and forest ink and blood red;
  * the players are cottages; at night it's indigo under a moon that waxes each night.
- * Every colour is a token in these first blocks. Flat print: no gradients, glows or italics.
+ * Every color is a token: the root and look blocks at the top, plus the per-view blocks further
+ * down (the dossier at the night scroll, the role scroll). Flat print: no gradients, glows or italics.
  */
 .mf {
   --mf-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --mf-cream: #f6f0e1;
   --mf-purpure: #6a3f74;
   --mf-vert: #30634a;
+  /* The phase curtain is a fixed print, the same by day, in the dark and at night. */
+  --mf-news: #e8e2d2;
+  --mf-news-ink: #18171b;
+  --mf-news-red: #b0261c;
+  --mf-linen: #e4dcc6;
+  --mf-linen-ink: #201d17;
+  --mf-dusk: #141a2a;
+  --mf-dusk-ink: #e8e0cc;
+  --mf-void: #0a0d17;
+  --mf-forest: #2a3326;
+  --mf-blood: #8e2a22;
+  --mf-sun: #c9962f;
+  --mf-sun-ray: #a77d2c;
+  --mf-shade: #000;
+  --mf-scrim: #0d0d10;
   color: var(--mf-ink);
   background: var(--mf-paper);
   transition:
@@ -43,7 +59,7 @@
   --mf-chart: #3a393f;
 }
 /* The night edition. */
-.mf--city.is-night {
+.mf--city.mf-is-night {
   --mf-paper: #1c2130;
   --mf-paper-2: #262c3e;
   --mf-ink: #ece5d3;
@@ -54,7 +70,7 @@
   --mf-plate: #0d1019;
   --mf-chart: #313850;
 }
-.mf--city.is-night[data-look='dark'] {
+.mf--city.mf-is-night[data-look='dark'] {
   --mf-paper: #141823;
   --mf-paper-2: #1d2230;
 }
@@ -84,7 +100,7 @@
   --mf-plate: #2f4a35;
   --mf-chart: #383a33;
 }
-.mf--village.is-night {
+.mf--village.mf-is-night {
   --mf-paper: #141a2a;
   --mf-paper-2: #1e263b;
   --mf-ink: #e8e0cc;
@@ -95,7 +111,7 @@
   --mf-plate: #0a0d17;
   --mf-chart: #2b3450;
 }
-.mf--village.is-night[data-look='dark'] {
+.mf--village.mf-is-night[data-look='dark'] {
   --mf-paper: #0f1420;
   --mf-paper-2: #182033;
 }
@@ -111,8 +127,8 @@
 .mf-team-lovers {
   --mf-team: var(--mf-purpure);
 }
-.is-night .mf-team-jester,
-.is-night .mf-team-killer,
+.mf-is-night .mf-team-jester,
+.mf-is-night .mf-team-killer,
 [data-look='dark'] .mf-team-jester,
 [data-look='dark'] .mf-team-killer {
   --mf-team: #b98ac4;
@@ -165,7 +181,7 @@
   border-bottom: 4px double var(--mf-ink);
 }
 .mf-mast__name {
-  font-size: clamp(22px, 6.4vw, 34px);
+  font-size: clamp(22px, calc(6.4 * var(--vw, 1vw)), 34px);
   text-align: center;
   white-space: nowrap;
   min-width: 0;
@@ -174,7 +190,7 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
 }
 .mf--phone .mf-mast__name {
-  font-size: clamp(19px, 5.4vw, 32px);
+  font-size: clamp(19px, calc(5.4 * var(--vw, 1vw)), 32px);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -246,10 +262,10 @@
   position: relative;
 }
 .mf--phone .mf-head {
-  font-size: clamp(30px, 9vw, 52px);
+  font-size: clamp(30px, calc(9 * var(--vw, 1vw)), 52px);
 }
 .mf--village.mf--phone .mf-head {
-  font-size: clamp(30px, 8.6vw, 50px);
+  font-size: clamp(30px, calc(8.6 * var(--vw, 1vw)), 50px);
 }
 .mf-tapvoice {
   margin: 4px 0 0;
@@ -442,8 +458,8 @@ button.mf-card__in {
 }
 
 /* Village placards: a cottage, the player at its door, a roof above. The cottage shape clips
-   anything drawn on its edge, so the edge is the card itself in the edge colour, with the cottage
-   laid over it a border's width in: the outline follows the roof in any colour. */
+   anything drawn on its edge, so the edge is the card itself in the edge color, with the cottage
+   laid over it a border's width in: the outline follows the roof in any color. */
 .mf--village .mf-card__in {
   --mf-edge: var(--mf-ink);
   --mf-bw: 2px;
@@ -754,7 +770,7 @@ button.mf-card__in {
   padding-bottom: var(--space-2);
 }
 .mf-lobby__mast .mf-mast__name {
-  font-size: clamp(30px, 7vw, 52px);
+  font-size: clamp(30px, calc(7 * var(--vw, 1vw)), 52px);
   white-space: normal;
 }
 .mf-lobby__strap {
@@ -947,7 +963,7 @@ button.mf-card__in {
   display: none;
 }
 
-/* The cast, printed as a programme. */
+/* The cast, printed as a program. */
 .mf-bill {
   display: grid;
   gap: var(--space-2);
@@ -1203,7 +1219,10 @@ button.mf-card__in {
   bottom: 46px;
 }
 .mf-cards--tv .mf-card.is-dead .mf-card__stamp {
-  font-size: 54px;
+  /* Stamped across the top of the placard, clear of the role label near its foot. */
+  font-size: 44px;
+  place-items: start center;
+  padding-top: 22%;
 }
 .mf-cards--tv .mf-card__heart {
   font-size: 34px;
@@ -1946,7 +1965,7 @@ button.mf-card__in {
   position: absolute;
   left: -4%;
   right: -4%;
-  height: clamp(12px, 3vw, 26px);
+  height: clamp(12px, calc(3 * var(--vw, 1vw)), 26px);
   border-radius: 999px;
   background: var(--mf-rod);
 }

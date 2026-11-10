@@ -6,12 +6,12 @@ import { Reveal, TvReveal } from './reveal';
 import { TvScreen } from './tv';
 import { WatchScreen } from './watch';
 
-/** Kings: a printed puzzle book of coloured boards. It uses Jackdaw's lobby. */
+/** Kings: a printed puzzle book of colored boards. It uses Jackdaw's lobby. */
 export const kingsUi: GameUi = {
   art: { band: 'gules', field: 'checky', glyph: 'crown' },
   about: {
     description:
-      'A square board split into coloured regions. Place one king in every row, every column and every colour, and no two kings may touch, not even at a corner. Every puzzle is made fresh for the game and has exactly one answer. Play alone, or race the table through the same puzzles.',
+      'A square board split into colored regions. Place one king in every row, every column and every color, and no two kings may touch, not even at a corner. Every puzzle is made fresh for the game and has exactly one answer. Play alone, or race the table through the same puzzles.',
     steps: [
       'The host picks the board, from 5×5 to 10×10, and how many puzzles, from 1 to 20.',
       'Tap a square once to cross it out, twice for a king, and a third time to clear it. Drag across empty squares to cross out a row of them.',
@@ -25,7 +25,7 @@ export const kingsUi: GameUi = {
     pictures: [
       {
         src: '/games/kings/game-phone.png',
-        alt: 'Kings on a phone: an 8×8 board in printed colours with four kings placed and two squares crossed out, Undo, Clear and Auto-cross, and the race between Wren, Rook and a bot.',
+        alt: 'Kings on a phone: an 8×8 board in printed colors with four kings placed and two squares crossed out, Undo, Clear and Auto-cross, and the race between Wren, Rook and a bot.',
       },
       {
         src: '/games/kings/desktop.png',

@@ -22,7 +22,7 @@ import {
   type ReactionKind,
   type ScoreLine,
 } from './protocol';
-import { createRng, type Rng } from './rng';
+import { createRng, mixSeed, type Rng, type RngState } from './rng';
 
 /**
  * The lobby state machine: pure functions from (lobby, input) to a new lobby. No I/O, no clocks,
@@ -50,11 +50,36 @@ export interface Session {
   /** Increments on every accepted action. */
   seq: number;
   startedAt: number;
-  rngState: number;
+  /** A 32-bit number in lobbies saved before 128-bit seeds; a 32-hex-character string now. */
+  rngState: RngState;
   /** When the game last moved (an action, a timer or a bot), so bots wait a moment after it. */
   movedAt?: number;
   /** Bots whose move the game refused at this seq: they sit it out until the game moves on. */
   botFailed?: { seq: number; ids: string[] };
+  /** The game's timer threw at this seq: it isn't tried again until the game moves on. */
+  timerFailed?: { seq: number };
+}
+
+/** A player the host removed: their device (hashed token) and who they were. */
+export interface Removed {
+  key: string;
+  name: string;
+  at: number;
+}
+
+/** A removed player asking to come back. `id` is random and safe to show the host. */
+export interface Knock {
+  id: string;
+  key: string;
+  name: string;
+  avatar: Avatar;
+  at: number;
+}
+
+/** A device the host turned away, kept out until `until`. */
+export interface Blocked {
+  key: string;
+  until: number;
 }
 
 export interface Lobby {
@@ -82,9 +107,28 @@ export interface Lobby {
   reactions?: Reaction[];
   /** Secret: rejoin code → whose seat it moves, and when it expires. */
   rejoinCodes: Record<string, { playerId: string; expiresAt: number }>;
+  /** The host closed the lobby to new players. Seated players, rejoin codes and bots still work. */
+  locked?: boolean;
+  /** Secret (never in a snapshot): devices of players the host removed, newest last (30). */
+  removed?: Removed[];
+  /** Removed players asking back in, newest last (5). Only the host's snapshot shows them. */
+  knocks?: Knock[];
+  /** Secret: devices the host turned away for `BLOCK_MS` (30). */
+  blocked?: Blocked[];
+  /** Secret: devices the host said yes to; their next join gets in, even when locked (5). */
+  allowed?: string[];
 }
 
 export const HOST_AWAY_MS = 60_000;
+/** How long a turned-away player is blocked, how long a knock waits, and the lists' caps. */
+export const BLOCK_MS = 10 * 60_000;
+export const KNOCK_TTL_MS = 10 * 60_000;
+export const REMOVED_LIMIT = 30;
+export const BLOCKED_LIMIT = 30;
+export const KNOCK_LIMIT = 5;
+export const ALLOWED_LIMIT = 5;
+/** A repeated knock only rewrites the lobby when its time is this old (clients retry often). */
+const KNOCK_REFRESH_MS = 60_000;
 export const ONLINE_WINDOW_MS = 45_000;
 export const REJOIN_CODE_TTL_MS = 10 * 60_000;
 export const HISTORY_LIMIT = 200;
@@ -133,16 +177,44 @@ function say(lobby: Lobby, lines: string[], now: number): Lobby {
 }
 
 /**
- * Why this name can't be used, or null if it can: someone other than `playerId` already has it,
- * ignoring case and spacing. Screens use it to explain before sending.
+ * A name reduced to what a person would see: compatibility-normalized (full-width letters become
+ * plain ones), case-folded, with all spacing and invisible characters removed.
+ */
+function nameSkeleton(name: string): string {
+  return name
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\s\p{C}]+/gu, '');
+}
+
+/** Names starting "Bot " are for computer players. */
+function looksLikeBot(name: string): boolean {
+  return /^bot\s/u.test(
+    name
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/[\p{C}]+/gu, '')
+      .trimStart(),
+  );
+}
+
+function takenBy(players: { id: string; name: string }[], name: string, playerId?: string | null) {
+  const wanted = nameSkeleton(name);
+  return players.find((p) => p.id !== playerId && nameSkeleton(p.name) === wanted);
+}
+
+/**
+ * Why this name can't be used, or null if it can: someone other than `playerId` already has it
+ * (ignoring case, spacing and look-alike forms of letters), or it starts with "Bot ", which is
+ * for computer players. Screens use it to explain before sending.
  */
 export function nameClash(
   players: { id: string; name: string }[],
   name: string,
   playerId?: string | null,
 ): string | null {
-  const wanted = name.replace(/\s+/g, ' ').trim().toLowerCase();
-  const clash = players.find((p) => p.id !== playerId && p.name.toLowerCase() === wanted);
+  if (looksLikeBot(name)) return 'Names starting with “Bot” are for computer players.';
+  const clash = takenBy(players, name, playerId);
   return clash ? `Someone at the table is already called ${clash.name}.` : null;
 }
 
@@ -244,6 +316,106 @@ export function playerIdForToken(lobby: Lobby, tokenKey: string): string | null 
   return lobby.seats[tokenKey] ?? null;
 }
 
+const BLOCKED_MESSAGE = 'The host has blocked you from this lobby for a few minutes.';
+const ASK_HOST_MESSAGE =
+  "The host removed you from this lobby. They've been asked whether to let you back in.";
+
+/**
+ * Why a device without a seat is turned away because the host removed it, or null if it isn't
+ * (never removed, or the host said yes to it). A block that has run out reads as "ask the host".
+ */
+function removedRefusal(lobby: Lobby, key: string, now: number) {
+  if ((lobby.allowed ?? []).includes(key)) return null;
+  if ((lobby.blocked ?? []).some((b) => b.key === key && b.until > now))
+    return { code: 'BLOCKED', message: BLOCKED_MESSAGE };
+  if ((lobby.removed ?? []).some((r) => r.key === key))
+    return { code: 'ASK_HOST', message: ASK_HOST_MESSAGE };
+  return null;
+}
+
+/** The host's answer to a removed player asking back in (see `joinOrKnock`). */
+export function answerKnock(
+  lobby: Lobby,
+  hostId: string,
+  knockId: string,
+  allow: boolean,
+  ctx: Ctx,
+): Lobby {
+  requireHost(lobby, hostId);
+  const knock = (lobby.knocks ?? []).find((k) => k.id === knockId);
+  if (!knock) return fail('KNOCK_GONE', 'That request is no longer there.');
+  const knocks = (lobby.knocks ?? []).filter((k) => k.id !== knockId);
+  if (allow) {
+    return touch(
+      {
+        ...lobby,
+        knocks,
+        removed: (lobby.removed ?? []).filter((r) => r.key !== knock.key),
+        blocked: (lobby.blocked ?? []).filter((b) => b.key !== knock.key),
+        allowed: [...(lobby.allowed ?? []).filter((k) => k !== knock.key), knock.key].slice(
+          -ALLOWED_LIMIT,
+        ),
+      },
+      ctx.now,
+    );
+  }
+  const blocked = [
+    ...(lobby.blocked ?? []).filter((b) => b.until > ctx.now && b.key !== knock.key),
+    { key: knock.key, until: ctx.now + BLOCK_MS },
+  ].slice(-BLOCKED_LIMIT);
+  return touch({ ...lobby, knocks, blocked }, ctx.now);
+}
+
+/**
+ * Like `join`, but a removed player's attempt is kept: the lobby comes back with their knock
+ * recorded (for the host to answer) and a `refusal` for the caller to throw once it has saved
+ * that lobby. Clients retry every few seconds, so a repeat changes nothing (no version bump, no
+ * chat line) until the knock is a minute old. Anything else `join` refuses still throws.
+ */
+export function joinOrKnock(
+  lobby: Lobby,
+  input: JoinInput & { knockId: string },
+  ctx: Ctx,
+): { lobby: Lobby; playerId: string | null; refusal?: { code: string; message: string } } {
+  if (playerIdForToken(lobby, input.tokenKey)) return join(lobby, input, ctx);
+  const refusal = removedRefusal(lobby, input.tokenKey, ctx.now);
+  if (!refusal) return join(lobby, input, ctx);
+  if (refusal.code === 'BLOCKED') return { lobby, playerId: null, refusal };
+  requireFreeName(lobby, input.name);
+  const live = (lobby.knocks ?? []).filter((k) => ctx.now - k.at < KNOCK_TTL_MS);
+  const mine = live.find((k) => k.key === input.tokenKey);
+  const avatar = input.avatar ?? input.palette[0] ?? { crest: 'jackdaw', tint: 'ink' };
+  if (
+    mine &&
+    mine.name === input.name &&
+    mine.avatar.crest === avatar.crest &&
+    mine.avatar.tint === avatar.tint &&
+    ctx.now - mine.at < KNOCK_REFRESH_MS &&
+    live.length === (lobby.knocks ?? []).length
+  )
+    return { lobby, playerId: null, refusal };
+  const knock: Knock = {
+    id: mine?.id ?? input.knockId,
+    key: input.tokenKey,
+    name: input.name,
+    avatar,
+    at: ctx.now,
+  };
+  const knocks = [...live.filter((k) => k.key !== input.tokenKey), knock].slice(-KNOCK_LIMIT);
+  return { lobby: touch({ ...lobby, knocks }, ctx.now), playerId: null, refusal };
+}
+
+/** The host opens or closes the lobby to new players. Anyone already seated is unaffected. */
+export function setLocked(lobby: Lobby, hostId: string, locked: boolean, ctx: Ctx): Lobby {
+  requireHost(lobby, hostId);
+  if (Boolean(lobby.locked) === locked) return lobby;
+  return say(
+    touch({ ...lobby, locked }, ctx.now),
+    [locked ? 'The host locked the lobby.' : 'The host unlocked the lobby.'],
+    ctx.now,
+  );
+}
+
 export interface JoinInput {
   tokenKey: string;
   /** Used only when this token has no seat yet. */
@@ -261,6 +433,11 @@ export interface JoinInput {
 export function join(lobby: Lobby, input: JoinInput, ctx: Ctx): { lobby: Lobby; playerId: string } {
   const existing = playerIdForToken(lobby, input.tokenKey);
   if (existing) return { lobby, playerId: existing };
+  const removed = removedRefusal(lobby, input.tokenKey, ctx.now);
+  if (removed) fail(removed.code, removed.message);
+  // The host's explicit yes lets one device in even while the lobby is locked.
+  const allowed = (lobby.allowed ?? []).includes(input.tokenKey);
+  if (lobby.locked && !allowed) fail('LOCKED', 'This lobby is locked. Ask the host to unlock it.');
   if (lobby.players.length >= MAX_PLAYERS)
     fail('LOBBY_FULL', `This lobby is full (${MAX_PLAYERS} players).`);
   requireFreeName(lobby, input.name);
@@ -278,6 +455,7 @@ export function join(lobby: Lobby, input: JoinInput, ctx: Ctx): { lobby: Lobby; 
       players: [...lobby.players, player],
       seats: { ...lobby.seats, [input.tokenKey]: player.id },
       hostId: hostless ? player.id : lobby.hostId,
+      ...(allowed ? { allowed: (lobby.allowed ?? []).filter((k) => k !== input.tokenKey) } : {}),
     },
     ctx.now,
   );
@@ -321,7 +499,7 @@ export function addBot(
   const game = lobby.selectedGameId ? ctx.games[lobby.selectedGameId] : undefined;
   if (game && !game.bot)
     fail('NO_BOTS', `${game.meta.name} can’t be played with computer players yet.`);
-  const free = BOT_NAMES.filter((n) => !nameClash(lobby.players, n));
+  const free = BOT_NAMES.filter((n) => !takenBy(lobby.players, n));
   const name = free.length
     ? free[Math.min(free.length - 1, Math.floor((input.pick ?? 0) * free.length))]!
     : `Bot ${lobby.players.length + 1}`;
@@ -382,8 +560,17 @@ export function kick(lobby: Lobby, hostId: string, playerId: string, ctx: Ctx): 
   if (lobby.status === 'in_game' && lobby.session?.playerIds.includes(playerId)) {
     fail('WRONG_STATUS', 'Players in the current game can be removed once it ends.');
   }
+  // Remember their devices: coming back means asking the host (a bot has no device).
+  const name = lobby.players.find((p) => p.id === playerId)?.name ?? '';
+  const gone = Object.entries(lobby.seats)
+    .filter(([, id]) => id === playerId)
+    .map(([key]): Removed => ({ key, name, at: ctx.now }));
+  const goneKeys = new Set(gone.map((r) => r.key));
+  const removed = [...(lobby.removed ?? []).filter((r) => !goneKeys.has(r.key)), ...gone].slice(
+    -REMOVED_LIMIT,
+  );
   return removePlayer(
-    say(lobby, [`{${playerId}} was removed by the host.`], ctx.now),
+    say({ ...lobby, removed }, [`{${playerId}} was removed by the host.`], ctx.now),
     playerId,
     ctx,
   );
@@ -511,6 +698,8 @@ export function redeemRejoinCode(
     fail('REJOIN_INVALID', 'That rejoin code is wrong or has expired.');
   }
   const { playerId } = entry!;
+  const refusal = removedRefusal(lobby, tokenKey, ctx.now);
+  if (refusal) fail(refusal.code, refusal.message);
   // A device holds one seat. Taking another would strand its old one with no device behind it.
   const current = playerIdForToken(lobby, tokenKey);
   if (current === playerId) return { lobby, playerId };
@@ -585,7 +774,8 @@ export function startBlocker(lobby: Lobby, ctx: Pick<Ctx, 'games'>): string | nu
 
 export interface StartInput {
   sessionId: string;
-  seed: number;
+  /** A number (older callers, tests) or 32 hex characters (what the runtime uses). */
+  seed: RngState;
   /** For a linked game: what the runtime's `GameLink.start` returned. */
   linked?: unknown;
 }
@@ -665,11 +855,11 @@ function moved(
   lobby: Lobby,
   game: AnyGameModule,
   state: unknown,
-  rngState: number,
+  rngState: RngState,
   ctx: Ctx,
 ): Lobby {
   const session = lobby.session!;
-  const { botFailed: _, ...rest } = session;
+  const { botFailed: _, timerFailed: __, ...rest } = session;
   return say(
     touch(
       {
@@ -706,7 +896,7 @@ export const BOT_DELAY_MS = 2_000;
 function botDelay(game: AnyGameModule, session: Session): number {
   const pace = game.botDelayMs;
   const base = typeof pace === 'function' ? pace(session.state) : (pace ?? BOT_DELAY_MS);
-  const u = createRng((session.rngState ^ Math.imul(session.seq + 1, 0x9e3779b1)) >>> 0).next();
+  const u = createRng(mixSeed(session.rngState, session.seq + 1)).next();
   return Math.round(base * (0.8 + u));
 }
 
@@ -741,6 +931,31 @@ function botMove(lobby: Lobby, ctx: Ctx): { id: string; action: unknown; rng: Rn
   return null;
 }
 
+/**
+ * Whether some bot has a move at `time`, remembered per session object. Reads (polls, snapshots)
+ * ask this many times while a bot is only waiting out its delay, and the answer for that moment
+ * can't change until the session does, so the bot's full move computation runs once, not per read.
+ */
+const botHasMove = new WeakMap<Session, Map<string, boolean>>();
+
+function botHasMoveAt(lobby: Lobby, ctx: Pick<Ctx, 'games'>, time: number): boolean {
+  const session = lobby.session!;
+  const key = [
+    time,
+    lobby.botLevel ?? DEFAULT_BOT_LEVEL,
+    lobby.players.filter((p) => p.bot).map((p) => p.id),
+    session.botFailed?.seq === session.seq ? session.botFailed.ids : [],
+  ].join('|');
+  let byKey = botHasMove.get(session);
+  if (!byKey) botHasMove.set(session, (byKey = new Map()));
+  const known = byKey.get(key);
+  if (known !== undefined) return known;
+  const has = botMove(lobby, { games: ctx.games, now: time }) !== null;
+  if (byKey.size > 8) byKey.clear();
+  byKey.set(key, has);
+  return has;
+}
+
 /** When a bot will next move (server time), or null if none has anything to do. */
 function nextBotAt(lobby: Lobby, ctx: Pick<Ctx, 'games'> & { now?: number }): number | null {
   const session = lobby.session;
@@ -748,7 +963,7 @@ function nextBotAt(lobby: Lobby, ctx: Pick<Ctx, 'games'> & { now?: number }): nu
   const game = ctx.games[session.gameId];
   if (!game?.bot || !lobby.players.some((p) => p.bot)) return null;
   const at = (session.movedAt ?? session.startedAt) + botDelay(game, session);
-  return botMove(lobby, { games: ctx.games, now: Math.max(at, ctx.now ?? 0) }) ? at : null;
+  return botHasMoveAt(lobby, ctx, Math.max(at, ctx.now ?? 0)) ? at : null;
 }
 
 /**
@@ -761,7 +976,10 @@ export function nextTimerAt(
 ): number | null {
   const session = lobby.session;
   if (lobby.status !== 'in_game' || !session) return null;
-  const timer = ctx.games[session.gameId]?.nextTimer?.(session.state)?.at ?? null;
+  const timer =
+    session.timerFailed?.seq === session.seq
+      ? null
+      : (ctx.games[session.gameId]?.nextTimer?.(session.state)?.at ?? null);
   const bot = nextBotAt(lobby, ctx);
   if (timer === null) return bot;
   return bot === null ? timer : Math.min(timer, bot);
@@ -779,6 +997,7 @@ export function runTimers(lobby: Lobby, ctx: Ctx): Lobby {
     const session = out.session;
     if (out.status !== 'in_game' || !session) return out;
     const game = gameFor(ctx, session.gameId);
+    if (session.timerFailed?.seq === session.seq) break;
     const timer = game.nextTimer?.(session.state);
     if (!timer || timer.at > ctx.now || !game.onTimer) break;
     const rng = createRng(session.rngState);
@@ -787,6 +1006,17 @@ export function runTimers(lobby: Lobby, ctx: Ctx): Lobby {
     out = finishIfOver(moved(out, game, state, rng.state, ctx), ctx);
   }
   return runBot(out, ctx);
+}
+
+/**
+ * Records that the running game's timer or bot threw, so `runTimers` and `nextTimerAt` leave the
+ * game's timers alone until it moves on (the seq changes) instead of failing again on every read.
+ * The version isn't bumped: nothing a player sees changes.
+ */
+export function markTimerFailed(lobby: Lobby): Lobby {
+  const session = lobby.session;
+  if (!session || session.timerFailed?.seq === session.seq) return lobby;
+  return { ...lobby, session: { ...session, timerFailed: { seq: session.seq } } };
 }
 
 /**
@@ -929,7 +1159,7 @@ export function backToLobby(lobby: Lobby, hostId: string, ctx: Ctx): Lobby {
   return touch({ ...lobby, status: 'waiting', results: null }, ctx.now);
 }
 
-/** Back to waiting, then start straight away if the same game still fits. */
+/** Back to waiting, then start right away if the same game still fits. */
 export function playAgain(lobby: Lobby, hostId: string, input: StartInput, ctx: Ctx): Lobby {
   const waiting = backToLobby(lobby, hostId, ctx);
   return startBlocker(waiting, ctx) ? waiting : beginSession(waiting, input, ctx);
@@ -995,6 +1225,12 @@ export function snapshotFor(
   if (timerAt !== null) snapshot.timerAt = timerAt;
   if (lobby.status === 'in_game') snapshot.waitingOn = waitingFor(lobby, ctx);
   if (partialResultOf(lobby, ctx)) snapshot.canSave = true;
+  if (lobby.locked) snapshot.locked = true;
+  if (viewerId !== null && viewerId === lobby.hostId) {
+    const knocks = (lobby.knocks ?? []).filter((k) => ctx.now - k.at < KNOCK_TTL_MS);
+    if (knocks.length > 0)
+      snapshot.knocks = knocks.map((k) => ({ id: k.id, name: k.name, avatar: k.avatar }));
+  }
   if (session && lobby.status === 'in_game') {
     const game = gameFor(ctx, session.gameId);
     snapshot.tableView = game.getTableView(session.state);

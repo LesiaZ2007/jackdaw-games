@@ -46,10 +46,10 @@ export const GOALS: Record<(typeof LENGTHS)[number], { points: number; rounds: n
   Long: { points: 15, rounds: 10 },
 };
 /** The fewest players for two teams of at least two. */
-export const TEAMS_MIN = 4;
+const TEAMS_MIN = 4;
 /** The middle of the dial, where it starts. */
 export const MIDDLE = 50;
-/** Where a target's centre can fall, so its whole zone is on the dial. */
+/** Where a target's center can fall, so its whole zone is on the dial. */
 export const TARGET_MIN = 10;
 export const TARGET_MAX = 90;
 /** Time on the reveal before the next round starts by itself. */
@@ -312,8 +312,11 @@ function drawOffer(used: number[], rng: Rng): { offer: [number, number]; used: n
   return { offer: [a, b], used: [...kept, a, b] };
 }
 
+/** The game before its first round is dealt: everything but `round`. */
+type BeforeFirstRound = Omit<WavelengthState, 'round'> & { round?: Round };
+
 /** Deal the next round for `team`: its next psychic, two cards and a target. */
-function newRound(s: WavelengthState, team: Team, catchUp: boolean, rng: Rng): WavelengthState {
+function newRound(s: BeforeFirstRound, team: Team, catchUp: boolean, rng: Rng): WavelengthState {
   const seat = s.order[team];
   const psychic = seat[s.turns[team] % seat.length]!;
   const { offer, used } = drawOffer(s.used, rng);
@@ -572,7 +575,7 @@ export const wavelength: GameModule<
     }
     const goal = GOALS[options.length][mode === 'teams' ? 'points' : 'rounds'];
     const startTeam = mode === 'teams' ? rng.pick(TEAMS) : 'sun';
-    const base: WavelengthState = {
+    const base: BeforeFirstRound = {
       players: playerIds,
       mode,
       guessing: options.guessing === 'Shared dial' ? 'shared' : 'average',
@@ -585,7 +588,6 @@ export const wavelength: GameModule<
       scores: mode === 'teams' ? { sun: 0, moon: 0, [other(startTeam)]: 1 } : { sun: 0, moon: 0 },
       bonus: 0,
       phase: 'clue',
-      round: null as unknown as Round,
       history: [],
       used: [],
       actBy: null,

@@ -37,4 +37,19 @@ describe('storageFromEnv', () => {
       'upstash',
     );
   });
+
+  it('refuses memory in production unless it is asked for', () => {
+    expect(() => storageFromEnv({ NODE_ENV: 'production' })).toThrow(/JACKDAW_STORAGE=memory/);
+    expect(storageFromEnv({ NODE_ENV: 'production', JACKDAW_STORAGE: 'memory' }).kind).toBe(
+      'memory',
+    );
+    expect(storageFromEnv({ NODE_ENV: 'development' }).kind).toBe('memory');
+    expect(
+      storageFromEnv({
+        NODE_ENV: 'production',
+        UPSTASH_REDIS_REST_URL: 'https://x',
+        UPSTASH_REDIS_REST_TOKEN: 't',
+      }).kind,
+    ).toBe('upstash');
+  });
 });

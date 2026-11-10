@@ -131,7 +131,7 @@ describe('recap', () => {
     expect(result.roundName).toBe('Round');
     expect(result.recap[0]).toMatchObject({ tag: '+2', key: true });
     expect(result.recap[1]).toMatchObject({ tag: 'Draw', key: true });
-    expect(result.stats!.columns).toEqual(['Points', 'Rounds won', 'Favourite']);
+    expect(result.stats!.columns).toEqual(['Points', 'Rounds won', 'Favorite']);
     expect(result.stats!.rows[0]).toEqual({ playerId: 'a', values: [2, 1, 'rock'] });
   });
 

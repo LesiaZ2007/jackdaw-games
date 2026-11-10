@@ -1,5 +1,5 @@
 /* Catan's seats: the island faint on a chart, each player a ship moored round it with their
-   crest on a sail in the colour they'll build in; empty moorings wait for the rest. */
+   crest on a sail in the color they'll build in; empty moorings wait for the rest. */
 
 .ctn-muster {
   display: grid;
@@ -30,7 +30,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  max-height: 62vh;
+  max-height: calc(62 * var(--vh, 1vh));
   margin: 0 auto;
   container-type: inline-size;
 }

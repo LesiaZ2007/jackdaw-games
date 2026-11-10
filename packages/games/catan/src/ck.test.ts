@@ -980,7 +980,7 @@ describe('progress cards', () => {
 
   it('Merchant Fleet: one kind of card goes 2:1 this turn only', () => {
     const { s: s0, me } = table();
-    const s = { ...s0, buildings: {} }; // no harbours
+    const s = { ...s0, buildings: {} }; // no harbors
     const base = give(withProgress(s, me, ['merchantFleet']), me, { paper: 2, coin: 4 });
     const t = progress(base, me, { card: 'merchantFleet', resource: 'paper' });
     expect(rateFor(t, me, 'paper')).toBe(2);
@@ -1107,7 +1107,7 @@ function classicCornerWith(s: CatanState, terrain: string): string {
 // ---------- Trading ----------
 
 describe('trading commodities', () => {
-  it('4:1 for commodities at the bank, 3:1 with a generic harbour, 2:1 with the Trade track at 3', () => {
+  it('4:1 for commodities at the bank, 3:1 with a generic harbor, 2:1 with the Trade track at 3', () => {
     const { s, me } = table();
     const L = layoutOf(s);
     const generic = s.board.harbours.find((h) => h.kind === 'any')!;
@@ -1116,14 +1116,14 @@ describe('trading commodities', () => {
       ...s,
       buildings: { [corner]: { owner, city: false } },
     });
-    // Away from every harbour: 4:1 for everything.
+    // Away from every harbor: 4:1 for everything.
     const bare = { ...s, buildings: {} };
     for (const c of ['paper', 'cloth', 'coin', 'wool'] as const)
       expect(rateFor(bare, me, c)).toBe(4);
     const g = at(L.edges[generic.edge]!.a);
     expect(rateFor(g, me, 'paper')).toBe(3);
     expect(rateFor(g, me, 'wool')).toBe(3);
-    // A resource harbour does nothing for commodities.
+    // A resource harbor does nothing for commodities.
     const r = at(L.edges[resHarbour.edge]!.a);
     expect(rateFor(r, me, 'coin')).toBe(4);
     expect(rateFor(r, me, 'ore')).toBe(2);

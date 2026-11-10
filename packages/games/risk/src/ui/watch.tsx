@@ -83,7 +83,7 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
           Continents
         </button>
       </div>
-      {/* Everyone's strength as a ledger, a row a general, each edged in their army's colour. */}
+      {/* Everyone's strength as a ledger, a row a general, each edged in their army's color. */}
       <table className="rk-ledger">
         <thead>
           <tr>

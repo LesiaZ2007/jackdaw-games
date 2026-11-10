@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { nameClash, type Avatar, type ClientMessage, type LobbySnapshot } from '@jackdaw/engine';
 import {
   AvatarPicker,
@@ -33,13 +33,15 @@ function freeAvatar(taken: Avatar[], preferred: Avatar | null): Avatar {
   };
 }
 
-/** Taking a seat: name, crest and colour. Also handles moving a seat over from another phone. */
+/** Taking a seat: name, crest and color. Also handles moving a seat over from another phone. */
 export function JoinCard({
   code,
   snapshot,
   removed,
   onJoined,
   onForget,
+  refusal,
+  onStopAsking,
   send,
 }: {
   code: string;
@@ -47,6 +49,9 @@ export function JoinCard({
   removed: boolean;
   onJoined: () => void;
   onForget: () => void;
+  /** The code of the server's last refusal, e.g. ASK_HOST while the host decides. */
+  refusal?: string;
+  onStopAsking: () => void;
   send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
 }) {
   const taken = snapshot.players.map((p) => p.avatar);
@@ -73,6 +78,10 @@ export function JoinCard({
   const full = snapshot.players.length >= 15;
   const game = catalogEntry(snapshot.selectedGameId);
   const playing = snapshot.status === 'in_game';
+  // The host removed this device earlier and is being asked whether to let it back in.
+  const asking = refusal === 'ASK_HOST';
+  // Locked to new players. Someone the host removed may still ask to come back.
+  const locked = Boolean(snapshot.locked) && !removed;
 
   async function join() {
     const trimmed = name.trim();
@@ -90,6 +99,17 @@ export function JoinCard({
       onJoined();
     }
   }
+
+  // While the host decides, keep asking quietly: the seat opens the moment they say yes.
+  const retry = useRef(join);
+  useEffect(() => {
+    retry.current = join;
+  });
+  useEffect(() => {
+    if (!asking) return;
+    const t = setInterval(() => void retry.current(), 4000);
+    return () => clearInterval(t);
+  }, [asking]);
 
   async function redeem() {
     if (rejoin.trim().length !== 6) return setError('Rejoin codes are 6 letters.');
@@ -137,7 +157,19 @@ export function JoinCard({
         )}
       </div>
 
-      {moving ? (
+      {asking ? (
+        <div className="join-card__asking" role="status">
+          <Token avatar={avatar} size={64} />
+          <h2 className="jd-h3">Waiting for the host</h2>
+          <p>
+            The host removed you from this lobby. They&rsquo;ve been asked whether to let you back
+            in; you&rsquo;ll be seated as soon as they say yes.
+          </p>
+          <button type="button" className="jd-link" onClick={onStopAsking}>
+            Stop asking
+          </button>
+        </div>
+      ) : moving ? (
         <div className="grid gap-3">
           <label className="grid gap-1.5">
             <span className="jd-label">Rejoin code from your other phone</span>
@@ -161,7 +193,7 @@ export function JoinCard({
           <Plaque go onClick={redeem} disabled={busy}>
             Move my seat here
           </Plaque>
-          <button type="button" className="home-link" onClick={() => setMoving(false)}>
+          <button type="button" className="jd-link" onClick={() => setMoving(false)}>
             Take a new seat instead
           </button>
         </div>
@@ -187,21 +219,23 @@ export function JoinCard({
             onChange={setAvatar}
             takenBy={takenAvatars(snapshot.players)}
           />
-          <Plaque go onClick={join} disabled={busy || full}>
-            {full
-              ? 'This lobby is full'
-              : busy
-                ? 'Taking a seat…'
-                : playing
-                  ? 'Watch, and play next game'
-                  : 'Take a seat'}
+          <Plaque go onClick={join} disabled={busy || full || locked}>
+            {locked
+              ? 'The host has locked this lobby'
+              : full
+                ? 'This lobby is full'
+                : busy
+                  ? 'Taking a seat…'
+                  : playing
+                    ? 'Watch, and play next game'
+                    : 'Take a seat'}
           </Plaque>
           {removed && (
-            <button type="button" className="home-link" onClick={onForget}>
+            <button type="button" className="jd-link" onClick={onForget}>
               Dismiss this message
             </button>
           )}
-          <button type="button" className="home-link" onClick={() => setMoving(true)}>
+          <button type="button" className="jd-link" onClick={() => setMoving(true)}>
             Moving from another phone? Enter your rejoin code
           </button>
         </div>

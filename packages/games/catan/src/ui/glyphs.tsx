@@ -160,7 +160,7 @@ export function DevGlyph({ kind, className }: { kind: keyof typeof DEV; classNam
   );
 }
 
-/** A small printed square in the resource's colour with its glyph: costs, offers, gains. */
+/** A small printed square in the resource's color with its glyph: costs, offers, gains. */
 export function Pip({ res, n }: { res: Card; n?: number }) {
   return (
     <span className={`ctn-pip ctn-fill--${TERRAIN_OF[res]}`} title={RESOURCE_NAME[res]}>
@@ -178,7 +178,7 @@ export function Pip({ res, n }: { res: Card; n?: number }) {
 export const SETTLEMENT = 'M-7,6 V-2 L0,-9 L7,-2 V6 Z';
 export const CITY = 'M-11,7 V-3 L-5.5,-10 L0,-3 V-1 H11 V7 Z';
 
-/** A piece in a seat colour, for costs and labels. */
+/** A piece in a seat color, for costs and labels. */
 export function PieceGlyph({
   kind,
   colour,

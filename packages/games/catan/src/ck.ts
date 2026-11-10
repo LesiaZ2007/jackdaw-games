@@ -58,7 +58,7 @@ export const TRACK_NAME: Record<Track, string> = {
 };
 
 export type EventFace = 'ship' | Track;
-/** The event die: three ship faces, and one city gate in each track's colour. */
+/** The event die: three ship faces, and one city gate in each track's color. */
 export const EVENT_FACES: readonly EventFace[] = [
   'ship',
   'ship',
@@ -1273,7 +1273,7 @@ export function ckBuild(
   return kind === 'wall' ? buildWall(s, who, at, false) : buildKnight(s, who, at);
 }
 
-/** The bank's rate for one card of `give`, with harbours, trading house, merchant and fleet. */
+/** The bank's rate for one card of `give`, with harbors, trading house, merchant and fleet. */
 export function ckRatio(
   s: Pick<CatanState, 'board' | 'size'> & { ck: Pick<CkState, 'levels' | 'merchant' | 'fleet'> },
   pid: string,

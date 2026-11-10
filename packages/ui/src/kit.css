@@ -52,6 +52,48 @@
   letter-spacing: 0.12em;
   color: var(--ink-2);
 }
+/* The heading scale. h1 is the screen title, h2 a section (30 to 40px), h3 a plaque label. */
+.jd-h1,
+.jd-h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 0.95;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+}
+.jd-h1 {
+  font-size: var(--step-4);
+}
+.jd-h2 {
+  font-size: var(--step-3);
+}
+.jd-h3 {
+  margin: 0;
+  font: 800 18px/1.15 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+/* A link set as a button's quiet cousin: underlined text, a full tap tall */
+.jd-link {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 10px 2px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--rule);
+}
+.jd-link:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
 
 /* ── Lid: a printed panel with a double rule (fleuron corners come from <Lid>) ── */
 .jd-lid {
@@ -96,8 +138,14 @@
   justify-content: center;
   gap: 10px;
   min-height: 52px;
-  padding: 0 20px;
-  font: 800 21px/1 var(--font-plaque);
+  max-width: 100%;
+  min-width: min-content;
+  /* a long label wraps inside the plate, clear of the inner rule, instead of spilling out */
+  padding: 10px 20px;
+  font: 800 21px/1.1 var(--font-plaque);
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: break-word;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--ink);
@@ -125,7 +173,7 @@
 .jd-plaque--small {
   min-height: var(--tap);
   font-size: 17px;
-  padding: 0 14px;
+  padding: 6px 14px;
 }
 .jd-plaque[disabled],
 .jd-plaque[aria-disabled='true'] {
@@ -306,7 +354,7 @@
   box-shadow:
     0 0 0 calc(var(--z) * 0.065) var(--ring-bg),
     0 0 0 calc(var(--z) * 0.1) var(--rule),
-    0 3px 6px var(--shadow);
+    0 calc(var(--z) * 0.05) 0 var(--shadow);
 }
 .jd-token::before,
 .jd-token::after {
@@ -382,14 +430,21 @@
   position: absolute;
   top: 3px;
   left: 5px;
-  font: 700 12px var(--font-plaque);
+  font: 700 14px var(--font-plaque);
   color: var(--ink-2);
 }
 .jd-space .jd-who {
   max-width: 92%;
+  min-width: 0;
+  /* a long name wraps to a second line; only a name past two lines is trimmed, with an ellipsis */
+  overflow-wrap: anywhere;
+  text-align: center;
+  text-wrap: balance;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font: 800 clamp(14px, calc(100cqi / var(--cols, 5) * 0.165), 28px) / 1.05 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -433,9 +488,9 @@
   padding: 3px 6px 4px;
   background: var(--or);
   color: var(--print-ink);
-  font: 800 11px/1 var(--font-plaque);
+  font: 800 14px/1 var(--font-plaque);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 .jd-space .jd-you--bot {
   background: var(--ink);
@@ -484,7 +539,7 @@
   position: absolute;
   top: 3px;
   left: 5px;
-  font: 700 12px var(--font-plaque);
+  font: 700 14px var(--font-plaque);
   color: var(--ink-2);
 }
 @media (hover: hover) {
@@ -793,9 +848,15 @@
     animation: none;
   }
   .jd-plaque,
+  .jd-addseat__ring,
   .jd-picker__crest,
   .jd-picker__tint {
     transition: none;
+  }
+  .jd-plaque:active,
+  .jd-addseat:active .jd-addseat__ring,
+  .jd-space--tap:active .jd-token {
+    transform: none;
   }
   .jd-code-entry input:focus + .jd-chits .jd-chit--next::after {
     animation: none;

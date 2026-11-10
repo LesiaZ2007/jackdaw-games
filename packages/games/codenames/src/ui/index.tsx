@@ -34,6 +34,11 @@ export const codenamesUi: GameUi = {
       },
     ],
   },
+  optionHelp: {
+    balance: 'Move operatives at the start so the teams differ by one at most.',
+    newSpymasters:
+      "Draw each team's spymaster at random every game instead of keeping the host's picks.",
+  },
   PlayerScreen,
   TvScreen,
   WatchScreen,

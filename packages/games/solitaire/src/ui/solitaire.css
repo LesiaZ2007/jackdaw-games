@@ -314,7 +314,14 @@ button.sol-card {
   position: absolute;
   inset: auto 0 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--vert) var(--p), transparent var(--p));
+}
+/* the fill: a real element sized by --p, not a hard-stop gradient */
+.sol-rival__bar::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--p);
+  background: var(--vert);
 }
 .sol-rival--stuck {
   border-style: dashed;

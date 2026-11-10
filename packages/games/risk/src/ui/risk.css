@@ -1,5 +1,5 @@
 /* Risk: a printed war map. Card stock, an inked coast over an engraved sea, every territory
-   filled with its owner's army colour, continents ruled round in a double line and lettered in
+   filled with its owner's army color, continents ruled round in a double line and lettered in
    the sea, with the engraver's ornaments. Tokens only; day and dark follow the shell. */
 
 /* ---------- The map ---------- */
@@ -97,7 +97,7 @@
   animation: rk-flash 900ms var(--ease-out) 2;
 }
 /* Fog of war: out of sight, the land goes to a pale mist with the engraver's hatching over it,
-   no army colour and no roundel, like the unsurveyed corners of an old chart. */
+   no army color and no roundel, like the unsurveyed corners of an old chart. */
 .rk-terr.is-fog .rk-terr__land {
   fill: color-mix(in srgb, var(--table) 55%, var(--paper));
 }
@@ -140,7 +140,7 @@
   stroke: var(--paper);
 }
 
-/* The engraver's ornaments: ink lines, paper fills, a touch of colour. Never tappable. */
+/* The engraver's ornaments: ink lines, paper fills, a touch of color. Never tappable. */
 .rk-decor {
   pointer-events: none;
 }
@@ -241,7 +241,7 @@
   font-weight: 700;
   text-anchor: middle;
   fill: var(--on-fill);
-  /* a dark rim keeps the count readable on every army's colour, gold included */
+  /* a dark rim keeps the count readable on every army's color, gold included */
   paint-order: stroke;
   stroke: var(--sable);
   stroke-width: 2px;
@@ -366,7 +366,7 @@
   text-align: center;
 }
 
-/* The dice: the attacker's on the left, the defender's on the right, each in their colour. */
+/* The dice: the attacker's on the left, the defender's on the right, each in their color. */
 .rk-dice {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -480,6 +480,16 @@
   background: none;
   border: 0;
 }
+/* A button that can't be pressed yet stays visibly off but readable: ink-2 text on shaded card
+   (at least 4.5:1), not the kit's half-faded plate. */
+.rk-dock .jd-plaque[disabled],
+.rk-dock .jd-plaque--go[disabled] {
+  opacity: 1;
+  color: var(--ink-2);
+  background: var(--table-2);
+  border-color: var(--ink-2);
+  outline-color: var(--ink-2);
+}
 .rk-stepper button:disabled {
   color: var(--rule);
 }
@@ -586,7 +596,7 @@
 .rk-continents__swatch {
   width: 14px;
   height: 14px;
-  /* the holder's army colour (set inline); empty while nobody holds it all */
+  /* the holder's army color (set inline); empty while nobody holds it all */
   background: var(--paper);
   border: 1px solid var(--ink);
 }
@@ -682,7 +692,7 @@
   column-gap: var(--space-2);
   align-items: center;
   padding: 6px var(--space-2);
-  /* each seat's army colour down its edge, matching their land on the map */
+  /* each seat's army color down its edge, matching their land on the map */
   border-left: 10px solid var(--rk-own);
 }
 .rk-seat.is-turn {
@@ -744,7 +754,7 @@
 }
 .rk-ledger tbody th {
   padding: 3px 6px 3px 0;
-  /* each general's army colour down the edge, matching their land on the map */
+  /* each general's army color down the edge, matching their land on the map */
   border-left: 10px solid var(--rk-own);
   display: flex;
   align-items: center;
@@ -927,12 +937,9 @@ td.rk-ledger__out {
   gap: 4px;
   padding-top: calc(var(--tok) * 0.22);
   color: var(--on-fill);
-  /* the cloth's fold, lighter at the top where it hangs */
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--rk-own) 82%, var(--paper)) 0 10%,
-    var(--rk-own) 30% 100%
-  );
+  /* flat cloth with a lighter hem band at the top where it hangs from the pole */
+  background: var(--rk-own);
+  border-top: calc(var(--tok) * 0.12) solid color-mix(in srgb, var(--rk-own) 82%, var(--paper));
   border-inline: 1.5px solid color-mix(in srgb, var(--rk-own) 60%, var(--ink));
   clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 80%, 0 100%);
   transform-origin: top center;
@@ -996,11 +1003,7 @@ td.rk-ledger__out {
 .rk-banner--furled .rk-banner__furl {
   width: 14px;
   height: calc(var(--tok) * 1.7);
-  background: repeating-linear-gradient(
-    170deg,
-    var(--rule) 0 6px,
-    color-mix(in srgb, var(--rule) 55%, var(--paper)) 6px 12px
-  );
+  background: color-mix(in srgb, var(--rule) 78%, var(--paper));
   border: 1.5px solid var(--ink-2);
   border-radius: 0 0 7px 7px;
 }
@@ -1029,7 +1032,7 @@ td.rk-ledger__out {
   color: var(--ink);
   background: var(--paper);
 }
-/* The host's "+" on a furled banner: a dashed ring round the furl, as if to raise it. */
+/* The host's "+" on a furled banner: a dashed ring around the furl, as if to raise it. */
 .rk-banner__add.jd-addseat {
   min-height: var(--tap);
   align-items: start;
@@ -1136,7 +1139,7 @@ td.rk-ledger__out {
   border: 3px solid var(--ink);
   outline: 1.5px solid var(--rule);
   outline-offset: -12px;
-  box-shadow: 0 0.4em 1.4em var(--shadow);
+  box-shadow: 0 20px 50px -24px var(--shadow);
 }
 
 /* ---------- Your orders (the opening screen) ---------- */
@@ -1149,7 +1152,6 @@ td.rk-ledger__out {
   place-items: center;
   padding: var(--space-4) var(--gutter, 16px);
   background: color-mix(in srgb, var(--table) 88%, transparent);
-  backdrop-filter: blur(2px);
   animation: rk-orders-in 320ms var(--ease-out) both;
 }
 @keyframes rk-orders-in {
@@ -1157,7 +1159,7 @@ td.rk-ledger__out {
     opacity: 0;
   }
 }
-/* A folded letter on card stock, double-ruled, its edge in your army's colour. */
+/* A folded letter on card stock, double-ruled, its edge in your army's color. */
 .rk-orders__letter {
   width: min(100%, 440px);
   max-height: 100%;
@@ -1198,7 +1200,7 @@ td.rk-ledger__out {
   border: 0;
   cursor: pointer;
 }
-/* The wax: your army's colour, scalloped like a pressed seal, your crest in the middle. */
+/* The wax: your army's color, scalloped like a pressed seal, your crest in the middle. */
 .rk-orders__wax {
   --ring-bg: var(--rk-own);
   width: 116px;

@@ -2,7 +2,33 @@
 
 .picker {
   display: grid;
+  gap: var(--space-5);
+}
+.picker__kind {
+  display: grid;
   gap: var(--space-3);
+  min-width: 0;
+}
+/* a kind's heading: its color as a diamond and a double rule, as on the home page's shelves */
+.picker__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 5px double var(--tint);
+  font: 800 17px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.picker__title::before {
+  content: '';
+  flex: none;
+  width: 10px;
+  height: 10px;
+  background: var(--tint);
+  border: 1.5px solid var(--ink);
+  transform: rotate(45deg);
 }
 .picker__grid {
   list-style: none;
@@ -55,7 +81,7 @@
   padding: var(--space-2) var(--space-2) var(--space-2) var(--space-2);
   background: var(--paper);
   border: 2px solid var(--ink);
-  /* a band of the game's own colour down the left edge */
+  /* a band of the game's own color down the left edge */
   border-left: 8px solid var(--band);
 }
 .next-up__what {
@@ -156,7 +182,7 @@
   gap: 4px;
   line-height: 1.4;
 }
-.next-up__how .home-link {
+.next-up__how .jd-link {
   padding-block: 4px;
 }
 @container next-up (min-width: 620px) {

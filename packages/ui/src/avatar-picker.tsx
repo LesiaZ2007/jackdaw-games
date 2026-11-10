@@ -11,7 +11,7 @@ const vars = (v: Record<string, string>) => v as CSSProperties;
 const nice = (id: string) => id[0]!.toUpperCase() + id.slice(1);
 
 /**
- * Choosing a crest and a colour. Crests show on the chosen colour so the pick reads as the token
+ * Choosing a crest and a color. Crests show on the chosen color so the pick reads as the token
  * it will become. Anything in `taken` (by another player) can't be chosen and says who has it.
  */
 export function AvatarPicker({
@@ -50,7 +50,7 @@ export function AvatarPicker({
         </div>
       </fieldset>
       <fieldset>
-        <legend className="jd-label">Colour</legend>
+        <legend className="jd-label">Color</legend>
         <div className="jd-picker__tints">
           {TINT_CHOICES.map((t) => {
             const who = t === value.tint ? undefined : takenBy[t];
@@ -79,7 +79,7 @@ export function AvatarButton({
   avatar,
   size = 56,
   onClick,
-  label = 'Change your crest and colour',
+  label = 'Change your crest and color',
 }: {
   avatar: Avatar;
   size?: number;

@@ -5,7 +5,8 @@ import type { Reaction } from '@jackdaw/engine';
 import { PlayerReaction, Token, useMoment, type ScreenPlayer } from '@jackdaw/ui';
 import { since, type KingsTableView } from '../rules';
 import { clock } from '../time';
-import { Board, KingMark, type Mark } from './board';
+import { Board, KingMark } from './board';
+import type { Mark } from '../marks';
 import { place } from './race';
 
 /** How the cards are laid out for this many players: as few rows as fit a 16:9 screen. */
@@ -72,7 +73,9 @@ export function PlayerCard({
           )}
           <PlayerReaction reactions={reactions} playerId={id} />
         </span>
-        <span className="kg-card__name">{name}</span>
+        <span className="kg-card__name" title={name}>
+          {name}
+        </span>
         <span className="kg-card__time">
           {done
             ? clock(times.at(-1)! - t.startedAt)

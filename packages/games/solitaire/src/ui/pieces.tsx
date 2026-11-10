@@ -46,9 +46,9 @@ export function PlayingCard({
 }: {
   card?: Card;
   down?: boolean;
-  /** The back's colour (a player's tint). */
+  /** The back's color (a player's tint). */
   back?: string;
-  /** A tab along the foot in this colour: whose deck the card came from. */
+  /** A tab along the foot in this color: whose deck the card came from. */
   tab?: string;
   className?: string;
   style?: CSSProperties;
@@ -101,12 +101,12 @@ export function PlayingCard({
 }
 
 /** An empty place for a card: a dashed outline with a faint mark in it. */
-export function Slot({ children, className }: { children?: ReactNode; className?: string }) {
+function Slot({ children, className }: { children?: ReactNode; className?: string }) {
   return <span className={cx('sol-card sol-slot', className)}>{children}</span>;
 }
 
 /** The shared foundations in suit order (each suit's tallest first), keeping their indexes. */
-export function sortedPiles(fs: readonly FoundationView[]) {
+function sortedPiles(fs: readonly FoundationView[]) {
   return fs
     .map((f, i) => ({ ...f, i }))
     .sort(

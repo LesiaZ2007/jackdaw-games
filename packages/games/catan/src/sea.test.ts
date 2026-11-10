@@ -72,7 +72,7 @@ describe('the sea map', () => {
     expect(home[s.robber]).toBe(0);
     expect(s.sea).toMatchObject({ ships: {}, pirate: null, moved: false });
     expect(s.sea!.bonus).toEqual({ a: [], b: [], c: [] });
-    // Harbours sit round the main island.
+    // Harbors sit around the main island.
     const L = layoutOf(s);
     for (const h of s.board.harbours)
       expect(L.edges[h.edge]!.tiles.some((t) => home[t] === 0)).toBe(true);

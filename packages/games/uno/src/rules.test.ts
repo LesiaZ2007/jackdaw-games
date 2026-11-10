@@ -66,7 +66,7 @@ const total = (s: UnoState) =>
   Object.values(s.hands).reduce((n, h) => n + h.length, 0) + s.deck.length + s.discard.length;
 
 describe('the deck', () => {
-  it('has 108 cards: 19 numbers, 6 actions in each colour, and 8 wilds', () => {
+  it('has 108 cards: 19 numbers, 6 actions in each color, and 8 wilds', () => {
     const faces = Array.from({ length: DECK_SIZE }, (_, i) => cardOf(i));
     expect(faces.filter((f) => f.colour === 'r')).toHaveLength(25);
     expect(faces.filter((f) => f.face === '0')).toHaveLength(4);
@@ -97,12 +97,12 @@ describe('the deal', () => {
 });
 
 describe('playing', () => {
-  it('takes a matching colour, number or symbol, or a wild, and refuses anything else', () => {
+  it('takes a matching color, number or symbol, or a wild, and refuses anything else', () => {
     const s = table({ a: [c('r', 9), c('b', 5), c('g', 2), c('w'), c('y', 1)], b: [c('y', 3)] });
     expect(() => act(s, 'a', { type: 'play', card: c('g', 2) })).toThrow(GameError);
     expect(act(s, 'a', { type: 'play', card: c('r', 9) }).colour).toBe('r');
     expect(act(s, 'a', { type: 'play', card: c('b', 5) }).colour).toBe('b');
-    expect(() => act(s, 'a', { type: 'play', card: s.hands.a![3]! })).toThrow(/colour/);
+    expect(() => act(s, 'a', { type: 'play', card: s.hands.a![3]! })).toThrow(/color/);
     const w = act(s, 'a', { type: 'play', card: s.hands.a![3]!, colour: 'g' });
     expect(w.colour).toBe('g');
     expect(w.toAct).toBe('b');

@@ -1,5 +1,5 @@
 // Production build into .next-check, so it's safe to run while a dev server is using .next.
-// `next build` rewrites next-env.d.ts to point at the build folder, so put it back afterwards.
+// `next build` rewrites next-env.d.ts to point at the build folder, so put it back afterward.
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';

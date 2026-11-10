@@ -28,7 +28,7 @@ test('seats open your look or the host’s player sheet, and missed chat shows o
   await join(magpie, code, 'Magpie');
   await expect(host.getByText('3 of 15 seats')).toBeVisible();
 
-  // Tapping your own seat opens your name, crest and colour.
+  // Tapping your own seat opens your name, crest and color.
   await host.getByRole('button', { name: /^Wren \(you\): change/ }).click();
   await expect(host.getByRole('dialog', { name: 'You at the table' })).toBeVisible();
   await host.keyboard.press('Escape');
@@ -43,7 +43,7 @@ test('seats open your look or the host’s player sheet, and missed chat shows o
   await talk.getByRole('textbox', { name: 'Message' }).fill('Evening all');
   await talk.getByRole('button', { name: 'Send' }).click();
   await expect(talk).toContainText('Evening all');
-  await rook.getByRole('button', { name: 'Close', exact: true }).click();
+  await talk.getByRole('button', { name: 'Close' }).click();
   await expect(host.getByRole('button', { name: 'Chat, 1 unread' })).toBeVisible();
   await expect(host.locator('.lobby-bar__badge')).toHaveText('1');
   // Your own message never counts.
@@ -51,7 +51,10 @@ test('seats open your look or the host’s player sheet, and missed chat shows o
 
   await host.getByRole('button', { name: 'Chat, 1 unread' }).click();
   await expect(host.getByRole('dialog', { name: 'Table talk' })).toContainText('Evening all');
-  await host.getByRole('button', { name: 'Close', exact: true }).click();
+  await host
+    .getByRole('dialog', { name: 'Table talk' })
+    .getByRole('button', { name: 'Close' })
+    .click();
   await expect(host.getByRole('button', { name: 'Chat', exact: true })).toBeVisible();
   // A refresh doesn't bring it back as unread.
   await host.reload();

@@ -2,15 +2,14 @@
 
 import type { CSSProperties } from 'react';
 import {
+  clockMs,
   useCountdown,
   useMoment,
-  useTheme,
   VerdictMoment,
   type GameUi,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import { ranking, type ZapTableView } from '../rules';
-import { clock } from '../time';
 import { columnsFor, PlayerCard } from './card';
 import { place, useTick } from './race';
 import './zap.css';
@@ -23,7 +22,7 @@ interface Solve {
 }
 
 /** Every solve so far, newest first. */
-export function solves(t: ZapTableView): Solve[] {
+function solves(t: ZapTableView): Solve[] {
   const out: Solve[] = [];
   for (const id of t.players) {
     const times = t.times[id] ?? [];
@@ -34,10 +33,6 @@ export function solves(t: ZapTableView): Solve[] {
   return out.sort((a, b) => b.at - a.at);
 }
 
-export function latestSolve(t: ZapTableView): Solve | null {
-  return solves(t)[0] ?? null;
-}
-
 /**
  * Zap on the TV: a card for everyone in the race, each with the puzzle they're on, how much of it
  * their line covers (the line itself, only when one person plays alone), their clock, and a stamp
@@ -45,7 +40,6 @@ export function latestSolve(t: ZapTableView): Solve | null {
  */
 export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...props }) => {
   const t = tableView as ZapTableView;
-  const look = useTheme();
   useTick();
   const players = props.players as ScreenPlayer[];
   const byId = new Map(players.map((p) => [p.id, p]));
@@ -62,7 +56,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
   const crowded = t.players.length > 8;
 
   return (
-    <div className={`zp zp-tv${solo ? ' is-solo' : ''}`} data-look={look}>
+    <div className={`zp zp-tv${solo ? ' is-solo' : ''}`}>
       <header className="zp-tv__head">
         <div className="zp-tv__what">
           <p className="zp-tv__title">{solo ? `${name(lead)}’s puzzles` : 'The race'}</p>
@@ -72,7 +66,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
         </div>
         <div className={`zp-tv__clock${closing !== null ? ' is-closing' : ''}`}>
           <span>{closing !== null ? 'Ends in' : 'Race clock'}</span>
-          <b>{closing !== null ? clock(closing * 1000) : clock(now() - t.startedAt)}</b>
+          <b>{closing !== null ? clockMs(closing * 1000) : clockMs(now() - t.startedAt)}</b>
         </div>
         <div className="zp-tv__lead">
           {solo ? (
@@ -133,7 +127,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
         ) : (
           all.slice(0, 3).map((s) => (
             <li key={`${s.id}-${s.n}`}>
-              <b>{name(s.id)}</b> solved puzzle {s.n} in {clock(s.ms)}
+              <b>{name(s.id)}</b> solved puzzle {s.n} in {clockMs(s.ms)}
             </li>
           ))
         )}
@@ -149,7 +143,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
               ? `All ${t.count} solved`
               : `${name(finished[fresh - 1]!)} finished ${place(fresh - 1)}`
           }
-          detail={clock((t.times[finished[fresh - 1]!]?.at(-1) ?? t.startedAt) - t.startedAt)}
+          detail={clockMs((t.times[finished[fresh - 1]!]?.at(-1) ?? t.startedAt) - t.startedAt)}
           avatar={byId.get(finished[fresh - 1]!)?.avatar}
           ms={2600}
           onDone={dismiss}

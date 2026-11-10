@@ -2,16 +2,16 @@
  * UNO: a printed play mat in the compendium. The cards are cream stock with charcoal ink and a
  * field in one of four heraldic tinctures (gules, or, vert, azure), wilds sable with a quartered
  * shield, the back sable with the jackdaw. Cards look the same day and dark (they're printed), so
- * their colours are set here; everything else comes from @jackdaw/ui tokens.
+ * their colors are set here; everything else comes from @jackdaw/ui tokens.
  */
 .uno,
 .uno-table {
   --uno-ink: #1d1d1c;
-  --uno-stock: #f6f0e1;
-  --uno-r: #a63a30;
+  --uno-stock: var(--on-fill);
+  --uno-r: var(--gules);
   --uno-y: #b8892a;
-  --uno-g: #30634a;
-  --uno-b: #2b5683;
+  --uno-g: var(--vert);
+  --uno-b: var(--azure);
   --uno-k: #26282b;
   --uno-emboss: rgba(0, 0, 0, 0.35);
   --uno-hatch: rgba(246, 240, 225, 0.07);
@@ -152,7 +152,7 @@ button.uno-card:focus-visible {
   paint-order: stroke;
   font: 800 15px var(--font-code);
 }
-/* A wild on the pile wears the colour it called as a ring. */
+/* A wild on the pile wears the color it called as a ring. */
 .uno-card[class*='uno-card--called-'] {
   box-shadow:
     0 0 0 calc(var(--w) * 0.07) var(--called),
@@ -224,13 +224,13 @@ button.uno-card:focus-visible {
   aspect-ratio: 1 / 1.02;
   margin: 12px auto 30px;
 }
-/* A round paper mat with a double ink rule, ringed in the colour in play. */
+/* A round paper mat with a double ink rule, ringed in the color in play. */
 .uno-mat {
   position: absolute;
   inset: 3% 2%;
   border-radius: 50%;
   overflow: hidden;
-  /* The ring is a light tint of the colour in play, so it says the colour without shouting. */
+  /* The ring is a light tint of the color in play, so it says the color without shouting. */
   background:
     radial-gradient(closest-side, var(--paper) 72%, transparent 72.5%),
     color-mix(in srgb, var(--uno-now) 42%, var(--paper));
@@ -531,7 +531,7 @@ button.uno-card:focus-visible {
   }
 }
 
-/* ── The lobby: everyone round the mat before the deal ────────────────── */
+/* ── The lobby: everyone around the mat before the deal ────────────────── */
 .uno-table--lobby {
   width: min(100%, 560px);
   margin: 18px auto 34px;
@@ -544,7 +544,7 @@ button.uno-card:focus-visible {
   border: 2px dashed var(--rule);
   background: var(--table-2);
 }
-/* The host's "+" on an open place: the same dashed ring, centred on it, at least 44px to tap. */
+/* The host's "+" on an open place: the same dashed ring, centered on it, at least 44px to tap. */
 .uno-addseat {
   inset: 50% auto auto 50%;
   translate: -50% -50%;
@@ -579,7 +579,7 @@ button.uno-card:focus-visible {
   padding: 1px 4px 2px;
   background: var(--ink);
   color: var(--paper);
-  font: 800 10px/1 var(--font-plaque);
+  font: 800 12px/1 var(--font-plaque);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   pointer-events: none;
@@ -768,7 +768,7 @@ button.uno-card:focus-visible {
 
 /* ── TV ────────────────────────────────────────────────────────────────── */
 /* Sizes are TV pixels on the 1920-wide stage, read from across the room. The room stays Jackdaw's
-   table; the card table on it is printed in the colour in play. */
+   table; the card table on it is printed in the color in play. */
 .uno-tv {
   position: relative;
   isolation: isolate;
@@ -812,8 +812,8 @@ button.uno-card:focus-visible {
   font-size: 34px;
 }
 
-/* The table: an oval printed flat in the colour in play inside a cream rule (like the cards), on a
-   paper rim, everyone round it. It keeps its shape and sits centred in whatever room the screen
+/* The table: an oval printed flat in the color in play inside a cream rule (like the cards), on a
+   paper rim, everyone round it. It keeps its shape and sits centered in whatever room the screen
    leaves (a 16:10 laptop's stage is taller). */
 .uno-tv__table {
   grid-column: 1;

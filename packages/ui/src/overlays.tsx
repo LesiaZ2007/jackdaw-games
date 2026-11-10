@@ -4,9 +4,8 @@ import { useEffect, useRef, type ReactNode, type RefObject } from 'react';
 import type { RecapEvent, RecapStats } from '@jackdaw/engine';
 import { Icon } from './icons';
 import { recapLine, withNames } from './recap';
+import { cx } from './util';
 import './overlays.css';
-
-const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -92,7 +91,7 @@ export function Sheet({
         tabIndex={-1}
       >
         <header className="jd-sheet__head">
-          <h2 className="jd-display jd-sheet__title">{title}</h2>
+          <h2 className="jd-h2 jd-sheet__title">{title}</h2>
           <button type="button" className="jd-iconbtn" onClick={onClose} aria-label="Close">
             <Icon.close />
           </button>
@@ -105,16 +104,19 @@ export function Sheet({
 
 /**
  * A brief message (rule refusals, network trouble) at the top of the screen. Disappears on its
- * own after a few seconds, or when tapped.
+ * own after a few seconds, or when tapped. `alert` is for something that went wrong and needs
+ * announcing at once (an action that failed); without it the message is a polite status.
  */
 export function Toast({
   message,
   onDone,
   ms = 3600,
+  alert,
 }: {
   message: string | null;
   onDone: () => void;
   ms?: number;
+  alert?: boolean;
 }) {
   useEffect(() => {
     if (!message) return;
@@ -123,9 +125,27 @@ export function Toast({
   }, [message, onDone, ms]);
   if (!message) return null;
   return (
-    <div className="jd-toast" role="status" aria-live="polite" onClick={onDone}>
+    <div
+      className="jd-toast"
+      role={alert ? 'alert' : 'status'}
+      aria-live={alert ? 'assertive' : 'polite'}
+      onClick={onDone}
+    >
       {message}
     </div>
+  );
+}
+
+/**
+ * One sticky strip while the lobby can't be reached (failed polls), instead of a new toast every
+ * few seconds. Render it while polls fail; it goes when the next one succeeds. `tv` sizes it for
+ * the TV stage.
+ */
+export function ReconnectingStrip({ tv }: { tv?: boolean }) {
+  return (
+    <p className={cx('jd-strip', tv && 'jd-strip--tv')} role="status">
+      Reconnecting…
+    </p>
   );
 }
 
@@ -155,7 +175,7 @@ export function RecapTimeline({
   }
   return (
     <section className="jd-recap" aria-label={title}>
-      <h3 className="jd-display jd-recap__title">{title}</h3>
+      <h2 className="jd-h2 jd-recap__title">{title}</h2>
       <ol className="jd-recap__list">
         {rounds.map((r, i) => (
           <li key={i} className="jd-recap__round">
@@ -208,7 +228,7 @@ export function RecapStatsTable({
   if (!stats || stats.rows.length === 0 || stats.columns.length === 0) return null;
   return (
     <section className="jd-stats" aria-label={title}>
-      <h3 className="jd-display jd-recap__title">{title}</h3>
+      <h2 className="jd-h2 jd-recap__title">{title}</h2>
       <div className="jd-stats__scroll">
         <table className="jd-stats__table">
           <thead>

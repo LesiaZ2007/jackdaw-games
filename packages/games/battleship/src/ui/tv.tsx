@@ -125,7 +125,9 @@ function Seat({
         <PlayerReaction reactions={reactions} playerId={id} />
       </span>
       <span className="bs-tv__id">
-        <span className="bs-tv__name">{name(id)}</span>
+        <span className="bs-tv__name" title={name(id)}>
+          {name(id)}
+        </span>
         {t.phase === 'place' && (
           <span className="bs-tv__afloat">{t.boards[id]?.ready ? 'Fleet placed' : 'Placing'}</span>
         )}

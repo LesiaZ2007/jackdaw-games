@@ -13,8 +13,8 @@ import './expansions.css';
 
 /**
  * The island, printed: tiles in their terrain inks with an engraved motif, shallows and an inked
- * seam round the coast, wooden piers to each harbour, cream number discs (red 6 and 8) with the
- * odds as dots, the robber, then everyone's roads, settlements and cities in their seat colours.
+ * seam around the coast, wooden piers to each harbor, cream number discs (red 6 and 8) with the
+ * odds as dots, the robber, then everyone's roads, settlements and cities in their seat colors.
  * When a move is being chosen only the legal spots are drawn, and a tap snaps to the nearest one.
  */
 
@@ -23,7 +23,7 @@ export type Spot = {
   at: string;
 };
 
-/** Each track's metropolis banner colour (the city gates on the event die). */
+/** Each track's metropolis banner color (the city gates on the event die). */
 export const TRACK_COLOUR: Record<Track, string> = {
   science: 'var(--ctn-science)',
   trade: 'var(--ctn-trade)',
@@ -43,7 +43,7 @@ export interface CatanBoardProps {
   /** Tiles that can be picked now (where the robber may go). */
   tiles?: number[];
   ghost?: Spot | null;
-  /** The ghost's seat colour. */
+  /** The ghost's seat color. */
   ghostColour?: string;
   /** The last roll, with its count: paying tiles light up and cards fly to their buildings. */
   roll?: { total: number; seq: number } | null;
@@ -53,7 +53,7 @@ export interface CatanBoardProps {
   onEdge?: (id: string) => void;
   onTile?: (tile: number) => void;
   label: string;
-  /** Sea round the island, in tile sides. */
+  /** Sea around the island, in tile sides. */
   pad?: number;
   className?: string;
   /** Seafarers: ships by edge, and the pirate's sea tile. */
@@ -657,7 +657,7 @@ function shipShape(colour: string, k = 1) {
   );
 }
 
-/** A knight: a shield in the seat colour with one bar per strength; inked and raised when
+/** A knight: a shield in the seat color with one bar per strength; inked and raised when
  * active, pale when not. */
 function knightToken(x: number, y: number, colour: string, k: Knight) {
   return (

@@ -5,7 +5,7 @@ import { REALM_REGIONS, REALM_SEA, REALM_SHAPES } from './realm.shapes';
  * Jackdaw's own board: an island kingdom with 42 provinces in 6 regions, shaped like the classic
  * board so it plays the same way.
  *
- *   Northmarch (north-west, 9) ──land── Crownlands (centre, 7) ──land── The Wolds (east, 12)
+ *   Northmarch (north-west, 9) ──land── Crownlands (center, 7) ──land── The Wolds (east, 12)
  *       │ one land border             │ two land borders              │ one land border, one
  *   The Fells (south-west, 4) ~~sea~~ Saltmarsh (south, 6) ─────────────┘ sea lane to…
  *   Highcairn ~~sea~~ Duskwold across the northern bay.          Isles of Wren (south-east, 4)
@@ -85,7 +85,7 @@ export const realm = defineMap({
     ['thornwick', 'ashcombe'],
     ['greywater', 'wolfden'],
     ['wolfden', 'ashcombe'],
-    // Northmarch to its neighbours
+    // Northmarch to its neighbors
     ['thornwick', 'westerhold'],
     ['ashcombe', 'westerhold'],
     ['ashcombe', 'oakhallow'],
@@ -103,7 +103,7 @@ export const realm = defineMap({
     ['crowns-rest', 'brightwater'],
     ['crowns-rest', 'stonebridge'],
     ['brightwater', 'stonebridge'],
-    // Crownlands to its neighbours
+    // Crownlands to its neighbors
     ['glimmerdale', 'elderwood'],
     ['glimmerdale', 'harrowmere'],
     ['crowns-rest', 'harrowmere'],
@@ -132,7 +132,7 @@ export const realm = defineMap({
     ['gallowmoor', 'emberfield'],
     ['gallowmoor', 'sunhollow'],
     ['emberfield', 'sunhollow'],
-    // Wolds to its neighbours
+    // Wolds to its neighbors
     ['vintners-vale', 'heronmere'],
     ['sunhollow', 'wren-isle'],
     // The Saltmarsh

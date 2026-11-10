@@ -76,7 +76,7 @@ export function TeamFiles({
                         size={tok}
                       />
                     </span>
-                    <span className="cn-file__name">
+                    <span className="cn-file__name" title={p.name}>
                       {p.name}
                       {p.id === me && <small> (you)</small>}
                     </span>

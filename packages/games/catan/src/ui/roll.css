@@ -1,6 +1,6 @@
 /* The roll: a light veil over the screen, two big printed dice tumbling in the middle, the total
    stamped under them, then the pair glides up into the turn strip. About 2.4s; taps go through
-   to skip it. Colours are tokens; no glow, no gradient. */
+   to skip it. Colors are tokens; no glow, no gradient. */
 
 .ctn-roll {
   position: fixed;

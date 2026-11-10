@@ -7,7 +7,7 @@ import type { Rng } from '@jackdaw/engine';
  * made here has exactly one answer.
  *
  * Cells are numbered row by row, `r * size + c`. `dots[k]` is the cell showing number k + 1.
- * `walls` are pairs of neighbouring cells, smaller first, with a wall between them.
+ * `walls` are pairs of neighboring cells, smaller first, with a wall between them.
  */
 export interface Puzzle {
   size: number;
@@ -32,7 +32,7 @@ export function neighbours(size: number, cell: number): number[] {
 
 const wallKey = (a: number, b: number) => (a < b ? `${a}-${b}` : `${b}-${a}`);
 
-/** For each cell, the neighbours a line can step to (no wall between). */
+/** For each cell, the neighbors a line can step to (no wall between). */
 export function links(p: Puzzle): number[][] {
   const walled = new Set(p.walls.map(([a, b]) => wallKey(a, b)));
   return [...Array(p.size * p.size).keys()].map((cell) =>

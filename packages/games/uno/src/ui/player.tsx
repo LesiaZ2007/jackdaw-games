@@ -86,7 +86,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const mine = v.phase === 'play' && v.toAct === v.me;
   const can = new Set(playable(v));
   const meP = byId.get(v.me);
-  // The turn ended under you (the timer, say): put the colour picker and the UNO call away.
+  // The turn ended under you (the timer, say): put the color picker and the UNO call away.
   if (!mine && (pick !== null || armed)) {
     setPick(null);
     setArmed(false);
@@ -231,7 +231,7 @@ export function TurnClock({ t, now }: { t: UnoTableView; now: () => number }) {
   );
 }
 
-/** A wild is going down: call its colour. */
+/** A wild is going down: call its color. */
 function ColourPicker({
   card,
   onPick,
@@ -242,8 +242,8 @@ function ColourPicker({
   onBack: () => void;
 }) {
   return (
-    <section className="uno-dock" aria-label="Choose a colour">
-      <p className="uno-dock__say">{cardName(card)}: choose the colour.</p>
+    <section className="uno-dock" aria-label="Choose a color">
+      <p className="uno-dock__say">{cardName(card)}: choose the color.</p>
       <div className="uno-colours">
         {COLOURS.map((c) => (
           <button

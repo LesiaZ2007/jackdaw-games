@@ -190,9 +190,11 @@ export function storageFromEnv(env: StorageEnv): RoomStorage {
   const url = env.KV_REST_API_URL ?? env.UPSTASH_REDIS_REST_URL;
   const token = env.KV_REST_API_TOKEN ?? env.UPSTASH_REDIS_REST_TOKEN;
   if (url && token) return new UpstashStorage(url, token);
-  if (env.VERCEL === '1') {
+  // Memory only works on one long-lived process, so a production server must opt in to it.
+  const production = env.VERCEL === '1' || env.NODE_ENV === 'production';
+  if (production && env.JACKDAW_STORAGE !== 'memory') {
     throw new Error(
-      'No room storage configured. Set KV_REST_API_URL and KV_REST_API_TOKEN (or UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN).',
+      'No room storage configured. Set KV_REST_API_URL and KV_REST_API_TOKEN (or UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN), or JACKDAW_STORAGE=memory for a single-process server.',
     );
   }
   return new MemoryStorage();

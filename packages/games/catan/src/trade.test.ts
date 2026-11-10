@@ -218,7 +218,7 @@ describe('bank trades', () => {
     );
   });
 
-  it('3 at a generic harbour, 2 at its own harbour', () => {
+  it('3 at a generic harbor, 2 at its own harbor', () => {
     const { s, me } = table({ me: { ore: 3, wool: 2 } });
     const generic = at(s, me, ['any']);
     expect(

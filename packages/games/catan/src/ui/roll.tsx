@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { prefersReducedMotion } from '@jackdaw/ui';
 import type { EventFace } from '../ck';
 import { Die, EventDie } from './common';
 import './roll.css';
@@ -45,7 +46,7 @@ export function RollMoment({
   const TUMBLE = 9;
 
   useEffect(() => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    if (prefersReducedMotion()) {
       done.current();
       return;
     }

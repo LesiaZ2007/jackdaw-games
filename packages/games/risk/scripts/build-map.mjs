@@ -200,7 +200,7 @@ for (const [name, raw] of Object.entries(src.lands)) {
     shapes[t] = { path: pathOf(kept[i]), label: labelPoint(kept[i]) };
     polys[t] = kept[i];
   });
-  // Neighbours: territories whose outlines run together for more than a sliver.
+  // Neighbors: territories whose outlines run together for more than a sliver.
   for (let i = 0; i < ids.length; i++)
     for (let j = i + 1; j < ids.length; j++)
       if (sharedLength(kept[i], kept[j]) > 4) landPairs.push([ids[i], ids[j]].sort());

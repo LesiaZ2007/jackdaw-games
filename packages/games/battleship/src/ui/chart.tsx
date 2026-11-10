@@ -197,7 +197,9 @@ export function Chart({
     <section className={`bs-chart bs-chart--${size}`} aria-label={label}>
       <header className="bs-chart__head">
         <Compass />
-        <h3 className="bs-chart__title">{label}</h3>
+        <h3 className="bs-chart__title" title={label}>
+          {label}
+        </h3>
       </header>
       <div className="bs-chart__plate">
         <div className="bs-chart__board">
@@ -373,7 +375,7 @@ const PLANE =
 
 /**
  * A printed plane flies across the chart and the peg drops after it, its shadow on the water
- * below. Ink and the sea colour only. It is not a hull, so it never shows where a ship is hiding.
+ * below. Ink and the sea color only. It is not a hull, so it never shows where a ship is hiding.
  */
 function Plane() {
   return (

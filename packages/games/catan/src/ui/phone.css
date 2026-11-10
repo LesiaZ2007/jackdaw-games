@@ -1,6 +1,6 @@
 /* Catan on a phone: fits under the bar without scrolling. Whose turn, everyone else, the island
    as big as the space allows, your hand, the dock; sheets for building, trading and cards. On a
-   laptop the hand and dock sit beside the island. Colours are Jackdaw's and catan.css's tokens. */
+   laptop the hand and dock sit beside the island. Colors are Jackdaw's and catan.css's tokens. */
 
 .ctn--phone {
   flex: 1;
@@ -47,16 +47,20 @@
   font: 800 19px/1.1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .ctn-strip__text small {
   font: 500 15px/1.2 var(--font-body);
   color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .ctn-seattok {
   display: inline-grid;
@@ -491,7 +495,7 @@
   height: 34px;
   padding: 0 16px;
 }
-/* A deck face down: a card back in the track's colour (walnut for development cards), two
+/* A deck face down: a card back in the track's color (walnut for development cards), two
    more under it, the count on top. */
 .ctn-deck {
   --dk: var(--ctn-walnut-2);
@@ -559,7 +563,7 @@
     font-size: 13px;
   }
 }
-/* Cities & Knights' tracks: a tower of five numbered steps in the track's colour, a gate on top,
+/* Cities & Knights' tracks: a tower of five numbered steps in the track's color, a gate on top,
    as tall as the commodity card beside it. */
 .ctn-tower {
   --tk: var(--ctn-science);
@@ -776,7 +780,7 @@
 }
 .ctn-dock .jd-plaque {
   min-height: 52px;
-  padding: 0 8px;
+  padding: 0 10px;
   font-size: 19px;
 }
 .ctn-dock--4 {
@@ -791,13 +795,13 @@
   position: relative;
   min-width: 0;
   gap: 6px;
-  padding: 0 4px;
+  padding: 0 10px;
   font-size: min(17px, 4.3cqi);
 }
 .ctn-dock--4 .ctn-count {
   position: absolute;
-  top: -9px;
-  right: -5px;
+  top: -11px;
+  right: 4px;
   font-size: 13px;
   padding: 3px 5px;
 }
@@ -881,9 +885,11 @@
 .ctn-watch__log {
   font: 500 15px/1.3 var(--font-body);
   color: var(--ink-2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .ctn-victims {
   display: grid;
@@ -991,7 +997,7 @@
   border: 0;
   background: none;
   padding: 0 4px;
-  min-height: 32px;
+  min-height: 44px;
   font: 700 15px var(--font-body);
   color: var(--ink);
   text-decoration: underline;
@@ -1063,7 +1069,7 @@
   font: 800 19px/1 var(--font-code);
 }
 .ctn-picker__less {
-  min-height: 40px;
+  min-height: 44px;
   border-top: 1px solid var(--rule);
   font: 800 22px/1 var(--font-plaque);
 }

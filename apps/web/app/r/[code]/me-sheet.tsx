@@ -5,7 +5,7 @@ import { nameClash, type Avatar, type ClientMessage, type LobbySnapshot } from '
 import { AvatarPicker, Plaque, Sheet, Token, takenAvatars } from '@jackdaw/ui';
 import { rememberAvatar, rememberName } from '@/lib/identity';
 
-/** Changing your own name, crest and colour once you're seated (not mid-game). */
+/** Changing your own name, crest and color once you're seated (not mid-game). */
 export function MeSheet({
   open,
   onClose,
@@ -72,7 +72,7 @@ function MeForm({
           <b>{me.name}</b>
         </div>
         <p className="me-sheet__note">
-          You can change your name, crest and colour once this game ends.
+          You can change your name, crest and color once this game ends.
         </p>
         <Plaque onClick={onDone}>Close</Plaque>
       </div>

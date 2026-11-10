@@ -1,7 +1,7 @@
 /*
  * Kings: a page from a printed puzzle book. The board's region inks are printed, so they stay
  * the same by day and in the dark; the frame round them follows the shell. All of the game's
- * colours are in this token block. No gradients, no glows.
+ * colors are in this token block. No gradients, no glows.
  */
 
 .kg {
@@ -217,15 +217,21 @@
 }
 .kg-tools {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.6fr;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
 }
 .kg-tool.jd-plaque {
   min-width: 0;
   min-height: var(--tap);
-  padding: 0 8px;
+  /* 12px clears the plaque's inner rule (6px in), so a label never touches its border. */
+  padding: 4px 12px;
   gap: 8px;
   font-size: 16px;
+  line-height: 1.1;
+}
+/* The Auto-cross switch has a row to itself, so its label stays on one line. */
+.kg-tool.kg-switch {
+  grid-column: 1 / -1;
   white-space: nowrap;
 }
 .kg-switch__box {
@@ -253,7 +259,7 @@
 }
 @container game (max-width: 340px) {
   .kg-tool.jd-plaque {
-    font-size: 14px;
+    font-size: 15px;
     letter-spacing: 0;
     gap: 6px;
   }
@@ -1108,16 +1114,16 @@
 .kg-answer figcaption {
   display: flex;
   justify-content: space-between;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 2px 6px;
   min-width: 0;
   font: 800 13px var(--font-plaque);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  white-space: nowrap;
 }
 .kg-answer figcaption span {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--ink-2);
   font-family: var(--font-code);
   letter-spacing: 0;

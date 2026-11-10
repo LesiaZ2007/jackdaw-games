@@ -616,7 +616,7 @@ describe('winning', () => {
       { playerId: 'c', outcome: 'loss', role: 'Hold 24 territories' },
     ]);
     expect(r.highlights!.map((h) => h.award)).toEqual(['Bloodiest battle', 'Greatest conquest']);
-    // The seat order, so the final map keeps everyone's army colours.
+    // The seat order, so the final map keeps everyone's army colors.
     expect((r.reveal as { seats: string[] }).seats).toEqual(['a', 'b', 'c']);
     expect(game.getTableView(s1).missions).toEqual(s1.missions);
   });
@@ -822,7 +822,7 @@ describe('fog of war', () => {
     expect(start(ids3, { fog: true }).fog).toBe(true);
   });
 
-  it('shows each player only their own territories and their neighbours', () => {
+  it('shows each player only their own territories and their neighbors', () => {
     const s = start(ids3, { fog: true });
     const tv = game.getTableView(s);
     expect(tv.owner).toEqual({});

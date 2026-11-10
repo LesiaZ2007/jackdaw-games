@@ -50,7 +50,7 @@ export type Announcement = string;
 
 /**
  * One entry in a game's recap timeline. Games append these to their own state as they go, so the
- * recap is built from what happened, never reconstructed afterwards. `secret` holds the hidden
+ * recap is built from what happened, never reconstructed afterward. `secret` holds the hidden
  * truth behind a public event; it is only ever shown once the game is over.
  */
 export interface RecapEvent {
@@ -63,7 +63,7 @@ export interface RecapEvent {
   secret?: string;
   /** A short outcome chip shown beside the event: "Failed, 2 Fail cards", "Bankrupt", "+340". */
   tag?: string;
-  /** Colours the event's chip and edge: 'good' (it went well, or the winning side scored), 'bad'. */
+  /** Colors the event's chip and edge: 'good' (it went well, or the winning side scored), 'bad'. */
   tone?: 'good' | 'bad';
   /** A turning point. The TV, which only has room for a few lines, shows these first. */
   key?: boolean;

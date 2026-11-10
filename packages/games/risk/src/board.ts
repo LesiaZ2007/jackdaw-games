@@ -31,7 +31,7 @@ export function reinforcementCount(map: MapDef, owner: Owner, pid: string): numb
   return Math.max(3, Math.floor(territoriesOf(owner, pid).length / 3)) + bonus;
 }
 
-/** Territories `from` can attack: neighbours held by anyone else, if `from` has 2+ armies. */
+/** Territories `from` can attack: neighbors held by anyone else, if `from` has 2+ armies. */
 export function attackTargets(
   map: MapDef,
   owner: Owner,

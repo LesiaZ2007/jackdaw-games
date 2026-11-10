@@ -12,3 +12,6 @@ export * from './celebrate';
 export * from './reactions';
 export * from './lobby-chat';
 export * from './clock';
+export * from './motion';
+export * from './format';
+export * from './util';

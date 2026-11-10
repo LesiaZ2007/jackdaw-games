@@ -40,7 +40,7 @@ function Engraving({ map }: { map: MapDef }) {
 }
 
 /**
- * One seat as a banner hung from a pole: the cloth in the army colour this seat will march under
+ * One seat as a banner hung from a pole: the cloth in the army color this seat will march under
  * (seat order sets it), the player's crest on it, their name on a ribbon. An empty seat is a
  * banner still furled; the host can tap its "+" to raise it for a computer general.
  */
@@ -162,7 +162,7 @@ function Muster({
 
 /**
  * Risk's seats in Jackdaw's lobby: the war council. Each player's banner hangs over a faint
- * engraving of the chosen board, in the colour their armies will be; open seats are furled.
+ * engraving of the chosen board, in the color their armies will be; open seats are furled.
  */
 export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
   seats,

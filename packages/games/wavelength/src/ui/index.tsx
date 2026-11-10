@@ -12,14 +12,13 @@ export const wavelengthUi: GameUi = {
   art: { band: 'purpure', field: 'bendy', glyph: 'dial' },
   about: {
     description:
-      'One of you can see where the target sits on a dial between two opposites, like Cold and Hot. You give a clue that lands right there, and your team turns the dial to where they think you mean. The closer it lands, the more you score, and the arguing over the needle is half the fun.',
+      'One of you can see where a target sits on a dial between two opposites, like Cold and Hot. You give a clue that lands right there, and your team turns the dial to where they think you mean. The closer it lands, the more you score, and arguing over the needle is half the fun.',
     steps: [
-      'The psychic sees a hidden target on the dial and picks one of two cards, like Underrated to Overrated.',
-      'They give a clue that sits at the target: “Pineapple on pizza”, maybe.',
+      'The psychic sees a hidden target and picks one of two cards, like Underrated to Overrated.',
+      'They give a clue that fits the target, such as “Pineapple on pizza”.',
       'Their team drags the dial to where they think the clue points and locks it in.',
-      'Teams: the other team calls whether the target is left or right of the needle, for a point.',
-      'The shutter opens: 4 for the bullseye, 3 or 2 for near it.',
-      'Teams take turns and the first to the goal wins. Together, everyone plays as one team for a set number of rounds.',
+      'In Teams, the other team calls whether the target is left or right of the needle, for a point.',
+      'The shutter opens: 4 for the bullseye, 3 or 2 nearby. First to the goal wins, or play set rounds together.',
     ],
     credit:
       'Wavelength is by Alex Hague, Justin Vickers and Wolfgang Warsch. Played here by its rules, with Jackdaw’s own spectrum cards.',

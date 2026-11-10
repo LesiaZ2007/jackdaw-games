@@ -15,12 +15,13 @@ export const secretHitlerUi: GameUi = {
   art: { band: 'gules', field: 'lozengy', glyph: 'ballot' },
   about: {
     description:
-      'Everyone is a Liberal or a Fascist, and the Fascists know who each other are. Each round a president and a chancellor pass a law from a deck that’s stacked against the Liberals, then everyone argues about what they were really dealt. Played the way secret-hitler.online does it, for up to 15 players (house rules above 10).',
+      'Everyone is a Liberal or a Fascist, and the Fascists know each other. Each round a president and a chancellor pass a law from a deck stacked against the Liberals, then everyone argues about what they were really dealt. Played the way secret-hitler.online does it, for up to 15 players (house rules above 10).',
     steps: [
       'The president nominates a chancellor and everyone votes Ja or Nein at the same time.',
-      'The president draws three policies and throws one away. The chancellor picks one of the other two to pass.',
-      'Some Fascist policies give the president a power: look at the deck, check someone’s party, pick the next president or shoot someone.',
-      'Liberals win with five Liberal policies or by shooting Hitler. Fascists win with six Fascist policies, or by getting Hitler elected chancellor after three are down.',
+      'The president draws three policies and discards one. The chancellor passes one of the other two.',
+      'Some Fascist policies give the president a power: peek at the deck, check a party, pick the next president or shoot.',
+      'Liberals win with five Liberal policies, or by shooting Hitler.',
+      'Fascists win with six Fascist policies, or by electing Hitler chancellor after three are down.',
     ],
     credit:
       'Secret Hitler by Goat, Wolf & Cabbage (Mike Boxleiter, Tommy Maranges and Max Temkin). Screens, art and animations from Secret Hitler Online by ShrimpCryptid (secret-hitler.online, github.com/ShrimpCryptid/Secret-Hitler-Online), adapted for Jackdaw. Both CC BY-NC-SA 4.0; not for sale.',

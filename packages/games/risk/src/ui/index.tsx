@@ -18,13 +18,13 @@ export const riskUi: GameUi = {
   art: { band: 'tenne', field: 'checky', glyph: 'banners' },
   about: {
     description:
-      'Build up armies, attack your neighbors and try to take over the map. Play the classic world map or our own island kingdom. With secret missions the first person to finish theirs wins, which keeps it to about an hour. World domination goes until one player owns everything.',
+      'Build up armies, attack your neighbors and take over the map. Play the classic world map or one of our own. With secret missions, the first player to finish theirs wins, which keeps a game to about an hour. World domination goes on until one player owns everything.',
     steps: [
-      'Territories are handed out at random and your armies are spread across them (or everyone places their own, all at once).',
-      'At the start of your turn you get new armies: a third of your territories (at least 3), plus extra for whole continents and traded-in cards.',
-      'Attack next door. Roll once at a time, or Blitz to fight until it’s settled. The defender wins ties.',
-      'Take at least one territory and you get a card. Three of a kind, or one of each, trade in for more armies.',
-      'Finish with one move between territories you hold that connect. Complete your mission, or take everything, to win.',
+      'Territories are dealt at random and armies spread across them (or everyone places theirs at once).',
+      'Each turn starts with new armies: a third of your territories (at least 3), plus continent and card bonuses.',
+      'Attack a neighbor. Roll one round at a time, or Blitz to fight it out. The defender wins ties.',
+      'Take at least one territory and you earn a card. Three of a kind, or one of each, trade in for armies.',
+      'End with one move between connected territories. Complete your mission, or take everything, to win.',
     ],
     credit: 'Based on Risk by Albert Lamorisse, with our own maps and pieces.',
     pictures: [

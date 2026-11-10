@@ -4,6 +4,7 @@ import type { GameUi } from '@jackdaw/ui';
 import { LobbySeats, MafiaTvLobby } from './lobby';
 import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
+import { TvReveal } from './tv-reveal';
 import { TvScreen } from './tv';
 
 /** Mafia (and Werewolf): catalog art, detail page and screens. It uses Jackdaw's lobby. */
@@ -61,4 +62,5 @@ export const mafiaUi: GameUi = {
   PlayerScreen,
   TvScreen,
   Reveal,
+  TvReveal,
 };

@@ -5,6 +5,7 @@ import { CodenamesLobby } from './lobby';
 import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
 import { TvScreen } from './tv';
+import { TvReveal } from './tv-reveal';
 import { CodenamesTvLobby } from './tv-lobby';
 import { WatchScreen } from './watch';
 
@@ -43,6 +44,7 @@ export const codenamesUi: GameUi = {
   TvScreen,
   WatchScreen,
   Reveal,
+  TvReveal,
   Lobby: CodenamesLobby,
   TvLobby: CodenamesTvLobby,
 };

@@ -400,7 +400,7 @@
     font-size: clamp(1.7rem, 9cqi, 3rem);
     overflow-wrap: break-word;
   }
-  @container (min-width: 340px) {
+  @container (min-width: 280px) {
     .shelf:not(.shelf--band) .shelf__mark {
       display: block;
       position: absolute;

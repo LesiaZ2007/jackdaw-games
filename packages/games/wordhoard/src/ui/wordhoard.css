@@ -1616,3 +1616,11 @@ button.wh-sq:focus-visible {
     z-index: 1;
   }
 }
+
+/* On a wide screen the played-word card sits over the board, clear of the scores and ledger. */
+@container game (min-width: 700px) and (orientation: landscape) {
+  .wh-mean--pop {
+    left: 30%;
+    width: min(52%, 440px);
+  }
+}

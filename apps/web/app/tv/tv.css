@@ -532,7 +532,7 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
 .tv-results {
   height: 100%;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-rows: auto auto 1fr auto;
   gap: 20px 80px;
   padding: 44px 88px 44px;
@@ -625,21 +625,22 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
 }
 /* The name keeps its room; a long role or stats line gives way first. */
 .tv-standing__name {
-  flex: 0 1 auto;
+  flex: none;
+  max-width: 50%;
   font-weight: 700;
-  min-width: min(8ch, 45%);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* it wraps rather than running on, so it can't push the reveal's column off the screen */
 .tv-standing__role {
-  flex: 1 1 0;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   color: var(--ink-2);
   font-size: 24px;
+  line-height: 1.15;
+}
+.tv-standings {
+  min-width: 0;
 }
 .tv-standing .tv-standing__outcome {
   margin-left: auto;

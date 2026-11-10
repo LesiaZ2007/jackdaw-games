@@ -41,7 +41,8 @@
   padding: var(--space-4) var(--space-4) var(--space-2);
 }
 .jd-sheet__title {
-  font-size: var(--step-3);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .jd-sheet__body {
   overflow: auto;
@@ -96,8 +97,36 @@
   background: var(--ink);
   color: var(--paper);
   font: 700 16px/1.35 var(--font-body);
-  box-shadow: 0 10px 30px -10px var(--shadow);
+  /* printed, not blurred: a hard offset like a chit's */
+  box-shadow: 0 4px 0 var(--shadow);
+  overflow-wrap: anywhere;
   animation: jd-toast-in 260ms var(--ease-out) both;
+}
+/* Sticky while polls fail; under any toast so a fresh message still shows over it. */
+.jd-strip {
+  position: fixed;
+  left: 50%;
+  top: calc(76px + env(safe-area-inset-top, 0px));
+  z-index: 55;
+  translate: -50% 0;
+  width: max-content;
+  max-width: min(92vw, 440px);
+  margin: 0;
+  padding: 8px 16px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  box-shadow: 0 4px 0 var(--shadow);
+  font: 800 16px/1.3 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.jd-strip--tv {
+  top: 24px;
+  max-width: none;
+  padding: 10px 28px;
+  font-size: 28px;
 }
 @keyframes jd-toast-in {
   from {
@@ -109,9 +138,6 @@
 .jd-recap {
   display: grid;
   gap: var(--space-3);
-}
-.jd-recap__title {
-  font-size: var(--step-2);
 }
 .jd-recap__list,
 .jd-recap__list ul {
@@ -142,7 +168,7 @@
   transform: rotate(45deg);
 }
 .jd-recap__n {
-  font: 700 13px var(--font-plaque);
+  font: 700 14px var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--ink-2);
@@ -169,13 +195,15 @@
   align-items: baseline;
 }
 .jd-recap__tag {
+  max-width: 100%;
   padding: 1px 8px;
-  font: 800 12px/1.4 var(--font-plaque);
+  font: 800 14px/1.3 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  white-space: nowrap;
+  /* a tag with a player's name in it wraps rather than spilling out of its border */
+  overflow-wrap: anywhere;
   border: 1.5px solid var(--ink);
-  border-radius: 999px;
+  border-radius: 0;
 }
 .jd-recap__event[data-tone] {
   padding-left: 10px;
@@ -221,7 +249,7 @@
   white-space: nowrap;
 }
 .jd-stats__table thead th {
-  font: 700 12px var(--font-plaque);
+  font: 700 14px var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--ink-2);

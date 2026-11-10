@@ -8,8 +8,13 @@ import { PollingTransport, TransportError } from './transport';
 export interface LobbyState {
   /** Latest snapshot for this device, or null until the first poll lands. */
   snapshot: LobbySnapshot | null;
-  /** The last transport or rule error (e.g. NOT_YOUR_TURN), for a toast. Cleared on success. */
+  /** The last error from something this device did (e.g. NOT_YOUR_TURN), for a toast. Cleared on success. */
   error: TransportError | null;
+  /**
+   * True while polls fail (no network, a server hiccup) and false again after the next one that
+   * gets through. Show one sticky "Reconnecting…" strip for this, not a toast per failed poll.
+   */
+  reconnecting: boolean;
   /** True once the server says the lobby doesn't exist (404). */
   missing: boolean;
   /** Send one message; resolves with the fresh snapshot, or null if the server refused it. */
@@ -25,6 +30,7 @@ export function useLobby(code: string, role: 'player' | 'display'): LobbyState {
   const [snapshot, setSnapshot] = useState<LobbySnapshot | null>(null);
   const [error, setError] = useState<TransportError | null>(null);
   const [missing, setMissing] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const transport = useRef<PollingTransport | null>(null);
 
   useEffect(() => {
@@ -39,8 +45,9 @@ export function useLobby(code: string, role: 'player' | 'display'): LobbyState {
       },
       (e) => {
         if (e.status === 404) setMissing(true);
-        else setError(e);
+        else setReconnecting(true);
       },
+      () => setReconnecting(false),
     );
     return () => {
       stop();
@@ -67,7 +74,7 @@ export function useLobby(code: string, role: 'player' | 'display'): LobbyState {
   }, []);
 
   const clearError = useCallback(() => setError(null), []);
-  return { snapshot, error, missing, send, clearError };
+  return { snapshot, error, reconnecting, missing, send, clearError };
 }
 
 /** Create a lobby as this device and return its code. Throws TransportError on failure. */

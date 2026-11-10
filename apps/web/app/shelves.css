@@ -1,13 +1,12 @@
 /*
  * The home page's game shelves (shelves.tsx): a contents line that sticks to the top, then one
- * shelf per kind. Wide screens pack the shelves into six columns; narrower ones stack them and
- * swipe each shelf sideways.
+ * shelf per kind, always in the same order. Wide screens give each shelf a row of six: its
+ * label, then its boxes. Narrower ones put the label on top and swipe the boxes sideways.
  */
 .shelves {
   --shelf-gap: 28px;
   display: grid;
-  gap: var(--space-6) var(--shelf-gap);
-  align-items: stretch;
+  gap: var(--space-6);
 }
 
 /* ── Contents line ───────────────────────────────────────────────────────── */
@@ -56,7 +55,6 @@
   letter-spacing: 0.08em;
   white-space: nowrap;
   cursor: pointer;
-  transition: color 160ms ease;
 }
 .shelf-index button::before {
   content: '';
@@ -67,7 +65,7 @@
   transform: rotate(45deg);
   transition: transform 260ms var(--ease-out);
 }
-/* the shelf in view: a bar in its colour under the name, and the diamond turned square */
+/* the shelf in view: a bar in its color under the name, and the diamond turned square */
 .shelf-index button::after {
   content: '';
   position: absolute;
@@ -107,7 +105,7 @@
   color: var(--ink-2);
   white-space: nowrap;
 }
-.shelf-index__count .cat-linkbtn {
+.shelf-index__count .jd-link {
   min-height: var(--tap);
   font: 700 15px var(--font-body);
   text-transform: none;
@@ -117,16 +115,28 @@
 /* ── One shelf ───────────────────────────────────────────────────────────── */
 .shelf {
   display: grid;
-  grid-template-rows: auto 1fr;
   gap: var(--space-4);
   min-width: 0;
   scroll-margin-top: calc(var(--tap) + var(--space-5));
 }
-.shelf__head {
+/* The ledge the boxes stand on. */
+.shelf::after {
+  content: '';
+  height: 10px;
+  margin-top: calc(-1 * var(--space-2));
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 0 5px 0 -1px var(--rule);
+  pointer-events: none;
+}
+
+/* The label: the kind's shield, its name and how many games it holds. */
+.shelf__label {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: var(--space-3);
+  min-width: 0;
   padding-bottom: var(--space-3);
   border-bottom: 5px double var(--tint);
 }
@@ -145,61 +155,26 @@
   min-width: 0;
 }
 .shelf__titles h3 {
-  margin: 0;
-  font: 800 var(--step-2) / 1 var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: var(--step-2);
 }
 .shelf__titles p {
   margin: 4px 0 0;
   color: var(--ink-2);
   font-size: var(--step--1);
 }
-.shelf__all {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: var(--tap);
-  padding-left: var(--space-2);
-  color: var(--ink);
+.shelf__mark {
+  display: none;
+}
+.shelf__count {
+  margin: 0;
   font: 700 15px var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  text-decoration: none;
+  color: var(--ink-2);
   white-space: nowrap;
 }
-.shelf__all span {
-  font-size: 24px;
-  line-height: 1;
-  color: var(--tint);
-  transition: transform 200ms var(--ease-out);
-}
-.shelf__all:hover span {
-  transform: translateX(4px);
-}
 
-/* The ledge the boxes stand on. */
-.shelf__case {
-  position: relative;
-  display: flex;
-  /* paired shelves share a row, so their boxes stand the same height */
-  align-items: stretch;
-  padding-bottom: 14px;
-}
-.shelf__case::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 10px;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  box-shadow: 0 5px 0 -1px var(--rule);
-  pointer-events: none;
-}
 .shelf__row {
-  flex: 1;
   min-width: 0;
   list-style: none;
   margin: 0;
@@ -211,67 +186,6 @@
 }
 .shelf__row li {
   min-width: 0;
-}
-/* Shelves list kinds already, so the covers don't each repeat it. */
-.shelf__row .jd-cover__kind {
-  display: none;
-}
-
-/*
- * A bookend: closes the gap after a shelf's last box on wide screens (uneven counts can't
- * always pair up), printed in the shelf's colour with its glyph. It links to the whole kind,
- * like "All 4" in the heading, so it stays out of the tab order.
- */
-.shelf__bookend {
-  display: none;
-}
-.shelf__bookend a {
-  position: relative;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: var(--space-4);
-  height: 100%;
-  min-height: 200px;
-  padding: var(--space-5) var(--space-4);
-  color: var(--on-fill);
-  text-decoration: none;
-  background-color: var(--tint);
-  border: 2px solid var(--ink);
-  /* the field shows through faintly, so it reads as print rather than a box to open */
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent 0 14px,
-    color-mix(in srgb, var(--on-fill) 9%, transparent) 14px 16px
-  );
-  box-shadow:
-    inset 0 0 0 5px var(--tint),
-    inset 0 0 0 6px var(--on-fill);
-  transition: filter 200ms ease;
-}
-.shelf__bookend a:hover {
-  filter: brightness(1.08);
-}
-.shelf__bookend-seal {
-  display: grid;
-  place-items: center;
-  width: 92px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 3px solid var(--on-fill);
-  box-shadow:
-    0 0 0 4px var(--tint),
-    0 0 0 5px var(--on-fill);
-}
-.shelf__bookend-seal svg {
-  width: 58px;
-  height: 58px;
-}
-.shelf__bookend-label {
-  font: 800 16px / 1.2 var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  text-align: center;
 }
 
 /* Boxes rise onto a shelf the first time it comes into view. */
@@ -291,35 +205,31 @@
 /* ── Draw a game ─────────────────────────────────────────────────────────── */
 .shelf-draw {
   --band: var(--sable);
-  --i: 2;
+  --i: 1;
   display: grid;
-  grid-template-rows: auto 1fr;
-  gap: var(--space-4);
+  grid-template-columns: min(30%, 250px) 1fr;
+  align-items: center;
+  gap: var(--shelf-gap);
   min-width: 0;
 }
 .shelf-draw__text {
-  grid-row: 1;
-  align-self: end;
-  padding-bottom: var(--space-3);
-  border-bottom: 5px double var(--rule);
+  display: grid;
+  justify-items: start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.shelf-draw__text h3 {
+  font-size: var(--step-2);
 }
 .shelf-draw__text p {
   margin: 0;
+  max-width: 34ch;
   color: var(--ink-2);
-  font-size: var(--step--1);
 }
-.shelf-draw__text .shelf-draw__title {
-  color: var(--ink);
-  font: 800 var(--step-1) / 1.1 var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.shelf-draw__text .cat-linkbtn {
-  min-height: var(--tap);
-  padding: 0;
+.shelf-draw__text .jd-plaque {
+  margin-top: var(--space-2);
 }
 .shelf-draw__box {
-  grid-row: 2;
   position: relative;
   display: flex;
   padding: 4px 8px 24px 0;
@@ -339,9 +249,6 @@
   flex: 1;
   display: flex;
   animation: shelf-turn 480ms var(--ease-out);
-}
-.shelf-draw__face .jd-cover__kind {
-  display: none;
 }
 .shelf-draw__back {
   --edge: 7px;
@@ -440,51 +347,108 @@
   }
 }
 
-/* ── Wide: shelves packed into six columns ───────────────────────────────── */
+/* ── Wide: each shelf a row of six, its label first ──────────────────────── */
 @media (min-width: 1200px) {
-  .shelves {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
   .shelf,
   .shelf-draw {
-    grid-column: span var(--span);
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: var(--shelf-gap);
   }
+  .shelf::after {
+    grid-column: 1 / -1;
+    margin-top: calc(-1 * var(--space-3));
+  }
+  /* the boxes sit in the shelf's own columns, beside the label */
   .shelf__row {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(var(--span), minmax(0, 1fr));
+    display: contents;
   }
-  .shelf__bookend {
-    display: block;
+  .shelf__row > li {
+    /* room for the cover's box edge, as the row's padding gives on narrower screens */
+    padding: 4px 8px 10px 0;
   }
-  .shelf-draw--wide {
-    grid-template-columns: calc((100% - (var(--span) - 1) * var(--shelf-gap)) / var(--span)) 1fr;
-    column-gap: var(--shelf-gap);
+  /* A printed divider card: the kind's color down its spine, its shield, name and count. */
+  .shelf__label {
+    grid-column: span var(--label-span);
+    grid-template-columns: minmax(0, 1fr);
+    align-content: space-between;
+    align-items: start;
+    gap: var(--space-4);
+    margin: 4px 0 10px;
+    padding: var(--space-5) var(--space-4) var(--space-4) calc(var(--space-4) + 14px);
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    box-shadow:
+      inset 12px 0 0 var(--tint),
+      inset 14px 0 0 var(--ink);
+    position: relative;
+    overflow: hidden;
+    container-type: inline-size;
   }
-  .shelf-draw--wide .shelf-draw__text {
-    grid-row: 2;
-    grid-column: 2;
-    align-self: center;
-    border: 0;
+  .shelf__label > * {
+    position: relative;
+    z-index: 1;
   }
-  .shelf-draw--wide .shelf-draw__box {
+  .shelf__shield {
+    width: 60px;
+    height: 68px;
+  }
+  .shelf__shield svg {
+    width: 36px;
+    height: 36px;
+  }
+  .shelf__titles h3 {
+    font-size: clamp(1.7rem, 9cqi, 3rem);
+    overflow-wrap: break-word;
+  }
+  @container (min-width: 340px) {
+    .shelf:not(.shelf--band) .shelf__mark {
+      display: block;
+      position: absolute;
+      z-index: 0;
+      top: 50%;
+      right: 4%;
+      height: 74%;
+      aspect-ratio: 1;
+      translate: 0 -50%;
+      color: var(--tint);
+      opacity: 0.16;
+    }
+    .shelf__mark svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+  .shelf__titles p {
+    margin-top: var(--space-2);
+  }
+  .shelf__count {
+    padding-top: var(--space-3);
+    border-top: 5px double var(--tint);
+  }
+  /* a kind that fills its rows gets its label as a band across the top instead */
+  .shelf--band .shelf__label {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    padding-block: var(--space-3);
+    margin-bottom: 0;
+  }
+  .shelf--band .shelf__count {
+    padding-top: 0;
+    border-top: 0;
+  }
+  .shelf-draw__box {
     grid-column: 1;
+  }
+  .shelf-draw__text {
+    grid-column: 2 / span 3;
   }
 }
 
-/* ── Narrower: stacked shelves, each swiping sideways ────────────────────── */
+/* ── Narrower: the boxes swipe sideways ──────────────────────────────────── */
 @media (max-width: 1199.98px) {
-  .shelf {
-    order: var(--order, 0);
-  }
-  .shelf-draw {
-    order: 9999;
-  }
-  .shelf__case,
-  .shelf-draw {
-    margin-inline: calc(-1 * var(--gutter));
-  }
   .shelf__row {
     grid-auto-columns: min(30%, 250px);
+    margin-inline: calc(-1 * var(--gutter));
     padding-inline: var(--gutter);
     scroll-padding-inline: var(--gutter);
     overflow-x: auto;
@@ -497,23 +461,6 @@
   }
   .shelf__row li {
     scroll-snap-align: start;
-  }
-  /* the draw box: a box on its own shelf, the words beside it */
-  .shelf-draw {
-    grid-template-columns: min(30%, 250px) 1fr;
-    grid-template-rows: auto;
-    column-gap: var(--shelf-gap);
-    padding-inline: var(--gutter);
-  }
-  .shelf-draw__box {
-    grid-row: 1;
-    grid-column: 1;
-  }
-  .shelf-draw__text {
-    grid-row: 1;
-    grid-column: 2;
-    align-self: center;
-    border: 0;
   }
 }
 @media (max-width: 719.98px) {
@@ -548,5 +495,10 @@
   .shelf-draw__face,
   .shelf-draw__back.is-shuffling {
     animation: none;
+  }
+  .shelf-index button::before,
+  .shelf-index button::after,
+  .shelf-draw__back {
+    transition: none;
   }
 }

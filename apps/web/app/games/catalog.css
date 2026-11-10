@@ -34,20 +34,6 @@
     display: none;
   }
 }
-.cat-linkbtn {
-  appearance: none;
-  background: none;
-  border: 0;
-  padding: 6px 2px;
-  font: inherit;
-  font-weight: 700;
-  color: var(--ink);
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  text-decoration-color: var(--rule);
-}
-.cat-linkbtn:focus-visible,
 .cat-select:focus-visible,
 .cat-pics--empty:focus-visible {
   outline: 3px solid var(--or);
@@ -133,7 +119,7 @@
   letter-spacing: 0.08em;
   color: var(--ink-2);
 }
-.cat-count .cat-linkbtn {
+.cat-count .jd-link {
   /* the row is already a tap tall, so the full height costs nothing */
   min-height: var(--tap);
   font: 700 15px var(--font-body);
@@ -373,13 +359,13 @@
   color: var(--ink-2);
   text-align: center;
 }
-.cat-dock__note .cat-linkbtn {
+.cat-dock__note .jd-link {
   position: relative;
   font-size: 15px;
   padding: 0;
 }
 /* A tap-sized hit area round the inline link, without changing the line. */
-.cat-dock__note .cat-linkbtn::after {
+.cat-dock__note .jd-link::after {
   content: '';
   position: absolute;
   left: -8px;

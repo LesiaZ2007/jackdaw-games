@@ -174,7 +174,7 @@ export function OptionsPanel({
                 )
               ) : type === 'enum' && f.options ? (
                 editable ? (
-                  <span className="options__choices" role="radiogroup">
+                  <span className="options__choices" role="radiogroup" aria-label={label(key)}>
                     {f.options.map((o) => (
                       <button
                         key={o}

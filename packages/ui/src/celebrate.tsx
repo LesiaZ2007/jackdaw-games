@@ -11,6 +11,7 @@ import {
 import type { Avatar } from '@jackdaw/engine';
 import { Icon } from './icons';
 import { Token } from './pieces';
+import { cx } from './util';
 import './celebrate.css';
 
 /**
@@ -27,7 +28,6 @@ import './celebrate.css';
  */
 export type Outcome = 'win' | 'loss' | 'draw' | 'reveal';
 
-const cx = (...names: (string | false | null | undefined)[]) => names.filter(Boolean).join(' ');
 const vars = (v: Record<string, string | number>) => v as CSSProperties;
 
 export interface VerdictProps {

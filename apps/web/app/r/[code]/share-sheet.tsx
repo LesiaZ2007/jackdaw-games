@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Chits, Icon, Plaque, Sheet } from '@jackdaw/ui';
 import { QrCode } from '@/lib/qr-code';
 import { siteHost, siteUrl } from '@/lib/qr';
@@ -17,6 +17,14 @@ export function ShareSheet({
   code: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Don't leave a timer behind when the sheet closes or the lobby unmounts.
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
   // The short link (/QGYR) redirects to the lobby, and makes a smaller QR code.
   const link = `${siteUrl()}/${code}`;
 
@@ -24,7 +32,8 @@ export function ShareSheet({
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       setCopied(false);
     }
@@ -45,6 +54,10 @@ export function ShareSheet({
             <Icon.copy />
             {copied ? 'Link copied' : 'Copy link'}
           </Plaque>
+          {/* Always mounted, so the change is announced */}
+          <span className="sr-only" role="status" aria-live="polite">
+            {copied ? 'Link copied' : ''}
+          </span>
           <Link className="jd-plaque jd-plaque--small" href={`/tv/${code}`} target="_blank">
             <Icon.tv />
             Show on TV

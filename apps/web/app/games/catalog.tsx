@@ -56,7 +56,7 @@ export function Catalog() {
             {filters.players ? ` for ${filters.players} players` : ''}
           </span>
           {hasFilters(filters) && (
-            <button type="button" className="cat-linkbtn" onClick={() => update(NO_FILTERS)}>
+            <button type="button" className="jd-link" onClick={() => update(NO_FILTERS)}>
               Clear filters
             </button>
           )}
@@ -64,7 +64,7 @@ export function Catalog() {
         {shown.length === 0 ? (
           <p className="cat-empty">
             No games match those filters.{' '}
-            <button type="button" className="cat-linkbtn" onClick={() => update(NO_FILTERS)}>
+            <button type="button" className="jd-link" onClick={() => update(NO_FILTERS)}>
               Show every game
             </button>
           </p>

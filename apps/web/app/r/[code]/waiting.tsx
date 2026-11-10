@@ -255,7 +255,7 @@ export function Waiting({
       {!themed && (
         <section className="waiting__table" aria-labelledby="at-table">
           <div className="section-head">
-            <h2 id="at-table" className="jd-display">
+            <h2 id="at-table" className="jd-h2">
               At the table
             </h2>
             <span>
@@ -294,7 +294,7 @@ export function Waiting({
               {isHost && count > 1 && (
                 <button
                   type="button"
-                  className="home-link waiting__manage"
+                  className="jd-link waiting__manage"
                   onClick={() => setManaging(true)}
                 >
                   Manage players
@@ -317,13 +317,13 @@ export function Waiting({
       {!themed && (
         <section className="waiting__game" aria-labelledby="next-game">
           <div className="section-head">
-            <h2 id="next-game" className="jd-display">
+            <h2 id="next-game" className="jd-h2">
               {showPicker ? 'Pick a game' : 'Next up'}
             </h2>
             <span>
               {isHost ? (
                 showPicker && entry ? (
-                  <button type="button" className="home-link" onClick={() => setPicking(false)}>
+                  <button type="button" className="jd-link" onClick={() => setPicking(false)}>
                     Keep {entry.meta.name}
                   </button>
                 ) : (
@@ -371,7 +371,7 @@ export function Waiting({
               </li>
             ))}
           </ul>
-          <button type="button" className="home-link" onClick={() => onOpen('stats')}>
+          <button type="button" className="jd-link" onClick={() => onOpen('stats')}>
             All game stats
           </button>
         </section>

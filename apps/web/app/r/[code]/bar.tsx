@@ -25,6 +25,7 @@ export function LobbyBar({
 }) {
   return (
     <header className="lobby-bar">
+      <h1 className="sr-only">Lobby {code}</h1>
       <Link href="/" className="lobby-bar__home" aria-label="Jackdaw home">
         <BirdMark width={40} height={40} weight={3} />
       </Link>

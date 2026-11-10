@@ -30,7 +30,7 @@
 .jd-lchat.is-open {
   transform: none;
   visibility: visible;
-  box-shadow: 0 0 60px var(--shadow);
+  box-shadow: 0 20px 50px -24px var(--shadow);
 }
 .jd-lchat__scrim {
   position: fixed;
@@ -57,7 +57,7 @@
   border-radius: var(--lc-radius, 0);
   background: none;
   color: inherit;
-  font: 700 15px var(--font-body);
+  font: 700 18px var(--font-body);
   cursor: pointer;
 }
 .jd-lchat__log {
@@ -77,16 +77,29 @@
 .jd-lchat__line {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.4;
+}
+.jd-lchat__line {
+  --lc-name-default: var(--lc-tint, var(--lc-ink-v));
+}
+:root[data-theme='dark'] .jd-lchat__line {
+  --lc-name-default: color-mix(in srgb, var(--lc-tint, var(--lc-ink-v)) 40%, var(--lc-ink-v));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .jd-lchat__line {
+    --lc-name-default: color-mix(in srgb, var(--lc-tint, var(--lc-ink-v)) 40%, var(--lc-ink-v));
+  }
 }
 .jd-lchat__line.is-grouped {
   margin-top: -5px;
 }
 .jd-lchat__name {
   display: block;
-  color: var(--lc-name, var(--lc-ink-v));
-  font: 800 15px/1.3 var(--lc-name-font, var(--font-plaque));
+  /* --lc-name wins, then a game's own --lc-name-<tint> (passed in as --lc-name-hook), then the
+     tint itself, lifted toward the text color in dark (tints are dark inks) */
+  color: var(--lc-name, var(--lc-name-hook, var(--lc-name-default, var(--lc-ink-v))));
+  font: 800 18px/1.3 var(--lc-name-font, var(--font-plaque));
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
@@ -99,7 +112,7 @@
   padding-left: 10px;
   border-left: 2px solid var(--lc-rule-v);
   color: var(--lc-dim-v);
-  font-size: 15px;
+  font-size: 18px;
 }
 .jd-lchat__form {
   display: flex;
@@ -114,7 +127,7 @@
   border-radius: var(--lc-radius, 0);
   background: var(--lc-field, transparent);
   color: inherit;
-  font: 400 16px var(--font-body);
+  font: 400 18px var(--font-body);
 }
 .jd-lchat__send {
   min-height: 48px;
@@ -123,7 +136,7 @@
   border-radius: var(--lc-radius, 0);
   background: var(--lc-ink-v);
   color: var(--lc-bg-v);
-  font: 800 16px var(--font-plaque);
+  font: 800 18px var(--font-plaque);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   cursor: pointer;

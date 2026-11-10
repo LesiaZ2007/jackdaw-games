@@ -6,6 +6,7 @@
   "description": "Avalon, linked: Jackdaw is the lobby and the live Avalon app runs the game (docs/avalon/LINK.md)",
   "exports": {
     ".": "./src/index.ts",
+    "./meta": "./src/meta.ts",
     "./link": "./src/link.ts",
     "./ui": "./src/ui/index.tsx"
   },

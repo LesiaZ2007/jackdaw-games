@@ -6,6 +6,7 @@
   "description": "Letterhoard: build words on a 15 by 15 board, 2 to 4 players",
   "exports": {
     ".": "./src/index.ts",
+    "./meta": "./src/meta.ts",
     "./ui": "./src/ui/index.tsx"
   },
   "imports": {

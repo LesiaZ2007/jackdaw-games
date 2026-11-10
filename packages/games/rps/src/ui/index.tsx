@@ -21,11 +21,11 @@ export const rpsUi: GameUi = {
     pictures: [
       {
         src: '/games/rps/game-phone.png',
-        alt: 'Rock Paper Scissors on a phone: who has picked, the scores, last round’s throws and the three buttons.',
+        alt: 'Rock Paper Scissors on a phone: everyone around a printed ring with their throws face down, the beats diagram in the middle, the scores, and the three throw discs.',
       },
       {
         src: '/games/rps/desktop.png',
-        alt: 'Rock Paper Scissors on a laptop: the round, the scores, last round’s throws and the three buttons.',
+        alt: 'Rock Paper Scissors on a laptop: the ring on the left, and the scores and the three throw discs beside it.',
         desktop: true,
       },
     ],

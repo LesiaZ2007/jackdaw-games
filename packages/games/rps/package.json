@@ -6,6 +6,7 @@
   "description": "Rock Paper Scissors: the Phase 1 test game (simultaneous secret picks)",
   "exports": {
     ".": "./src/index.ts",
+    "./meta": "./src/meta.ts",
     "./ui": "./src/ui/index.tsx"
   },
   "scripts": {

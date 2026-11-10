@@ -57,11 +57,11 @@ export const solitaireUi: GameUi = {
     pictures: [
       {
         src: '/games/solitaire/game-phone.png',
-        alt: 'Solitaire on a phone: the other players and their cards to go along the top, the shared middle printed in green with the aces on it, your stock and waste, and your seven columns.',
+        alt: 'Solitaire on a phone: the other players and their cards to go along the top, the shared middle on green baize with its empty slots marked, your stock and waste, and your seven columns.',
       },
       {
         src: '/games/solitaire/desktop.png',
-        alt: 'Solitaire on a TV: the shared middle across the top and every player’s layout below, each deck’s backs in its owner’s color, with their cards to go.',
+        alt: 'Solitaire on a laptop: the shared middle across the top, your seven columns large below, and your stock and the other players beside them.',
         desktop: true,
       },
     ],

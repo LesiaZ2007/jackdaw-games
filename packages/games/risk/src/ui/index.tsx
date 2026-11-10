@@ -30,11 +30,11 @@ export const riskUi: GameUi = {
     pictures: [
       {
         src: '/games/risk/game-phone.png',
-        alt: 'Risk on a phone: the map zoomed in, a territory picked to attack, and Roll and Blitz at the bottom.',
+        alt: 'Risk on a phone: the map zoomed in on a few territories with their armies, and whose turn it is.',
       },
       {
         src: '/games/risk/desktop.png',
-        alt: 'Risk on a laptop: the whole map with every army, and each player’s lands, armies and cards.',
+        alt: 'Risk on a laptop: the whole map with every army, and whose turn it is beside it.',
         desktop: true,
       },
     ],

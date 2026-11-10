@@ -24,11 +24,11 @@ export const battleshipUi: GameUi = {
     pictures: [
       {
         src: '/games/battleship/game-phone.png',
-        alt: 'Battleship on a phone: Wren’s fleet on a pale printed sea, each ship its own silhouette, carrier, battleship, cruiser, submarine and destroyer in heraldic colors.',
+        alt: 'Battleship on a phone: laying your fleet on a pale printed sea, the five ships in their dock below, with Horizontal and Fleet ready.',
       },
       {
         src: '/games/battleship/tv.png',
-        alt: 'Battleship on a TV: both charts on pale water, a large Sunk stamp, and the ship that went down drawn transparent and tilted on its squares.',
+        alt: 'Battleship on a TV: both charts on pale water side by side, Wren still placing and the bot’s fleet placed.',
         desktop: true,
       },
     ],

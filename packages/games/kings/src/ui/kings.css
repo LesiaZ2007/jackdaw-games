@@ -204,25 +204,12 @@
     transform: translateY(0) scale(1);
   }
 }
-.kg-king__disc {
-  fill: var(--kg-paper);
-  stroke: currentColor;
-  stroke-width: 2;
-}
-.kg-king__body {
-  fill: currentColor;
-  stroke: currentColor;
-  stroke-width: 1.4;
-  stroke-linejoin: round;
-}
-.kg-king.is-hollow .kg-king__body {
+.kg-king.is-hollow path:nth-child(2) {
   fill: none;
-  stroke-width: 2;
 }
-.kg-king.is-gold .kg-king__body {
+.kg-king.is-gold path:nth-child(2) {
   fill: var(--kg-or);
   stroke: var(--kg-ink);
-  stroke-width: 1.8;
 }
 @media (hover: hover) and (pointer: fine) {
   .kg-board.is-live .kg-cell:hover {

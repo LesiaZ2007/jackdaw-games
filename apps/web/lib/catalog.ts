@@ -7,6 +7,7 @@ import { catanUi } from '@jackdaw/game-catan/ui';
 import { codenamesUi } from '@jackdaw/game-codenames/ui';
 import { kingsUi } from '@jackdaw/game-kings/ui';
 import { mafiaUi } from '@jackdaw/game-mafia/ui';
+import { cambioUi } from '@jackdaw/game-cambio/ui';
 import { unoUi } from '@jackdaw/game-uno/ui';
 import { pokerUi } from '@jackdaw/game-poker/ui';
 import { riskUi } from '@jackdaw/game-risk/ui';
@@ -49,6 +50,7 @@ export const gameUis: Record<string, GameUi> = {
   codenames: codenamesUi,
   kings: kingsUi,
   mafia: mafiaUi,
+  cambio: cambioUi,
   uno: unoUi,
   poker: pokerUi,
   risk: riskUi,

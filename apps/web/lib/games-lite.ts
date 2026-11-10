@@ -2,6 +2,7 @@ import type { GameCategory, GameMeta } from '@jackdaw/engine';
 import { meta as avalon } from '@jackdaw/game-avalon/meta';
 import { meta as backgammon } from '@jackdaw/game-backgammon/meta';
 import { meta as battleship } from '@jackdaw/game-battleship/meta';
+import { meta as cambio } from '@jackdaw/game-cambio/meta';
 import { meta as catan } from '@jackdaw/game-catan/meta';
 import { meta as codenames } from '@jackdaw/game-codenames/meta';
 import { meta as fandango } from '@jackdaw/game-fandango/meta';
@@ -128,6 +129,7 @@ const BOXES: [GameMeta, Field, string][] = [
   [avalon, 'wavy', 'avalon'],
   [backgammon, 'paly', 'tables'],
   [battleship, 'fretty', 'ship'],
+  [cambio, 'wavy', 'peek'],
   [catan, 'semee', 'hexes'],
   [codenames, 'checky', 'grid'],
   [fandango, 'semee', 'sunmoon'],

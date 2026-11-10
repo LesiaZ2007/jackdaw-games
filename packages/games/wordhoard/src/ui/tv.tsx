@@ -2,8 +2,8 @@
 
 import { Token, useMoment, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { Move, WordhoardTableView } from '../rules';
-import { MeaningCard } from './define';
-import { BoardGrid, Tile } from './pieces';
+import { Ledger, Pouch } from './hoard';
+import { BoardFrame, BoardGrid, Legend, Tile } from './pieces';
 import { Scores, TurnClock, moveText, sideName } from './player';
 import './wordhoard.css';
 
@@ -21,55 +21,66 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
   const byId = new Map(players.map((p) => [p.id, p]));
   const name = (id: string) => byId.get(id)?.name ?? 'Someone';
   const last = t.moves[t.moves.length - 1];
-  const lastPlay = [...t.moves].reverse().find((m) => m.kind === 'play');
   // Only a move that lands while the TV is watching animates; a refresh just shows the board.
   const [fresh, dismiss] = useMoment(t.moves.length);
   const landing = fresh !== null && last ? last : null;
   return (
     <div className="wh wh--tv">
-      <div className="wh-tv__board">
-        <BoardGrid
-          board={t.board}
-          recent={last?.cells}
-          dropIn={landing?.kind === 'play' ? DROP_GAP : undefined}
-        />
-        {landing && (
-          <MoveCard
-            key={t.moves.length}
-            move={landing}
-            player={byId.get(landing.player)}
-            text={
-              landing.kind === 'play'
-                ? [
-                    name(landing.player),
-                    ...(landing.words ?? [])
-                      .slice(1)
-                      .map((w, i) => `${i === 0 ? 'also ' : ''}${w.word}`),
-                  ].join(', ')
-                : moveText(landing, name)
-            }
-            onDone={dismiss}
-          />
-        )}
+      <div className="wh-tv__left">
+        <div className="wh-tv__board">
+          <BoardFrame>
+            <BoardGrid
+              board={t.board}
+              recent={last?.cells}
+              dropIn={landing?.kind === 'play' ? DROP_GAP : undefined}
+            />
+          </BoardFrame>
+          {landing && (
+            <MoveCard
+              key={t.moves.length}
+              move={landing}
+              player={byId.get(landing.player)}
+              text={
+                landing.kind === 'play'
+                  ? [
+                      name(landing.player),
+                      ...(landing.words ?? [])
+                        .slice(1)
+                        .map((w, i) => `${i === 0 ? 'also ' : ''}${w.word}`),
+                    ].join(', ')
+                  : moveText(landing, name)
+              }
+              onDone={dismiss}
+            />
+          )}
+        </div>
+        <div className="wh-tv__hoard">
+          <Pouch count={t.bagCount} />
+          <Legend />
+        </div>
       </div>
       <aside className="wh-tv__side">
         <h2 className="jd-display">
           {t.over ? 'Final scores' : `${sideName(t, t.turn, name)} to play`}
           {!t.over && <TurnClock at={t.turnBy} now={now} />}
         </h2>
-        <Scores t={t} players={players} reactions={reactions} />
-        <p className="wh-tv__bag">
-          {t.bagCount} tile{t.bagCount === 1 ? '' : 's'} in the bag
-        </p>
-        <MeaningCard move={lastPlay} who={lastPlay ? name(lastPlay.player) : ''} />
-        <ol className="wh-tv__moves" aria-label="Latest plays">
-          {t.moves
-            .slice(-4)
-            .reverse()
-            .map((m, i) => (
-              <li key={t.moves.length - i}>{moveText(m, name)}</li>
-            ))}
-        </ol>
+        <Scores
+          t={t}
+          players={players}
+          reactions={reactions}
+          gain={
+            landing?.kind === 'play'
+              ? {
+                  player: landing.player,
+                  n: landing.score,
+                  key: t.moves.length,
+                  delay: (landing.cells?.length ?? 1) * DROP_GAP + 520,
+                }
+              : undefined
+          }
+        />
+        {last && last.kind !== 'play' && <p className="wh-tv__last">{moveText(last, name)}</p>}
+        <Ledger moves={t.moves} players={players} limit={8} tokenSize={52} />
       </aside>
     </div>
   );

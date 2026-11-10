@@ -80,7 +80,10 @@ export function outOfOrder(p: Puzzle, path: readonly number[]): Set<number> {
   return bad;
 }
 
-/** Line and trail inks; red is left out so it can't be mistaken for a number out of order. */
+/**
+ * Per-puzzle inks from before the pen-and-page look. The board no longer uses them (every line is
+ * the one pen ink, `--zp-ink-pen`); kept because the tests still pin their spread.
+ */
 const INKS: [line: string, trail: string][] = [
   ['#e0612a', '#f5d8c4'],
   ['#2f6fd6', '#d7e3f7'],
@@ -144,7 +147,10 @@ export function Board({
   const adj = links(puzzle);
   const on = new Set(path);
   const bad = outOfOrder(puzzle, path);
-  const ink = inkOf(puzzle);
+  // How many numbers the line has reached in order: those are "passed"; the next one is ringed.
+  const order = new Map(puzzle.dots.map((c, k) => [c, k]));
+  let reached = 0;
+  for (const cell of path) if (order.get(cell) === reached) reached++;
   const drag = useRef<{ path: number[]; last: number } | null>(null);
   const [pen, setPen] = useState<{ x: number; y: number } | null>(null);
   const wallsOf = (i: number) => {
@@ -234,12 +240,37 @@ export function Board({
     }
   }
 
+  // The nib points the way the line last went (or where the tip is leaning while drawing).
+  const prev = path.length > 1 ? path[path.length - 2]! : undefined;
+  let heading = { x: 1, y: 0 };
+  if (tip.x !== ex || tip.y !== ey) heading = { x: tip.x - ex, y: tip.y - ey };
+  else if (prev !== undefined)
+    heading = { x: ex - ((prev % size) + 0.5), y: ey - (Math.floor(prev / size) + 0.5) };
+  const angle = (Math.atan2(heading.y, heading.x) * 180) / Math.PI;
+
+  const dot = (cell: number, k: number) => {
+    const x = (cell % size) + 0.5;
+    const y = Math.floor(cell / size) + 0.5;
+    return (
+      <g
+        key={cell}
+        className={`zp-dot${bad.has(cell) ? ' is-bad' : ''}${k < reached ? ' is-past' : ''}${k === reached ? ' is-next' : ''}`}
+      >
+        {k === reached && <circle className="zp-dot__ring" cx={x} cy={y} r={0.44} />}
+        <circle className="zp-dot__disc" cx={x} cy={y} r={0.36} />
+        <text x={x} y={y} dy="0.035em">
+          {k + 1}
+        </text>
+      </g>
+    );
+  };
+
   return (
     <div
       className={`zp-board${solved ? ' is-solved' : ''}${onPath ? ' is-live' : ''}${hint?.mistake ? ' is-mistake' : ''}${className ? ` ${className}` : ''}`}
       role="grid"
       aria-label={label}
-      style={vars({ '--n': size, '--zp-line': ink.line, '--zp-trail': ink.trail })}
+      style={vars({ '--n': size })}
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
@@ -263,25 +294,23 @@ export function Board({
         />
       ))}
       <svg className="zp-ink" viewBox={`0 0 ${size} ${size}`} aria-hidden="true">
+        {puzzle.dots.map((cell, k) => (k < reached ? dot(cell, k) : null))}
         {(path.length > 1 || tip.x !== ex || tip.y !== ey) && (
-          <polyline className="zp-line" points={`${points} ${tip.x},${tip.y}`} />
+          <>
+            <polyline className="zp-line" points={`${points} ${tip.x},${tip.y}`} />
+            <polyline className="zp-line-core" points={`${points} ${tip.x},${tip.y}`} />
+          </>
         )}
-        {end !== undefined && <circle className="zp-pen" cx={tip.x} cy={tip.y} r={0.22} />}
         {puzzle.walls.map(([a, b]) => (
           <line key={`${a}-${b}`} className="zp-wall" {...wallLine(size, a, b)} />
         ))}
-        {puzzle.dots.map((cell, k) => {
-          const x = (cell % size) + 0.5;
-          const y = Math.floor(cell / size) + 0.5;
-          return (
-            <g key={cell} className={`zp-dot${bad.has(cell) ? ' is-bad' : ''}`}>
-              <circle cx={x} cy={y} r={0.33} />
-              <text x={x} y={y} dy="0.035em">
-                {k + 1}
-              </text>
-            </g>
-          );
-        })}
+        {puzzle.dots.map((cell, k) => (k < reached ? null : dot(cell, k)))}
+        {end !== undefined && (
+          <g className="zp-nib" transform={`translate(${tip.x} ${tip.y}) rotate(${angle})`}>
+            <path d="M0 0L-0.2 -0.14H-0.46Q-0.53 0 -0.46 0.14H-0.2Z" />
+            <path className="zp-nib__slit" d="M-0.04 0H-0.32" />
+          </g>
+        )}
       </svg>
     </div>
   );

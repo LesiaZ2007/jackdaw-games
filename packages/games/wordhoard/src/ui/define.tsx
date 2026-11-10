@@ -8,41 +8,60 @@ import { Tile } from './pieces';
 /** Meanings already fetched on this device, by word. */
 const meanings = new Map<string, Definition>();
 
+/** Lookups on their way, by the words asked, so a card and the ledger share one request. */
+const inflight = new Map<string, Promise<void>>();
+
+/** A meaning already fetched on this device, if any (never asks). */
+export function cachedMeaning(word: string): Definition | undefined {
+  return meanings.get(word);
+}
+
 /**
  * What the words of a play mean, from the server (which asks the dictionaries and caches the
  * answer). Null while it's on its way; a word nobody knows comes back with no senses.
  */
-function useDefinitions(words: string[]): Definition[] | null {
+export function useDefinitions(words: string[]): Definition[] | null {
   const key = words.join(',');
   const cached = words.every((w) => meanings.has(w)) ? words.map((w) => meanings.get(w)!) : null;
   const [answer, setAnswer] = useState<{ key: string; defs: Definition[] } | null>(null);
   useEffect(() => {
     if (!key || cached) return;
-    const ctl = new AbortController();
+    let cancelled = false;
     // Asked the way the server keeps it (sorted, in capitals), so it doesn't redirect.
     const asked = [...new Set(key.split(','))].sort().join(',');
-    fetch(`/api/words/define?w=${asked}`, { signal: ctl.signal })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((body: { words: Definition[] }) => {
-        for (const d of body.words) meanings.set(d.word, d);
+    let ask = inflight.get(asked);
+    if (!ask) {
+      ask = fetch(`/api/words/define?w=${asked}`)
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+        .then((body: { words: Definition[] }) => {
+          for (const d of body.words) meanings.set(d.word, d);
+        })
+        .finally(() => inflight.delete(asked));
+      inflight.set(asked, ask);
+    }
+    ask
+      .then(() => {
+        if (cancelled) return;
         setAnswer({
           key,
           defs: key.split(',').map((w) => meanings.get(w) ?? { word: w, senses: [] }),
         });
       })
       .catch(() => {
-        if (!ctl.signal.aborted) {
+        if (!cancelled) {
           setAnswer({ key, defs: key.split(',').map((w) => ({ word: w, senses: [] })) });
         }
       });
-    return () => ctl.abort();
+    return () => {
+      cancelled = true;
+    };
   }, [key, cached]);
   if (!key) return [];
   return cached ?? (answer?.key === key ? answer.defs : null);
 }
 
 /** The words a play made, the main word first. */
-function playedWords(move: Move | undefined): string[] {
+export function playedWords(move: Move | undefined): string[] {
   return move?.kind === 'play' ? (move.words ?? []).map((w) => w.word).slice(0, 4) : [];
 }
 

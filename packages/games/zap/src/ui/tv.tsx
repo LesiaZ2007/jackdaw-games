@@ -11,7 +11,7 @@ import {
 } from '@jackdaw/ui';
 import { ranking, type ZapTableView } from '../rules';
 import { columnsFor, PlayerCard } from './card';
-import { place, useTick } from './race';
+import { place, Race, useTick } from './race';
 import './zap.css';
 
 interface Solve {
@@ -91,6 +91,8 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
           )}
         </div>
       </header>
+
+      {!solo && <Race t={t} players={players} now={now} reactions={reactions} size="tv" />}
 
       <div
         className={`zp-tv__cards${crowded ? ' is-crowded' : ''}`}

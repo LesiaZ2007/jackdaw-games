@@ -25,11 +25,11 @@ export const wavelengthUi: GameUi = {
     pictures: [
       {
         src: '/games/wavelength/game-phone.png',
-        alt: 'Wavelength on a phone: the clue at the top, the dial with its shutter open on the banded target zone, the needle where the team left it, and the points stamped below.',
+        alt: 'Wavelength on a phone: the clue at the top, the dial with its needle, the two ends of the spectrum on plaques, and Lock in.',
       },
       {
         src: '/games/wavelength/tv.png',
-        alt: 'Wavelength on a TV: the clue across the top, the big dial revealing the target zone with the points stamped across it, and the Sun and Moon teams down either side.',
+        alt: 'Wavelength on a TV: the clue across the top, the big dial with its needle, and the score beside it.',
         desktop: true,
       },
     ],

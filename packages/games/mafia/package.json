@@ -6,6 +6,7 @@
   "description": "Mafia (and Werewolf) for 5 to 15 players",
   "exports": {
     ".": "./src/index.ts",
+    "./meta": "./src/meta.ts",
     "./ui": "./src/ui/index.tsx"
   },
   "scripts": {

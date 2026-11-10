@@ -6,6 +6,7 @@
   "description": "Kings: one-king-a-row logic puzzles, alone or as a race",
   "exports": {
     ".": "./src/index.ts",
+    "./meta": "./src/meta.ts",
     "./ui": "./src/ui/index.tsx"
   },
   "scripts": {

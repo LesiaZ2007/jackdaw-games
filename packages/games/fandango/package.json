@@ -6,6 +6,7 @@
   "description": "Fandango: sun and moon grid puzzles, alone or as a race",
   "exports": {
     ".": "./src/index.ts",
+    "./meta": "./src/meta.ts",
     "./ui": "./src/ui/index.tsx"
   },
   "scripts": {

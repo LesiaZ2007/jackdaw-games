@@ -24,11 +24,11 @@ export const kingsUi: GameUi = {
     pictures: [
       {
         src: '/games/kings/game-phone.png',
-        alt: 'Kings on a phone: an 8×8 board in printed colors with four kings placed and two squares crossed out, Undo, Clear and Auto-cross, and the race between Wren, Rook and a bot.',
+        alt: 'Kings on a phone: the puzzle on a ribbon and the clock on a shield, an 8×8 board of hatched heraldic regions, Undo, Clear and Auto-cross, and each racer’s row of crowns.',
       },
       {
         src: '/games/kings/desktop.png',
-        alt: 'Kings on a laptop: the board on the left with three kings placed, the race beside it, and table talk on the right.',
+        alt: 'Kings on a laptop: the board of hatched regions on the left, the tools and each racer’s crowns beside it, and table talk on the right.',
         desktop: true,
       },
     ],

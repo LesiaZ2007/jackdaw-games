@@ -24,11 +24,11 @@ export const fandangoUi: GameUi = {
     pictures: [
       {
         src: '/games/fandango/game-phone.png',
-        alt: 'Fandango on a phone: a 6×6 board part filled with suns and moons, = and × signs between some squares, Undo and Clear, and the race between Heron, Wren and a bot.',
+        alt: 'Fandango on a phone: the racers’ tokens crossing a sky from sun to moon, a 6×6 board part filled with woodcut suns and moons, = and × signs between some squares, Undo and Clear, and the race list.',
       },
       {
         src: '/games/fandango/desktop.png',
-        alt: 'Fandango on a laptop: the board on the left part filled, the race beside it, and table talk on the right.',
+        alt: 'Fandango on a laptop: the board on the left part filled, the sky track and the race beside it, and table talk on the right.',
         desktop: true,
       },
     ],

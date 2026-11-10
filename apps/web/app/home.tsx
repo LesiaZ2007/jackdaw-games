@@ -16,7 +16,7 @@ import {
   Sheet,
   Token,
 } from '@jackdaw/ui';
-import { catalog, KINDS } from '@/lib/catalog';
+import { boxes, KINDS } from '@/lib/games-lite';
 import { rememberAvatar, rememberedAvatar, rememberedName, rememberName } from '@/lib/identity';
 import { createLobby } from '@/lib/use-lobby';
 import { InstallButton } from './pwa';
@@ -24,6 +24,18 @@ import { GameShelves } from './shelves';
 import { ThemeButton } from './theme-toggle';
 
 const FALLBACK_AVATAR: Avatar = { crest: 'raven', tint: 'slate' };
+
+/** Whether the page has been scrolled at all, so the "more below" arrow can bow out. */
+function useScrolled(): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const check = () => setScrolled(window.scrollY > 48);
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    return () => window.removeEventListener('scroll', check);
+  }, []);
+  return scrolled;
+}
 
 export function Home() {
   const router = useRouter();
@@ -76,86 +88,111 @@ export function Home() {
     document.getElementById('games')?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
   }
 
+  const scrolled = useScrolled();
   // One box of each kind, in the shelves' order, so the fan shows every color once.
-  const fan = KINDS.flatMap((k) => catalog.find((e) => e.meta.category === k.kind) ?? []);
+  const fan = KINDS.flatMap((k) => boxes.find((e) => e.meta.category === k.kind) ?? []);
 
   return (
     <>
       <main className="home">
-        <ThemeButton className="home-corner" />
-        <div className="home-hero">
-          <Lid className="home-title">
-            <BirdMark width={132} height={132} weight={2.2} />
-            <h1 className="jd-display home-title__name">Jackdaw</h1>
-            <p className="jd-label home-title__sub">A compendium of games for 2 to 15</p>
-            <p className="home-title__line">
-              Everyone plays on their own phone. Put the table on a TV if you have one.
-            </p>
-          </Lid>
+        {/* The welcome fills the first screen on every device; the games are a scroll below. */}
+        <div className="home-screen">
+          <ThemeButton className="home-corner" />
+          <div className="home-hero">
+            <Lid className="home-title">
+              <BirdMark width={132} height={132} weight={2.2} />
+              <h1 className="jd-display home-title__name">Jackdaw</h1>
+              <p className="jd-label home-title__sub">A compendium of games for 2 to 15</p>
+              <p className="home-title__line">
+                Everyone plays on their own phone. Put the table on a TV if you have one.
+              </p>
+            </Lid>
 
-          <div className="home-fan" aria-hidden="true">
-            {fan.map((g, i) => (
-              <span
-                key={g.meta.id}
-                className={`home-fan__lid jd-field-${g.art.field}`}
-                style={
-                  {
-                    '--band': `var(--${g.art.band})`,
-                    '--x': `calc(${i - (fan.length - 1) / 2} * min(62px, 15.5vw))`,
-                    '--r': `${(i - (fan.length - 1) / 2) * 7.5}deg`,
-                  } as React.CSSProperties
-                }
-              >
-                <Glyph id={g.art.glyph} size={36} />
-              </span>
-            ))}
+            <div className="home-fan" aria-hidden="true">
+              {fan.map((g, i) => (
+                <span
+                  key={g.meta.id}
+                  className={`home-fan__lid jd-field-${g.art.field}`}
+                  style={
+                    {
+                      '--band': `var(--${g.art.band})`,
+                      '--x': `calc(${i - (fan.length - 1) / 2} * min(62px, 15.5vw))`,
+                      '--r': `${(i - (fan.length - 1) / 2) * 7.5}deg`,
+                    } as React.CSSProperties
+                  }
+                >
+                  <Glyph id={g.art.glyph} size={36} />
+                </span>
+              ))}
+            </div>
+
+            <Lid className="home-start" corners={false} aria-label="Start playing">
+              <div className="home-who">
+                <label className="jd-label" htmlFor="home-name">
+                  Your name
+                </label>
+                <div className="home-who__row">
+                  <AvatarButton avatar={avatar} size={48} onClick={() => setPicking(true)} />
+                  <input
+                    id="home-name"
+                    className="jd-input"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={20}
+                    placeholder="e.g. Jackdaw"
+                    autoComplete="nickname"
+                    onKeyDown={(e) => e.key === 'Enter' && create()}
+                  />
+                </div>
+              </div>
+              <Plaque go onClick={create} disabled={busy}>
+                {busy ? 'Opening a lobby…' : 'Create a lobby'}
+              </Plaque>
+              <div className="jd-or">or join one</div>
+              <div className="home-join">
+                <CodeInput
+                  value={code}
+                  onChange={setCode}
+                  onEnter={join}
+                  size="min(66px, 13.5vw)"
+                />
+                <Plaque small onClick={join}>
+                  Join
+                </Plaque>
+              </div>
+              {error && (
+                <p role="alert" className="home-error">
+                  {error}
+                </p>
+              )}
+              <nav className="home-nav" aria-label="More">
+                <button type="button" className="jd-link home-nav__browse" onClick={browse}>
+                  Browse the games
+                  <Icon.down />
+                </button>
+                <Link href="/tv" className="jd-link">
+                  Show a lobby on a TV
+                </Link>
+                <InstallButton />
+              </nav>
+            </Lid>
           </div>
 
-          <Lid className="home-start" corners={false} aria-label="Start playing">
-            <div className="home-who">
-              <label className="jd-label" htmlFor="home-name">
-                Your name
-              </label>
-              <div className="home-who__row">
-                <AvatarButton avatar={avatar} size={48} onClick={() => setPicking(true)} />
-                <input
-                  id="home-name"
-                  className="jd-input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={20}
-                  placeholder="e.g. Jackdaw"
-                  autoComplete="nickname"
-                  onKeyDown={(e) => e.key === 'Enter' && create()}
-                />
-              </div>
-            </div>
-            <Plaque go onClick={create} disabled={busy}>
-              {busy ? 'Opening a lobby…' : 'Create a lobby'}
-            </Plaque>
-            <div className="jd-or">or join one</div>
-            <div className="home-join">
-              <CodeInput value={code} onChange={setCode} onEnter={join} size="min(66px, 13.5vw)" />
-              <Plaque small onClick={join}>
-                Join
-              </Plaque>
-            </div>
-            {error && (
-              <p role="alert" className="home-error">
-                {error}
-              </p>
-            )}
-            <nav className="home-nav" aria-label="More">
-              <button type="button" className="jd-link home-nav__browse" onClick={browse}>
-                Browse the games
-                <Icon.down />
-              </button>
-              <Link href="/tv" className="jd-link">
-                Show a lobby on a TV
-              </Link>
-              <InstallButton />
-            </nav>
-          </Lid>
+          {/* The games are below the fold: say so until the page moves. */}
+          <button
+            type="button"
+            className={scrolled ? 'home-more is-gone' : 'home-more'}
+            onClick={browse}
+            aria-label="Scroll down to the games"
+            tabIndex={scrolled ? -1 : 0}
+          >
+            <span className="home-more__label" aria-hidden="true">
+              The games
+            </span>
+            <span className="home-more__ring" aria-hidden="true">
+              <Icon.down />
+            </span>
+          </button>
         </div>
 
         <section id="games" className="home-shelves" aria-labelledby="home-shelves-title">

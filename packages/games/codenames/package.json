@@ -6,6 +6,7 @@
   "description": "Codenames: two teams, one-word clues, 25 words, one assassin",
   "exports": {
     ".": "./src/index.ts",
+    "./meta": "./src/meta.ts",
     "./ui": "./src/ui/index.tsx"
   },
   "scripts": {

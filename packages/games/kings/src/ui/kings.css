@@ -9,16 +9,19 @@
   --kg-rule: rgba(29, 29, 28, 0.28);
   --kg-paper: #f7f3ea;
   --kg-bad: #a63a30;
-  --kg-r0: #c7b3e0;
-  --kg-r1: #f4bf8f;
-  --kg-r2: #a9c8ec;
-  --kg-r3: #bcd99e;
-  --kg-r4: #dedbd3;
-  --kg-r5: #ef9f92;
-  --kg-r6: #f1dc86;
-  --kg-r7: #97d3c8;
-  --kg-r8: #e8bcd4;
-  --kg-r9: #cdb894;
+  --kg-hatch: rgba(29, 29, 28, 0.13);
+  --kg-or: #a77d2c;
+  /* Ten fiefs, each a heraldic tincture tinted on paper; printed, so the same in the dark. */
+  --kg-r0: color-mix(in srgb, var(--purpure) 30%, var(--kg-paper));
+  --kg-r1: color-mix(in srgb, var(--tenne) 36%, var(--kg-paper));
+  --kg-r2: color-mix(in srgb, var(--azure) 34%, var(--kg-paper));
+  --kg-r3: color-mix(in srgb, var(--vert) 34%, var(--kg-paper));
+  --kg-r4: var(--kg-paper);
+  --kg-r5: color-mix(in srgb, var(--gules) 34%, var(--kg-paper));
+  --kg-r6: color-mix(in srgb, var(--kg-or) 42%, var(--kg-paper));
+  --kg-r7: color-mix(in srgb, var(--azure) 15%, var(--kg-paper));
+  --kg-r8: color-mix(in srgb, var(--sable) 32%, var(--kg-paper));
+  --kg-r9: color-mix(in srgb, var(--vert) 56%, var(--kg-paper));
   --kg-heavy: 1.5px;
   color: var(--ink);
 }
@@ -56,7 +59,9 @@
   margin: 0;
   border: 0;
   border-radius: 0;
-  background: var(--fill);
+  background-color: var(--fill);
+  background-image: var(--hatch, none);
+  background-size: var(--hs, auto);
   color: var(--kg-ink);
   box-shadow:
     var(--st),
@@ -73,6 +78,54 @@
 }
 .kg-board.is-live .kg-cell {
   cursor: pointer;
+}
+/* Each fief's engraver's hatching, so no region is told apart by color alone. */
+.kg-f0 {
+  --hatch: repeating-linear-gradient(-45deg, var(--kg-hatch) 0 1px, transparent 1px 7px);
+}
+.kg-f1 {
+  --hatch:
+    repeating-linear-gradient(45deg, var(--kg-hatch) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(0deg, var(--kg-hatch) 0 1px, transparent 1px 8px);
+}
+.kg-f2 {
+  --hatch: repeating-linear-gradient(0deg, var(--kg-hatch) 0 1px, transparent 1px 6px);
+}
+.kg-f3 {
+  --hatch: repeating-linear-gradient(45deg, var(--kg-hatch) 0 1px, transparent 1px 7px);
+}
+.kg-f4 {
+  --hatch: none;
+}
+.kg-f5 {
+  --hatch: repeating-linear-gradient(90deg, var(--kg-hatch) 0 1px, transparent 1px 6px);
+}
+.kg-f6 {
+  --hatch: radial-gradient(circle, var(--kg-hatch) 0 1.3px, transparent 1.7px);
+  --hs: 7px 7px;
+}
+.kg-f7 {
+  --hatch: repeating-linear-gradient(
+    0deg,
+    var(--kg-hatch) 0 1px,
+    transparent 1px 3px,
+    var(--kg-hatch) 3px 4px,
+    transparent 4px 10px
+  );
+}
+.kg-f8 {
+  --hatch:
+    repeating-linear-gradient(45deg, var(--kg-hatch) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(-45deg, var(--kg-hatch) 0 1px, transparent 1px 7px);
+}
+.kg-f9 {
+  --hatch: repeating-linear-gradient(
+    45deg,
+    var(--kg-hatch) 0 1px,
+    transparent 1px 3px,
+    var(--kg-hatch) 3px 4px,
+    transparent 4px 10px
+  );
 }
 .kg-t {
   --st: inset 0 var(--kg-heavy) 0 0 var(--kg-ink);
@@ -96,8 +149,8 @@
 }
 .kg-cross {
   position: relative;
-  width: 34%;
-  height: 34%;
+  width: 56%;
+  height: 56%;
 }
 .kg-cross::before,
 .kg-cross::after {
@@ -109,7 +162,7 @@
   height: 100%;
   margin-left: -1px;
   background: var(--kg-ink);
-  opacity: 0.7;
+  opacity: 0.55;
 }
 .kg-cross::before {
   transform: rotate(45deg);
@@ -118,31 +171,58 @@
   transform: rotate(-45deg);
 }
 .kg-cell.is-faint .kg-cross {
-  opacity: 0.4;
+  opacity: 0.5;
 }
 .kg-cell.is-bad {
   color: var(--kg-bad);
-  background:
+  background-image:
     repeating-linear-gradient(
       -45deg,
       transparent 0 5px,
       color-mix(in srgb, var(--kg-bad) 28%, transparent) 5px 7px
     ),
-    var(--fill);
+    var(--hatch, none);
+  background-size: auto, var(--hs, auto);
+}
+/* Solved: the frame turns vert and each crown drops and settles, a beat apart. */
+.kg-board.is-solved {
+  border-color: var(--vert);
+  outline-color: var(--vert);
 }
 .kg-board.is-solved .kg-king {
-  animation: kg-crowned 700ms var(--ease-out) both;
+  animation: kg-crowned 360ms var(--ease-out) both;
+  animation-delay: calc(var(--k, 0) * 40ms);
 }
 @keyframes kg-crowned {
   0% {
-    transform: scale(1);
+    transform: translateY(-70%) scale(1.15);
   }
-  45% {
-    transform: scale(1.25) translateY(-6%);
+  65% {
+    transform: translateY(6%) scale(0.96);
   }
   100% {
-    transform: scale(1);
+    transform: translateY(0) scale(1);
   }
+}
+.kg-king__disc {
+  fill: var(--kg-paper);
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.kg-king__body {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+.kg-king.is-hollow .kg-king__body {
+  fill: none;
+  stroke-width: 2;
+}
+.kg-king.is-gold .kg-king__body {
+  fill: var(--kg-or);
+  stroke: var(--kg-ink);
+  stroke-width: 1.8;
 }
 @media (hover: hover) and (pointer: fine) {
   .kg-board.is-live .kg-cell:hover {
@@ -343,29 +423,152 @@
 .kg-pips {
   grid-area: pips;
   display: flex;
-  gap: 3px;
+  align-items: center;
+  gap: 2px;
   min-width: 0;
 }
-.kg-pip {
-  flex: 1;
-  max-width: 22px;
-  height: 7px;
-  border: 1px solid var(--ink-2);
+.kg-pips .kg-king {
+  flex: 0 1 16px;
+  min-width: 0;
+  width: 16px;
+  height: 15px;
+  color: var(--ink);
 }
-.kg-pip.is-on {
-  background: var(--ink);
-  border-color: var(--ink);
+.kg-pips .kg-king.is-hollow {
+  color: var(--ink-2);
+}
+.kg-pips .kg-king.is-gold {
+  flex-basis: 22px;
+  width: 22px;
+  height: 20px;
+}
+.kg-check {
+  position: relative;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-left: 4px;
+}
+.kg-check::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 0;
+  width: 6px;
+  height: 12px;
+  border: solid var(--win-ink);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+.kg-race__more {
+  margin: 2px 0 0;
+  color: var(--ink-2);
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-@container game (min-width: 760px) {
+/* The court strip: the puzzle on a ribbon, the clock on a shield. */
+.kg-court {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.kg-ribbon {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 9px 24px 9px 20px;
+  background: var(--ink);
+  color: var(--paper);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 50%, 100% 100%, 0 100%, 12px 50%);
+  font: 800 20px/1.1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kg-shield {
+  flex: none;
+  padding: 2px;
+  background: var(--ink);
+  clip-path: polygon(0 0, 100% 0, 100% 60%, 88% 80%, 50% 100%, 12% 80%, 0 60%);
+}
+.kg-shield__in {
+  display: block;
+  min-width: 92px;
+  padding: 4px 8px 13px;
+  background: var(--paper);
+  clip-path: polygon(0 0, 100% 0, 100% 60%, 88% 80%, 50% 100%, 12% 80%, 0 60%);
+  font: 800 24px/1.1 var(--font-code);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* Laptop: the board on the left sized by the height, the court on the right top to bottom. */
+@media (min-width: 1024px) {
   .kg-main {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: var(--space-5);
+    row-gap: var(--space-4);
     align-items: stretch;
   }
+  .kg-stage {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+  .kg-court {
+    grid-column: 2;
+    grid-row: 1;
+  }
   .kg-side {
-    justify-content: center;
+    grid-column: 2;
+    grid-row: 2;
+    justify-content: flex-start;
     gap: var(--space-4);
+  }
+  .kg-ribbon {
+    font-size: 26px;
+    padding: 12px 30px;
+  }
+  .kg-shield__in {
+    min-width: 120px;
+    padding: 6px 10px 16px;
+    font-size: 32px;
+  }
+  .kg-raceWrap {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .kg-lane {
+    column-gap: var(--space-3);
+    padding: 8px var(--space-3);
+  }
+  .kg-lane__name {
+    font-size: 20px;
+  }
+  .kg-lane__time {
+    font-size: 18px;
+  }
+  .kg-pips {
+    gap: 3px;
+  }
+  .kg-pips .kg-king {
+    flex-basis: 22px;
+    width: 22px;
+    height: 20px;
+  }
+  .kg-pips .kg-king.is-gold {
+    flex-basis: 30px;
+    width: 30px;
+    height: 27px;
   }
   .kg-tools {
     grid-template-columns: 1fr 1fr;

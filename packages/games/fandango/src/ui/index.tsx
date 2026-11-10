@@ -11,14 +11,13 @@ export const fandangoUi: GameUi = {
   art: { band: 'azure', field: 'semee', glyph: 'sunmoon' },
   about: {
     description:
-      'A square board to fill with suns and moons. Every row and every column holds as many suns as moons, and never three of the same next to each other. An = between two squares means they match; an × means they differ. A few squares come filled in. Every puzzle is made fresh for the game, has exactly one answer, and can be worked out without guessing. Play alone, or race the table through the same puzzles.',
+      'Fill a square board with suns and moons. Every row and column holds the same number of each, and never three of a kind side by side. An = between two squares means they match, and an × means they differ. Each puzzle has exactly one answer and needs no guessing. Play alone, or race the table through the same puzzles.',
     steps: [
-      'The host picks the board, from 4×4 to 10×10, and how many puzzles, from 1 to 20.',
-      'Tap a square for a sun, tap again for a moon, and once more to clear it. Squares that came filled in stay put.',
-      'Marks that break a rule turn red. Undo and Clear are under the board.',
-      'A finished board counts by itself and the next puzzle opens. Everyone gets the same puzzles in the same order.',
-      'Playing alone, you can ask for a hint: it explains the next deduction and shows you where. Show a mistake points out the first thing that’s wrong. Hints are counted in the results, and are never there in a race.',
-      'Most puzzles solved wins, and the quickest to get there breaks a tie. Once someone has solved them all, everyone else has two minutes.',
+      'The host picks the board size, from 4×4 to 10×10, and 1 to 20 puzzles.',
+      'Tap a square for a sun, again for a moon, and once more to clear it. Marks that break a rule turn red.',
+      'A finished board counts on its own and the next puzzle opens. Everyone gets the same puzzles in the same order.',
+      'Playing alone, ask for a hint or a mistake check. Both are counted, and neither is allowed in a race.',
+      'Most puzzles solved wins, and speed breaks ties. Once someone finishes, everyone else has two minutes.',
     ],
     credit:
       'After Tango, the daily puzzle on LinkedIn, itself a cousin of the binary puzzles known as Takuzu. The puzzles here are Jackdaw’s own.',

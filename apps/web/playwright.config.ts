@@ -27,6 +27,8 @@ export default defineConfig({
       JACKDAW_LINK_SECRET: FAKE_LINK_SECRET,
       // `next start` runs in production mode, which refuses in-memory storage unless told.
       JACKDAW_STORAGE: 'memory',
+      // Every test browser shares one address; the per-address limits are for the open internet.
+      JACKDAW_LIMITS: 'relaxed',
     },
   },
 });

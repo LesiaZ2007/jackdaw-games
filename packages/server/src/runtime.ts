@@ -207,7 +207,7 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     creates: 10,
     posts: 200,
     polls: 400,
-    joins: 20,
+    joins: 40,
     ...opts.addressLimit,
   };
   const JOIN_WINDOW_MS = 60_000;

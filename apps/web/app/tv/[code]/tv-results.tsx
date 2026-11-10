@@ -134,7 +134,9 @@ export function TvResults({
                 <span className="tv-standing__name">{names[s.playerId] ?? 'Left the lobby'}</span>
                 {(s.team || s.role || statsOf.get(s.playerId)) && (
                   <span className="tv-standing__role">
-                    {[s.team, s.role, statsOf.get(s.playerId)].filter(Boolean).join(', ')}
+                    {[s.team, s.role !== s.team ? s.role : null, statsOf.get(s.playerId)]
+                      .filter(Boolean)
+                      .join(', ')}
                   </span>
                 )}
                 <OutcomeChip outcome={s.outcome} className="tv-standing__outcome">

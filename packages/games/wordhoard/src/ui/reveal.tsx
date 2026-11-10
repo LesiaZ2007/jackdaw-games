@@ -2,7 +2,8 @@
 
 import { Token, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { Move, WordhoardReveal } from '../rules';
-import { BoardGrid, Tile } from './pieces';
+import { Ledger } from './hoard';
+import { BoardFrame, BoardGrid, Tile } from './pieces';
 import { moveText } from './player';
 import './wordhoard.css';
 
@@ -30,6 +31,7 @@ export const Reveal: NonNullable<GameUi['Reveal']> = ({ result, players, me }) =
   const byId = new Map(players.map((p) => [p.id, p]));
   const name = (id: string) => (id === me ? 'You' : (byId.get(id)?.name ?? 'Someone'));
   const best = bestPlay(r.moves);
+  const others = r.moves.filter((m) => m.kind !== 'play');
 
   return (
     <div className="wh wh-final">
@@ -45,18 +47,23 @@ export const Reveal: NonNullable<GameUi['Reveal']> = ({ result, players, me }) =
             {best.player === me ? 'you' : name(best.player)}.
           </p>
         )}
-        <div className="wh-boardwrap">
-          <BoardGrid board={r.board} recent={best?.cells} label="The finished board" />
+        <div className="wh-final__spread">
+          <BoardFrame>
+            <BoardGrid board={r.board} recent={best?.cells} label="The finished board" />
+          </BoardFrame>
+          <Ledger moves={r.moves} players={players} best={best} live={false} />
         </div>
       </section>
-      <section aria-label="Every move">
-        <h3 className="jd-display wh-final__title">Every move</h3>
-        <ol className="wh-final__moves">
-          {r.moves.map((m, i) => (
-            <li key={i}>{moveText(m, name)}</li>
-          ))}
-        </ol>
-      </section>
+      {others.length > 0 && (
+        <section aria-label="Passes and swaps">
+          <h3 className="jd-display wh-final__title">Passes and swaps</h3>
+          <ol className="wh-final__moves">
+            {others.map((m, i) => (
+              <li key={i}>{moveText(m, name)}</li>
+            ))}
+          </ol>
+        </section>
+      )}
     </div>
   );
 };
@@ -112,14 +119,22 @@ function FinalScores({
 }
 
 /** The TV's results: the finished board, as big as the space beside the standings allows. */
-export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result }) => {
+export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result, players }) => {
   const r = result.reveal as WordhoardReveal;
   const best = bestPlay(r.moves);
   return (
     <div className="wh wh-final wh-final--tv">
-      <div className="wh-boardwrap">
+      <BoardFrame>
         <BoardGrid board={r.board} recent={best?.cells} label="The finished board" />
-      </div>
+      </BoardFrame>
+      <Ledger
+        moves={r.moves}
+        players={players as ScreenPlayer[]}
+        best={best}
+        live={false}
+        tokenSize={44}
+        limit={7}
+      />
     </div>
   );
 };

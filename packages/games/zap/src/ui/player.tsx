@@ -14,6 +14,7 @@ import { checkPath } from '../puzzle';
 import { ranking, type ZapAction, type ZapPlayerView } from '../rules';
 import { BoltMark, Board } from './board';
 import { PlayerCard, Spectate } from './card';
+import { Page, TurnPage } from './page';
 import { place, Race, useTick } from './race';
 import { findMistake, nextStep, type Hint } from '../hints';
 import './zap.css';
@@ -188,14 +189,6 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 
   return (
     <div className="zp zp--phone">
-      <header className="zp-head">
-        <p className="zp-head__title">
-          {doneAll ? (solo ? 'All solved' : 'Finished') : `Puzzle ${v.index + 1} of ${v.count}`}
-        </p>
-        <span className="zp-clock" aria-label="Time on this puzzle">
-          {doneAll ? clockMs(took) : clockMs(now() - v.since)}
-        </span>
-      </header>
       {closing !== null && !doneAll && (
         <p className="zp-closing" role="status">
           Someone has solved them all. The race ends in {clockMs(closing * 1000)}.
@@ -203,26 +196,49 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       )}
 
       <div className={`zp-main${solo ? ' is-solo' : ''}`}>
+        {!solo && (
+          <Race
+            t={v}
+            players={players}
+            me={v.me}
+            now={now}
+            reactions={reactions}
+            mineDrawn={doneAll ? undefined : path.length}
+          />
+        )}
         <div className="zp-stage">
-          {v.puzzle ? (
-            <Board
-              puzzle={v.puzzle}
-              path={path}
-              onPath={locked ? undefined : draw}
-              solved={locked}
-              hint={locked ? null : tip}
-              label={`Puzzle ${v.index + 1}, ${v.size} by ${v.size}`}
-            />
-          ) : (
-            <div className="zp-done">
-              <BoltMark size={72} />
-              <p className="zp-done__line">
-                {solo
-                  ? `${v.count === 1 ? 'Solved' : `All ${v.count} solved`} in ${clockMs(took)}.`
-                  : `${place(myPlace)}, all ${v.count} in ${clockMs(took)}.`}
-              </p>
-            </div>
-          )}
+          <TurnPage turnKey={v.index}>
+            <Page
+              title={
+                doneAll
+                  ? `Zap · ${solo ? 'All solved' : 'Finished'}`
+                  : `Zap · Puzzle ${v.index + 1} of ${v.count}`
+              }
+              clock={doneAll ? clockMs(took) : clockMs(now() - v.since)}
+              clockLabel="Time on this puzzle"
+              solved={locked || !v.puzzle}
+            >
+              {v.puzzle ? (
+                <Board
+                  puzzle={v.puzzle}
+                  path={path}
+                  onPath={locked ? undefined : draw}
+                  solved={locked}
+                  hint={locked ? null : tip}
+                  label={`Puzzle ${v.index + 1}, ${v.size} by ${v.size}`}
+                />
+              ) : (
+                <div className="zp-done">
+                  <BoltMark size={72} />
+                  <p className="zp-done__line">
+                    {solo
+                      ? `${v.count === 1 ? 'Solved' : `All ${v.count} solved`} in ${clockMs(took)}.`
+                      : `${place(myPlace)}, all ${v.count} in ${clockMs(took)}.`}
+                  </p>
+                </div>
+              )}
+            </Page>
+          </TurnPage>
         </div>
 
         <aside className="zp-side">
@@ -261,15 +277,11 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               Not quite: {checkPath(v.puzzle, path)}
             </p>
           )}
-          {solo ? (
-            v.puzzle && (
-              <p className="zp-rules">
-                Start on 1 and draw one line through every square, through the numbers in order,
-                ending on the last. It can&rsquo;t cross itself or go through a wall.
-              </p>
-            )
-          ) : (
-            <Race t={v} players={players} me={v.me} now={now} reactions={reactions} />
+          {solo && v.puzzle && (
+            <p className="zp-rules">
+              Start on 1 and draw one line through every square, through the numbers in order,
+              ending on the last. It can&rsquo;t cross itself or go through a wall.
+            </p>
           )}
         </aside>
       </div>

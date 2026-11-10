@@ -92,7 +92,7 @@ describe('nightSummary', () => {
     expect(nightSummary(draw, {}, {}).streak).toBeNull();
   });
 
-  it('names the favourite game once it has been played twice, and times the night', () => {
+  it('names the favorite game once it has been played twice, and times the night', () => {
     clock = 0;
     const one = night(game('rps', ['a', 'b'], ['a']));
     expect(nightSummary(one, {}, {}).favourite).toBeNull();

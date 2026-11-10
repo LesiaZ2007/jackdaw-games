@@ -140,7 +140,7 @@ or the TV.
   selected ship, which drops onto its squares. Fleet ready locks it. One shot fires on
   the tap. Salvo selects squares, then Fire salvo. Grid squares shrink so the 10×10
   chart fits under the bar at 375px; the dock and the chart switch stay at least 44px.
-- **A shot:** a small printed plane, original line art in ink on the sea colour, flies
+- **A shot:** a small printed plane, original line art in ink on the sea color, flies
   across the chart and drops the shot. Then the peg lands. A miss lands as an ink cross.
   A hit lands as a red peg. On your fleet that peg is drawn on the ship. A ship that just
   sank is drawn across its squares, then tilts and turns transparent, still on those

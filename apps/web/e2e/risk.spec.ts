@@ -48,7 +48,7 @@ test('risk: a whole turn on the phone, seen by the other phone and the TV', asyn
   const { code } = await call(request, '/api/lobby', keys[0]!, { name: 'Wren', gameId: 'risk' });
   await call(request, `/api/lobby/${code}`, keys[1]!, { type: 'join', name: 'Rook' });
 
-  // The lobby: each seat a banner in the colour its armies will be, and every option explained.
+  // The lobby: each seat a banner in the color its armies will be, and every option explained.
   const host = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await host.addInitScript((t) => localStorage.setItem('jackdaw:token', t), keys[0]!);
   const lobby = await host.newPage();

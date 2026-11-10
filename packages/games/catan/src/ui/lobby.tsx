@@ -58,7 +58,7 @@ function Chart({ size }: { size: Size }) {
   );
 }
 
-/** A ship at its mooring: the sail in the colour this seat will build in, the crest on it. */
+/** A ship at its mooring: the sail in the color this seat will build in, the crest on it. */
 function Ship({
   seat,
   index,
@@ -76,7 +76,7 @@ function Ship({
   onAddBot?: () => void;
   tv?: boolean;
 }) {
-  // Round the island, starting top left, clockwise.
+  // Around the island, starting top left, clockwise.
   const a = -Math.PI * 0.75 + (Math.PI * 2 * index) / of;
   const place = {
     '--x': `${50 + Math.cos(a) * 41}%`,

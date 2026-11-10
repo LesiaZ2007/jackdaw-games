@@ -24,7 +24,7 @@ export const battleshipUi: GameUi = {
     pictures: [
       {
         src: '/games/battleship/game-phone.png',
-        alt: 'Battleship on a phone: Wren’s fleet on a pale printed sea, each ship its own silhouette, carrier, battleship, cruiser, submarine and destroyer in heraldic colours.',
+        alt: 'Battleship on a phone: Wren’s fleet on a pale printed sea, each ship its own silhouette, carrier, battleship, cruiser, submarine and destroyer in heraldic colors.',
       },
       {
         src: '/games/battleship/tv.png',

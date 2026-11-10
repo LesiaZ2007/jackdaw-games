@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { BirdMark, Lid } from '@jackdaw/ui';
 import { catalog } from '@/lib/catalog';
 
-/** About Jackdaw, with the credits its licences ask for. */
+/** About Jackdaw, with the credits its licenses ask for. */
 export function About() {
   return (
     <main className="cat-about">
@@ -60,7 +60,7 @@ export function About() {
         </ul>
         <p className="cat-credit">
           Game names and rules belong to their creators. Where a game&rsquo;s credit above names
-          someone else&rsquo;s word list or art, it&rsquo;s used under the licence given there;
+          someone else&rsquo;s word list or art, it&rsquo;s used under the license given there;
           everything else was made for Jackdaw.
         </p>
       </section>

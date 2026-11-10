@@ -4,7 +4,7 @@
  * mugshot placards against a line-up's height chart; at night the page turns to the night
  * edition. The village (Werewolf) is a woodcut chapbook, linen and forest ink and blood red;
  * the players are cottages; at night it's indigo under a moon that waxes each night.
- * Every colour is a token: the root and look blocks at the top, plus the per-view blocks further
+ * Every color is a token: the root and look blocks at the top, plus the per-view blocks further
  * down (the dossier at the night scroll, the role scroll). Flat print: no gradients, glows or italics.
  */
 .mf {
@@ -458,8 +458,8 @@ button.mf-card__in {
 }
 
 /* Village placards: a cottage, the player at its door, a roof above. The cottage shape clips
-   anything drawn on its edge, so the edge is the card itself in the edge colour, with the cottage
-   laid over it a border's width in: the outline follows the roof in any colour. */
+   anything drawn on its edge, so the edge is the card itself in the edge color, with the cottage
+   laid over it a border's width in: the outline follows the roof in any color. */
 .mf--village .mf-card__in {
   --mf-edge: var(--mf-ink);
   --mf-bw: 2px;
@@ -963,7 +963,7 @@ button.mf-card__in {
   display: none;
 }
 
-/* The cast, printed as a programme. */
+/* The cast, printed as a program. */
 .mf-bill {
   display: grid;
   gap: var(--space-2);

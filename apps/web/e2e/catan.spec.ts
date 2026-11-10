@@ -48,7 +48,7 @@ test('catan: the opening, a roll, a trade and a turn, on phones and the TV', asy
   await call(request, `/api/lobby/${code}`, keys[1]!, { type: 'join', name: 'Rook' });
   await call(request, `/api/lobby/${code}`, keys[2]!, { type: 'join', name: 'Finch' });
 
-  // The lobby: each player a ship, its sail in the colour they'll build in.
+  // The lobby: each player a ship, its sail in the color they'll build in.
   const host = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await host.addInitScript((t) => localStorage.setItem('jackdaw:token', t), keys[0]!);
   const lobby = await host.newPage();

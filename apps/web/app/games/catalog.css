@@ -364,7 +364,7 @@
   font-size: 15px;
   padding: 0;
 }
-/* A tap-sized hit area round the inline link, without changing the line. */
+/* A tap-sized hit area around the inline link, without changing the line. */
 .cat-dock__note .jd-link::after {
   content: '';
   position: absolute;

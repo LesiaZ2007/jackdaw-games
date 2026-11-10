@@ -246,7 +246,7 @@ export interface AwardChange {
 export interface CatanState {
   size: Size;
   board: Board;
-  /** Players in seat order; seat order sets each player's colour. */
+  /** Players in seat order; seat order sets each player's color. */
   seats: string[];
   target: number;
   friendly: boolean;

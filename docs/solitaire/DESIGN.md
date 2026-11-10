@@ -8,7 +8,7 @@ of the game.
 ## Rules
 
 The deal is Klondike: seven columns, the first with one card face up and the last with seven,
-the rest of the deck in a stock. A column builds down in alternating colours, and only a king
+the rest of the deck in a stock. A column builds down in alternating colors, and only a king
 can start an empty one. A face-up run can move as a block onto another column, and a covered
 card turns over once the face-up cards on top of it have gone.
 

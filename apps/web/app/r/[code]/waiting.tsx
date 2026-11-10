@@ -159,7 +159,7 @@ export function Waiting({
   const blocker = blockerFor(s);
   const count = s.players.length;
   const showPicker = picking || !entry;
-  // A game can seat everyone its own way in Jackdaw's lobby (poker: round the card table; Risk:
+  // A game can seat everyone its own way in Jackdaw's lobby (poker: around the card table; Risk:
   // the war council's banners), drawn once that game is chosen. Otherwise the seat track, with as
   // many spaces as the chosen game seats (all 15 while choosing). A change of either flies.
   const seatStyle = useSeatStyle(
@@ -185,7 +185,7 @@ export function Waiting({
     // Your own seat opens your look; the host can tap anyone else's to remove them.
     action:
       p.id === s.me
-        ? `${p.name} (you): change your name, crest or colour`
+        ? `${p.name} (you): change your name, crest or color`
         : isHost
           ? p.bot
             ? `${p.name}: remove`

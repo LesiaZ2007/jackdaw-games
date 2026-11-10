@@ -6,7 +6,7 @@ LinkedIn's Queens, called Kings, for 1 to 15 players in Jackdaw's lobby (2026-10
 
 ## Rules
 
-An N×N board is cut into N coloured regions. Place N kings: one in every row, every column and
+An N×N board is cut into N colored regions. Place N kings: one in every row, every column and
 every region, and no two touching, not even at a corner. Boards run from 5×5 to 10×10.
 
 ## Puzzles
@@ -16,10 +16,10 @@ every region, and no two touching, not even at a corner. Boards run from 5×5 to
 1. Lay out an answer: one king a row and a column, none touching.
 2. Grow a region out from each king, a square at a time from a random region's edge (regions
    grow at different rates, so some are long and thin and some broad).
-3. While a second answer exists, hand one of its squares to a neighbouring region (keeping every
+3. While a second answer exists, hand one of its squares to a neighboring region (keeping every
    region in one piece and every king of the first answer in place). A board that won't settle
    is thrown away.
-4. Shuffle the region numbers, so a colour says nothing about where its king is.
+4. Shuffle the region numbers, so a color says nothing about where its king is.
 
 About 55 ms on average at 10×10 (230 ms at worst); 11×11 takes seconds, so 10 is the largest.
 Puzzles are made when the first player reaches them, so a 20-puzzle race doesn't hold up Start.
@@ -49,23 +49,23 @@ the phone (`src/hints.ts`), so nothing about the answer is sent anywhere new; th
 the server a hint was used (`hint`), and the server refuses that in a race or with hints off. The
 table never sees hints, so they're never on the TV or in someone else's race.
 
-A hint is a short note under the board, a ring round the square it's about, and a light shade over
+A hint is a short note under the board, a ring around the square it's about, and a light shade over
 the squares that explain it. It stays until the board changes. _Show a mistake_ rings the first
 wrong mark in red, or says "No mistakes so far." (which isn't counted). If the board has a mistake,
 Hint asks you to put that right first. Hints used are counted per puzzle and shown in the results
 (the summary line says ", 3 hints", and the results card has a Hints line); a run with none reads
 as before.
 
-Hints try the simplest deduction first: a row, column or colour with one square left; crossing
-out what a king rules out; a colour that fits in one row or column (or the other way round);
-then a square where a king would leave another colour, row or column with nowhere to go. Only if
-none of those finds anything does it fall back to pointing at the king's square in a colour. A
+Hints try the simplest deduction first: a row, column or color with one square left; crossing
+out what a king rules out; a color that fits in one row or column (or the other way around);
+then a square where a king would leave another color, row or column with nowhere to go. Only if
+none of those finds anything does it fall back to pointing at the king's square in a color. A
 mistake is a king in the wrong square (or two kings that rule each other out), then a cross where
 a king belongs.
 
 ## Look
 
-A printed puzzle book: region inks in ten soft printed colours (the same by day and in the dark),
+A printed puzzle book: region inks in ten soft printed colors (the same by day and in the dark),
 heavy ink where regions meet, a double-ruled frame. A tap crosses a square out, a second places a
 king, a third clears; dragging crosses out a row of squares. Kings that break a rule turn red and
 hatched. Auto-cross (per device) faintly crosses out what your kings rule out. Undo, Clear and

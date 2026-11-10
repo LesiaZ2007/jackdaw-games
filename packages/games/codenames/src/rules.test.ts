@@ -223,7 +223,7 @@ describe('guessing', () => {
 
   it('refuses to pass before the team has made a guess', () => {
     throwsCode(() => act(clue(fixed()), 'cy', { type: 'pass' }), 'GUESS_FIRST');
-    // Guesses under an earlier clue don't count towards this one.
+    // Guesses under an earlier clue don't count toward this one.
     let s = act(clue(fixed()), 'ben', { type: 'guess', index: 20 });
     s = act(clue(s), 'eli', { type: 'guess', index: 21 });
     throwsCode(() => act(clue(s), 'cy', { type: 'pass' }), 'GUESS_FIRST');
@@ -339,7 +339,7 @@ describe('hidden information', () => {
     view.revealed.forEach((c, i) => expect(c).toBe(s.revealed[i] ? s.key[i] : null));
   };
 
-  it('the table view and operatives never see an unrevealed colour', () => {
+  it('the table view and operatives never see an unrevealed color', () => {
     let s = act(clue(fixed()), 'ben', { type: 'guess', index: 0 });
     unrevealedColours(s, JSON.stringify(codenames.getTableView(s)));
     const op = codenames.getPlayerView(s, 'ben');

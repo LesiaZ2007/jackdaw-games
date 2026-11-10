@@ -6,7 +6,7 @@ import type { MonopolyTableView } from '../rules';
 import { ArtBulb, ArtTap, ArtTrain } from './art';
 import { GROUP_INK, faceName, money } from './board';
 
-/** The bank's notes, in their classic colours. */
+/** The bank's notes, in their classic colors. */
 export const NOTES = [500, 100, 50, 20, 10, 5, 1] as const;
 
 /**
@@ -56,7 +56,7 @@ export function Wallet({ cash, size = 'phone' }: { cash: number; size?: 'phone' 
 }
 
 /**
- * Someone's deeds as little title-deed cards: the colour band, the name, the buildings.
+ * Someone's deeds as little title-deed cards: the color band, the name, the buildings.
  * Cards of one set overlap like a hand. Tap one to read it.
  */
 export function DeedCards({

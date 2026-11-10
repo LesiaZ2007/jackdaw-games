@@ -1019,7 +1019,7 @@ describe('partial results', () => {
     expect(r.winners.sort()).toEqual(['rook', 'wren']);
   });
 
-  it('favours the town when the Mafia have lost more', () => {
+  it('favors the town when the Mafia have lost more', () => {
     const r = game.partialResult!(dead(deal(R7), ['rook']))!;
     expect(r.winners.sort()).toEqual(['finch', 'heron', 'magpie', 'robin', 'swift']);
   });

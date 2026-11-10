@@ -376,7 +376,7 @@
   }
 }
 
-/* ── The lobby: everyone round the table before the deal ──────────────── */
+/* ── The lobby: everyone around the table before the deal ──────────────── */
 .pk-table--lobby {
   width: min(100%, 560px);
   margin: 18px auto 34px;

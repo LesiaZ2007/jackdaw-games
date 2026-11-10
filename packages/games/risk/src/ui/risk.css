@@ -1,5 +1,5 @@
 /* Risk: a printed war map. Card stock, an inked coast over an engraved sea, every territory
-   filled with its owner's army colour, continents ruled round in a double line and lettered in
+   filled with its owner's army color, continents ruled round in a double line and lettered in
    the sea, with the engraver's ornaments. Tokens only; day and dark follow the shell. */
 
 /* ---------- The map ---------- */
@@ -97,7 +97,7 @@
   animation: rk-flash 900ms var(--ease-out) 2;
 }
 /* Fog of war: out of sight, the land goes to a pale mist with the engraver's hatching over it,
-   no army colour and no roundel, like the unsurveyed corners of an old chart. */
+   no army color and no roundel, like the unsurveyed corners of an old chart. */
 .rk-terr.is-fog .rk-terr__land {
   fill: color-mix(in srgb, var(--table) 55%, var(--paper));
 }
@@ -1032,7 +1032,7 @@ td.rk-ledger__out {
   color: var(--ink);
   background: var(--paper);
 }
-/* The host's "+" on a furled banner: a dashed ring round the furl, as if to raise it. */
+/* The host's "+" on a furled banner: a dashed ring around the furl, as if to raise it. */
 .rk-banner__add.jd-addseat {
   min-height: var(--tap);
   align-items: start;

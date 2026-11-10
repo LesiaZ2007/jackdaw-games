@@ -1,7 +1,7 @@
-/* Catan: the island printed in Catan's own colours on Jackdaw's card stock. Terrain inks with
-   engraved motifs, cream number discs (red 6 and 8), wooden piers, the classic piece colours.
+/* Catan: the island printed in Catan's own colors on Jackdaw's card stock. Terrain inks with
+   engraved motifs, cream number discs (red 6 and 8), wooden piers, the classic piece colors.
    The board is printed, so it looks the same day and dark; the frame around it follows the
-   shell. Every colour Catan adds is a token here. */
+   shell. Every color Catan adds is a token here. */
 
 .ctn,
 .ctn-board {
@@ -26,7 +26,7 @@
   --ctn-wood: #9b7146;
   --ctn-seam: #1d1d1c;
   --ctn-shade: rgba(29, 29, 28, 0.32);
-  /* the classic piece colours, printed */
+  /* the classic piece colors, printed */
   --ctn-pc-red: var(--gules);
   --ctn-pc-blue: var(--azure);
   --ctn-pc-white: #efe9da;

@@ -25,7 +25,7 @@ import type { GameArt } from '@jackdaw/ui';
 /**
  * Everything the catalog and lobby know about each game. Playable games come from the
  * registry (rules) plus their UI module (art, about, screens). Games still being built are
- * listed too, greyed as "Coming soon", so friends can see what's next.
+ * listed too, grayed as "Coming soon", so friends can see what's next.
  */
 export interface CatalogEntry {
   meta: GameMeta;

@@ -50,7 +50,7 @@ export type Cards = Record<Card, number>;
 /** The classic island (3–4 players) or the big one (5–6). */
 export type Size = 'classic' | 'big';
 
-/** A 2:1 harbour for one resource, or a 3:1 harbour for any. */
+/** A 2:1 harbor for one resource, or a 3:1 harbor for any. */
 export type HarbourKind = Resource | 'any';
 
 export interface Tile {
@@ -65,7 +65,7 @@ export interface Harbour {
   kind: HarbourKind;
 }
 
-/** One game's island: tiles in the layout's order, and its harbours. */
+/** One game's island: tiles in the layout's order, and its harbors. */
 export interface Board {
   size: Size;
   /** Seafarers: the sea map this board is laid on (absent: the plain island of `size`). */

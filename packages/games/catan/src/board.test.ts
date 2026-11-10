@@ -50,7 +50,7 @@ describe('board generation', () => {
           expect(redsTouch(makeBoard(size, style, createRng(seed)))).toBe(false);
   });
 
-  it('redsTouch spots two neighbouring reds', () => {
+  it('redsTouch spots two neighboring reds', () => {
     const L = layout('classic');
     const b: Board = makeBoard('classic', 'Beginner', createRng(1));
     const [a, n] = [0, L.tiles[0]!.neighbours[0]!];

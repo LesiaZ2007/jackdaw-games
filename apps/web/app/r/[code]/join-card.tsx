@@ -33,7 +33,7 @@ function freeAvatar(taken: Avatar[], preferred: Avatar | null): Avatar {
   };
 }
 
-/** Taking a seat: name, crest and colour. Also handles moving a seat over from another phone. */
+/** Taking a seat: name, crest and color. Also handles moving a seat over from another phone. */
 export function JoinCard({
   code,
   snapshot,

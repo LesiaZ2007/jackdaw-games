@@ -9,7 +9,7 @@ import { useArrival } from './motion';
 
 export type Name = (id: string) => string;
 
-/** One player's name plate: token, checker colour, pips to go and points won. */
+/** One player's name plate: token, checker color, pips to go and points won. */
 export function Plate({
   t,
   side,

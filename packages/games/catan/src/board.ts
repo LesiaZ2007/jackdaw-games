@@ -4,7 +4,7 @@ import type { Board, DevCard, HarbourKind, Size, Terrain, Tile } from './types';
 
 /**
  * Laying out the island (5th edition and the 5–6 extension): which tiles, which number tokens in
- * which order, which harbours. Balanced follows the rulebook: tiles shuffled, tokens laid in
+ * which order, which harbors. Balanced follows the rulebook: tiles shuffled, tokens laid in
  * letter order along the spiral, redrawn until no two red numbers (6 and 8) touch.
  */
 

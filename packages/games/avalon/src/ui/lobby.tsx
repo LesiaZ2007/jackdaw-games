@@ -77,7 +77,7 @@ const initials = (name = '') =>
     .join('')
     .toUpperCase();
 
-/** A player's crest on their colour: a disc at night, a shield on parchment. */
+/** A player's crest on their color: a disc at night, a shield on parchment. */
 function Avatar({ player, children }: { player: ScreenPlayer; children?: ReactNode }) {
   return (
     <span
@@ -247,7 +247,7 @@ export function Fan({ roles, label }: { roles: Role[]; label: string }) {
 }
 
 /**
- * Avalon's Table talk (the app's Chat in components/Room.js): each name in its speaker's colour,
+ * Avalon's Table talk (the app's Chat in components/Room.js): each name in its speaker's color,
  * a speaker's back-to-back lines grouped under one name, and the lobby's own lines set apart.
  */
 function AvalonChat({ chat, players }: { chat: LobbyChat; players: ScreenPlayer[] }) {
@@ -407,7 +407,7 @@ export function AvalonLobby({
               canInspect={(id) => id === me || isHost}
               inspectLabel={(p) =>
                 p.id === me
-                  ? `${p.name} (you): change your name, crest or colour`
+                  ? `${p.name} (you): change your name, crest or color`
                   : `${p.name}: remove or make host`
               }
               onInspect={onSeat}

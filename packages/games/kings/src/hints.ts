@@ -3,7 +3,7 @@ import { solve, type Puzzle } from './puzzle';
 /**
  * Hints for someone playing alone: the next thing that can be worked out, said the way a person
  * would reason it, or a mark that's wrong. `cells` are the squares the hint is about; `area` the
- * squares that explain it (a colour, a row, a king). `marks` are the board's: 0 empty, 1 crossed
+ * squares that explain it (a color, a row, a king). `marks` are the board's: 0 empty, 1 crossed
  * out, 2 a king.
  */
 export interface Hint {
@@ -31,7 +31,7 @@ function answerOf(p: Puzzle): Set<number> {
   return a;
 }
 
-/** Whether a king on `a` rules out `b`: same row, column or colour, or touching. */
+/** Whether a king on `a` rules out `b`: same row, column or color, or touching. */
 function rules(p: Puzzle, a: number, b: number): boolean {
   const { size } = p;
   const [ar, ac, br, bc] = [Math.floor(a / size), a % size, Math.floor(b / size), b % size];
@@ -56,7 +56,7 @@ function groupsOf(p: Puzzle): Group[] {
       cells: all.filter((i) => i % size === c),
     })),
     ...[...Array(size).keys()].map((g) => ({
-      name: 'this colour',
+      name: 'this color',
       cells: all.filter((i) => p.regions[i] === g),
     })),
   ];
@@ -100,7 +100,7 @@ export function nextStep(p: Puzzle, marks: readonly number[]): Hint {
   const kingless = (g: Group, extra: number[] = []) =>
     !g.cells.some((i) => marks[i] === 2 || extra.includes(i));
 
-  // A row, column or colour with one square left.
+  // A row, column or color with one square left.
   for (const g of groups) {
     if (!kingless(g)) continue;
     const left = g.cells.filter((i) => open(i));
@@ -117,13 +117,13 @@ export function nextStep(p: Puzzle, marks: readonly number[]): Hint {
     const out = [...Array(n).keys()].filter((i) => marks[i] === 0 && rules(p, k, i));
     if (out.length)
       return {
-        text: 'This king rules out its row, its column, its colour and the squares touching it. Cross them out.',
+        text: 'This king rules out its row, its column, its color and the squares touching it. Cross them out.',
         cells: out,
         area: [k],
       };
   }
 
-  // A colour whose open squares sit in one row or column, or a row or column in one colour.
+  // A color whose open squares sit in one row or column, or a row or column in one color.
   const size = p.size;
   const lineOf = [
     { word: 'row', at: (i: number) => Math.floor(i / size) },
@@ -141,7 +141,7 @@ export function nextStep(p: Puzzle, marks: readonly number[]): Hint {
       );
       if (rest.length)
         return {
-          text: `Every square left in this colour is in ${word} ${line + 1}, so that ${word}'s king is in this colour. Cross out the rest of the ${word}.`,
+          text: `Every square left in this color is in ${word} ${line + 1}, so that ${word}'s king is in this color. Cross out the rest of the ${word}.`,
           cells: rest,
           area: left,
         };
@@ -158,13 +158,13 @@ export function nextStep(p: Puzzle, marks: readonly number[]): Hint {
     );
     if (rest.length)
       return {
-        text: `Every square left in ${g.name} is one colour, so that colour's king is in ${g.name}. Cross out the rest of the colour.`,
+        text: `Every square left in ${g.name} is one color, so that color's king is in ${g.name}. Cross out the rest of the color.`,
         cells: rest,
         area: left,
       };
   }
 
-  // A square that, holding a king, would leave a row, column or colour with nowhere for one.
+  // A square that, holding a king, would leave a row, column or color with nowhere for one.
   for (let i = 0; i < n; i++) {
     if (!open(i)) continue;
     const blocked = groups.find(
@@ -187,7 +187,7 @@ export function nextStep(p: Puzzle, marks: readonly number[]): Hint {
     )[0];
   const cell = region?.cells.find((i) => answer.has(i));
   return {
-    text: 'Of the squares left in this colour, the king goes here.',
+    text: 'Of the squares left in this color, the king goes here.',
     cells: cell === undefined ? [] : [cell],
     area: region?.cells ?? [],
   };

@@ -11,11 +11,11 @@ export const monopolyUi: GameUi = {
   art: { band: 'vert', field: 'fretty', glyph: 'house' },
   about: {
     description:
-      'Go round the board buying streets, railroads and utilities. Own a whole colour group and you can build houses and hotels, and the rent climbs fast. Trade to finish your sets, mortgage when money runs short, and keep going until everyone else is bankrupt.',
+      'Go around the board buying streets, railroads and utilities. Own a whole color group and you can build houses and hotels, and the rent climbs fast. Trade to finish your sets, mortgage when money runs short, and keep going until everyone else is bankrupt.',
     steps: [
       'Roll the dice and move. Pass GO and collect $200.',
       'Land on a deed nobody owns and buy it, or let it go to auction, where anyone can bid.',
-      'Land on someone else’s deed and pay rent. A full colour group doubles it, and houses raise it far more.',
+      'Land on someone else’s deed and pay rent. A full color group doubles it, and houses raise it far more.',
       'Own a whole group and build on it evenly, one house at a time, up to a hotel.',
       'Trade deeds, cash and Jail cards at any time from the Trade sheet. Mortgage deeds when you need money.',
       'Can’t pay? Sell buildings and mortgage until you can, or go bankrupt. The last one standing wins, or the richest when the rounds run out.',
@@ -25,7 +25,7 @@ export const monopolyUi: GameUi = {
     pictures: [
       {
         src: '/games/monopoly/game-phone.png',
-        alt: 'Monopoly on a phone: the printed board with its colour bands and tokens, the dice in the pale green centre, everyone’s cash below and the End turn plaque.',
+        alt: 'Monopoly on a phone: the printed board with its color bands and tokens, the dice in the pale green centre, everyone’s cash below and the End turn plaque.',
       },
       {
         src: '/games/monopoly/tv.png',

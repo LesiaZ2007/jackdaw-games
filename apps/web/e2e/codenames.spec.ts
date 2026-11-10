@@ -4,7 +4,7 @@ import { join as pathJoin } from 'node:path';
 
 // Codenames: the host splits the table into Red and Blue in the game's own lobby, a spymaster
 // gives a clue and an operative guesses on real phones, then the rest of the game is driven
-// through the lobby API to a win. Operatives and the TV must never receive an unrevealed colour.
+// through the lobby API to a win. Operatives and the TV must never receive an unrevealed color.
 // SHOTS=1 also screenshots every screen at 375, 768, 1280 and 1920 in day and dark.
 
 type Card = 'red' | 'blue' | 'bystander' | 'assassin';
@@ -88,7 +88,7 @@ async function post(req: APIRequestContext, code: string, token: string, data: u
   return (await res.json()) as Snapshot;
 }
 
-/** The player's own view must carry no colour for a word that's still hidden (unless spymaster). */
+/** The player's own view must carry no color for a word that's still hidden (unless spymaster). */
 function expectNoHiddenColours(
   view: Omit<View, 'key' | 'myTeam' | 'spymaster'> & Partial<View>,
   key: Card[],
@@ -178,7 +178,7 @@ test('a 4-player game: teams in the lobby, a real clue and guess, then to a win'
   const spyPage = phones[names.indexOf(spyName)]!;
   const opPage = phones[names.indexOf(opName)]!;
 
-  // Operatives and the TV get no colours before anything is uncovered.
+  // Operatives and the TV get no colors before anything is uncovered.
   const opView = (await read(opPage.request, code, tokens[ids[opName]!]!)).view!;
   expectNoHiddenColours(opView, key);
   const tv = await open(browser, 1280, 800);

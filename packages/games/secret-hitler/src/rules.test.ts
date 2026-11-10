@@ -37,7 +37,7 @@ function table(n: number, opts: { roles?: Role[]; deck?: Policy[]; president?: s
 
 const apply = (s: ShState, who: string, a: ShAction) => game.applyAction(s, who, a, rng, 0);
 
-/** One move, with the president pressing End term straight away once the round is done. */
+/** One move, with the president pressing End term right away once the round is done. */
 function act(s: ShState, who: string, a: ShAction): ShState {
   const next = apply(s, who, a);
   return next.phase === 'post' ? apply(next, next.president, { type: 'endTerm' }) : next;

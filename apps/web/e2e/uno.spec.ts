@@ -60,8 +60,8 @@ test('uno: the player to act plays or draws, and the turn goes round', async ({
   const playable = actor.getByRole('button', { name: /, play it$/ });
   if ((await playable.count()) > 0) {
     await playable.first().click();
-    // A wild asks for its colour first.
-    const colour = actor.getByRole('region', { name: 'Choose a colour' });
+    // A wild asks for its color first.
+    const colour = actor.getByRole('region', { name: 'Choose a color' });
     if (await colour.isVisible().catch(() => false)) {
       await colour.getByRole('button', { name: 'Blue' }).click();
     }

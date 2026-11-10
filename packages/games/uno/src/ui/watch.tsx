@@ -16,7 +16,7 @@ import { feedLine } from './tv';
 import './uno.css';
 
 /**
- * UNO for someone watching on a phone: the phone's own table with everyone round the mat and their
+ * UNO for someone watching on a phone: the phone's own table with everyone around the mat and their
  * card counts, and where a player's hand and dock would be, the last few moves as the TV's play by
  * play. Nobody's cards are ever shown.
  */

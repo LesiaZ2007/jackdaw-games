@@ -287,7 +287,7 @@ function DevRow({
   );
 }
 
-/** Cities & Knights' progress cards, each in its track's colour; a tap opens them to play one. */
+/** Cities & Knights' progress cards, each in its track's color; a tap opens them to play one. */
 function ProgressRow({
   cards,
   onCards,

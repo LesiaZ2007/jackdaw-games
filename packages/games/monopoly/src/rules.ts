@@ -36,7 +36,7 @@ import { monopolyBot } from './bot';
 
 /**
  * Monopoly for 2 to 6, by the classic rules: roll and move, buy what you land on or see it go to
- * auction, collect rent, build evenly on full colour groups, mortgage, trade, and go bankrupt
+ * auction, collect rent, build evenly on full color groups, mortgage, trade, and go bankrupt
  * when you can't pay. The last player standing wins, or the richest once a round limit is up.
  *
  * Everything at a Monopoly table is public except the order of the two card decks, which stays
@@ -45,7 +45,7 @@ import { monopolyBot } from './bot';
  * A payment a player can't make at once goes on a queue of debts. While the queue isn't empty
  * the first debtor must raise the money (sell buildings, mortgage, trade) or go bankrupt, and
  * nobody else moves. A player who couldn't raise it even by selling everything goes bankrupt
- * straight away.
+ * right away.
  */
 
 const ENDS = ['Last one standing', 'After 30 rounds', 'After 20 rounds'] as const;
@@ -345,7 +345,7 @@ const groupName = (space: number) => {
 };
 
 /**
- * The sets (colour groups, and the railroads) this player holds in full, by their first space.
+ * The sets (color groups, and the railroads) this player holds in full, by their first space.
  * Compared before and after a deed changes hands to spot a monopoly being completed.
  */
 function setsHeld(s: MonopolyState, id: string): number[] {
@@ -377,7 +377,7 @@ function recapSets(s: MonopolyState, id: string, before: number[]) {
   }
 }
 
-/** True when one player owns every deed in a colour group. */
+/** True when one player owns every deed in a color group. */
 function fullSet(s: MonopolyState, space: number): boolean {
   const owner = holding(s, space)?.owner;
   return Boolean(owner) && setOf(space).every((d) => holding(s, d)?.owner === owner);
@@ -879,7 +879,7 @@ export function buildBlock(s: MonopolyState, id: string, at: number): string | n
   const st = streetAt(at);
   const h = holding(s, at);
   if (!st || !h || h.owner !== id) return 'You can only build on your own streets.';
-  if (!fullSet(s, at)) return 'Build once you own the whole colour group.';
+  if (!fullSet(s, at)) return 'Build once you own the whole color group.';
   const group = setOf(at).map((d) => holding(s, d)!);
   if (group.some((g) => g.mortgaged)) return 'Lift the mortgages in this group first.';
   if (h.houses >= 5) return 'That street already has a hotel.';

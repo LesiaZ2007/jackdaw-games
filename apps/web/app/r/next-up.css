@@ -81,7 +81,7 @@
   padding: var(--space-2) var(--space-2) var(--space-2) var(--space-2);
   background: var(--paper);
   border: 2px solid var(--ink);
-  /* a band of the game's own colour down the left edge */
+  /* a band of the game's own color down the left edge */
   border-left: 8px solid var(--band);
 }
 .next-up__what {

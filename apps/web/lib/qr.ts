@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 
-/** A QR code as one SVG path (1 unit per module) plus its size, for drawing in any colour. */
+/** A QR code as one SVG path (1 unit per module) plus its size, for drawing in any color. */
 export function qrPath(text: string): { size: number; d: string } {
   const qr = QRCode.create(text, { errorCorrectionLevel: 'M' });
   const size = qr.modules.size;

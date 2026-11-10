@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* Tailwind is for layout only; colour, type and pieces come from @jackdaw/ui tokens and kit. */
+/* Tailwind is for layout only; color, type and pieces come from @jackdaw/ui tokens and kit. */
 *,
 *::before,
 *::after {

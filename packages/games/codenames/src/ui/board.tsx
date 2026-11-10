@@ -61,7 +61,7 @@ function useHold(onTap: (i: number) => void, onHold?: (i: number) => void) {
 
 export interface BoardProps {
   words: string[];
-  /** Colours of uncovered words; null while hidden. */
+  /** Colors of uncovered words; null while hidden. */
   revealed: (Card | null)[];
   /** The key, for spymasters (and everyone once it's over). */
   keyCards?: Card[] | null;

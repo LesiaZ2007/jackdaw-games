@@ -110,7 +110,7 @@ export function CodenamesLobby({
           isHost
             ? `${p.name}${p.id === me ? ' (you)' : ''}${p.bot ? ', computer player' : ''}: choose where they play`
             : p.id === me
-              ? `${p.name} (you): change your name, crest or colour`
+              ? `${p.name} (you): change your name, crest or color`
               : `${p.name}${p.bot ? ', computer player' : ''}`
         }
       >

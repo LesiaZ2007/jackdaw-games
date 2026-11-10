@@ -348,7 +348,7 @@ export interface BoxLidProps {
   players: [number, number];
   minutes: [number, number];
   tagline?: string;
-  /** Why it can't be played right now, e.g. "Needs 5 to 15 players". Greys the lid. */
+  /** Why it can't be played right now, e.g. "Needs 5 to 15 players". Grays the lid. */
   unfit?: string | null;
   selected?: boolean;
   onClick?: () => void;

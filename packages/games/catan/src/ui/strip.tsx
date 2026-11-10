@@ -87,7 +87,7 @@ export function TurnStrip({
   );
 }
 
-/** Everyone else: token in their colour, name, cards, development cards, awards and points. */
+/** Everyone else: token in their color, name, cards, development cards, awards and points. */
 export function Opponents({
   t,
   me,

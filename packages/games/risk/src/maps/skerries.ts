@@ -4,7 +4,7 @@ import { SKERRIES_REGIONS, SKERRIES_SEA, SKERRIES_SHAPES } from './skerries.shap
 /**
  * An archipelago (2026-10-24: "more risk maps"): 42 territories on fifteen islands in six
  * groups, with the classic board's bonuses. Every way between groups is a sea lane, so each group
- * has few ways in and holding one is about guarding its harbours.
+ * has few ways in and holding one is about guarding its harbors.
  *
  *   Northholm (north-west, 9) ~~ Saltreach (south-west, 7) ~~ the Teeth (south, 4 islets)
  *         ~~ the Great Skerry (center, 12) ~~ the Gannet Isles (north-east, 6)
@@ -40,7 +40,7 @@ export const skerries = defineMap({
     ['longbarrow', 'Longbarrow', 'northholm'],
     ['eiderwick', 'Eiderwick', 'northholm'],
     ['skuahall', 'Skuahall', 'northholm'],
-    ['cold-harbour', 'Cold Harbour', 'northholm'],
+    ['cold-harbour', 'Cold Harbor', 'northholm'],
     ['whalebone', 'Whalebone', 'northholm'],
     ['auk-isle', 'Auk Isle', 'northholm'],
     ['razorbill', 'Razorbill', 'northholm'],

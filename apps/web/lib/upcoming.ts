@@ -3,7 +3,7 @@ import type { GameAbout, GameArt } from '@jackdaw/ui';
 import { games } from './registry';
 
 /**
- * Games still being built, listed in the catalog greyed as "Coming soon" (none right now). Plain
+ * Games still being built, listed in the catalog grayed as "Coming soon" (none right now). Plain
  * data with no React, so server code (page titles) can read it too. Werewolf and Spyfall were
  * listed here until they were dropped (2026-10-24); Werewolf came back as Mafia's village setting.
  */

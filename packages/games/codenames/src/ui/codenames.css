@@ -1,6 +1,6 @@
 /* Codenames: a case file on the table. Index cards for the 25 words, an agent's ink stamp that
    flips over a word once it's uncovered, manila folders for the two teams. Day is kraft and
-   manila; dark is night ops. Every colour is a token in this first block. */
+   manila; dark is night ops. Every color is a token in this first block. */
 
 .cn {
   --cn-desk: #c9b48a;
@@ -45,7 +45,7 @@
   --cn-ass: #0f0e0d;
   --cn-go: #3f8a63;
   --cn-shadow: rgba(0, 0, 0, 0.5);
-  /* Chat names at night: lighter versions of each player's colour. */
+  /* Chat names at night: lighter versions of each player's color. */
   --lc-name-slate: #8fc0d8;
   --lc-name-plum: #b9a3dc;
   --lc-name-moss: #a7c79a;
@@ -184,7 +184,7 @@ button.cn-card {
   text-transform: uppercase;
   white-space: nowrap;
 }
-/* A spymaster's key: the card washed in its colour, with a corner tab. */
+/* A spymaster's key: the card washed in its color, with a corner tab. */
 .cn-card__key {
   position: absolute;
   top: 0;
@@ -212,7 +212,7 @@ button.cn-card {
   outline: 3px solid var(--cn-ass);
   outline-offset: -3px;
 }
-/* Suggestions: a dashed ring in the colour of the team in play, with the suggesters' tokens. */
+/* Suggestions: a dashed ring in the color of the team in play, with the suggesters' tokens. */
 .cn-card.is-suggested {
   outline: 2px dashed var(--cn-text-2);
   outline-offset: -4px;

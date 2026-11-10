@@ -6,7 +6,7 @@ import { PlayerScreen } from './player';
 import { TvScreen } from './tv';
 import { WatchScreen } from './watch';
 
-/** UNO: catalog art, detail page and screens. It uses Jackdaw's lobby, seated round the mat. */
+/** UNO: catalog art, detail page and screens. It uses Jackdaw's lobby, seated around the mat. */
 export const unoUi: GameUi = {
   art: { band: 'gules', field: 'checky', glyph: 'uno' },
   about: {

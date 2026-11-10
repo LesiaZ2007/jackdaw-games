@@ -69,7 +69,7 @@ describe('placement', () => {
     expect(piecesLeft(b, roads, 'a')).toEqual({ road: 13, settlement: 4, city: 3 });
   });
 
-  it('harbour ratios: 2 for its resource, 3 generic, 4 otherwise', () => {
+  it('harbor ratios: 2 for its resource, 3 generic, 4 otherwise', () => {
     const board = makeBoard('classic', 'Beginner', createRng(1));
     const generic = L.edges[board.harbours[0]!.edge]!; // 'any'
     const wool = L.edges[board.harbours[1]!.edge]!; // 'wool'

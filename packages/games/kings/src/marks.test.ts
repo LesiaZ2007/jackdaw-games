@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { answerMarks, clashes, edges, ruledOut, type Mark } from './marks';
 import { checkKings, makePuzzle, solve, type Puzzle } from './puzzle';
 
-// A 4×4 board in four 2×2 colour blocks.
+// A 4×4 board in four 2×2 color blocks.
 const p: Puzzle = {
   size: 4,
   regions: [0, 0, 1, 1, 0, 0, 1, 1, 2, 2, 3, 3, 2, 2, 3, 3],
@@ -21,7 +21,7 @@ describe('ruledOut', () => {
     expect(ruledOut(p, Array<Mark>(16).fill(1)).some(Boolean)).toBe(false);
   });
 
-  it('rules out the row, column, colour and neighbours, but not the king itself', () => {
+  it('rules out the row, column, color and neighbors, but not the king itself', () => {
     const out = ruledOut(p, board([5]));
     const open = out.flatMap((x, i) => (x ? [] : [i]));
     expect(open).toEqual([3, 5, 11, 12, 14, 15]);
@@ -29,15 +29,15 @@ describe('ruledOut', () => {
 });
 
 describe('clashes', () => {
-  it('is empty for kings that do not touch or share a line or colour', () => {
+  it('is empty for kings that do not touch or share a line or color', () => {
     expect(clashes(p, board([1, 11])).size).toBe(0);
   });
 
-  it('marks both kings of a pair that shares a row, column, colour or touches', () => {
+  it('marks both kings of a pair that shares a row, column, color or touches', () => {
     expect(sorted(clashes(p, board([0, 3])))).toEqual([0, 3]); // row
     expect(sorted(clashes(p, board([0, 12])))).toEqual([0, 12]); // column
-    expect(sorted(clashes(p, board([0, 5])))).toEqual([0, 5]); // colour and touching
-    expect(sorted(clashes(p, board([2, 7])))).toEqual([2, 7]); // colour
+    expect(sorted(clashes(p, board([0, 5])))).toEqual([0, 5]); // color and touching
+    expect(sorted(clashes(p, board([2, 7])))).toEqual([2, 7]); // color
     expect(sorted(clashes(p, board([5, 10])))).toEqual([5, 10]); // diagonal touch
   });
 
@@ -50,7 +50,7 @@ describe('clashes', () => {
 });
 
 describe('edges', () => {
-  it('inks the board edge and every colour change', () => {
+  it('inks the board edge and every color change', () => {
     expect(edges(p, 0)).toEqual({ t: true, l: true, b: false, r: false });
     expect(edges(p, 1)).toEqual({ t: true, l: false, b: false, r: true });
     expect(edges(p, 5)).toEqual({ t: false, l: false, b: true, r: true });

@@ -114,15 +114,27 @@ function sortedPiles(fs: readonly FoundationView[]) {
     );
 }
 
+/** A printed ghost slot on the baize: where a pile goes. A suit mark, or an "A" for any ace. */
+function Ghost({ suit, hint }: { suit?: Suit; hint?: boolean }) {
+  return (
+    <span className={cx('sol-card sol-ghost', hint && 'sol-ghost--hint')} aria-hidden="true">
+      {suit ? <SuitMark suit={suit} /> : <b>A</b>}
+    </span>
+  );
+}
+
 /**
- * The middle everyone builds on: every foundation's top card, by suit, each with a tab in the
- * tint of whoever put it there. The pile that just took a card lands it.
+ * The middle everyone builds on, printed as a baize with a cream rule: one slot per suit (a
+ * ghost where no pile has started) and, with more than one player, a spare slot for a second
+ * ace of any suit. Each started pile shows its top card with a band in the tint of whoever put
+ * that card there. The pile that just took a card lands it with a small thunk.
  */
 export function Middle({
   foundations,
   players,
   landed,
   hint,
+  seats = 1,
 }: {
   foundations: readonly FoundationView[];
   players: ScreenPlayer[];
@@ -130,25 +142,78 @@ export function Middle({
   landed?: { pile: number; n: number } | null;
   /** Light up the piles this card could go on. */
   hint?: boolean;
+  /** How many decks are in play: with more than one, a suit can have several piles. */
+  seats?: number;
 }) {
   const piles = sortedPiles(foundations);
-  return (
-    <div className="sol-middle" aria-label="The middle">
-      {piles.length === 0 && <p className="sol-middle__empty">Aces go up here</p>}
-      {piles.map((f) => (
+  const up = foundations.reduce((n, f) => n + f.count, 0);
+  const slots: ReactNode[] = [];
+  for (const suit of SUITS) {
+    const mine = piles.filter((f) => f.suit === suit);
+    if (mine.length === 0) slots.push(<Ghost key={`g${suit}`} suit={suit} hint={hint} />);
+    for (const f of mine) {
+      const here = landed?.pile === f.i;
+      slots.push(
         <span
           key={f.i}
           className={cx('sol-pile', f.count === 13 && 'sol-pile--done', hint && 'sol-pile--hint')}
           title={`${f.count} ${f.count === 1 ? 'card' : 'cards'}`}
         >
-          <PlayingCard
-            key={landed?.pile === f.i ? `n${landed.n}` : f.top}
-            card={f.top}
-            tab={tintOf(players, f.by)}
-            className={landed?.pile === f.i ? 'sol-land' : undefined}
-          />
-        </span>
-      ))}
+          <span
+            key={here ? `n${landed.n}` : 's'}
+            className={cx('sol-pile__in', here && 'sol-thunk')}
+          >
+            <PlayingCard
+              card={f.top}
+              tab={tintOf(players, f.by)}
+              className={here ? 'sol-land' : undefined}
+            />
+          </span>
+        </span>,
+      );
+    }
+  }
+  if (seats > 1) slots.push(<Ghost key="open" hint={hint} />);
+  return (
+    <div className="sol-middle" aria-label="The middle">
+      <p className="sol-middle__label">
+        The middle · {up} {up === 1 ? 'card' : 'cards'} up
+      </p>
+      <div className="sol-middle__row" style={{ '--n': slots.length } as CSSProperties}>
+        {slots}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A cleared-out layout: the top cards of the middle piles hop out one after another and settle
+ * in a fanned row under a "Cleared out" plaque. Without motion it is just the row.
+ */
+export function Cascade({
+  foundations,
+  players,
+}: {
+  foundations: readonly FoundationView[];
+  players: ScreenPlayer[];
+}) {
+  const piles = sortedPiles(foundations);
+  return (
+    <div className="sol-cascade" style={{ '--n': Math.max(piles.length, 1) } as CSSProperties}>
+      <p className="sol-cascade__plaque">Cleared out</p>
+      <div className="sol-cascade__row">
+        {piles.map((f, k) => (
+          <span key={f.i} className="sol-cascade__x" style={{ '--k': k } as CSSProperties}>
+            <span className="sol-cascade__y">
+              <PlayingCard
+                card={f.top}
+                tab={tintOf(players, f.by)}
+                covered={k < piles.length - 1}
+              />
+            </span>
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -233,6 +298,8 @@ export function StockWaste({
   bump?: Card | null;
 }) {
   const top = seat.waste.at(-1);
+  // The stack's printed thickness thins out as it empties.
+  const edges = seat.stock >= 16 ? 3 : seat.stock >= 6 ? 2 : seat.stock >= 2 ? 1 : 0;
   const stockLabel =
     seat.stock > 0
       ? `Turn the stock: ${seat.stock} left`
@@ -248,12 +315,23 @@ export function StockWaste({
         disabled={!onDraw || (seat.stock === 0 && seat.wasteCount === 0)}
         aria-label={stockLabel}
       >
-        {seat.stock > 0 ? (
-          <PlayingCard down back={back} />
-        ) : (
-          <Slot>{seat.wasteCount > 0 ? <b aria-hidden="true">↻</b> : null}</Slot>
-        )}
-        <span className="sol-count">{seat.stock}</span>
+        <span className="sol-stock__stack" style={{ '--e': edges } as CSSProperties}>
+          {Array.from({ length: edges }, (_, i) => (
+            <span
+              key={i}
+              className="sol-card sol-card--back sol-stock__edge"
+              style={{ '--back': back, '--k': edges - i } as CSSProperties}
+            />
+          ))}
+          {seat.stock > 0 ? (
+            <PlayingCard down back={back} />
+          ) : (
+            <Slot>{seat.wasteCount > 0 ? <b aria-hidden="true">↻</b> : null}</Slot>
+          )}
+        </span>
+        <span className="sol-chit sol-chit--stock" aria-hidden="true">
+          {seat.stock}
+        </span>
       </button>
       <div className="sol-waste">
         {seat.waste.length === 0 && <Slot />}

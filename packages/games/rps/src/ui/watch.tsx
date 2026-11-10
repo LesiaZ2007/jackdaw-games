@@ -3,12 +3,14 @@
 import { useMoment, VerdictMoment, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import { roundWinners } from '../outcome';
 import type { RpsTableView } from '../rules';
+import { useRevealBeat } from './beat';
 import { RpsTable } from './player';
 import { roundDetail, roundTitle } from './tv';
 
 /**
- * Rock Paper Scissors for someone watching on a phone: the phone's own table (round, who has
- * thrown, scores, the last reveal) without the throw buttons. Each reveal shows as the TV's moment.
+ * Rock Paper Scissors for someone watching on a phone: the phone's own table (the ring, the
+ * scores, the round history) without the throw discs. Each reveal shows as the TV's moment,
+ * once the discs have turned over.
  */
 export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
   tableView,
@@ -21,16 +23,12 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
   const last = t.history[t.history.length - 1];
   const won = last ? roundWinners(last) : [];
   const [fresh, dismiss] = useMoment(t.history.length);
+  const step = useRevealBeat(t.history.length);
 
   return (
     <div className="rps-watch">
       <RpsTable table={t} players={players as ScreenPlayer[]} reactions={reactions} />
-      {!last && (
-        <p className="rps-watch__empty">
-          Everyone&rsquo;s throws are shown here together once the last pick is in.
-        </p>
-      )}
-      {fresh !== null && last && t.round <= t.rounds && (
+      {fresh !== null && step >= 5 && last && t.round <= t.rounds && (
         <VerdictMoment
           key={last.round}
           outcome="reveal"

@@ -1,0 +1,493 @@
+/* Rock Paper Scissors: the ring, the throw discs and the score pad, shared by the phone and the TV.
+   Built from @jackdaw/ui tokens. Everything is flat print: no gradients, no glows. */
+
+/* ── Colors: every color this game adds is here ────────────────────────────────────────────── */
+.rps,
+.rps-tv {
+  --rps-rock: var(--sable);
+  --rps-paper: var(--on-fill);
+  --rps-scissors: var(--gules);
+  --rps-glyph-cream: var(--on-fill);
+  /* ink on the cream paper disc: fixed, so a printed disc looks the same by day and in the dark */
+  --rps-glyph-ink: #1d1d1c;
+  --rps-win: var(--vert);
+  --rps-lose: color-mix(in srgb, var(--ink) 38%, transparent);
+  --rps-pick: var(--or);
+  /* what the discs are punched out of, and the printed face of the ring */
+  --rps-cut: var(--paper);
+  --rps-face: var(--paper);
+}
+
+.rps-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Throw discs ───────────────────────────────────────────────────────────────────────────── */
+/* Size is --d (a length). A disc is a round punch-out with a die-cut ring like the kit's tokens. */
+.rps-disc {
+  --dd: var(--d, 88px);
+  --lift: calc(var(--dd) * 0.05);
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--dd);
+  height: var(--dd);
+  perspective: calc(var(--dd) * 5);
+  transition: transform 160ms var(--ease-out);
+}
+.rps-disc__in {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 420ms var(--ease-out);
+}
+.rps-disc.is-down .rps-disc__in {
+  transform: rotateY(180deg);
+}
+.rps-disc__face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow:
+    0 0 0 calc(var(--dd) * 0.02) var(--ink),
+    0 0 0 calc(var(--dd) * 0.06) var(--rps-cut),
+    0 0 0 calc(var(--dd) * 0.085) var(--rule),
+    0 var(--lift) 0 calc(var(--dd) * 0.085) var(--shadow);
+}
+/* the printed rule just inside the edge */
+.rps-disc__face::after {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  border: max(1px, calc(var(--dd) * 0.02)) solid currentColor;
+  opacity: 0.7;
+}
+.rps-disc__face svg {
+  width: 60%;
+  height: 60%;
+  display: block;
+}
+.rps-disc__face svg g {
+  stroke-width: 4.2px;
+}
+.rps-disc--rock .rps-disc__front {
+  background: var(--rps-rock);
+  color: var(--rps-glyph-cream);
+}
+.rps-disc--paper .rps-disc__front {
+  background: var(--rps-paper);
+  color: var(--rps-glyph-ink);
+}
+.rps-disc--scissors .rps-disc__front {
+  background: var(--rps-scissors);
+  color: var(--rps-glyph-cream);
+}
+/* the back: sable with the jackdaw */
+.rps-disc__back {
+  transform: rotateY(180deg);
+  background: var(--rps-rock);
+  color: var(--rps-glyph-cream);
+}
+.rps-disc__back .jd-mark {
+  width: 58%;
+  height: 58%;
+}
+/* the ring round a disc: gold when chosen, vert for the round's winners, muted ink for the rest */
+.rps-disc::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--dd) * -0.15);
+  border-radius: 50%;
+  border: calc(var(--dd) * 0.06) solid var(--mark, transparent);
+  pointer-events: none;
+}
+.rps-disc--win {
+  --mark: var(--rps-win);
+}
+.rps-disc--loss,
+.rps-disc--draw {
+  --mark: var(--rps-lose);
+}
+.rps-disc.is-selected {
+  --mark: var(--rps-pick);
+  --lift: calc(var(--dd) * 0.14);
+  transform: translateY(calc(var(--dd) * -0.07));
+}
+
+/* ── The ring ──────────────────────────────────────────────────────────────────────────────── */
+/* The box takes the room the screen leaves; the ring is the largest square that fits it. */
+.rps-ringbox {
+  container-type: size;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+}
+.rps-ring {
+  --mid: 31;
+  --rps-fs: clamp(12px, 3.6cqw, 22px);
+  position: relative;
+  width: min(100cqw, 100cqh);
+  aspect-ratio: 1;
+  container-type: size;
+}
+/* the printed circle on the table: a double ink rule */
+.rps-ring__table {
+  position: absolute;
+  inset: 3%;
+  border-radius: 50%;
+  background: var(--rps-face);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 0 0 0 1.4cqw var(--rps-face),
+    inset 0 0 0 calc(1.4cqw + 1.5px) var(--ink);
+}
+.rps-ring__mid {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: calc(var(--mid) * 1cqw);
+  height: calc(var(--mid) * 1cqw);
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.rps-mid__note {
+  margin: 0;
+  font: 800 var(--rps-fs) / 1.1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+
+/* the "what beats what" triangle: rock → scissors → paper → rock */
+.rps-beats {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  color: var(--ink);
+}
+.rps-beats svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.rps-beats line {
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.rps-beats__disc {
+  position: absolute;
+  translate: -50% -50%;
+  --d: calc(var(--mid) * 0.3cqw);
+}
+
+/* the three-beat count */
+.rps-count {
+  display: grid;
+  justify-items: center;
+  gap: 1.6cqw;
+}
+.rps-count__chits {
+  display: flex;
+  gap: 1.4cqw;
+}
+.rps-count__chits i {
+  width: 3.6cqw;
+  height: 3.6cqw;
+  border: 2px solid var(--ink);
+}
+.rps-count__chits i.is-on {
+  background: var(--ink);
+}
+.rps-count__word {
+  font-size: clamp(18px, 8cqw, 120px);
+  line-height: 1;
+  animation: rps-beat 300ms var(--ease-out) both;
+}
+@keyframes rps-beat {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+.rps-result {
+  display: grid;
+  gap: 0.6cqw;
+  justify-items: center;
+}
+.rps-result__line {
+  font-size: clamp(16px, 5.4cqw, 72px);
+  line-height: 1.05;
+  animation: rps-beat 320ms var(--ease-out) both;
+}
+.rps-result__round {
+  font: 800 clamp(12px, 3cqw, 32px) / 1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-2);
+}
+
+/* seats: a token with its name plate, and in front of it (toward the middle) its disc */
+.rps-ring__seats {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rps-seat {
+  --ring-bg: var(--rps-face);
+  position: absolute;
+  translate: -50% -50%;
+  width: calc(var(--rt) * 1cqw);
+  height: calc(var(--rt) * 1cqw);
+}
+.rps-seat__tok {
+  position: relative;
+  display: grid;
+}
+.rps-seat .jd-token {
+  --z: calc(var(--rt) * 1cqw);
+  --ring-bg: var(--rps-face);
+}
+.rps-seat--me .jd-token {
+  outline: max(2px, calc(var(--z) * 0.06)) solid var(--or);
+  outline-offset: calc(var(--z) * 0.12);
+}
+.rps-seat__plate {
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  z-index: 1;
+  width: max-content;
+  max-width: 21cqw;
+  padding: 0.1em 0.45em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  font: 800 var(--rps-fs) / 1.2 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rps-seat[data-plate='below'] .rps-seat__plate {
+  top: calc(100% + var(--rt) * 0.14cqw);
+}
+.rps-seat[data-plate='above'] .rps-seat__plate {
+  bottom: calc(100% + var(--rt) * 0.14cqw);
+}
+.rps-seat--me .rps-seat__plate {
+  background: var(--ink);
+  color: var(--paper);
+}
+.rps-slot {
+  --d: calc(var(--rd) * 1cqw);
+  position: absolute;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: var(--d);
+  height: var(--d);
+}
+.rps-slot__empty {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px dashed var(--rule);
+}
+/* the round's "+n" pops beside each scorer after the turn */
+.rps-slot__gain {
+  position: absolute;
+  left: 68%;
+  top: -22%;
+  z-index: 2;
+  padding: 0.1em 0.35em;
+  background: var(--vert);
+  color: var(--on-fill);
+  font: 800 var(--rps-fs) / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  animation: rps-gain 520ms var(--ease-out) both;
+}
+@keyframes rps-gain {
+  0% {
+    transform: translateY(8px) scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* ── Scores ────────────────────────────────────────────────────────────────────────────────── */
+/* the strip: token, name and points, best first, sideways inside its own box */
+.rps-strip ol {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 2px 6px;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+}
+.rps-strip li {
+  --ring-bg: var(--paper);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  max-width: 200px;
+  padding: 4px 12px 4px 8px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.rps-strip li.is-me {
+  outline: 2px solid var(--or);
+  outline-offset: 1px;
+}
+.rps-strip__name {
+  min-width: 0;
+  max-width: 9ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 14px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rps-strip__pts {
+  font: 800 22px var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+
+/* the score pad: a ruled sheet, a row per player and a column per finished round */
+.rps-pad {
+  --w1: 44px;
+  --ring-bg: var(--paper);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.rps-pad__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.rps-pad table {
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+.rps-pad th,
+.rps-pad td {
+  padding: 3px 8px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  text-align: center;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.rps-pad thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font: 700 12px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+.rps-pad .rps-pad__who {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: var(--w1);
+  min-width: var(--w1);
+  max-width: var(--w1);
+  text-align: left;
+}
+.rps-pad thead .rps-pad__who {
+  z-index: 3;
+}
+.rps-pad .rps-pad__tot {
+  position: sticky;
+  left: var(--w1);
+  z-index: 1;
+  border-right: 2px solid var(--ink);
+}
+.rps-pad thead .rps-pad__tot {
+  z-index: 3;
+}
+.rps-pad__id {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.rps-pad__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: 800 15px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rps-pad__tot .jd-tally {
+  font: 800 20px var(--font-code);
+}
+.rps-pad tr.is-me > * {
+  background: color-mix(in srgb, var(--paper) 84%, var(--table-2));
+}
+.rps-pad__cell > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.rps-pad__cell .rps-disc {
+  --d: 22px;
+}
+.rps-pad__cell b {
+  font: 800 15px var(--font-code);
+}
+.rps-pad__empty {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px dashed var(--rule);
+  color: var(--ink-2);
+  font-size: 15px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rps-disc,
+  .rps-disc__in {
+    transition: none;
+  }
+  .rps-count__word,
+  .rps-result__line,
+  .rps-slot__gain {
+    animation: none;
+  }
+}

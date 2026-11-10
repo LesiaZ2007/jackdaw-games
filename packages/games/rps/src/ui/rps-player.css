@@ -1,239 +1,170 @@
-/* Rock Paper Scissors, phone and table. Built from @jackdaw/ui tokens. */
+/* Rock Paper Scissors, phone and laptop. The ring, discs and score pad are in ring.css.
+   Colors are tokens at the top of ring.css. */
+
+/* A phone fits the height under the lobby bar (GameUi.fit): the ring takes what the head, the
+   scores and the hand leave, so the three throw discs are always on screen. */
 .rps {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-2);
+  width: 100%;
   max-width: 640px;
-  /* fits the height under the lobby bar (GameUi.fit): the scores and the throws scroll inside
-     their own boxes, so the three throw buttons are always on screen */
+  margin-inline: auto;
   flex: 1;
   min-height: 0;
-}
-.rps__hand {
-  margin-top: auto;
-}
-.rps__board {
-  flex: 1 1 120px;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.rps__reveal {
-  flex: 0 1 auto;
-  min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
-}
-.rps__reveal ul {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 .rps__head h2 {
   font-size: var(--step-3);
+  line-height: 1.05;
 }
 .rps__head p {
-  margin: var(--space-1) 0 0;
+  margin: 2px 0 0;
   color: var(--ink-2);
+  font-size: 16px;
+  line-height: 1.2;
 }
-.rps__board ol {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  background: var(--paper);
-  border: 2px solid var(--ink);
+.rps > .rps-ringbox {
+  flex: 1 1 0;
+  min-height: 160px;
 }
-.rps__board li {
-  --ring-bg: var(--paper);
+.rps__side {
+  flex: none;
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-}
-/* Holds a token and any reaction popping over it */
-.rps__tok {
-  position: relative;
-  display: inline-grid;
-}
-.rps__board li + li {
-  border-top: 1px solid var(--rule);
-}
-.rps__board .jd-token {
-  --ring-bg: var(--paper);
-}
-.rps__board li.me {
-  background: color-mix(in srgb, var(--paper) 82%, var(--table-2));
-}
-.rps__name {
-  flex: 1;
-  min-width: 0;
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rps__name small {
-  font-weight: 500;
-  color: var(--ink-2);
-}
-.rps__thrown,
-.rps__thinking {
-  font: 700 13px var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.rps__thrown {
-  color: var(--ink);
-}
-.rps__thrown::before {
-  content: '✓ ';
-}
-.rps__thinking {
-  color: var(--ink-2);
-}
-.rps__score {
-  min-width: 2ch;
-  text-align: right;
-  font: 800 26px var(--font-code);
-  font-variant-numeric: tabular-nums;
-}
-.rps__reveal {
-  display: grid;
+  flex-direction: column;
   gap: var(--space-2);
+  min-height: 0;
 }
-.rps__reveal ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-  gap: var(--space-2);
-}
-.rps__card {
-  --ring-bg: var(--paper);
+.rps-scores {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-2);
-  min-height: 56px;
-  padding: var(--space-2);
-  border: 2px solid var(--ink);
-  background: var(--paper);
-  font-weight: 700;
-  animation: rps-flip 560ms var(--ease-out) both;
-  transform-origin: 50% 50%;
+  min-height: 0;
 }
-.rps__card-name {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  line-height: 1.1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* on a phone the pad is the history only: the strip already has names and points */
+.rps .rps-pad {
+  max-height: 100px;
 }
-.rps__card-name small {
-  font: 700 13px var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-2);
+.rps .rps-pad--blank {
+  display: none;
 }
-/* the round's winners are printed on green card; the rest step back */
-.rps__card--win {
-  color: var(--on-fill);
-  background: var(--vert);
+.rps .rps-pad__name,
+.rps .rps-pad__tot {
+  display: none;
 }
-.rps__card--win .rps__throw,
-.rps__card--win .rps__card-name small {
-  color: var(--on-fill);
-}
-.rps__card--win .jd-chip {
-  color: var(--vert);
-  background: var(--on-fill);
-}
-/* a loss stays fully legible: plain paper with an ink rule, not faded or dashed */
-.rps__card--loss {
-  border-color: var(--ink-2);
-}
-.rps__card--me {
-  outline: 3px solid var(--or);
-  outline-offset: 2px;
-}
-@keyframes rps-flip {
-  from {
-    transform: perspective(500px) rotateY(90deg);
-    opacity: 0;
-  }
-}
-.rps__throw {
-  display: grid;
-  color: var(--ink);
-}
+
+/* ── Your hand: three throw discs ── */
 .rps__hand {
+  --rps-cut: var(--table);
   display: grid;
-  gap: var(--space-2);
+  gap: 6px;
+  padding-top: 14px;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-.rps__picks {
+.rps-picks {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
 }
-.rps__pick {
+.rps-pick {
+  --d: 88px;
   appearance: none;
   display: grid;
   justify-items: center;
-  gap: var(--space-1);
-  min-height: 108px;
-  padding: var(--space-3) var(--space-1);
+  gap: 8px;
+  min-height: 44px;
+  padding: 0;
   color: var(--ink);
-  background: var(--paper);
-  border: 2px solid var(--ink);
-  outline: 1px solid var(--ink);
-  outline-offset: -6px;
-  font: 800 18px var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  background: none;
+  border: 0;
   cursor: pointer;
-  transition: transform 140ms var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
-.rps__pick:active {
+.rps-pick__label {
+  font: 800 16px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+/* the others step back a little but stay legible and tappable, so you can change your mind */
+.rps-picks.has-pick .rps-pick[aria-checked='false'] {
+  opacity: 0.72;
+}
+.rps-pick[aria-checked='true'] .rps-pick__label {
+  text-decoration: underline 3px var(--or);
+  text-underline-offset: 5px;
+}
+.rps-pick:active .rps-disc {
   transform: translateY(1px);
 }
-.rps__pick[aria-checked='true'] {
-  color: var(--on-fill);
-  background: var(--vert);
-  outline-color: var(--on-fill);
+.rps-pick[aria-checked='true']:active .rps-disc {
+  transform: translateY(calc(var(--d) * -0.07 + 1px));
 }
-.rps__pick:focus-visible {
+.rps-pick:focus-visible {
   outline: 3px solid var(--or);
-  outline-offset: 2px;
+  outline-offset: 4px;
 }
 .rps__status {
   margin: 0;
   text-align: center;
   color: var(--ink-2);
   font-size: 15px;
+  line-height: 1.2;
 }
-@media (prefers-reduced-motion: reduce) {
-  .rps__pick {
-    transition: none;
-  }
-  .rps__card {
-    animation: none;
-  }
-}
-
-/* ── Hover on a computer (2026-10-24: "hover actions on PC: lift cards or tiles up") ── */
-/* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
+/* Only with a mouse: phones never see this. Movement is left out for reduced motion. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .rps__pick:not(:disabled):hover {
+  .rps-pick:hover .rps-disc:not(.is-selected) {
     transform: translateY(-4px);
   }
-  .rps__pick:not(:disabled):hover:active {
-    transform: translateY(1px);
+}
+
+/* ── Laptop: the ring on the left sized by the height, scores, history and your hand on the right ── */
+@container game (min-width: 720px) {
+  .rps {
+    display: grid;
+    max-width: none;
+    gap: var(--space-3) var(--space-6);
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      'head side'
+      'ring side';
+  }
+  .rps__head {
+    grid-area: head;
+  }
+  .rps > .rps-ringbox {
+    grid-area: ring;
+    min-height: 0;
+  }
+  .rps__side {
+    grid-area: side;
+    justify-content: center;
+    gap: var(--space-5);
+  }
+  .rps-strip {
+    display: none;
+  }
+  .rps .rps-pad {
+    --w1: 170px;
+    max-height: min(440px, 60cqh);
+  }
+  .rps .rps-pad--blank {
+    display: flex;
+  }
+  .rps .rps-pad__name {
+    display: block;
+  }
+  .rps .rps-pad__tot {
+    display: table-cell;
+  }
+  .rps .rps-ring {
+    --rps-fs: clamp(14px, 3.4cqw, 22px);
+  }
+  .rps-pick {
+    --d: 104px;
   }
 }
 
-/* ── Watching on a phone: the table fills the space under the note and never scrolls the page ── */
+/* ── Watching on a phone: the same table without the throw discs ── */
 .rps-watch {
   flex: 1;
   min-height: 0;
@@ -244,39 +175,4 @@
   flex: 1;
   min-height: 0;
   max-width: none;
-  gap: var(--space-3);
-}
-/* A long table scrolls inside the scores; the last reveal keeps to the bottom. */
-.rps-watch .rps__board {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.rps-watch .rps__reveal {
-  margin-top: auto;
-}
-.rps-watch .rps__reveal ul {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-/* Before the first reveal: where the throws will land, in dashed print */
-.rps-watch__empty {
-  margin: 0;
-  padding: var(--space-4);
-  text-align: center;
-  color: var(--ink-2);
-  border: 2px dashed var(--rule);
-  background: var(--paper);
-}
-/* two throws to a row, set tighter so names keep their room */
-.rps-watch .rps__card {
-  gap: var(--space-1);
-  min-height: 48px;
-  padding: var(--space-1) var(--space-2);
-}
-.rps-watch .rps__throw svg {
-  width: 28px;
-  height: 28px;
-}
-.rps-watch .rps__card-name {
-  font-size: 15px;
 }

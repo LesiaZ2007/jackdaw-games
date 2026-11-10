@@ -306,7 +306,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           {solo ? (
             v.puzzle && (
               <p className="kg-rules">
-                One king in every row, every column and every colour. Kings can&rsquo;t touch, not
+                One king in every row, every column and every color. Kings can&rsquo;t touch, not
                 even at a corner. Tap once to cross a square out, twice for a king.
               </p>
             )

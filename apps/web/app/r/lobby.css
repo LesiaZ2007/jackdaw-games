@@ -53,7 +53,7 @@
     display: grid;
   }
 }
-/* The host's End game: a stop square on phones, spelt out from tablets up. */
+/* The host's End game: a stop square on phones, spelled out from tablets up. */
 .lobby-bar__end {
   color: var(--gules);
 }
@@ -1078,7 +1078,7 @@
   --ring-bg: var(--paper);
 }
 
-/* ── Changing your name, crest and colour ── */
+/* ── Changing your name, crest and color ── */
 .me-sheet {
   display: grid;
   gap: var(--space-5);

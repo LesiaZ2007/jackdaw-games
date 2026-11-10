@@ -25,7 +25,7 @@ export interface GameCoverProps {
   kind?: string;
   /** Not built yet: a "Coming soon" sash across the corner. */
   soon?: boolean;
-  /** Why it can't be played right now, e.g. "Needs 5 to 15 players". Greys the cover. */
+  /** Why it can't be played right now, e.g. "Needs 5 to 15 players". Grays the cover. */
   unfit?: string | null;
   selected?: boolean;
   /** Opens a page: rendered as a link (pass `link` for client-side navigation). */

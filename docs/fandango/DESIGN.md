@@ -1,6 +1,6 @@
 # Fandango
 
-LinkedIn's Tango, called Fandango, for 1 to 15 players in Jackdaw's lobby (Lesia, 2026-10-26:
+LinkedIn's Tango, called Fandango, for 1 to 15 players in Jackdaw's lobby (2026-10-26:
 "same approach as Kings and Zap: build Fandango, our version of LinkedIn's Tango"). It plays like
 Kings and Zap: choose the board, play alone or race over 1 to 20 puzzles, every puzzle fresh with
 exactly one answer. It's a Mini game.
@@ -55,7 +55,7 @@ the phone (`src/hints.ts`), so nothing about the answer is sent anywhere new; th
 the server a hint was used (`hint`), and the server refuses that in a race or with hints off. The
 table never sees hints, so they're never on the TV or in someone else's race.
 
-A hint is a short note under the board, a ring round the square it's about, and a light shade over
+A hint is a short note under the board, a ring around the square it's about, and a light shade over
 the squares that explain it. It stays until the board changes. _Show a mistake_ rings the first
 wrong mark in red, or says "No mistakes so far." (which isn't counted). If the board has a mistake,
 Hint asks you to put that right first. Hints used are counted per puzzle and shown in the results

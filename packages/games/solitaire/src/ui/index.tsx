@@ -44,7 +44,7 @@ export const solitaireUi: GameUi = {
   art: { band: 'sable', field: 'bendy', glyph: 'patience' },
   about: {
     description:
-      'Klondike, the solitaire everyone knows, played all at once round the table. Each of you lays out your own deck, but the aces go in the middle for everyone: build on anyone’s piles, race to put your cards up first, and be the first to get rid of every card.',
+      'Klondike, the solitaire everyone knows, played all at once around the table. Each of you lays out your own deck, but the aces go in the middle for everyone: build on anyone’s piles, race to put your cards up first, and be the first to get rid of every card.',
     steps: [
       'Everyone deals their own deck as usual: seven columns, the top card of each face up, the rest in the stock. Any uncovered aces go straight to the middle.',
       'Play by the usual rules. Build your columns down in alternating colors, put a king in an empty column, and turn the stock one or three cards at a time, as often as you like.',

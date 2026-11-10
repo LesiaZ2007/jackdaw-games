@@ -1159,7 +1159,7 @@ export function backToLobby(lobby: Lobby, hostId: string, ctx: Ctx): Lobby {
   return touch({ ...lobby, status: 'waiting', results: null }, ctx.now);
 }
 
-/** Back to waiting, then start straight away if the same game still fits. */
+/** Back to waiting, then start right away if the same game still fits. */
 export function playAgain(lobby: Lobby, hostId: string, input: StartInput, ctx: Ctx): Lobby {
   const waiting = backToLobby(lobby, hostId, ctx);
   return startBlocker(waiting, ctx) ? waiting : beginSession(waiting, input, ctx);

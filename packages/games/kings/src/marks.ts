@@ -4,7 +4,7 @@ import type { Puzzle } from './puzzle';
 export type Mark = 0 | 1 | 2;
 
 /**
- * Squares a king rules out: its row, its column, its colour and the eight round it. Drawn faintly
+ * Squares a king rules out: its row, its column, its color and the eight round it. Drawn faintly
  * when Auto-cross is on; never stored, so taking the king back clears them.
  */
 export function ruledOut(p: Puzzle, marks: readonly Mark[]): boolean[] {
@@ -30,7 +30,7 @@ export function ruledOut(p: Puzzle, marks: readonly Mark[]): boolean[] {
   return out;
 }
 
-/** Kings that break a rule: sharing a row, column or colour, or touching another king. */
+/** Kings that break a rule: sharing a row, column or color, or touching another king. */
 export function clashes(p: Puzzle, marks: readonly Mark[]): Set<number> {
   const { size, regions } = p;
   const kings = marks.flatMap((m, i) => (m === 2 ? [i] : []));
@@ -55,7 +55,7 @@ export function clashes(p: Puzzle, marks: readonly Mark[]): Set<number> {
   return bad;
 }
 
-/** Heavy ink on the sides of a square that border another colour (or the edge of the board). */
+/** Heavy ink on the sides of a square that border another color (or the edge of the board). */
 export function edges(p: Puzzle, i: number) {
   const { size, regions } = p;
   const r = Math.floor(i / size);

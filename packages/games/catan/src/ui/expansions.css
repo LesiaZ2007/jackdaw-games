@@ -164,7 +164,7 @@
   padding: 3px 5px;
 }
 
-/* The event die: a ship, or a city gate in its track's colour. */
+/* The event die: a ship, or a city gate in its track's color. */
 .ctn .ctn-die--event {
   grid-template: 1fr / 1fr;
   place-items: center;

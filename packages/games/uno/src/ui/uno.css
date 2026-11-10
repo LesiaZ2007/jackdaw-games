@@ -531,7 +531,7 @@ button.uno-card:focus-visible {
   }
 }
 
-/* ── The lobby: everyone round the mat before the deal ────────────────── */
+/* ── The lobby: everyone around the mat before the deal ────────────────── */
 .uno-table--lobby {
   width: min(100%, 560px);
   margin: 18px auto 34px;

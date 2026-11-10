@@ -1,7 +1,7 @@
 /*
  * Kings: a page from a printed puzzle book. The board's region inks are printed, so they stay
  * the same by day and in the dark; the frame round them follows the shell. All of the game's
- * colours are in this token block. No gradients, no glows.
+ * colors are in this token block. No gradients, no glows.
  */
 
 .kg {

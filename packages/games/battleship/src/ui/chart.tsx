@@ -375,7 +375,7 @@ const PLANE =
 
 /**
  * A printed plane flies across the chart and the peg drops after it, its shadow on the water
- * below. Ink and the sea colour only. It is not a hull, so it never shows where a ship is hiding.
+ * below. Ink and the sea color only. It is not a hull, so it never shows where a ship is hiding.
  */
 function Plane() {
   return (

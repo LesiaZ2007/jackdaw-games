@@ -84,7 +84,7 @@ export function matches(id: number, top: number, colour: Colour): boolean {
   return c.colour === colour || c.face === cardOf(top).face;
 }
 
-/** Colour order, then numbers low to high, then the action cards, then the wilds. */
+/** Color order, then numbers low to high, then the action cards, then the wilds. */
 export function sortHand(hand: readonly number[]): number[] {
   return [...hand].sort((a, b) => a - b);
 }

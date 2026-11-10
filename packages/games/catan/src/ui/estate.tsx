@@ -12,7 +12,7 @@ import './estate.css';
 /* Everything about your own position, always on screen (2026-11-09: "victory pt dashboard",
    "I should be able to see everything I need at any time", "I can't see where the barbarian
    ship is"): your points and where they come from, and with Cities & Knights your three tracks,
-   your progress cards by colour, your knights and the barbarian ship's voyage. */
+   your progress cards by color, your knights and the barbarian ship's voyage. */
 
 interface PointRow {
   key: string;
@@ -137,7 +137,7 @@ export function defence(t: CatanTableView) {
 }
 
 /**
- * The barbarian ship's voyage: seven steps of sea from its harbour to Catan's coast, the ship on
+ * The barbarian ship's voyage: seven steps of sea from its harbor to Catan's coast, the ship on
  * the step it has reached, and the island's active knights against its cities.
  */
 export function BarbarianTrack({
@@ -215,7 +215,7 @@ export function BarbarianTrack({
   );
 }
 
-/** Your points on a medallion, the ring filling towards the target; a tap shows where they come from. */
+/** Your points on a medallion, the ring filling toward the target; a tap shows where they come from. */
 export function PointsMedal({
   t,
   v,
@@ -335,7 +335,7 @@ export function Ledger({
 }
 
 /**
- * Cities & Knights: one of your tracks as a tower of five numbered steps in its colour, a gate on
+ * Cities & Knights: one of your tracks as a tower of five numbered steps in its color, a gate on
  * top (ringed for a metropolis you hold). It stands beside the commodity that climbs it, as on
  * the improvement chart. A tap opens your city improvements.
  */

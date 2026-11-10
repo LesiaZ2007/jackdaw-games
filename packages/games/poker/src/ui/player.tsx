@@ -215,7 +215,7 @@ function Waiting({
 
 /**
  * Between hands: a countdown, then the server deals the next hand by itself (or shows who won
- * after the last). Anyone can deal straight away, and a player out of chips may buy back in if the
+ * after the last). Anyone can deal right away, and a player out of chips may buy back in if the
  * table allows.
  */
 function NextHand({

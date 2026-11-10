@@ -24,7 +24,7 @@ team turns the dial to where they think the target is, and scores by how close i
   Teams take turns; each team's psychic rotates through its members. After a team locks its
   guess, the other team calls whether the target is **left or right** of the dial for 1 point
   (no point if the dial is dead on the centre). If a team scores 4 and is still behind
-  afterwards, it goes again at once (the printed catch-up rule). First to the goal wins; if both
+  afterward, it goes again at once (the printed catch-up rule). First to the goal wins; if both
   reach it in the same round the higher score wins, and a tie plays on until it's broken.
 - **Together mode (2–15 players).** Everyone on one team; the psychic rotates through everyone.
   No left/right call. A fixed number of rounds; a bullseye (4) earns one extra round. The score

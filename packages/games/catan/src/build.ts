@@ -1,7 +1,7 @@
 import type { Layout } from './geometry';
 import { CARDS, type Board, type Cards, type HarbourKind, type Resource } from './types';
 
-/** Where pieces may go, what they cost, and what harbours a player can use. */
+/** Where pieces may go, what they cost, and what harbors a player can use. */
 
 /** Settlements and cities by corner. */
 export type Buildings = Record<string, { owner: string; city: boolean }>;
@@ -81,7 +81,7 @@ export function piecesLeft(b: Buildings, r: Roads, pid: string): Record<Piece, n
   };
 }
 
-/** Harbours `pid` has built beside. */
+/** Harbors `pid` has built beside. */
 export function harboursOf(L: Layout, board: Board, b: Buildings, pid: string): HarbourKind[] {
   return board.harbours
     .filter((h) => {
@@ -91,6 +91,6 @@ export function harboursOf(L: Layout, board: Board, b: Buildings, pid: string): 
     .map((h) => h.kind);
 }
 
-/** How many of `res` the bank wants for one card: 2 at its harbour, 3 at a generic one, else 4. */
+/** How many of `res` the bank wants for one card: 2 at its harbor, 3 at a generic one, else 4. */
 export const bankRatio = (kinds: HarbourKind[], res: Resource): 2 | 3 | 4 =>
   kinds.includes(res) ? 2 : kinds.includes('any') ? 3 : 4;

@@ -32,7 +32,7 @@ Calming|Stressful: Spa day @3; Cup of tea @12; Gardening @25; Commute @60; Job i
 Natural|Artificial: Waterfall @3; Oak tree @6; Apple @12; Bread @45; Plastic @85; Robot @95
 Simple|Complicated: Spoon @3; Noughts and crosses @10; Bicycle @40; Chess @65; Tax return @82; Quantum physics @97
 Old-fashioned|Futuristic: Quill @3; Horse and cart @8; Typewriter @20; Landline phone @35; Smartphone @70; Robot butler @88; Teleporter @98
-Messy|Tidy: Toddler's room @3; Teenager's bedroom @8; Kitchen after a party @15; Average desk @50; Hotel room @80; Operating theatre @92
+Messy|Tidy: Toddler's room @3; Teenager's bedroom @8; Kitchen after a party @15; Average desk @50; Hotel room @80; Operating theater @92
 Useless|Useful: Chocolate teapot @2; Broken pencil @8; Ornament @30; Umbrella @65; Knife @80; Phone @88; Water @97
 Dull|Sharp: Spoon @3; Butter knife @12; Pencil @50; Scissors @70; Kitchen knife @82; Razor @95
 Ordinary|Weird: Toast @3; Going to work @8; Wearing a hat @20; Pineapple on pizza @45; Platypus @75; Deep sea fish @88; Dream logic @97
@@ -44,8 +44,8 @@ Silent|Deafening: Mime @3; Snow falling @8; Whisper @18; Office @40; Lawnmower @
 Plain|Fancy: Paper bag @3; White T-shirt @10; Jeans @30; Restaurant @55; Wedding dress @80; Palace @92
 Round|Pointy: Ball @3; Orange @8; Egg @20; Pear @40; Pencil @80; Needle @95
 Floats|Sinks: Rubber duck @3; Beach ball @5; Leaf @10; Wood @20; Ice @25; Person @50; Coin @85; Anchor @97
-Clean|Filthy: Operating theatre @3; New towel @8; Washed car @20; Kitchen table @40; Muddy boots @75; Pigsty @92
-Healthy|Unhealthy: Broccoli @3; Salad @6; Apple @10; Pasta @40; Pizza @68; Doughnut @85; Deep-fried butter @97
+Clean|Filthy: Operating theater @3; New towel @8; Washed car @20; Kitchen table @40; Muddy boots @75; Pigsty @92
+Healthy|Unhealthy: Broccoli @3; Salad @6; Apple @10; Pasta @40; Pizza @68; Donut @85; Deep-fried butter @97
 Mild|Intense: Warm milk @3; Breeze @10; Coffee @45; Roller coaster @80; Skydiving @90; Hurricane @97
 Comfortable|Uncomfortable: Bed @3; Sofa @6; Armchair @12; Office chair @40; Bus seat @60; High heels @80; Bed of nails @97
 Temporary|Permanent: Sandcastle @3; Sticky note @8; Haircut @20; Paint @55; Tattoo @85; Carved stone @95
@@ -144,7 +144,7 @@ Weapon|Not a weapon: Sword @3; Bow and arrow @8; Frying pan @40; Umbrella @60; P
 Normal pet|Exotic pet: Cat @3; Dog @5; Goldfish @12; Rabbit @20; Parrot @50; Snake @70; Tiger @97
 Easy to draw|Hard to draw: Circle @3; Smiley face @6; Stick man @8; House @20; Cat @55; Horse @75; Hands @88
 Easy to spell|Hard to spell: Cat @3; Dog @5; Banana @20; Necessary @70; Onomatopoeia @90
-Easy to learn|Hard to master: Snap @5; Noughts and crosses @10; Draughts @40; Guitar @70; Chess @90
+Easy to learn|Hard to master: Snap @5; Noughts and crosses @10; Drafts @40; Guitar @70; Chess @90
 Easy to say|Hard to say: Mom @3; Hello @6; Banana @15; Worcestershire @85; Supercalifragilistic @95
 Easy to remember|Hard to remember: Your name @3; Birthday @10; Phone number @50; Password @80; Pi to 100 digits @97
 Unknown|World famous: Your neighbor @5; Local baker @10; Town mayor @30; TV weatherman @55; Eiffel Tower @92; The moon @97

@@ -2,7 +2,7 @@ import type { Card, Clue, CodenamesTableView, Guess } from './rules';
 import { TEAM_NAME, type Team } from './teams';
 
 /**
- * The latest guess, found from the public table only (every guessed word's colour is public), so
+ * The latest guess, found from the public table only (every guessed word's color is public), so
  * phones and the TV can mark it without any hidden information.
  */
 export function lastGuess(

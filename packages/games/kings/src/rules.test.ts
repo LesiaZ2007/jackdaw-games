@@ -200,7 +200,7 @@ describe('Kings', () => {
     expect(kings.getTableView(s).live).toEqual({ wren: [7] });
   });
 
-  it('has bots fill the board a king at a time, smallest colours first', () => {
+  it('has bots fill the board a king at a time, smallest colors first', () => {
     const p = makePuzzle(8, createRng(12));
     const right = new Set(answer(p));
     const counts = [0, 0.3, 0.6, 0.9, 0.99].map((f) => botKings(p, f * 1000, 1000, 'hard', 'k'));

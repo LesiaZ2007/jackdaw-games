@@ -24,7 +24,7 @@ export function armyOf(pid: string, seats: readonly string[]): Army | null {
   return pid === NEUTRAL || i < 0 ? null : ARMIES[i % ARMIES.length]!;
 }
 
-/** A seat's army color as CSS (the neutral army is grey). */
+/** A seat's army color as CSS (the neutral army is gray). */
 export function armyColour(pid: string, seats: readonly string[]): string {
   const a = armyOf(pid, seats);
   return a ? `var(--${a})` : 'var(--rule)';

@@ -6,7 +6,7 @@
    [data-printed], exactly as in the app. */
 
 .avalon {
-  /* Chat names at Night: the light version of each player's colour (the app's AVATAR_INKS). */
+  /* Chat names at Night: the light version of each player's color (the app's AVATAR_INKS). */
   --av-ink-slate: #8fc0d8;
   --av-ink-plum: #b9a3dc;
   --av-ink-moss: #a7c79a;

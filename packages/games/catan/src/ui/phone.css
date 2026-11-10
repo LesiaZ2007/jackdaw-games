@@ -1,6 +1,6 @@
 /* Catan on a phone: fits under the bar without scrolling. Whose turn, everyone else, the island
    as big as the space allows, your hand, the dock; sheets for building, trading and cards. On a
-   laptop the hand and dock sit beside the island. Colours are Jackdaw's and catan.css's tokens. */
+   laptop the hand and dock sit beside the island. Colors are Jackdaw's and catan.css's tokens. */
 
 .ctn--phone {
   flex: 1;
@@ -495,7 +495,7 @@
   height: 34px;
   padding: 0 16px;
 }
-/* A deck face down: a card back in the track's colour (walnut for development cards), two
+/* A deck face down: a card back in the track's color (walnut for development cards), two
    more under it, the count on top. */
 .ctn-deck {
   --dk: var(--ctn-walnut-2);
@@ -563,7 +563,7 @@
     font-size: 13px;
   }
 }
-/* Cities & Knights' tracks: a tower of five numbered steps in the track's colour, a gate on top,
+/* Cities & Knights' tracks: a tower of five numbered steps in the track's color, a gate on top,
    as tall as the commodity card beside it. */
 .ctn-tower {
   --tk: var(--ctn-science);

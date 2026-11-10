@@ -290,8 +290,8 @@ const BOT_SLIP: Record<BotLevel, number> = { easy: 0.3, normal: 0.14, hard: 0.03
 
 /**
  * The kings a bot has on the board `elapsed` ms into a puzzle it takes `total` to solve. It works
- * the way people do: the smallest colours first, slowly at the start and faster as the board
- * closes in. Now and then it puts one in the wrong square of that colour, and moves it next step.
+ * the way people do: the smallest colors first, slowly at the start and faster as the board
+ * closes in. Now and then it puts one in the wrong square of that color, and moves it next step.
  */
 export function botKings(
   p: Puzzle,

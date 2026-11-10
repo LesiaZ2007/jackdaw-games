@@ -119,7 +119,7 @@ export function PlaceDock({
   );
 }
 
-/** Attack: pick a territory to attack from, then a neighbour, then Roll or Blitz. */
+/** Attack: pick a territory to attack from, then a neighbor, then Roll or Blitz. */
 export function AttackDock({
   t,
   map,
@@ -167,7 +167,7 @@ export function AttackDock({
     );
   if (from)
     return (
-      <Dock title={`Attack from ${name(from)}`} hint="Tap an enemy neighbour (outlined).">
+      <Dock title={`Attack from ${name(from)}`} hint="Tap an enemy neighbor (outlined).">
         <Plaque small disabled={busy} onClick={onCancel}>
           Back
         </Plaque>

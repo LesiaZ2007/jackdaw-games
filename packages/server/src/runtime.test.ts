@@ -152,7 +152,7 @@ describe('room runtime', () => {
     ).resolves.toBeDefined();
   });
 
-  it('serialises concurrent writes so none are lost', async () => {
+  it('serializes concurrent writes so none are lost', async () => {
     const { runtime, code } = await threePlayerLobby();
     await Promise.all(
       Array.from({ length: 8 }, (_, i) =>

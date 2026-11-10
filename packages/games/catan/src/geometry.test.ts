@@ -22,7 +22,7 @@ describe('geometry', () => {
     expect(widths('big')).toEqual([3, 4, 5, 6, 5, 4, 3]);
   });
 
-  it.each(['classic', 'big'] as const)('%s: corner and tile neighbours are symmetric', (size) => {
+  it.each(['classic', 'big'] as const)('%s: corner and tile neighbors are symmetric', (size) => {
     const L = layout(size);
     for (const c of Object.values(L.corners)) {
       for (const n of c.corners) expect(L.corners[n]!.corners).toContain(c.id);
@@ -46,7 +46,7 @@ describe('geometry', () => {
     }
   });
 
-  it('harbour slots: 9 and 11 coastal edges, no two sharing a corner', () => {
+  it('harbor slots: 9 and 11 coastal edges, no two sharing a corner', () => {
     for (const [size, n] of [
       ['classic', 9],
       ['big', 11],
@@ -72,7 +72,7 @@ describe('geometry', () => {
     const L = layout('classic');
     for (const i of L.spiral.slice(0, 12)) expect(L.tiles[i]!.neighbours.length).toBeLessThan(6);
     expect(L.spiral[18]).toBe(9); // the centre tile comes last
-    // Each step of the spiral moves to a neighbouring tile.
+    // Each step of the spiral moves to a neighboring tile.
     for (let k = 1; k < L.spiral.length; k++)
       expect(L.tiles[L.spiral[k - 1]!]!.neighbours).toContain(L.spiral[k]);
   });

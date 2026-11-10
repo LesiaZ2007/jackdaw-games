@@ -50,7 +50,7 @@ export function useOrders(t: RiskTableView, me: string | null): [boolean, () => 
 /**
  * The opening screen: your orders under a wax seal in your army's color. Tap to break the seal
  * and read your secret mission (or, in world domination, the one order everyone has), then go to
- * battle. It's on the Mission button afterwards.
+ * battle. It's on the Mission button afterward.
  */
 export function Orders({
   t,

@@ -127,7 +127,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
         {all.length === 0 ? (
           <li className="is-hint">
             {solo
-              ? 'One king in every row, column and colour. No two touching.'
+              ? 'One king in every row, column and color. No two touching.'
               : 'Everyone has the same puzzles. First to solve them all wins.'}
           </li>
         ) : (

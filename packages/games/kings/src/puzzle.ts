@@ -1,7 +1,7 @@
 import type { Rng } from '@jackdaw/engine';
 
 /**
- * A Kings puzzle (LinkedIn's Queens, with kings): an N×N board cut into N coloured regions.
+ * A Kings puzzle (LinkedIn's Queens, with kings): an N×N board cut into N colored regions.
  * Place N kings so that every row, every column and every region holds exactly one, and no two
  * kings touch, not even at a corner. Every puzzle made here has exactly one answer.
  *
@@ -21,7 +21,7 @@ export type Answer = number[];
 
 /**
  * Up to `limit` answers to the puzzle, row by row. Kings go one per row, so two kings can only
- * touch across neighbouring rows, which is checked against the row above.
+ * touch across neighboring rows, which is checked against the row above.
  */
 export function solve(p: Puzzle, limit = 2): Answer[] {
   const { size, regions } = p;
@@ -64,7 +64,7 @@ export function checkKings(p: Puzzle, kings: readonly number[]): string | null {
   const regs = new Set(kings.map((k) => regions[k]));
   if (rows.size !== size) return 'One king in every row.';
   if (cols.size !== size) return 'One king in every column.';
-  if (regs.size !== size) return 'One king in every colour.';
+  if (regs.size !== size) return 'One king in every color.';
   for (const a of kings)
     for (const b of kings)
       if (
@@ -151,7 +151,7 @@ function growRegions(size: number, answer: Answer, rng: Rng): number[] {
 
 /**
  * A new puzzle with exactly one answer. It lays out an answer, grows the regions round it, then,
- * while a second answer exists, hands one of that answer's squares to a neighbouring region so
+ * while a second answer exists, hands one of that answer's squares to a neighboring region so
  * the second answer stops working. A board that won't settle is thrown away and started again.
  */
 export function makePuzzle(size: number, rng: Rng): Puzzle {
@@ -161,7 +161,7 @@ export function makePuzzle(size: number, rng: Rng): Puzzle {
     const regions = growRegions(size, answer, rng);
     for (let step = 0; step < size * 12; step++) {
       const found = solve({ size, regions });
-      // Regions were numbered by their king's row; shuffled so a colour says nothing about it.
+      // Regions were numbered by their king's row; shuffled so a color says nothing about it.
       if (found.length === 1) {
         const relabel = rng.shuffle([...Array(size).keys()]);
         return { size, regions: regions.map((g) => relabel[g]!) };

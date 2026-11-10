@@ -105,14 +105,14 @@ export interface CodenamesState {
   recap: RecapEvent[];
 }
 
-/** Everything public: the TV and every phone render this. No unrevealed colours. */
+/** Everything public: the TV and every phone render this. No unrevealed colors. */
 export interface CodenamesTableView {
   players: string[];
   teams: Record<string, Team>;
   spymasters: Record<Team, string>;
   starting: Team;
   words: string[];
-  /** The colour of each revealed word; null while it's still hidden. */
+  /** The color of each revealed word; null while it's still hidden. */
   revealed: (Card | null)[];
   turn: Team;
   phase: CodenamesState['phase'];

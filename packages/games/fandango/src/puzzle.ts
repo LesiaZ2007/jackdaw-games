@@ -8,7 +8,7 @@ import type { Rng } from '@jackdaw/engine';
  * by reasoning alone, no guessing.
  *
  * Cells are numbered row by row, `r * size + c`, and hold 0 (empty), `SUN` or `MOON`. `signs` join
- * neighbouring cells, smaller first.
+ * neighboring cells, smaller first.
  */
 export interface Puzzle {
   size: number;

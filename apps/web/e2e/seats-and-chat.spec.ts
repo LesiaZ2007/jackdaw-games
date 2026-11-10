@@ -28,7 +28,7 @@ test('seats open your look or the host’s player sheet, and missed chat shows o
   await join(magpie, code, 'Magpie');
   await expect(host.getByText('3 of 15 seats')).toBeVisible();
 
-  // Tapping your own seat opens your name, crest and colour.
+  // Tapping your own seat opens your name, crest and color.
   await host.getByRole('button', { name: /^Wren \(you\): change/ }).click();
   await expect(host.getByRole('dialog', { name: 'You at the table' })).toBeVisible();
   await host.keyboard.press('Escape');

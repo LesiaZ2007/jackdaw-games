@@ -337,7 +337,7 @@ export function ProgressSheet({
       {!groups.length && (
         <p className="ctn-trade__why">
           None yet. A city gate on the event die deals them to anyone whose improvements in that
-          colour are high enough.
+          color are high enough.
         </p>
       )}
       <ul className="ctn-devlist">
@@ -408,7 +408,7 @@ export function PickSheet({
       {first === 'progress' ? (
         <>
           <p className="ctn-trade__why">
-            You tied for the best defence. Draw a progress card from the deck you like.
+            You tied for the best defense. Draw a progress card from the deck you like.
           </p>
           <div className="ctn-decks">
             {TRACKS.map((track) => (

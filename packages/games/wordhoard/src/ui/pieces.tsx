@@ -37,7 +37,7 @@ export function Tile({
 }
 
 /**
- * The printed board: 15 by 15 squares with the bonus squares in heraldic colours and a star in
+ * The printed board: 15 by 15 squares with the bonus squares in heraldic colors and a star in
  * the middle. Tiles already played, tiles being placed this turn (`pending`), and the last move
  * picked out (`recent`). Empty squares are buttons when `onSquare` is given, marked with
  * `data-square="row,col"` so a dragged tile can find the square it's dropped on.

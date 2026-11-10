@@ -1,7 +1,7 @@
 /*
  * Wavelength: a printed dial board in the compendium. The dial is sable card with a cream rim,
  * ticked like a radio tuner; the target zone is printed in bands (vert 4, tenné 3, gold 2) under a
- * sable shutter that swings away round the pivot on the reveal. Sun team is gules, Moon azure.
+ * sable shutter that swings away around the pivot on the reveal. Sun team is gules, Moon azure.
  * The board is printed, so it looks the same day and dark; its colors are set here and
  * everything else comes from @jackdaw/ui tokens.
  */
@@ -170,7 +170,7 @@
   fill: var(--wl-cream);
   font: 800 7px var(--font-plaque);
 }
-/* The shutter swings down round the pivot, out of the face, to show the target. */
+/* The shutter swings down around the pivot, out of the face, to show the target. */
 .wl-shutter {
   fill: var(--wl-card-2);
   transform-box: view-box;

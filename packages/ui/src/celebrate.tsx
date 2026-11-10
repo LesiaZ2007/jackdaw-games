@@ -136,7 +136,7 @@ export function Burst({ pieces = 22 }: { pieces?: number }) {
   return (
     <span className="jd-burst" aria-hidden="true">
       {Array.from({ length: pieces }, (_, i) => {
-        // Spread evenly round the circle, nudged by a fixed wobble so it doesn't look mechanical.
+        // Spread evenly around the circle, nudged by a fixed wobble so it doesn't look mechanical.
         const angle = (i / pieces) * Math.PI * 2 + Math.sin(i * 12.9898) * 0.35;
         const reach = 0.75 + ((Math.sin(i * 78.233) + 1) / 2) * 0.55;
         const feather = i % 5 === 2;
@@ -162,7 +162,7 @@ export function Burst({ pieces = 22 }: { pieces?: number }) {
 
 const BURST_FILLS = ['gules', 'azure', 'vert', 'or', 'purpure', 'tenne', 'on-fill'];
 
-/** A small coloured result chip ("Won", "+2") that pops in when it appears or changes. */
+/** A small colored result chip ("Won", "+2") that pops in when it appears or changes. */
 export function OutcomeChip({
   outcome,
   children,

@@ -171,12 +171,12 @@ export const UTILITIES: readonly number[] = BOARD.flatMap((s, i) =>
   s.kind === 'utility' ? [i] : [],
 );
 
-/** The spaces of one colour group, in board order. */
+/** The spaces of one color group, in board order. */
 export function groupSpaces(group: Group): number[] {
   return BOARD.flatMap((s, i) => (s.kind === 'street' && s.group === group ? [i] : []));
 }
 
-/** The spaces that share a deed's set: its colour group, the four railroads, or the two utilities. */
+/** The spaces that share a deed's set: its color group, the four railroads, or the two utilities. */
 export function setOf(space: number): number[] {
   const deed = deedAt(space);
   if (!deed) return [];

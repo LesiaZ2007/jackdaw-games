@@ -15,7 +15,7 @@ async function createLobby(page: Page, name: string) {
   await page.getByRole('button', { name: 'Show options and rules' }).click();
 }
 
-/** Reads the board's colours from the squares' labels, works out the kings, and taps them in. */
+/** Reads the board's colors from the squares' labels, works out the kings, and taps them in. */
 async function solveBoard(page: Page, puzzle: number) {
   const board = page.getByRole('grid', { name: new RegExp(`^Puzzle ${puzzle},`) });
   await expect(board).toBeVisible();

@@ -102,7 +102,7 @@ function Places({
 }
 
 /**
- * The deal for this many players, as the cast printed in a programme. The host taps the extras
+ * The deal for this many players, as the cast printed in a program. The host taps the extras
  * to put them in or take them out.
  */
 function Cast({

@@ -21,7 +21,7 @@ import type { Theme } from './theme';
  *   `reveal` for someone only watching. Key it on something public that moves on when the round
  *   resolves (`useMoment(history.length)`) so a refresh doesn't replay it, and work the outcome
  *   out from the public table view only, never from hidden state. The TV shows the same moment
- *   at `size="tv"` naming the winners. Rows that change colour with a result use `OutcomeChip`,
+ *   at `size="tv"` naming the winners. Rows that change color with a result use `OutcomeChip`,
  *   and running scores use `Tally` so they pop when they go up. The end-of-game results screen
  *   already gives each player their `Verdict`; a game's `Reveal` sits under it.
  * - **Day and dark.** Screens follow the shell's choice via `useTheme()` (`theme.ts`). A game
@@ -91,7 +91,7 @@ export interface GameUi {
   Results?: ComponentType<GameResultsProps>;
   /**
    * Optional: the seats in Jackdaw's lobby on phones and laptops once this game is chosen, drawn the
-   * game's way in place of the seat track (poker: everyone round the card table). It gets the
+   * game's way in place of the seat track (poker: everyone around the card table). It gets the
    * same seats as the track, the game's most players, and the options chosen so far.
    */
   LobbySeats?: ComponentType<LobbySeatsProps>;

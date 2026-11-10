@@ -37,7 +37,7 @@ export function KingMark({ size }: { size?: number | string }) {
 }
 
 const name = (p: Puzzle, i: number) =>
-  `Row ${Math.floor(i / p.size) + 1}, column ${(i % p.size) + 1}, colour ${p.regions[i]! + 1}`;
+  `Row ${Math.floor(i / p.size) + 1}, column ${(i % p.size) + 1}, color ${p.regions[i]! + 1}`;
 
 /**
  * The printed board. Tap a square to cross it out, again for a king, again to clear it. Drag

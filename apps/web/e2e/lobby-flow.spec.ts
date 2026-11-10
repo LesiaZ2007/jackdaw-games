@@ -32,8 +32,8 @@ test('three phones play a round, a refresh keeps its seat, and Play again keeps 
   await join(magpie, code, 'Magpie');
   await expect(host.getByText('3 of 15 seats')).toBeVisible();
 
-  // Rook changes name, crest and colour from the lobby; the host sees the owl is now taken.
-  await rook.getByRole('button', { name: 'Change your crest and colour' }).click();
+  // Rook changes name, crest and color from the lobby; the host sees the owl is now taken.
+  await rook.getByRole('button', { name: 'Change your crest and color' }).click();
   const mine = rook.getByRole('dialog', { name: 'You at the table' });
   await mine.getByLabel('Your name').fill('Kestrel');
   await mine.getByRole('button', { name: 'Owl', exact: true }).click();
@@ -41,7 +41,7 @@ test('three phones play a round, a refresh keeps its seat, and Play again keeps 
   await mine.getByRole('button', { name: 'Save' }).click();
   await expect(mine).toBeHidden();
   await expect(host.getByRole('listitem', { name: /Kestrel/ })).toBeVisible();
-  await host.getByRole('button', { name: 'Change your crest and colour' }).click();
+  await host.getByRole('button', { name: 'Change your crest and color' }).click();
   await expect(
     host.getByRole('dialog').getByRole('button', { name: 'Owl, taken by Kestrel' }),
   ).toBeDisabled();

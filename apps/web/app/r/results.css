@@ -48,7 +48,7 @@
   }
 }
 
-/* ── Standings: each row printed in its outcome's colour ── */
+/* ── Standings: each row printed in its outcome's color ── */
 .results__standings h2 {
   margin-bottom: var(--space-2);
 }
@@ -73,7 +73,7 @@
 .results__standings li + li {
   border-top: 1px solid var(--rule);
 }
-/* a coloured edge, like the band on a score card */
+/* a colored edge, like the band on a score card */
 .results__standings li::before {
   content: '';
   position: absolute;

@@ -1,7 +1,7 @@
 # Avalon in Jackdaw: the link
 
 2026-10-13: Jackdaw does **not** get its own copy of Avalon. The live app
-(`C:\Users\KBITK\OneDrive\Desktop\avalon`, play-avalon.vercel.app) stays the game. Jackdaw is
+(play-avalon.vercel.app) stays the game. Jackdaw is
 the lobby: the table gathers in Jackdaw, the host sets Avalon up there, presses Start, and every
 phone (and the TV) lands straight in a live Avalon game with roles already dealt. When it ends,
 everyone goes back to Jackdaw and the result is in the night's scores.
@@ -14,7 +14,7 @@ everyone goes back to Jackdaw and the result is in the night's scores.
    look by day and Night look in dark mode. It fills the screen under Jackdaw's bar (code chits,
    invite and TV, stats, chat, menu). Only the host changes settings.
 2. **Start Avalon.** Jackdaw's server creates the Avalon room with everyone seated (their names,
-   crests and colours), the settings applied and the roles dealt. Each phone is taken to its own
+   crests and colors), the settings applied and the roles dealt. Each phone is taken to its own
    seat in Avalon; the TV is taken to Avalon's TV screen. Nobody types a code.
 3. **The game** is the live Avalon app, unchanged, except that a linked room shows
    "Back to Jackdaw" where it would offer a new game or the Avalon lobby.
@@ -54,10 +54,10 @@ Server-to-server calls send `authorization: Bearer <JACKDAW_LINK_SECRET>`. Avalo
 ```
 
 - Seats players in the given order, with their names and avatars (`tint` is the index into
-  Avalon's `AVATAR_TINTS`, which is the same 15 colours in the same order as Jackdaw's
+  Avalon's `AVATAR_TINTS`, which is the same 15 colors in the same order as Jackdaw's
   `TINT_CHOICES`; `icon` is the crest id, shared with Jackdaw's crests). The given host is the
   Avalon host. Settings go through the same validation as the `settings` and `theme` actions.
-- Starts the game straight away (the same `startGame` as the `start` action).
+- Starts the game right away (the same `startGame` as the `start` action).
 - Stores `room.jackdaw = { code, returnUrl, ids: { <avalon id>: <jackdaw id> } }`.
 
 ### `GET /api/jackdaw/rooms/:code`

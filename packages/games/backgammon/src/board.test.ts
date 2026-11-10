@@ -310,7 +310,7 @@ describe('nextSteps (a turn played one checker at a time)', () => {
 
   it('lets a doublet be played in any order', () => {
     const pos = startPosition();
-    // The 6 point first, then the 13: legalTurns lists this the other way round.
+    // The 6 point first, then the 13: legalTurns lists this the other way around.
     const after = nextSteps(pos, 0, [3, 3], [{ from: 6, die: 3 }]);
     expect(after).toContainEqual({ from: 13, die: 3 });
     expect(diceLeft([3, 3], [{ from: 6, die: 3 }])).toEqual([3, 3, 3]);

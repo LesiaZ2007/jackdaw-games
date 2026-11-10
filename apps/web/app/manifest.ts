@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
-// Colours mirror the dark look's table and ink in packages/ui/src/tokens.css (the icon's own
-// colours); a manifest can't read CSS custom properties.
+// Colors mirror the dark look's table and ink in packages/ui/src/tokens.css (the icon's own
+// colors); a manifest can't read CSS custom properties.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: '/',

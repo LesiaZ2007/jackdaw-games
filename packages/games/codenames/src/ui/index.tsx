@@ -13,12 +13,12 @@ export const codenamesUi: GameUi = {
   art: { band: 'gules', field: 'checky', glyph: 'grid' },
   about: {
     description:
-      'Two teams, 25 words on the table. Only the spymasters know which words belong to which team, and they can only help with one word and a number. Guess wrong and you might hand the other team a point, or hit the assassin and lose right there.',
+      'Two teams, 25 words on the table. Only the spymasters know which words belong to which team, and they can help with just one word and a number. A wrong guess might hand the other team a point, or hit the assassin and lose on the spot.',
     steps: [
       'The host splits everyone into Red and Blue, and each team gets a spymaster.',
       'Your spymaster gives a one-word clue and a number.',
-      'Tap a word to suggest it. It gets guessed once most of your team agrees, or someone holds it down.',
-      'You get as many guesses as the number, plus one. A wrong guess ends your turn.',
+      'Tap a word to suggest it. It’s guessed once most of your team agrees, or someone holds it down.',
+      'Guess as many words as the number, plus one. A wrong guess ends your turn.',
       'Find all your words first to win. Touch the assassin and you lose.',
     ],
     credit: 'Based on Codenames by Vlaada Chvátil, with our own word list and art.',

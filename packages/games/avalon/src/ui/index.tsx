@@ -13,12 +13,13 @@ export const avalonUi: GameUi = {
   art: { band: 'azure', field: 'wavy', glyph: 'avalon' },
   about: {
     description:
-      "You're all knights of the Round Table, except a few of you secretly work for Mordred. Each quest needs a team, and the traitors want on it so they can sink it. Good needs three successful quests, and even then the Assassin gets one guess at who Merlin is to steal the win.",
+      'Good knights of the Round Table set out on quests, while a few secret traitors working for Mordred try to sink them. Each quest needs a team, and the traitors want a seat on it. Good wins with three successful quests, and even then the Assassin gets one guess at who Merlin is to steal the win.',
     steps: [
       'The leader picks a team for the quest.',
       'Everyone votes on the team at the same time.',
       'If it passes, the team secretly plays Success or Fail.',
-      'A single Fail sinks the quest (quest 4 needs two Fails with 7 or more players).',
+      'One Fail sinks the quest (two on quest 4 with 7 or more players).',
+      'Three failed quests win it for the traitors. Three successes win it for Good, unless the Assassin finds Merlin.',
     ],
     credit:
       'Based on The Resistance: Avalon by Don Eskridge. The game runs in the Avalon app; Jackdaw seats everyone and keeps score.',

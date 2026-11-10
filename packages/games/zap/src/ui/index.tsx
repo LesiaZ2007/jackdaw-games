@@ -8,17 +8,16 @@ import { WatchScreen } from './watch';
 
 /** Zap: a printed puzzle book of one-line routes. It uses Jackdaw's lobby. */
 export const zapUi: GameUi = {
-  art: { band: 'tenne', field: 'checky', glyph: 'bolt' },
+  art: { band: 'tenne', field: 'bendy', glyph: 'bolt' },
   about: {
     description:
-      'A square board with a few numbered squares and some walls. Draw one line from 1 that passes through every square exactly once, through the numbers in order, and ends on the last. Every puzzle is made fresh for the game and has exactly one answer. Play alone, or race the table through the same puzzles.',
+      'A square board with a few numbered squares and some walls. Draw one line from 1 that passes through every square exactly once, hits the numbers in order and ends on the last. Each puzzle has exactly one answer. Play alone, or race the table through the same puzzles.',
     steps: [
-      'The host picks the board, from 5×5 to 8×8, and how many puzzles, from 1 to 20.',
-      'Press on 1 and drag to draw. The line moves up, down, left or right, never through a wall, and never crosses itself.',
-      'Drag back along the line to take steps back, or tap a square on it to cut back to there. Undo and Clear are under the board.',
-      'Numbers passed out of order turn red. A finished line counts by itself and the next puzzle opens. Everyone gets the same puzzles in the same order.',
-      'Playing alone, you can ask for a hint: it explains the next deduction and shows you where. Show a mistake points out the first thing that’s wrong. Hints are counted in the results, and are never there in a race.',
-      'Most puzzles solved wins, and the quickest to get there breaks a tie. Once someone has solved them all, everyone else has two minutes.',
+      'The host picks the board size, from 5×5 to 8×8, and 1 to 20 puzzles.',
+      'Press on 1 and drag to draw. The line goes up, down, left or right, never through a wall or itself.',
+      'Drag back along the line to undo, or tap a square on it to cut back. Undo and Clear sit under the board.',
+      'Playing alone, ask for a hint or a mistake check. Both are counted, and neither is allowed in a race.',
+      'Most puzzles solved wins, and speed breaks ties. Once someone finishes, everyone else has two minutes.',
     ],
     credit:
       'After Zip, the daily puzzle on LinkedIn, itself a cousin of the Hamiltonian path puzzles. The puzzles here are Jackdaw’s own.',

@@ -6,6 +6,7 @@
   "description": "Backgammon: a match of tables for two",
   "exports": {
     ".": "./src/index.ts",
+    "./meta": "./src/meta.ts",
     "./ui": "./src/ui/index.tsx"
   },
   "scripts": {

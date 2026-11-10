@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { BirdMark, GameCover, Glyph } from '@jackdaw/ui';
-import { catalog, KINDS, unfitReason, type CatalogEntry } from '@/lib/catalog';
+import { boxes, KINDS, unfitReason, type BoxEntry } from '@/lib/games-lite';
 import { FilterBar } from './games/filter-bar';
 import { filterQuery, hasFilters, matches, NO_FILTERS, type Filters } from './games/filters';
 import './shelves.css';
@@ -32,15 +32,13 @@ const countOf = (n: number) => (n === 1 ? '1 game' : `${n} games`);
  */
 export function GameShelves() {
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
-  const shown = catalog.filter((e) => matches(e.meta, filters));
+  const shown = boxes.filter((e) => matches(e.meta, filters));
   const shelves = KINDS.map((k) => ({
     ...k,
     games: shown.filter((e) => e.meta.category === k.kind),
   })).filter((s) => s.games.length > 0);
 
-  const pool = shown.filter(
-    (e) => e.playable && !(filters.players && unfitReason(e.meta, filters.players)),
-  );
+  const pool = shown.filter((e) => !(filters.players && unfitReason(e.meta, filters.players)));
 
   const wrap = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState<string[]>([]);
@@ -192,7 +190,7 @@ export function GameShelves() {
   );
 }
 
-function Cover({ entry: e, players }: { entry: CatalogEntry; players: number | null }) {
+function Cover({ entry: e, players }: { entry: BoxEntry; players: number | null }) {
   return (
     <GameCover
       name={e.meta.name}
@@ -200,7 +198,6 @@ function Cover({ entry: e, players }: { entry: CatalogEntry; players: number | n
       players={[e.meta.minPlayers, e.meta.maxPlayers]}
       minutes={e.meta.minutes}
       tagline={e.meta.tagline}
-      soon={!e.playable}
       unfit={players ? unfitReason(e.meta, players) : null}
       href={`/games/${e.meta.id}`}
       link={Link}
@@ -212,8 +209,8 @@ function Cover({ entry: e, players }: { entry: CatalogEntry; players: number | n
  * A face-down box at the end of the shelves: tap it and it shuffles, then turns over a game
  * that fits the filters. Draw again for another.
  */
-function DrawBox({ pool }: { pool: CatalogEntry[] }) {
-  const [drawn, setDrawn] = useState<CatalogEntry | null>(null);
+function DrawBox({ pool }: { pool: BoxEntry[] }) {
+  const [drawn, setDrawn] = useState<BoxEntry | null>(null);
   const [shuffling, setShuffling] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);

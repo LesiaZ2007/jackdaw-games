@@ -6,6 +6,7 @@
   "description": "Secret Hitler: elect governments, pass policies, find Hitler (5 to 15 players)",
   "exports": {
     ".": "./src/index.ts",
+    "./meta": "./src/meta.ts",
     "./ui": "./src/ui/index.tsx"
   },
   "scripts": {

@@ -24,11 +24,11 @@ export const wordhoardUi: GameUi = {
     pictures: [
       {
         src: '/games/wordhoard/game-phone.png',
-        alt: 'Letterhoard on a phone: the scores, the board and your rack of seven tiles.',
+        alt: 'Letterhoard on a phone: the pouch of tiles and the Ledger button, the scores with the player to move marked, the board with its ornamented bonus squares and their key, and your rack of seven tiles.',
       },
       {
         src: '/games/wordhoard/desktop.png',
-        alt: 'Letterhoard on a laptop: the board, your rack, the scores and the latest plays.',
+        alt: 'Letterhoard on a laptop: the board, the scores, the ledger of words played with their meanings, and your rack and buttons.',
         desktop: true,
       },
     ],

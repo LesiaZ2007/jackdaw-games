@@ -24,7 +24,7 @@ export const unoUi: GameUi = {
     pictures: [
       {
         src: '/games/uno/game-phone.png',
-        alt: 'UNO on a phone: the table from your seat with the draw pile and the discard pile ringed in the color in play, your hand fanned along the bottom, and Draw.',
+        alt: 'UNO on a phone: the table from your seat with the draw pile and the discard pile ringed in the color in play, a Skip stamp across it, and your hand along the bottom.',
       },
       {
         src: '/games/uno/tv.png',

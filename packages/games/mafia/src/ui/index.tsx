@@ -29,16 +29,16 @@ export const mafiaUi: GameUi = {
       },
       {
         src: '/games/mafia/werewolf-phone.png',
-        alt: 'Werewolf on a phone at night: the players as cottages under an indigo sky, and the Witch choosing whether to save the wolves’ victim.',
+        alt: 'Werewolf on a phone: “The cards are dealt” on a scroll, and a card to tap and look at in secret before the first night.',
       },
       {
         src: '/games/mafia/tv.png',
-        alt: 'Mafia on a TV: an EXTRA! stamp over “Town Runs Wren Out”, the placards with the votes counted, the deck, the tally and the obituaries.',
+        alt: 'Mafia on a TV: “The cards are dealt” across the front page of The Jackdaw Courier, everyone’s placard, and the roles in the deck.',
         desktop: true,
       },
       {
         src: '/games/mafia/werewolf-tv.png',
-        alt: 'Werewolf on a TV at night: “Night falls on the village” over the cottages, the moon rising over the treeline.',
+        alt: 'Werewolf on a TV: “The cards are dealt” on the village’s scroll, the players as cottages, and the roles in the deck.',
         desktop: true,
       },
     ],

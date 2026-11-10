@@ -23,7 +23,7 @@ export const pokerUi: GameUi = {
     pictures: [
       {
         src: '/games/poker/game-phone.png',
-        alt: 'Poker on a phone: the table from your seat, the flop and the pot, your two cards and the betting buttons.',
+        alt: 'Poker on a phone: the table from your seat, the pot in the middle, your two cards and the betting buttons.',
       },
       {
         src: '/games/poker/desktop.png',

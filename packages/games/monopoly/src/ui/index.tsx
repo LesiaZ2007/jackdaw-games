@@ -25,11 +25,11 @@ export const monopolyUi: GameUi = {
     pictures: [
       {
         src: '/games/monopoly/game-phone.png',
-        alt: 'Monopoly on a phone: the printed board with its color bands and tokens, the dice in the pale green center, everyone’s cash below and the End turn plaque.',
+        alt: 'Monopoly on a phone: the printed board with its color bands and tokens, everyone’s cash and bank notes below, and the Roll the dice plaque.',
       },
       {
         src: '/games/monopoly/tv.png',
-        alt: 'Monopoly on a TV: the whole board with every street named, a Chance card drawn in the middle, and each player’s cash and the story so far beside it.',
+        alt: 'Monopoly on a TV: the whole board with every street named and each player’s cash beside it.',
         desktop: true,
       },
     ],

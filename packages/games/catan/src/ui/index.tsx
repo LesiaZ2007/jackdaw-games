@@ -31,11 +31,11 @@ export const catanUi: GameUi = {
     pictures: [
       {
         src: '/games/catan/game-phone.png',
-        alt: 'Catan on a phone: the island, everyone’s cards and points, your hand and the Build, Trade, Cards and End buttons.',
+        alt: 'Catan on a phone: the island, everyone’s cards and points along the top, and your tray of resource cards below.',
       },
       {
         src: '/games/catan/desktop.png',
-        alt: 'Catan on a laptop: the island large, with whose turn it is, the dice, your hand and the buttons beside it.',
+        alt: 'Catan on a laptop: the island large, with whose turn it is, everyone’s cards and your tray beside it.',
         desktop: true,
       },
     ],

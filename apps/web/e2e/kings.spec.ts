@@ -23,7 +23,7 @@ async function solveBoard(page: Page, puzzle: number) {
     .getByRole('button')
     .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label') ?? ''));
   const size = Math.sqrt(labels.length);
-  const regions = labels.map((l) => Number(/colour (\d+)/.exec(l)![1]) - 1);
+  const regions = labels.map((l) => Number(/color (\d+)/.exec(l)![1]) - 1);
   const answer = solve({ size, regions }, 1)[0]!;
   const cells = board.getByRole('button');
   for (const [r, c] of answer.entries()) {
@@ -82,7 +82,7 @@ test('alone with hints: a hint rings a square, a mistake is pointed out, the res
     .getByRole('button')
     .evaluateAll((els) => els.map((el) => el.getAttribute('aria-label') ?? ''));
   const size = Math.sqrt(labels.length);
-  const regions = labels.map((l) => Number(/colour (\d+)/.exec(l)![1]) - 1);
+  const regions = labels.map((l) => Number(/color (\d+)/.exec(l)![1]) - 1);
   const answer = solve({ size, regions }, 1)[0]!;
   const wrong = answer[0] === 0 ? 1 : 0;
   const cell = board.getByRole('button').nth(wrong);

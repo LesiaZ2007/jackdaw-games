@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import type { Reaction } from '@jackdaw/engine';
-import { PlayerReaction, Token, type ScreenPlayer } from '@jackdaw/ui';
+import { PlayerReaction, Token, clockMs, type ScreenPlayer } from '@jackdaw/ui';
 import { ranking, since, type ZapTableView } from '../rules';
-import { clock } from '../time';
 
 /** Re-render every half second, for running clocks. */
 export function useTick(ms = 500) {
@@ -55,7 +54,9 @@ export function Race({
               )}
               <PlayerReaction reactions={reactions} playerId={id} />
             </span>
-            <span className="zp-lane__name">{id === me ? 'You' : (p?.name ?? 'Someone')}</span>
+            <span className="zp-lane__name" title={p?.name}>
+              {id === me ? 'You' : (p?.name ?? 'Someone')}
+            </span>
             {t.count <= 20 && (
               <span className="zp-pips" aria-label={`${times.length} of ${t.count} solved`}>
                 {Array.from({ length: t.count }, (_, k) => (
@@ -65,9 +66,9 @@ export function Race({
             )}
             <span className="zp-lane__time">
               {done
-                ? `${place(i)} · ${clock(times.at(-1)! - t.startedAt)}`
+                ? `${place(i)} · ${clockMs(times.at(-1)! - t.startedAt)}`
                 : running
-                  ? `On ${times.length + 1} of ${t.count} · ${clock(now() - since(t, id))}`
+                  ? `On ${times.length + 1} of ${t.count} · ${clockMs(now() - since(t, id))}`
                   : `${times.length} of ${t.count}`}
             </span>
           </li>

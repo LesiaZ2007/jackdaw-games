@@ -124,7 +124,7 @@
   color: var(--on-fill);
 }
 
-/* A name plate: printed card, double rule when it is their move. */
+/* A name plate: printed card; on their move it takes a brass-tinted fill and a double rule. */
 .bgm-plate {
   min-width: 0;
   display: flex;
@@ -135,6 +135,7 @@
   background: var(--paper);
 }
 .bgm-plate.is-turn {
+  background: color-mix(in srgb, var(--bgm-mark) 34%, var(--paper));
   border-color: var(--ink);
   outline: 1px solid var(--ink);
   outline-offset: -5px;
@@ -155,9 +156,12 @@
   text-transform: uppercase;
 }
 .bgm-plate__who b {
+  /* A long name wraps to a second line before it is clipped; the full name is in the title. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   font-weight: 800;
 }
 .bgm-plate__who span {
@@ -234,6 +238,7 @@
 }
 .bgm-log li {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 6px;
   padding: 4px 0;
@@ -241,6 +246,10 @@
 }
 .bgm-log li:first-child {
   font-weight: 800;
+}
+.bgm-log li > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .bgm-log__dice {
   display: inline-flex;

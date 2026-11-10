@@ -347,7 +347,7 @@ describe('move', () => {
       Wren: seat({ cols: [col(['9s']), col(['9c']), col(['8d'])] }),
       Magpie: busy(),
     });
-    // Same colour, same rank, wrong rank.
+    // Same color, same rank, wrong rank.
     for (const to of [1, 2]) {
       expect(refused(() => act(s, 'Wren', { type: 'move', from: 0, card: '9s', to })).code).toBe(
         'no_fit',

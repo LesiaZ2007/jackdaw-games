@@ -4,7 +4,8 @@ import type { CSSProperties } from 'react';
 import { Token, useTheme, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { KingsReveal } from '../rules';
 import { clock } from '../time';
-import { answerMarks, Board } from './board';
+import { answerMarks } from '../marks';
+import { Board } from './board';
 import { place } from './race';
 import './kings.css';
 
@@ -54,7 +55,7 @@ function Podium({
             >
               <span className="kg-podium__place">{place(k)}</span>
               {p ? <Token avatar={p.avatar} size={36} /> : <span className="kg-podium__gone" />}
-              <span className="kg-podium__name">
+              <span className="kg-podium__name" title={p?.name}>
                 {p?.name ?? 'Someone'}
                 {id === me && <small> (you)</small>}
               </span>

@@ -84,7 +84,7 @@ export const SPECTRUMS: readonly Spectrum[] = [
   ['Mild inconvenience', 'Total disaster'],
   ['Basic', 'Sophisticated'],
 
-  // People and behaviour
+  // People and behavior
   ['Villain', 'Hero'],
   ['Introvert', 'Extrovert'],
   ['Lazy', 'Hard-working'],

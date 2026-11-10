@@ -8,7 +8,7 @@ import { missionText, type Mission } from '../missions';
 import { territoryName } from './common';
 
 /** The three troop symbols, drawn small (and the wild, which stands in for any). */
-export function SymbolMark({ symbol }: { symbol: CardSymbol }) {
+function SymbolMark({ symbol }: { symbol: CardSymbol }) {
   const art: Record<CardSymbol, string> = {
     // A pikeman's shield, a horseshoe, a cannon on its wheel, a star.
     infantry: 'M12 4h16v10c0 7-4 11-8 13-4-2-8-6-8-13z',

@@ -1815,7 +1815,7 @@ button.mnp-sp {
   min-width: 0;
 }
 .mnp-tv .mnp-face {
-  font-size: 22px;
+  font-size: 24px;
   letter-spacing: 0;
   line-height: 0.92;
 }
@@ -1993,9 +1993,9 @@ button.mnp-sp {
   font-size: 24px;
 }
 .mnp-pop--tv .mnp-pop__bank {
-  width: 64px;
-  height: 64px;
-  font-size: 18px;
+  width: 76px;
+  height: 76px;
+  font-size: 24px;
 }
 .mnp-pop--tv .mnp-pop__notes {
   width: 140px;
@@ -2398,7 +2398,7 @@ button.mnp-sp {
 }
 .mnp-tt__cell .mnp-chip {
   --band: inherit;
-  min-height: 40px;
+  min-height: 44px;
   font-size: 12px;
 }
 .mnp-tt__money {

@@ -13,7 +13,8 @@ import {
 import { checkKings } from '../puzzle';
 import { ranking, type KingsAction, type KingsPlayerView } from '../rules';
 import { clock } from '../time';
-import { Board, KingMark, type Mark } from './board';
+import { Board, KingMark } from './board';
+import type { Mark } from '../marks';
 import { PlayerCard, Spectate } from './card';
 import { place, Race, useTick } from './race';
 import { findMistake, nextStep, type Hint } from '../hints';

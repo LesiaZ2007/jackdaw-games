@@ -1,7 +1,7 @@
 /*
  * Zap: a page from a printed puzzle book, the line drawn on it in orange ink. The board is
  * printed, so it stays the same by day and in the dark; the frame round it follows the shell.
- * All of the game's colours are in this token block. No gradients, no glows.
+ * All of the game's colors are in this token block. No gradients, no glows.
  */
 
 .zp {
@@ -1087,7 +1087,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .zp-board.is-solved .zp-bolt {
+  .zp-board.is-solved .zp-line {
     animation: none;
   }
   .zp-stamp {

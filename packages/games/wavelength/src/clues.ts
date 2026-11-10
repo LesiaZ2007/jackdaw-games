@@ -78,13 +78,13 @@ Bad job|Dream job: Sewer cleaner @5; Telemarketer @10; Office temp @35; Teacher 
 Bad sandwich|Perfect sandwich: Sand sandwich @2; Soggy cucumber @12; Plain butter @25; Cheese and pickle @70; BLT @85; Club sandwich @90
 Bad smell to wake up to|Good smell to wake up to: Smoke alarm @3; Burnt toast @15; Wet dog @10; Rain @60; Bacon @85; Fresh coffee @92
 Rubbish film|Masterpiece: Straight to DVD @5; Bad sequel @12; Popcorn flick @45; Family classic @70; Oscar winner @88
-Unlikeable|Lovable: Internet troll @3; Parking warden @20; Tax inspector @15; Grumpy neighbour @25; Golden retriever @92; Grandma @88
+Unlikeable|Lovable: Internet troll @3; Parking warden @20; Tax inspector @15; Grumpy neighbor @25; Golden retriever @92; Grandma @88
 Lame hobby|Cool hobby: Collecting receipts @3; Ironing @8; Stamp collecting @25; Gardening @45; Rock climbing @85; Skydiving @92
 Bad advice|Good advice: Pet the bear @3; Lick the battery @5; Just wing it @30; Sleep on it @75; Drink water @88
 Hard to love|Easy to love: Wasps @3; Traffic wardens @10; Pigeons @30; Cats @70; Puppies @93
 Wrong|Right: Two plus two is five @3; Flat earth @5; Whale is a fish @15; Tomato is a fruit @85; Water is wet @95
 Nobody wants it|Everybody wants it: Cold sore @3; Parking ticket @5; Fruitcake @25; Day off @85; Winning lottery ticket @97
-Mild inconvenience|Total disaster: Stubbed toe @5; Missed the bus @12; Lost keys @30; Flat tyre @45; House flood @80; Volcano erupting @95
+Mild inconvenience|Total disaster: Stubbed toe @5; Missed the bus @12; Lost keys @30; Flat tire @45; House flood @80; Volcano erupting @95
 Basic|Sophisticated: Beans on toast @5; Pumpkin spice latte @15; Burger @25; Sushi @60; Opera @85; Caviar @92
 
 Villain|Hero: Dracula @3; Pirate @15; Robin Hood @70; Firefighter @88; Superman @95
@@ -99,11 +99,11 @@ Follower|Leader: Sheep @3; Duckling @8; Intern @15; Teacher @65; Captain @85; Ki
 Pessimist|Optimist: Eeyore @3; Weather forecaster @35; Gambler @80; Puppy @90
 Nerdy|Sporty: Chess club @3; Coding @8; Library @12; Bird watching @30; Yoga @60; Football @85; Olympic sprinter @97
 Unpopular|Popular: Tax collector @3; Dentist @15; Teacher @45; Footballer @80; Pop star @95
-Forgettable person|Famous person: Background extra @5; Neighbour's cousin @15; Local mayor @40; TV presenter @75; Queen @97
+Forgettable person|Famous person: Background extra @5; Neighbor's cousin @15; Local mayor @40; TV presenter @75; Queen @97
 Bad role model|Good role model: Pirate @12; Cartoon villain @5; Rock star @30; Teacher @75; Firefighter @88
 Would lose a fight|Would win a fight: Kitten @5; Goldfish @3; Grandma @25; Goose @55; Bear @88; Tank @97
 Bad at keeping secrets|Vault: Toddler @3; Parrot @8; Gossip @12; Best friend @60; Spy @90; Diary with a lock @80
-Harmless prank|Unforgivable prank: Whoopee cushion @5; Fake spider @15; Salt in the sugar @40; Fake lottery ticket @80; Cancelling a wedding @97
+Harmless prank|Unforgivable prank: Whoopee cushion @5; Fake spider @15; Salt in the sugar @40; Fake lottery ticket @80; Canceling a wedding @97
 Normal thing to do|Weird thing to do: Brushing teeth @3; Making tea @6; Talking to plants @50; Eating soup with a fork @75; Wearing a tie to bed @90
 Socially acceptable|Socially unacceptable: Saying please @3; Queueing @8; Singing in the shower @25; Talking loudly on the bus @65; Licking a stranger @97
 Morning person|Night owl: Rooster @3; Milkman @8; Baker @10; Teacher @30; DJ @85; Owl @95; Vampire @97
@@ -145,9 +145,9 @@ Normal pet|Exotic pet: Cat @3; Dog @5; Goldfish @12; Rabbit @20; Parrot @50; Sna
 Easy to draw|Hard to draw: Circle @3; Smiley face @6; Stick man @8; House @20; Cat @55; Horse @75; Hands @88
 Easy to spell|Hard to spell: Cat @3; Dog @5; Banana @20; Necessary @70; Onomatopoeia @90
 Easy to learn|Hard to master: Snap @5; Noughts and crosses @10; Draughts @40; Guitar @70; Chess @90
-Easy to say|Hard to say: Mum @3; Hello @6; Banana @15; Worcestershire @85; Supercalifragilistic @95
+Easy to say|Hard to say: Mom @3; Hello @6; Banana @15; Worcestershire @85; Supercalifragilistic @95
 Easy to remember|Hard to remember: Your name @3; Birthday @10; Phone number @50; Password @80; Pi to 100 digits @97
-Unknown|World famous: Your neighbour @5; Local baker @10; Town mayor @30; TV weatherman @55; Eiffel Tower @92; The moon @97
+Unknown|World famous: Your neighbor @5; Local baker @10; Town mayor @30; TV weatherman @55; Eiffel Tower @92; The moon @97
 Local|Global: Corner shop @3; Village fete @6; Town hall @15; National park @60; Olympics @90; The internet @97
 Ancient|Brand new: Pyramids @3; Stonehenge @6; Castle @20; Grandad's car @55; New phone @88; Fresh paint @95
 Primitive|High-tech: Stone axe @3; Campfire @6; Wheel @12; Bicycle @40; Laptop @80; Robot @88; Spaceship @97
@@ -186,7 +186,7 @@ Dessert|Main course: Ice cream @3; Cheesecake @5; Fruit salad @30; Soup @55; Pas
 City break|Beach holiday: Paris @3; Rome @6; Museum tour @10; Lake district @45; Cruise @70; Sunbed @92
 Fiction|Non-fiction: Fairy tales @3; Dragons @6; Historical novel @45; Biography @80; Dictionary @95
 
-Pigeon|Peacock: Grey suit @6; Sparrow @12; Blackbird @25; Parrot @80; Flamingo @85; Drag queen @95
+Pigeon|Peacock: Gray suit @6; Sparrow @12; Blackbird @25; Parrot @80; Flamingo @85; Drag queen @95
 Common bird|Rare bird: Pigeon @3; Seagull @5; Robin @15; Owl @50; Kingfisher @65; Golden eagle @85; Dodo @99
 Clever animal|Silly animal: Dolphin @3; Octopus @5; Crow @10; Dog @35; Sheep @75; Turkey @90
 Cuddly animal|Scary animal: Kitten @3; Puppy @5; Rabbit @8; Horse @40; Goose @60; Shark @92; Tarantula @88

@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { prefersReducedMotion } from '@jackdaw/ui';
 import { cellName, shipOf } from '../fleet';
 import type { Volley } from '../rules';
-
-const reduce = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * The seq of a volley that arrived after this screen opened, for one flight of the pegs.
@@ -16,7 +14,7 @@ export function useArrival(seq: number): number | null {
   const [arrived, setArrived] = useState<number | null>(null);
   if (tracked !== seq) {
     setTracked(seq);
-    setArrived(reduce() ? null : seq);
+    setArrived(prefersReducedMotion() ? null : seq);
   }
   useEffect(() => {
     if (arrived == null) return;
@@ -90,7 +88,7 @@ export function useDelayedFelt(seq: number, moment: Felt | null): [Felt | null, 
   }
   useEffect(() => {
     if (pending == null) return;
-    const t = window.setTimeout(() => setShow(pending), reduce() ? 0 : 900);
+    const t = window.setTimeout(() => setShow(pending), prefersReducedMotion() ? 0 : 900);
     return () => window.clearTimeout(t);
   }, [pending]);
   return [show === seq && moment ? moment : null, () => setShow(null)];

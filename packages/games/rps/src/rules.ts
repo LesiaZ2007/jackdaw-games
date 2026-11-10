@@ -119,10 +119,10 @@ export function botPick(
 function statsFrom(state: RpsState, winners: string[]): RecapStats {
   const order = [...winners, ...state.players.filter((id) => !winners.includes(id))];
   return {
-    columns: ['Points', 'Rounds won', 'Favourite'],
+    columns: ['Points', 'Rounds won', 'Favorite'],
     rows: order.map((playerId) => {
       const thrown = state.history.map((h) => h.picks[playerId]!);
-      const favourite = PICKS.map((p) => [p, thrown.filter((t) => t === p).length] as const).sort(
+      const favorite = PICKS.map((p) => [p, thrown.filter((t) => t === p).length] as const).sort(
         (a, b) => b[1] - a[1],
       )[0]!;
       const roundsWon = state.history.filter((h) => {
@@ -131,7 +131,7 @@ function statsFrom(state: RpsState, winners: string[]): RecapStats {
       }).length;
       return {
         playerId,
-        values: [state.scores[playerId]!, roundsWon, favourite[1] > 0 ? favourite[0] : '-'],
+        values: [state.scores[playerId]!, roundsWon, favorite[1] > 0 ? favorite[0] : '-'],
       };
     }),
   };

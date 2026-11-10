@@ -147,7 +147,9 @@ export function PokerTable({
                   </span>
                 )}
               </span>
-              <span className="pk-seat__name">{id === me ? 'You' : name(id)}</span>
+              <span className="pk-seat__name" title={name(id)}>
+                {id === me ? 'You' : name(id)}
+              </span>
               <span className="pk-seat__stack">
                 {out && (t.stacks[id] ?? 0) === 0 ? 'Out' : chips(t.stacks[id] ?? 0)}
               </span>

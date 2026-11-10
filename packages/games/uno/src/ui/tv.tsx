@@ -21,7 +21,7 @@ import './uno.css';
 const FAN_MAX = 10;
 
 /**
- * UNO on the TV, made to be read from the sofa. The table is printed in the colour in play, the
+ * UNO on the TV, made to be read from the sofa. The table is printed in the color in play, the
  * discard pile large in the middle with the last few cards scattered under it, and the way play
  * goes in the heading. Everyone sits round it with their real number of card backs
  * fanned out, and whoever plays next is lifted and lit. Action cards stamp their word across the
@@ -60,7 +60,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
           <span className="uno-tv__colour">
             <span className={`uno-swatch uno-swatch--${t.colour}`} aria-hidden="true" />
             {COLOUR_NAME[t.colour]}
-            <span className="uno-tv__dir">{t.dir === 1 ? 'clockwise' : 'anticlockwise'}</span>
+            <span className="uno-tv__dir">{t.dir === 1 ? 'clockwise' : 'counterclockwise'}</span>
           </span>
         )}
         <p>{roundLine(t)}</p>
@@ -146,7 +146,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
                     {count}
                   </span>
                 </span>
-                <span className="uno-tv__name">
+                <span className="uno-tv__name" title={name(id)}>
                   {name(id)}
                   {t.target > 0 && (
                     <span className="uno-tv__score" aria-label={`${t.scores[id] ?? 0} points`}>

@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-const reduce = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+import { prefersReducedMotion } from '@jackdaw/ui';
 
 /**
  * The seq of a log entry that arrived after this screen opened, for one flight of the checkers.
@@ -14,7 +12,7 @@ export function useArrival(seq: number): number | null {
   const [arrived, setArrived] = useState<number | null>(null);
   if (tracked !== seq) {
     setTracked(seq);
-    setArrived(reduce() ? null : seq);
+    setArrived(prefersReducedMotion() ? null : seq);
   }
   useEffect(() => {
     if (arrived == null) return;

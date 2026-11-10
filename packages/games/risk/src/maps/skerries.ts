@@ -7,7 +7,7 @@ import { SKERRIES_REGIONS, SKERRIES_SEA, SKERRIES_SHAPES } from './skerries.shap
  * has few ways in and holding one is about guarding its harbours.
  *
  *   Northholm (north-west, 9) ~~ Saltreach (south-west, 7) ~~ the Teeth (south, 4 islets)
- *         ~~ the Great Skerry (centre, 12) ~~ the Gannet Isles (north-east, 6)
+ *         ~~ the Great Skerry (center, 12) ~~ the Gannet Isles (north-east, 6)
  *         ~~ Wyvern Key (east, 4) ~~ back to the Teeth.
  */
 export const skerries = defineMap({

@@ -37,7 +37,7 @@ export function Plate({
         <PlayerReaction reactions={reactions} playerId={id} />
       </span>
       <span className="bgm-plate__who">
-        <b>{you ? 'You' : name(id)}</b>
+        <b title={name(id)}>{you ? 'You' : name(id)}</b>
         <span>
           <CheckerIcon side={side} size={size === 'tv' ? 30 : 16} />
           {t.pips[side]} pips

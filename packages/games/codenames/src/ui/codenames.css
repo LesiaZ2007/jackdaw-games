@@ -80,13 +80,18 @@
   justify-content: center;
   gap: 6px;
   min-height: var(--tap);
-  padding: 0 16px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 16px;
   border: 2px solid var(--cn-text);
-  border-radius: 3px;
+  border-radius: 0;
   background: transparent;
   color: var(--cn-text);
-  font: 800 16px/1 var(--font-plaque);
+  font: 800 16px/1.1 var(--font-plaque);
   letter-spacing: 0.05em;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
   text-transform: uppercase;
   cursor: pointer;
 }

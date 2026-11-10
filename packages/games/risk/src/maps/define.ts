@@ -18,7 +18,7 @@ export interface MapSource {
   regions?: Record<string, string>;
 }
 
-/** Builds a `MapDef` from a border list, so neighbours always go both ways. */
+/** Builds a `MapDef` from a border list, so neighbors always go both ways. */
 export function defineMap(src: MapSource): MapDef {
   const adj = new Map<string, string[]>(src.territories.map(([id]) => [id, []]));
   for (const [a, b] of src.borders) {

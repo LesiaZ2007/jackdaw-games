@@ -11,7 +11,7 @@ import type { RiskAction, RiskTableView, RiskView } from './rules';
  *
  * - Trades a set whenever it holds one (it must at five cards).
  * - Piles its reinforcements onto the border that best sets up an attack it wants: weak
- *   neighbours, territories in its mission's continents, its destroy target, a continent it's
+ *   neighbors, territories in its mission's continents, its destroy target, a continent it's
  *   one short of. With plenty to place, some go to the border under most pressure.
  * - Attacks only with a clear edge (3+ armies and 2+ more than the defender), blitzing when the
  *   edge is big and rolling one throw at a time when it's close, so it stops once it runs thin.
@@ -88,7 +88,7 @@ class Brain {
 
   private armies = (x: string) => this.t.armies[x] ?? 0;
 
-  /** Neighbours held by someone else (all in sight: they border one of ours). */
+  /** Neighbors held by someone else (all in sight: they border one of ours). */
   private enemies = (x: string) =>
     (this.adj.get(x) ?? []).filter((n) => this.t.owner[n] !== this.me);
 

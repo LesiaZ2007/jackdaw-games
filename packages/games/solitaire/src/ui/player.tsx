@@ -5,18 +5,15 @@ import {
   Plaque,
   PlayerReaction,
   Token,
+  plural,
   useMoment,
   type GameUi,
   type ScreenPlayer,
 } from '@jackdaw/ui';
-import { cardShort, rankOf, type Card } from '../cards';
+import { cardShort, type Card } from '../cards';
+import { hintFor, moveFor } from '../hints';
 import {
-  canGoUp,
-  fits,
-  movesFor,
-  viewLayout,
   type Move,
-  type SeatView,
   type SolitaireAction,
   type SolitairePlayerView,
   type SolitaireTableView,
@@ -25,51 +22,10 @@ import {
 import { Middle, PlayingCard, StockWaste, Tableau, tintOf } from './pieces';
 import './solitaire.css';
 
-const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`;
-
 /** "Wren", "Wren and Rook", "Wren, Rook and Robin". */
 export function names(ids: string[], name: (id: string) => string): string {
   const all = ids.map(name);
   return all.length <= 1 ? (all[0] ?? '') : `${all.slice(0, -1).join(', ')} and ${all.at(-1)}`;
-}
-
-/**
- * Where a tapped card goes: up to the middle if it can (only a column's bottom card or the
- * waste's), otherwise onto the first column it fits, a column with cards before an empty one.
- */
-export function moveFor(
-  seat: SeatView,
-  foundations: SolitaireTableView['foundations'],
-  from: Source,
-  card: Card,
-): Move | null {
-  const top = from === 'waste' ? seat.waste.at(-1) : seat.cols[from]!.up.at(-1);
-  if (top === card && canGoUp(foundations, card)) return { type: 'up', from, card };
-  const order = seat.cols
-    .map((col, to) => ({ col, to }))
-    .filter(({ to }) => to !== from)
-    .sort((a, b) => Number(a.col.up.length === 0) - Number(b.col.up.length === 0));
-  for (const { col, to } of order) {
-    if (!fits(col, card)) continue;
-    // A king already heading a column of its own gains nothing from moving to another.
-    if (from !== 'waste' && rankOf(card) === 13) {
-      const src = seat.cols[from]!;
-      if (src.down === 0 && src.up[0] === card) continue;
-    }
-    return { type: 'move', from, card, to };
-  }
-  return null;
-}
-
-/** The move a hint points at: anything going up first, then turning a covered card over. */
-export function hintFor(seat: SeatView, t: SolitaireTableView): Move | 'stock' | null {
-  const moves = movesFor(viewLayout(seat), t.foundations);
-  const best =
-    moves.find((m) => m.type === 'up') ??
-    moves.find((m) => m.type === 'move' && m.from !== 'waste') ??
-    moves[0];
-  if (best) return best;
-  return seat.stuck ? null : 'stock';
 }
 
 /** One line for the head of the screen. */
@@ -140,7 +96,7 @@ export function Rivals({
 }
 
 /** What this player pulled when everyone was stuck, for the banner. */
-export function pullLine(t: SolitaireTableView, me: string | null, name: (id: string) => string) {
+function pullLine(t: SolitaireTableView, me: string | null, name: (id: string) => string) {
   if (!t.pull) return null;
   const mine = me ? t.pull.cards[me] : undefined;
   if (mine) return { title: 'Everyone was stuck', detail: 'You pulled', card: mine };

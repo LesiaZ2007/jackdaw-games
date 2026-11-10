@@ -15,7 +15,7 @@ import { armyColour } from './armies';
 import { LandDecor, SeaDecor } from './decor';
 import './risk.css';
 
-/** What's in the frame: the map point at its centre, and the zoom (1 = the whole map fits). */
+/** What's in the frame: the map point at its center, and the zoom (1 = the whole map fits). */
 interface View {
   cx: number;
   cy: number;
@@ -28,7 +28,7 @@ export interface RiskMapProps {
   map: MapDef;
   owner: Owner;
   armies: Armies;
-  /** The players in seat order: each seat's armies have their own colour. */
+  /** The players in seat order: each seat's armies have their own color. */
   seats: readonly string[];
   /** The territory picked (drawn raised). */
   selected?: string | null;
@@ -56,7 +56,7 @@ export interface RiskMapProps {
   className?: string;
 }
 
-/** "Northwest Territory" on two lines, so long names don't run into their neighbours. */
+/** "Northwest Territory" on two lines, so long names don't run into their neighbors. */
 function nameLines(name: string): string[] {
   const words = name.split(' ');
   if (name.length < 11 || words.length < 2) return [name];
@@ -71,7 +71,7 @@ function nameLines(name: string): string[] {
 }
 
 /**
- * The board: every territory filled with its owner's army colour, an army roundel on each, each
+ * The board: every territory filled with its owner's army color, an army roundel on each, each
  * continent ruled round in a heavier double line with its name lettered in the sea, the coast
  * inked over an engraved sea with the cartographer's ornaments. Roundels and names keep the same
  * size on screen whatever the zoom.
@@ -224,6 +224,11 @@ export function RiskMap({
   const r = (11 * scale) / px;
   const showNames = names || px > 1.15;
   const font = (11 * (1 + (scale - 1) * 0.35)) / px;
+  // A name near the edge of the frame slides in so its letters aren't cut off by it.
+  const nameX = (x: number, lines: string[]) => {
+    const half = Math.max(...lines.map((l) => l.length)) * font * 0.36;
+    return Math.max(x0 + half, Math.min(x, x0 + vw - half));
+  };
   const colour = (pid: string) => armyColour(pid, seats);
   const aiming = targets.length > 0;
 
@@ -338,9 +343,9 @@ export function RiskMap({
           if (fog && !(t.id in owner))
             return showNames ? (
               <g key={t.id} className="rk-roundel is-fog" onClick={() => pick(t.id)}>
-                <text x={x} y={y} className="rk-name" fontSize={font}>
+                <text x={nameX(x, nameLines(t.name))} y={y} className="rk-name" fontSize={font}>
                   {nameLines(t.name).map((line, i) => (
-                    <tspan key={i} x={x} dy={i ? '1.05em' : '0.36em'}>
+                    <tspan key={i} x={nameX(x, nameLines(t.name))} dy={i ? '1.05em' : '0.36em'}>
                       {line}
                     </tspan>
                   ))}
@@ -359,9 +364,14 @@ export function RiskMap({
                 </text>
               )}
               {showNames && (
-                <text x={x} y={y + r + font * 1.05} className="rk-name" fontSize={font}>
+                <text
+                  x={nameX(x, nameLines(t.name))}
+                  y={y + r + font * 1.05}
+                  className="rk-name"
+                  fontSize={font}
+                >
                   {nameLines(t.name).map((line, i) => (
-                    <tspan key={i} x={x} dy={i ? '1.05em' : 0}>
+                    <tspan key={i} x={nameX(x, nameLines(t.name))} dy={i ? '1.05em' : 0}>
                       {line}
                     </tspan>
                   ))}

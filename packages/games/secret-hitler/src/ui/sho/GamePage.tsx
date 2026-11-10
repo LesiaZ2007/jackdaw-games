@@ -349,7 +349,7 @@ export default class GamePage extends Component<GamePageProps, GamePageState> {
             );
           }
           this.queueEventUpdate('CHANCELLOR NOMINATION');
-          this.queueStatusMessage('Waiting for president to nominate a chancellor.');
+          this.queueStatusMessage(`Waiting for ${newState.president} to nominate a chancellor.`);
           if (isPresident) {
             // Show the chancellor nomination window.
             this.queueAlert(SelectNominationPrompt(name, newState, this.sendWSCommand));
@@ -377,7 +377,9 @@ export default class GamePage extends Component<GamePageProps, GamePageState> {
           // The vote completed, so show the votes.
           this.addAnimationToQueue(() => this.showVotes(newState));
           this.queueEventUpdate('LEGISLATIVE SESSION');
-          this.queueStatusMessage('Waiting for the president to choose a policy to discard.');
+          this.queueStatusMessage(
+            `Waiting for ${newState.president} to choose a policy to discard.`,
+          );
           if (isPresident && newState.presidentChoices) {
             this.queueAlert(
               <PresidentLegislativePrompt
@@ -389,7 +391,9 @@ export default class GamePage extends Component<GamePageProps, GamePageState> {
           break;
 
         case LobbyState.LEGISLATIVE_CHANCELLOR:
-          this.queueStatusMessage('Waiting for the chancellor to choose a policy to enact.');
+          this.queueStatusMessage(
+            `Waiting for ${newState.chancellor} to choose a policy to enact.`,
+          );
           if (isChancellor && newState.chancellorChoices) {
             this.queueAlert(
               <ChancellorLegislativePrompt
@@ -406,7 +410,7 @@ export default class GamePage extends Component<GamePageProps, GamePageState> {
 
         case LobbyState.LEGISLATIVE_PRESIDENT_VETO:
           this.queueStatusMessage(
-            'Chancellor has motioned to veto the agenda. Waiting for the president to decide.',
+            `${newState.chancellor} has motioned to veto the agenda. Waiting for ${newState.president} to decide.`,
           );
           if (isPresident) {
             this.queueAlert(
@@ -521,7 +525,7 @@ export default class GamePage extends Component<GamePageProps, GamePageState> {
               break;
             default:
           }
-          this.queueStatusMessage('Waiting for the president to end their term.');
+          this.queueStatusMessage(`Waiting for ${newState.president} to end their term.`);
           break;
 
         case LobbyState.LIBERAL_VICTORY_EXECUTION:

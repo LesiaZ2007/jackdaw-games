@@ -151,15 +151,15 @@
   position: relative;
   min-width: 0;
   gap: 4px;
-  padding: 0 3px;
+  padding: 0 10px;
   font-size: min(16px, 3.6cqi);
   white-space: normal;
   line-height: 1.05;
 }
 .ctn .ctn-dock--5 .ctn-count {
   position: absolute;
-  top: -9px;
-  right: -5px;
+  top: -11px;
+  right: 4px;
   font-size: 13px;
   padding: 3px 5px;
 }

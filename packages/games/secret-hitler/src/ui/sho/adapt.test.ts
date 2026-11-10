@@ -34,7 +34,7 @@ const seen = (s: ShState, id: string | null) =>
   toGameState(game.getTableView(s), id ? game.getPlayerView(s, id) : null, players);
 
 describe('the game state for secret-hitler.online’s screens', () => {
-  it('names players, and gives each their crest and colour', () => {
+  it('names players, and gives each their crest and color', () => {
     const g = seen(table(), 'p2');
     expect(g.playerOrder).toEqual(NAMES);
     expect(g.icon).toMatchObject({

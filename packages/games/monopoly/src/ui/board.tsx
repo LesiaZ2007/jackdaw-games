@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Token, type ScreenPlayer } from '@jackdaw/ui';
+import { prefersReducedMotion, Token, type ScreenPlayer } from '@jackdaw/ui';
 import {
   ArtArrow,
   ArtBag,
@@ -112,9 +112,6 @@ export function cellOf(space: number): { row: number; col: number; side: 'b' | '
   return { row: 1 + (space - 30), col: 11, side: 'r' };
 }
 
-const reduced = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 /**
  * Where each token is drawn. A token walks round the board one space at a time when it moves by
  * the dice, and jumps straight there when it's sent (to Jail, or by a card).
@@ -138,7 +135,7 @@ export function useWalk(t: MonopolyTableView): Walk {
       jump: {},
       step: prev.step + 1,
     });
-    if (reduced()) {
+    if (prefersReducedMotion()) {
       const now = window.setTimeout(() => setShown(settle), 0);
       return () => window.clearTimeout(now);
     }

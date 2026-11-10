@@ -15,6 +15,8 @@ import { toGameState } from './sho/adapt';
  * Phones that are watching scroll as usual.
  */
 const MAX_TV_ZOOM = 1.6;
+/** Never shrink below this: past it the type is unreadable from a sofa, so the page clips instead. */
+const MIN_TV_ZOOM = 0.6;
 
 function useFitOnTv() {
   const ref = useRef<HTMLDivElement>(null);
@@ -31,7 +33,7 @@ function useFitOnTv() {
     const fit = () => {
       if (host.clientHeight <= 0) return;
       if (fits(MAX_TV_ZOOM)) return;
-      let lo = 0.25;
+      let lo = MIN_TV_ZOOM;
       let hi = MAX_TV_ZOOM;
       for (let i = 0; i < 9; i++) {
         const mid = (lo + hi) / 2;

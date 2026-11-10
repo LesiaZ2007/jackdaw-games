@@ -59,16 +59,20 @@
 }
 .ctn-tv__turn b {
   font: 800 36px / 1 var(--font-display);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .ctn-tv__turn small {
   margin-top: 6px;
   font: 800 24px / 1.15 var(--font-plaque);
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-2);
@@ -229,9 +233,12 @@
   color: var(--ink);
 }
 .ctn-tv__log li {
+  /* A long line wraps to a second row rather than losing its end. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 /* Five or six players: tighter rows so everyone fits beside the island. */
@@ -255,7 +262,7 @@
 }
 .ctn-reveal__board {
   aspect-ratio: 1;
-  max-height: 70vh;
+  max-height: calc(70 * var(--vh, 1vh));
   display: grid;
   background: var(--ctn-sea);
   border: 2px solid var(--ink);

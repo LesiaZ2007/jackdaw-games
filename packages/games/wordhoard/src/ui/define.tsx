@@ -12,7 +12,7 @@ const meanings = new Map<string, Definition>();
  * What the words of a play mean, from the server (which asks the dictionaries and caches the
  * answer). Null while it's on its way; a word nobody knows comes back with no senses.
  */
-export function useDefinitions(words: string[]): Definition[] | null {
+function useDefinitions(words: string[]): Definition[] | null {
   const key = words.join(',');
   const cached = words.every((w) => meanings.has(w)) ? words.map((w) => meanings.get(w)!) : null;
   const [answer, setAnswer] = useState<{ key: string; defs: Definition[] } | null>(null);
@@ -42,7 +42,7 @@ export function useDefinitions(words: string[]): Definition[] | null {
 }
 
 /** The words a play made, the main word first. */
-export function playedWords(move: Move | undefined): string[] {
+function playedWords(move: Move | undefined): string[] {
   return move?.kind === 'play' ? (move.words ?? []).map((w) => w.word).slice(0, 4) : [];
 }
 

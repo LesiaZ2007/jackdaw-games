@@ -2,19 +2,19 @@
  * Wavelength: a printed dial board in the compendium. The dial is sable card with a cream rim,
  * ticked like a radio tuner; the target zone is printed in bands (vert 4, tenné 3, gold 2) under a
  * sable shutter that swings away round the pivot on the reveal. Sun team is gules, Moon azure.
- * The board is printed, so it looks the same day and dark; its colours are set here and
+ * The board is printed, so it looks the same day and dark; its colors are set here and
  * everything else comes from @jackdaw/ui tokens.
  */
 .wl {
   --wl-card: #26282b;
   --wl-card-2: #34373b;
-  --wl-cream: #f6f0e1;
+  --wl-cream: var(--on-fill);
   --wl-ink: #1d1d1c;
   --wl-2: #b8892a;
-  --wl-3: #9a5a22;
-  --wl-4: #30634a;
-  --wl-sun: #a63a30;
-  --wl-moon: #2b5683;
+  --wl-3: var(--tenne);
+  --wl-4: var(--vert);
+  --wl-sun: var(--gules);
+  --wl-moon: var(--azure);
   --wl-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -360,6 +360,8 @@ button.wl-card:focus-visible {
   text-transform: uppercase;
   text-align: center;
   rotate: -4deg;
+  max-width: 100%;
+  text-wrap: balance;
   animation: wl-stamp 700ms var(--wl-ease) 900ms both;
 }
 .wl-stamp--4 {
@@ -476,15 +478,16 @@ button.wl-card:focus-visible {
   padding: 10px 16px;
   font-size: 28px;
 }
+/* The points stamp sits in its own band under the dial, clear of the needle and the band labels. */
+.wl-tv__board.has-stamp .wl-dial {
+  width: min(100cqw, (100cqh - 260px) * 1.78);
+}
 .wl-tv__stamp {
-  position: absolute;
-  left: 50%;
-  top: 34%;
-  translate: -50% -50%;
-  font-size: 92px;
-  border-width: 5px;
-  outline-offset: -12px;
-  padding: 14px 40px;
+  max-width: 100%;
+  font-size: 56px;
+  border-width: 4px;
+  outline-offset: -10px;
+  padding: 10px 36px;
 }
 .wl-team {
   grid-row: 2;
@@ -706,7 +709,7 @@ button.wl-card:focus-visible {
   height: 44px;
 }
 .wl-pick__add .jd-addseat__ring {
-  width: 40px;
+  width: 44px;
 }
 .wl-pick__name--open {
   font-weight: 600;

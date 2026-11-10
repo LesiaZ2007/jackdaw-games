@@ -55,7 +55,9 @@ export function Race({
               )}
               <PlayerReaction reactions={reactions} playerId={id} />
             </span>
-            <span className="kg-lane__name">{id === me ? 'You' : (p?.name ?? 'Someone')}</span>
+            <span className="kg-lane__name" title={p?.name}>
+              {id === me ? 'You' : (p?.name ?? 'Someone')}
+            </span>
             {t.count <= 20 && (
               <span className="kg-pips" aria-label={`${times.length} of ${t.count} solved`}>
                 {Array.from({ length: t.count }, (_, k) => (

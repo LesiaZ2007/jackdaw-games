@@ -4,11 +4,29 @@
   flex-direction: column;
   gap: var(--space-4);
   max-width: 640px;
-  /* fill the screen below the lobby bar, so the throws sit in the bottom third */
-  min-height: calc(100dvh - 96px);
+  /* fits the height under the lobby bar (GameUi.fit): the scores and the throws scroll inside
+     their own boxes, so the three throw buttons are always on screen */
+  flex: 1;
+  min-height: 0;
 }
 .rps__hand {
   margin-top: auto;
+}
+.rps__board {
+  flex: 1 1 120px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.rps__reveal {
+  flex: 0 1 auto;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.rps__reveal ul {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .rps__head h2 {
   font-size: var(--step-3);
@@ -131,10 +149,9 @@
   color: var(--vert);
   background: var(--on-fill);
 }
+/* a loss stays fully legible: plain paper with an ink rule, not faded or dashed */
 .rps__card--loss {
-  opacity: 0.62;
-  border-style: dashed;
-  border-color: var(--rule);
+  border-color: var(--ink-2);
 }
 .rps__card--me {
   outline: 3px solid var(--or);
@@ -151,13 +168,9 @@
   color: var(--ink);
 }
 .rps__hand {
-  position: sticky;
-  bottom: 0;
   display: grid;
   gap: var(--space-2);
-  margin-inline: calc(var(--gutter) * -1);
-  padding: var(--space-4) var(--gutter) calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(to bottom, transparent, var(--table) 18%);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .rps__picks {
   display: grid;
@@ -199,12 +212,6 @@
   text-align: center;
   color: var(--ink-2);
   font-size: 15px;
-}
-@media (min-width: 768px) {
-  .rps__hand {
-    margin-inline: 0;
-    padding-inline: 0;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .rps__pick {

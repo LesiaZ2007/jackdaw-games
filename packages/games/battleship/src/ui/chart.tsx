@@ -197,7 +197,9 @@ export function Chart({
     <section className={`bs-chart bs-chart--${size}`} aria-label={label}>
       <header className="bs-chart__head">
         <Compass />
-        <h3 className="bs-chart__title">{label}</h3>
+        <h3 className="bs-chart__title" title={label}>
+          {label}
+        </h3>
       </header>
       <div className="bs-chart__plate">
         <div className="bs-chart__board">

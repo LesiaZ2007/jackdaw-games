@@ -3,16 +3,15 @@
 import { useEffect, useState } from 'react';
 import {
   Plaque,
+  clockMs,
   useCountdown,
   useMoment,
-  useTheme,
   VerdictMoment,
   type GameUi,
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import { checkPath } from '../puzzle';
 import { ranking, type ZapAction, type ZapPlayerView } from '../rules';
-import { clock } from '../time';
 import { BoltMark, Board } from './board';
 import { PlayerCard, Spectate } from './card';
 import { place, Race, useTick } from './race';
@@ -66,7 +65,6 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   ...props
 }) => {
   const v = view as ZapPlayerView;
-  const look = useTheme();
   const players = props.players as ScreenPlayer[];
   const solo = v.players.length === 1;
   const { path, set, undo, canUndo } = useLine(`jackdaw:zap:${v.startedAt}:${v.me}:${v.index}`);
@@ -133,29 +131,29 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         ? {
             title: solo ? `All ${v.count} solved` : `${place(myPlace)} to finish`,
             detail: solo
-              ? `${clock(took)} in all. Your last took ${clock(lastMs)}.`
-              : `All ${v.count} in ${clock(took)}.`,
+              ? `${clockMs(took)} in all. Your last took ${clockMs(lastMs)}.`
+              : `All ${v.count} in ${clockMs(took)}.`,
           }
         : {
             title: `Puzzle ${fresh} solved`,
-            detail: `${clock(lastMs)}. ${v.count - fresh} to go.`,
+            detail: `${clockMs(lastMs)}. ${v.count - fresh} to go.`,
           }
       : null;
 
   const byId = new Map(players.map((p) => [p.id, p]));
   if (doneAll && !solo) {
     return (
-      <div className="zp zp--phone zp-watch" data-look={look}>
+      <div className="zp zp--phone zp-watch">
         <header className="zp-head">
           <p className="zp-head__title">Watching the race</p>
           <span className="zp-clock" aria-label="Your time">
-            {clock(took)}
+            {clockMs(took)}
           </span>
         </header>
         <p className="zp-you" role="status">
-          <b>{place(myPlace)}</b> You solved all {v.count} in {clock(took)}.{' '}
+          <b>{place(myPlace)}</b> You solved all {v.count} in {clockMs(took)}.{' '}
           {closing !== null
-            ? `The race ends in ${clock(closing * 1000)}.`
+            ? `The race ends in ${clockMs(closing * 1000)}.`
             : 'Here’s how everyone else is doing.'}
         </p>
         <Spectate count={order.length - 1}>
@@ -189,18 +187,18 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   }
 
   return (
-    <div className="zp zp--phone" data-look={look}>
+    <div className="zp zp--phone">
       <header className="zp-head">
         <p className="zp-head__title">
           {doneAll ? (solo ? 'All solved' : 'Finished') : `Puzzle ${v.index + 1} of ${v.count}`}
         </p>
         <span className="zp-clock" aria-label="Time on this puzzle">
-          {doneAll ? clock(took) : clock(now() - v.since)}
+          {doneAll ? clockMs(took) : clockMs(now() - v.since)}
         </span>
       </header>
       {closing !== null && !doneAll && (
         <p className="zp-closing" role="status">
-          Someone has solved them all. The race ends in {clock(closing * 1000)}.
+          Someone has solved them all. The race ends in {clockMs(closing * 1000)}.
         </p>
       )}
 
@@ -220,8 +218,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               <BoltMark size={72} />
               <p className="zp-done__line">
                 {solo
-                  ? `${v.count === 1 ? 'Solved' : `All ${v.count} solved`} in ${clock(took)}.`
-                  : `${place(myPlace)}, all ${v.count} in ${clock(took)}.`}
+                  ? `${v.count === 1 ? 'Solved' : `All ${v.count} solved`} in ${clockMs(took)}.`
+                  : `${place(myPlace)}, all ${v.count} in ${clockMs(took)}.`}
               </p>
             </div>
           )}

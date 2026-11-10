@@ -73,3 +73,34 @@ export function place(
   }
   return { teams, spymasters };
 }
+
+/** Only the arrangement of players who are still here, with spymasters kept on their team. */
+export function arrangementFor(
+  arrangement: Arrangement,
+  playerIds: readonly string[],
+): Arrangement {
+  const here = new Set(playerIds);
+  const teams = Object.fromEntries(
+    Object.entries(arrangement.teams).filter(([id]) => here.has(id)),
+  ) as Record<string, Team>;
+  const spymasters: Partial<Record<Team, string>> = {};
+  for (const t of TEAMS) {
+    const id = arrangement.spymasters[t];
+    if (id && teams[id] === t) spymasters[t] = id;
+  }
+  return { teams, spymasters };
+}
+
+/**
+ * A fresh random split for the lobby's Shuffle: alternate down a shuffled table, so the sides
+ * differ by at most one, and the first of each side is its spymaster.
+ */
+export function shuffleTeams(playerIds: readonly string[], rng: Rng): Arrangement {
+  const order = rng.shuffle([...playerIds]);
+  const first = rng.pick(TEAMS);
+  const teams: Record<string, Team> = {};
+  order.forEach((id, i) => (teams[id] = i % 2 === 0 ? first : other(first)));
+  const spymasters: Partial<Record<Team, string>> = {};
+  for (const id of order) if (!spymasters[teams[id]!]) spymasters[teams[id]!] = id;
+  return { teams, spymasters };
+}

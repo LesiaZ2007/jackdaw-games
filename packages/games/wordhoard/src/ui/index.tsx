@@ -34,6 +34,14 @@ export const wordhoardUi: GameUi = {
       },
     ],
   },
+  optionHelp: {
+    pairs: {
+      'Past four players':
+        'With five or more players you play in pairs, sharing a rack and a score. Up to four, everyone plays alone.',
+      Always: 'Everyone plays in pairs, sharing a rack and a score. Needs at least three players.',
+    },
+    turnTimer: 'Out of time, your turn passes.',
+  },
   fit: true,
   PlayerScreen,
   TvScreen,

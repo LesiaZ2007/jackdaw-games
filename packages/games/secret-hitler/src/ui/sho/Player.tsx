@@ -71,7 +71,7 @@ export default function Player({
     >
       <img id="player-image" src={A.playerBase} alt={altText} className={darken} />
 
-      {/* Jackdaw: the player's crest on their colour, where the site has a portrait. */}
+      {/* Jackdaw: the player's crest on their color, where the site has a portrait. */}
       <span
         className={'sho-jackdaw sho-crest' + darken}
         style={

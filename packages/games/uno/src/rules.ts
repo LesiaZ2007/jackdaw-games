@@ -24,10 +24,10 @@ import { unoBot } from './bot';
 
 /**
  * UNO for 2–10 players, by the official rules. Everyone gets seven cards and one is turned
- * up. In turn, play a card that matches the top of the pile by colour, number or symbol, or a
- * wild, which calls the colour; otherwise draw. Skip misses the next player, Reverse turns play
+ * up. In turn, play a card that matches the top of the pile by color, number or symbol, or a
+ * wild, which calls the color; otherwise draw. Skip misses the next player, Reverse turns play
  * round (and is a Skip with two players), Draw Two makes the next player take two and miss their
- * go. A Wild Draw Four is only fair when you hold nothing in the colour in play: the next player
+ * go. A Wild Draw Four is only fair when you hold nothing in the color in play: the next player
  * takes four, or challenges it. A bluff caught means the bluffer takes the four; a fair one
  * challenged costs the challenger six.
  *
@@ -65,7 +65,7 @@ export type UnoOptions = z.infer<typeof optionsSchema>;
 const colourSchema = z.enum(['r', 'y', 'g', 'b']);
 
 export const actionSchema = z.discriminatedUnion('type', [
-  /** Play a card; a wild names its colour. `call` says "UNO!" as it goes down. */
+  /** Play a card; a wild names its color. `call` says "UNO!" as it goes down. */
   z.object({
     type: z.literal('play'),
     card: z.number().int().min(0).max(107),
@@ -97,7 +97,7 @@ export interface Move {
   kind: 'play' | 'draw' | 'take' | 'pass' | 'challenge' | 'call' | 'catch';
   /** The card played. */
   card?: number;
-  /** The colour a wild called. */
+  /** The color a wild called. */
   colour?: Colour;
   /** Cards drawn or taken. */
   count?: number;
@@ -117,7 +117,7 @@ export interface Pending {
   from: string;
   /** The last one was a Wild Draw Four, so it can be challenged. */
   wild4: boolean;
-  /** For a Wild Draw Four: the colour in play when it went down (a bluff means holding it). */
+  /** For a Wild Draw Four: the color in play when it went down (a bluff means holding it). */
   was?: Colour;
 }
 
@@ -147,14 +147,14 @@ export interface UnoState {
   deck: number[];
   /** The discard pile, top card last. */
   discard: number[];
-  /** The colour in play (a wild's called colour, otherwise the top card's). */
+  /** The color in play (a wild's called color, otherwise the top card's). */
   colour: Colour;
   /** 1 goes up the seat order, -1 back down it. */
   dir: 1 | -1;
   toAct: string | null;
   pending:
     | (Pending & {
-        /** Secret: the Wild Draw Four was played holding the colour. */ bluff: boolean;
+        /** Secret: the Wild Draw Four was played holding the color. */ bluff: boolean;
       })
     | null;
   /** Secret: the card the player to act just drew and may play now. */
@@ -210,7 +210,7 @@ export interface UnoTableView {
 
 export interface UnoPlayerView extends UnoTableView {
   me: string;
-  /** Your cards, sorted by colour and face. */
+  /** Your cards, sorted by color and face. */
   hand: number[];
   /** The card you just drew, if you may play it now. */
   drawn: number | null;
@@ -318,7 +318,7 @@ function startRound(s: UnoState, rng: Rng): UnoState {
     hands[id] = deck.slice(0, HAND_SIZE);
     deck = deck.slice(HAND_SIZE);
   }
-  // Turn up the first number card, so the round opens on a plain colour.
+  // Turn up the first number card, so the round opens on a plain color.
   const first = deck.findIndex(isNumber);
   const up = deck[first]!;
   deck = [...deck.slice(0, first), ...deck.slice(first + 1)];
@@ -414,9 +414,9 @@ function play(
         );
   }
   const c = cardOf(a.card);
-  if (isWild(a.card) && !a.colour) throw new GameError('no_colour', 'Choose a colour.');
+  if (isWild(a.card) && !a.colour) throw new GameError('no_colour', 'Choose a color.');
   const colour = c.colour ?? a.colour!;
-  // A Wild Draw Four is a bluff when you held anything in the colour in play.
+  // A Wild Draw Four is a bluff when you held anything in the color in play.
   const bluff =
     c.face === 'wild4' && hand.some((id) => id !== a.card && cardOf(id).colour === s.colour);
   const rest = hand.filter((id) => id !== a.card);

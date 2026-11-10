@@ -9,7 +9,7 @@ import { namer } from './common';
 import { RiskMap } from './map';
 import './risk.css';
 
-/** The seat order behind the army colours (results saved before it was recorded use the lobby's). */
+/** The seat order behind the army colors (results saved before it was recorded use the lobby's). */
 const seatsOf = (r: RiskReveal, players: ScreenPlayer[]) => r.seats ?? players.map((p) => p.id);
 
 function Missions({ r, players }: { r: RiskReveal; players: ScreenPlayer[] }) {

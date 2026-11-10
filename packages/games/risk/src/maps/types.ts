@@ -20,7 +20,7 @@ export interface Territory {
   path: string;
   /** Where the army roundel sits. */
   label: [number, number];
-  /** Neighbours, by id (sea lanes included). */
+  /** Neighbors, by id (sea lanes included). */
   adj: string[];
 }
 

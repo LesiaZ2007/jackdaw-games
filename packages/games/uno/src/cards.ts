@@ -1,6 +1,6 @@
 /**
- * The 108-card deck, by number: each colour has one 0, two each of 1–9, and two each of Skip,
- * Reverse and Draw Two (25 cards, ids 0–99 in colour order), then four Wilds (100–103) and four
+ * The 108-card deck, by number: each color has one 0, two each of 1–9, and two each of Skip,
+ * Reverse and Draw Two (25 cards, ids 0–99 in color order), then four Wilds (100–103) and four
  * Wild Draw Fours (104–107). A card is just its id, so hands and piles are lists of numbers.
  */
 
@@ -34,7 +34,7 @@ const ACTIONS: Face[] = ['skip', 'skip', 'rev', 'rev', 'draw2', 'draw2'];
 
 export interface CardInfo {
   id: number;
-  /** Null for the wilds, which take whatever colour is called. */
+  /** Null for the wilds, which take whatever color is called. */
   colour: Colour | null;
   face: Face;
 }
@@ -77,7 +77,7 @@ export function cardName(id: number): string {
   return c.colour ? `${COLOUR_NAME[c.colour]} ${face}` : face;
 }
 
-/** Plays on the pile in the normal way: same colour, same number or symbol, or a wild. */
+/** Plays on the pile in the normal way: same color, same number or symbol, or a wild. */
 export function matches(id: number, top: number, colour: Colour): boolean {
   if (isWild(id)) return true;
   const c = cardOf(id);

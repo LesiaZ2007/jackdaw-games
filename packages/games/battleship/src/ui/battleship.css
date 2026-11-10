@@ -9,6 +9,7 @@
   --bs-sea: #d7e4e8;
   --bs-ink: #243b46;
   --bs-wave: #8aa3ae;
+  --bs-shade: #000;
   color: var(--ink);
 }
 .bs[data-look='dark'] {
@@ -106,6 +107,10 @@
 }
 .bs-switch button {
   min-height: 44px;
+  min-width: 0;
+  padding: 4px 8px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
   border: 2px solid var(--ink);
   background: var(--paper);
   color: var(--ink);
@@ -457,7 +462,7 @@ button.bs-cell:focus-visible {
   overflow: visible;
 }
 .bs-plane__shadow {
-  fill: #000;
+  fill: var(--bs-shade);
   opacity: 0.12;
 }
 .bs-plane__body {
@@ -552,7 +557,7 @@ button.bs-cell:focus-visible {
 }
 /* Deck work is a darker print of the ship's own fill, so the cream letter reads on it. */
 .bs-hull__shape .bs-hull__deck {
-  fill: color-mix(in srgb, var(--hull) 58%, #000);
+  fill: color-mix(in srgb, var(--hull) 58%, var(--bs-shade));
   stroke-width: 1;
 }
 .bs-hull__shape .bs-hull__gun {
@@ -750,8 +755,9 @@ button.bs-cell:focus-visible {
   min-width: 0;
   min-height: 84px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 32px;
+  gap: 8px 32px;
 }
 .bs-tv__who {
   min-width: 0;
@@ -791,6 +797,8 @@ button.bs-cell:focus-visible {
 }
 .bs-tv__board {
   position: relative;
+  /* Above the stamp row, so the stamp's landing never paints over the chart's header. */
+  z-index: 1;
   min-height: 0;
   container-type: size;
   display: grid;
@@ -902,14 +910,18 @@ button.bs-cell:focus-visible {
   height: 46%;
 }
 .bs-stamp {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
   margin: 0;
+  transform-origin: left center;
   display: flex;
   align-items: center;
   gap: 12px;
   pointer-events: none;
 }
 .bs-stamp__word {
+  flex: none;
   padding: 6px 22px 8px;
   border: 4px solid var(--bs-ink);
   outline: 2px solid var(--bs-ink);
@@ -929,6 +941,8 @@ button.bs-cell:focus-visible {
   color: var(--on-fill);
 }
 .bs-stamp__where {
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: 4px 14px;
   background: var(--bs-sea);
   color: var(--bs-ink);

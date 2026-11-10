@@ -803,7 +803,6 @@ const REASON: Record<WinReason, string> = {
   'hitler-elected': 'Fascists win: Hitler was elected chancellor',
   'hitler-shot': 'Liberals win: Hitler was executed',
 };
-export const reasonText = (r: WinReason) => REASON[r];
 
 /** Terms served, Ja votes and Fascist laws passed per player, the winning side first. */
 function statsOf(s: ShState, winners: string[]): RecapStats {
@@ -874,7 +873,7 @@ function resultFor(s: ShState, winner: Winner, reason: WinReason, ended: boolean
       ? `The ${side} were ahead: ${s.liberal} of ${LIBERAL_WIN} Liberal policies to ${s.fascist} of ${FASCIST_WIN} Fascist.`
       : REASON[reason],
     reveal,
-    // Events that helped one side are coloured for or against the side that won.
+    // Events that helped one side are colored for or against the side that won.
     recap: s.recap.map((e) => {
       const benefits = (e.data as { benefits?: Winner } | undefined)?.benefits;
       return benefits

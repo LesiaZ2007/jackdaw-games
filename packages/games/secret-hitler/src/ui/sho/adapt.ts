@@ -26,7 +26,7 @@ export const VICTORY: Record<WinReason, LobbyState> = {
   'hitler-elected': LobbyState.FASCIST_VICTORY_ELECTION,
 };
 
-/** A player's crest and colour, and their id for the seat animation. */
+/** A player's crest and color, and their id for the seat animation. */
 export const lookOf = (id: string, p?: ScreenPlayer): Look => ({
   crest: p?.avatar.crest ?? '',
   tint: p?.avatar.tint ?? '',

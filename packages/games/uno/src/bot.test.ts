@@ -114,7 +114,7 @@ describe('the computer player', () => {
     expect(ask(drew, 'a')).toEqual({ type: 'pass' });
   });
 
-  it('saves its wilds, but names its best colour when a wild is all it has', () => {
+  it('saves its wilds, but names its best color when a wild is all it has', () => {
     const s = table({ a: [100, 13, 80], b: [31, 32] });
     expect(ask(s, 'a')).toMatchObject({ type: 'play', card: 13 });
     const wild = table({ a: [100, 76, 78], b: [31, 32] });
@@ -140,7 +140,7 @@ describe('the computer player', () => {
     expect(ask({ ...s, stacking: true }, 'a')).toMatchObject({ type: 'play', card: 23 });
   });
 
-  it('only ever names a real colour for a wild', () => {
+  it('only ever names a real color for a wild', () => {
     for (let seed = 1; seed < 20; seed++) {
       const a = ask(table({ a: [104, 105], b: [31, 32] }), 'a', seed);
       expect(a?.type).toBe('play');

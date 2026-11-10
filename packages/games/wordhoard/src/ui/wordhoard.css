@@ -347,7 +347,7 @@ button.wh-sq:focus-visible {
   translate: -50% -90%;
   pointer-events: none;
   font-size: 34px;
-  filter: drop-shadow(0 10px 12px var(--shadow));
+  filter: drop-shadow(0 0.1em 0 var(--shadow));
 }
 .wh-ghost .wh-tile {
   font-size: 34px;
@@ -504,10 +504,10 @@ button.wh-sq:focus-visible {
   line-height: 1.35;
   color: var(--ink-2);
 }
+/* A play line names a player and a word: let it wrap rather than cut letters. */
 .wh-watch__moves li {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .wh-watch__moves li:first-child {
   font-weight: 800;

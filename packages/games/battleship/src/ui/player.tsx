@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import {
   Plaque,
   PlayerReaction,
+  prefersReducedMotion,
   Token,
   useCountdown,
   useTheme,
@@ -71,8 +72,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 
   useEffect(() => {
     if (!settling) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const t = window.setTimeout(() => setSettling(null), reduce ? 0 : 680);
+    const t = window.setTimeout(() => setSettling(null), prefersReducedMotion() ? 0 : 680);
     return () => window.clearTimeout(t);
   }, [settling]);
 
@@ -189,7 +189,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
                 <PlayerReaction reactions={reactions} playerId={id} />
               </span>
               <span className="bs-name__text">
-                <b>{id === v.me ? 'You' : name(id)}</b>
+                <b title={name(id)}>{id === v.me ? 'You' : name(id)}</b>
               </span>
             </span>
           );

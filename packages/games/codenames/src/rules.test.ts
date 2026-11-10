@@ -12,7 +12,7 @@ import {
   type CodenamesState,
 } from './rules';
 import { lastGuess, guessOutcome } from './outcome';
-import { place } from './teams';
+import { arrangementFor, place, shuffleTeams } from './teams';
 import { WORDS } from './words';
 
 const P = ['ana', 'ben', 'cy', 'dee', 'eli', 'fay'];
@@ -421,5 +421,37 @@ describe('the word list', () => {
     expect(WORDS.length).toBeGreaterThanOrEqual(400);
     expect(new Set(WORDS).size).toBe(WORDS.length);
     for (const w of WORDS) expect(w).toMatch(/^[A-Z]+$/);
+  });
+});
+
+describe('lobby arrangement', () => {
+  it('shuffles into two sides that differ by one at most, each with a spymaster on it', () => {
+    for (let n = 2; n <= 15; n++) {
+      const ids = Array.from({ length: n }, (_, i) => `p${i}`);
+      const { teams, spymasters } = shuffleTeams(ids, createRng(n));
+      expect(Object.keys(teams).sort()).toEqual([...ids].sort());
+      const red = ids.filter((id) => teams[id] === 'red').length;
+      expect(Math.abs(red - (n - red))).toBeLessThanOrEqual(1);
+      for (const t of ['red', 'blue'] as const) expect(teams[spymasters[t]!]).toBe(t);
+    }
+  });
+
+  it('is the same for the same seed and varies with it', () => {
+    const ids = Array.from({ length: 10 }, (_, i) => `p${i}`);
+    expect(shuffleTeams(ids, createRng(3))).toEqual(shuffleTeams(ids, createRng(3)));
+    const seen = new Set(
+      Array.from({ length: 20 }, (_, s) => JSON.stringify(shuffleTeams(ids, createRng(s)).teams)),
+    );
+    expect(seen.size).toBeGreaterThan(1);
+  });
+
+  it('drops players who left, and a spymaster who is no longer on their team', () => {
+    const kept = arrangementFor(
+      { teams: { a: 'red', b: 'red', c: 'blue' }, spymasters: { red: 'a', blue: 'z' } },
+      ['a', 'c'],
+    );
+    expect(kept).toEqual({ teams: { a: 'red', c: 'blue' }, spymasters: { red: 'a' } });
+    const moved = arrangementFor({ teams: { a: 'blue' }, spymasters: { red: 'a' } }, ['a']);
+    expect(moved.spymasters).toEqual({});
   });
 });

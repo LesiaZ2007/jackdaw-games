@@ -12,7 +12,7 @@ const cx = (...n: (string | false | null | undefined)[]) => n.filter(Boolean).jo
 
 /** The page's root classes: the setting, and night when it's night. */
 export function rootClass(t: { mode: Mode }, night: boolean, extra: string) {
-  return cx('mf', `mf--${t.mode === 'Mafia' ? 'city' : 'village'}`, night && 'is-night', extra);
+  return cx('mf', `mf--${t.mode === 'Mafia' ? 'city' : 'village'}`, night && 'mf-is-night', extra);
 }
 
 /** Counts down a deadline as m:ss. */

@@ -102,7 +102,7 @@ describe('playing', () => {
     expect(() => act(s, 'a', { type: 'play', card: c('g', 2) })).toThrow(GameError);
     expect(act(s, 'a', { type: 'play', card: c('r', 9) }).colour).toBe('r');
     expect(act(s, 'a', { type: 'play', card: c('b', 5) }).colour).toBe('b');
-    expect(() => act(s, 'a', { type: 'play', card: s.hands.a![3]! })).toThrow(/colour/);
+    expect(() => act(s, 'a', { type: 'play', card: s.hands.a![3]! })).toThrow(/color/);
     const w = act(s, 'a', { type: 'play', card: s.hands.a![3]!, colour: 'g' });
     expect(w.colour).toBe('g');
     expect(w.toAct).toBe('b');

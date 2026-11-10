@@ -657,7 +657,7 @@ export function botMove(
   // A little noise so it isn't predictable (more the lower its level: an Easy bot misreads its
   // hand often), plus position and looseness.
   const score = e + (rng.next() - 0.5) * MISREAD[level] + pos * 0.03 + loose * fair * 2;
-  // Strong against this many players, or simply a favourite; a monster wins most of the time.
+  // Strong against this many players, or simply a favorite; a monster wins most of the time.
   const strong = score > 0.62 || (n > 1 && score > fair * 1.8);
   const monster = score > 0.78 || (n > 1 && score > fair * 2.6);
   const pot = v.pot;
@@ -820,7 +820,7 @@ function resultFrom(s: PokerState, stacks: Record<string, number>, summary: stri
     summary,
     reveal,
     recap: s.recap.map((e, i) => {
-      // Pot events are logged before the winner is known; colour them now, and the last is a turning point.
+      // Pot events are logged before the winner is known; color them now, and the last is a turning point.
       const isPot = (x: RecapEvent) => (x.data as { pot?: boolean } | undefined)?.pot === true;
       if (!isPot(e) || !e.actor) return e;
       const last = !s.recap.slice(i + 1).some(isPot);

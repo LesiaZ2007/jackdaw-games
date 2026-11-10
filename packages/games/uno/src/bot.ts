@@ -7,7 +7,7 @@ import { playable, type UnoAction, type UnoPlayerView, type UnoTableView } from 
  * and the public table only. It catches anyone who forgets to call UNO, always calls its own,
  * plays its most costly matching cards first and saves its wilds, hits a player close to going
  * out with Skips, Draw Twos and Wild Draw Fours, never bluffs a Wild Draw Four when it has a
- * choice, names the colour it holds most of, passes draw cards on when stacking is allowed, and
+ * choice, names the color it holds most of, passes draw cards on when stacking is allowed, and
  * sometimes challenges a Wild Draw Four from a player with several cards left.
  *
  * Below Hard it's more human (2026-10-24: "a bit more randomized but still can win"): it
@@ -41,7 +41,7 @@ export function unoBot(ctx: BotContext<UnoPlayerView, UnoTableView>): UnoAction 
   return playCard(v, best(v, options, rng, level), rng, forgets);
 }
 
-/** Holding something in the colour in play, besides `except`: a Wild Draw Four would be a bluff. */
+/** Holding something in the color in play, besides `except`: a Wild Draw Four would be a bluff. */
 const holdsColour = (v: UnoPlayerView, except: number) =>
   v.hand.some((id) => id !== except && cardOf(id).colour === v.colour);
 
@@ -72,7 +72,7 @@ function best(v: UnoPlayerView, options: number[], rng: Rng, level: BotLevel): n
   return botChoose(honest.length ? honest : options, score, level, rng);
 }
 
-/** The colour held most (ignoring `except` and the wilds); a random one when there's none. */
+/** The color held most (ignoring `except` and the wilds); a random one when there's none. */
 function favourite(hand: number[], except: number | null, rng: Rng): Colour {
   const count: Record<Colour, number> = { r: 0, y: 0, g: 0, b: 0 };
   for (const id of hand) {

@@ -132,7 +132,7 @@ export function RpsTable({
                   {p && <Token avatar={p.avatar} size={34} away={!p.online} />}
                   <PlayerReaction reactions={reactions} playerId={id} name={name(id)} size={34} />
                 </span>
-                <span className="rps__name">
+                <span className="rps__name" title={name(id)}>
                   {name(id)}
                   {id === me && <small> (you)</small>}
                 </span>
@@ -163,7 +163,7 @@ export function RpsTable({
                   style={{ animationDelay: `${i * 90}ms` }}
                 >
                   <span className="rps__throw">{pick && <Throw pick={pick} size={34} />}</span>
-                  <span className="rps__card-name">
+                  <span className="rps__card-name" title={id === me ? undefined : name(id)}>
                     {id === me ? 'You' : name(id)}
                     <small>{pick ? LABEL[pick] : 'No throw'}</small>
                   </span>

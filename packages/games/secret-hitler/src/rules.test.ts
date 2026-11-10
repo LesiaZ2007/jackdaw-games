@@ -508,7 +508,7 @@ describe('recap', () => {
     expect(enacted.text).not.toContain('drew');
   });
 
-  it('tags, colours and keys the events, and names the sides in stats', () => {
+  it('tags, colors and keys the events, and names the sides in stats', () => {
     const s = liberalWin();
     const r = game.getResult(s)!;
     expect(r.roundName).toBe('Government');

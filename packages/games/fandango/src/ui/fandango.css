@@ -62,8 +62,8 @@
 .fd-cell.is-bad {
   background: repeating-linear-gradient(
     -45deg,
-    rgba(179, 38, 30, 0.16) 0 4px,
-    rgba(179, 38, 30, 0.04) 4px 9px
+    color-mix(in srgb, var(--fd-bad) 16%, transparent) 0 4px,
+    color-mix(in srgb, var(--fd-bad) 4%, transparent) 4px 9px
   );
 }
 .fd-cell.is-given.is-bad {

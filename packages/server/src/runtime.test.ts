@@ -345,7 +345,12 @@ describe('your-move notifications', () => {
   // Stand-ins only: the send function is faked, so nothing is encrypted or signed here.
   const sub = {
     endpoint: 'https://fcm.googleapis.com/fcm/send/ben',
-    keys: { p256dh: 'p256', auth: 'auth' },
+    // Well-formed keys (the RFC 8291 example): subscribing checks their size.
+    keys: {
+      p256dh:
+        'BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcxaOzi6-AYWXvTBHm4bjyPjs7Vd8pZGH6SRpkNtoIAiw4',
+      auth: 'BTBZMqHH6r4Tts7J_aSIgg',
+    },
   };
   const vapid = { publicKey: 'test', privateKey: 'test', subject: 'mailto:x@example.com' };
 

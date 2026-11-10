@@ -191,6 +191,9 @@ export async function sendPush(
         topic: message.tag.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || 'jackdaw',
       },
       body,
+      // The endpoint is a client-supplied URL: never follow a redirect elsewhere, never wait long.
+      redirect: 'manual',
+      signal: AbortSignal.timeout(5_000),
     });
     if (res.status === 404 || res.status === 410) return 'gone';
     return res.ok ? 'ok' : 'failed';
@@ -220,7 +223,21 @@ function isPushHost(endpoint: string): boolean {
   }
 }
 
-/** Whether a value looks like a browser push subscription worth storing. */
+/** Base64url text that decodes to exactly `bytes` bytes (and, if given, starts with `first`). */
+function isKey(value: unknown, bytes: number, first?: number): boolean {
+  if (typeof value !== 'string' || !/^[A-Za-z0-9_-]+$/.test(value)) return false;
+  try {
+    const raw = b64urlDecode(value);
+    return raw.length === bytes && (first === undefined || raw[0] === first);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether a value looks like a browser push subscription worth storing: an endpoint on a push
+ * service, a P-256 public key (65 bytes, uncompressed) and a 16-byte auth secret.
+ */
 export function isPushSubscription(v: unknown): v is PushSubscriptionData {
   const s = v as PushSubscriptionData;
   return (
@@ -229,9 +246,7 @@ export function isPushSubscription(v: unknown): v is PushSubscriptionData {
     typeof s.endpoint === 'string' &&
     isPushHost(s.endpoint) &&
     s.endpoint.length < 1000 &&
-    typeof s.keys?.p256dh === 'string' &&
-    s.keys.p256dh.length < 200 &&
-    typeof s.keys.auth === 'string' &&
-    s.keys.auth.length < 100
+    isKey(s.keys?.p256dh, 65, 0x04) &&
+    isKey(s.keys.auth, 16)
   );
 }

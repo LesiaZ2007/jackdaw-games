@@ -9,6 +9,6 @@ export function GET() {
     ? Response.json({ publicKey: keys.publicKey })
     : Response.json(
         { error: { code: 'NOT_SET_UP', message: 'No notifications here.' } },
-        { status: 404 },
+        { status: 501 },
       );
 }

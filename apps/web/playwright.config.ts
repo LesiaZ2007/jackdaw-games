@@ -25,6 +25,8 @@ export default defineConfig({
     env: {
       AVALON_URL: `http://localhost:${FAKE_AVALON_PORT}`,
       JACKDAW_LINK_SECRET: FAKE_LINK_SECRET,
+      // `next start` runs in production mode, which refuses in-memory storage unless told.
+      JACKDAW_STORAGE: 'memory',
     },
   },
 });

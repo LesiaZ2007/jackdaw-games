@@ -1,5 +1,6 @@
 import {
   CODE_ALPHABET,
+  REJOIN_CODE_LENGTH,
   ClientMessage,
   GameError,
   ONLINE_WINDOW_MS,
@@ -10,7 +11,8 @@ import {
   createLobby,
   createRejoinCode,
   endGameEarly,
-  join,
+  answerKnock,
+  joinOrKnock,
   kick,
   leave,
   playAgain,
@@ -24,8 +26,10 @@ import {
   setAvatar,
   setBotLevel,
   setGame,
+  setLocked,
   setOptions,
   settleLinked,
+  markTimerFailed,
   snapshotFor,
   start,
   startBlocker,
@@ -45,6 +49,7 @@ import {
   type LobbySnapshot,
   type LobbyStats,
   type Presence,
+  type RngState,
 } from '@jackdaw/engine';
 import { DEFAULT_AVATARS, isKnownAvatar } from './avatars';
 import { RoomError } from './errors';
@@ -83,15 +88,30 @@ export interface RuntimeOptions {
   now?: () => number;
   /** Random string of `length` characters from `alphabet`. */
   randomString?: (length: number, alphabet: string) => string;
-  seed?: () => number;
+  /** A new game's rng seed: 32 hex characters (128 bits). Tests may pass a number. */
+  seed?: () => RngState;
   /** How long a poll may reuse a lobby read on this instance. Avalon uses 900ms. */
   readCacheMs?: number;
+  /** Per device token, per window. */
   rateLimit?: { posts: number; polls: number; windowMs: number };
   /**
-   * Per client address, per window: lobby codes asked for that don't exist (someone guessing
-   * codes) and lobbies created. Tokens are made by the client, so they can't be the only key.
+   * Per client address. Tokens are made by the client, so they can't be the only key: rotating
+   * them would dodge every limit. Counted per window (`rateLimit.windowMs`): `misses` lobby codes
+   * asked for that don't exist (someone guessing codes), `creates` lobbies created, and all
+   * lobby `posts` (messages, rejoin, push) and `polls` (polls, stats) together. These are
+   * generous on purpose: a household behind one address with 15 phones and a TV polls about
+   * every 1.5s, roughly 100 polls per 10s. `joins` is counted per minute: new players taking a
+   * seat. Any left out keep their defaults.
    */
-  addressLimit?: { misses: number; creates: number };
+  addressLimit?: Partial<{
+    misses: number;
+    creates: number;
+    posts: number;
+    polls: number;
+    joins: number;
+  }>;
+  /** How long after a linked game starts that the same lobby may start another (default 10s). */
+  linkCooldownMs?: number;
   sleep?: (ms: number) => Promise<void>;
   /** Links for games played in another app, by game id (see GameLink in the engine). */
   links?: Record<string, GameLink>;
@@ -111,9 +131,11 @@ export interface RuntimeOptions {
   defer?: (work: Promise<unknown>) => void;
 }
 
-/** Where a message came from, for anything that needs this site's own address. */
+/** Where a message came from: this site's own address, and the client's address. */
 export interface RequestInfo {
   origin?: string;
+  /** The client's address, when known (the HTTP layer always supplies one). */
+  ip?: string | null;
 }
 
 export interface CreateInput {
@@ -136,6 +158,19 @@ export interface UnchangedSnapshot {
 }
 
 const ID_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789';
+
+/** Distinct TV displays a lobby records as online, and the most `tv:` fields it will ever hold. */
+const TV_LIMIT = 8;
+const TV_FIELDS_MAX = 64;
+/** Rate-limit counters kept per instance before the oldest are dropped. */
+const HITS_MAX = 10_000;
+
+/** Whether a stored document looks like a lobby; anything else is treated as missing. */
+function isLobbyDoc(doc: unknown): doc is Lobby {
+  if (typeof doc !== 'object' || doc === null) return false;
+  const d = doc as { code?: unknown; players?: unknown };
+  return typeof d.code === 'string' && Array.isArray(d.players);
+}
 
 export function cryptoRandomString(length: number, alphabet: string): string {
   const bytes = crypto.getRandomValues(new Uint8Array(length));
@@ -167,7 +202,16 @@ export function createRoomRuntime(opts: RuntimeOptions) {
   const seed = opts.seed ?? randomSeed;
   const readCacheMs = opts.readCacheMs ?? 900;
   const limits = opts.rateLimit ?? { posts: 30, polls: 40, windowMs: 10_000 };
-  const addressLimits = opts.addressLimit ?? { misses: 12, creates: 10 };
+  const addressLimits = {
+    misses: 12,
+    creates: 10,
+    posts: 200,
+    polls: 400,
+    joins: 20,
+    ...opts.addressLimit,
+  };
+  const JOIN_WINDOW_MS = 60_000;
+  const linkCooldownMs = opts.linkCooldownMs ?? 10_000;
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const links = opts.links ?? {};
   const linkCheckMs = opts.linkCheckMs ?? 5_000;
@@ -177,8 +221,11 @@ export function createRoomRuntime(opts: RuntimeOptions) {
   // ── Per-instance caches (best effort; each serverless instance has its own) ──────────────
   const readCache = new Map<string, { at: number; value: Promise<Lobby | null> }>();
   const tokenHashes = new Map<string, string>();
-  const hits = new Map<string, number[]>();
+  /** Request times per limiter key, with the window they count over. */
+  const hits = new Map<string, { at: number[]; windowMs: number }>();
   const linkChecks = new Map<string, number>();
+  /** When each lobby last started a linked game (see `linkCooldownMs`). */
+  const linkStarts = new Map<string, number>();
 
   async function tokenKey(token: string): Promise<string> {
     let key = tokenHashes.get(token);
@@ -190,21 +237,61 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     return key;
   }
 
-  /** Throws RATE_LIMITED if `who` has sent more than `max` requests in the window. */
-  function rateLimit(who: string, max: number) {
+  /** Counters that must survive a flood of throwaway keys: guessing and creating guards. */
+  const keepKey = (key: string) => key.startsWith('miss:') || key.startsWith('create-ip:');
+
+  /**
+   * Keeps the counters under their cap without ever clearing them all: first drops those whose
+   * window has passed, then, if still over, the oldest ones that aren't the guessing and
+   * creating guards.
+   */
+  function trimHits() {
+    if (hits.size <= HITS_MAX) return;
     const t = now();
-    const recent = (hits.get(who) ?? []).filter((at) => t - at < limits.windowMs);
+    for (const [key, entry] of hits) {
+      const last = entry.at[entry.at.length - 1] ?? 0;
+      if (t - last >= entry.windowMs) hits.delete(key);
+    }
+    if (hits.size <= HITS_MAX) return;
+    for (const key of hits.keys()) {
+      if (hits.size <= HITS_MAX * 0.9) break;
+      if (!keepKey(key)) hits.delete(key);
+    }
+  }
+
+  /** Records a hit for `who` and returns the hits inside the window. */
+  function addHit(who: string, windowMs: number): number[] {
+    const t = now();
+    const recent = (hits.get(who)?.at ?? []).filter((at) => t - at < windowMs);
     recent.push(t);
-    hits.set(who, recent);
-    if (hits.size > 10_000) hits.clear();
-    if (recent.length > max)
+    // Delete first so the entry moves to the back: eviction takes the least recently used.
+    hits.delete(who);
+    hits.set(who, { at: recent, windowMs });
+    trimHits();
+    return recent;
+  }
+
+  /** Throws RATE_LIMITED if `who` has sent more than `max` requests in the window. */
+  function rateLimit(who: string, max: number, windowMs = limits.windowMs) {
+    if (addHit(who, windowMs).length > max)
       throw new RoomError(429, 'RATE_LIMITED', 'Slow down a little and try again.');
+  }
+
+  /** Counts one request from a client address against its bucket (no-op without an address). */
+  function limitAddress(ip: string | null | undefined, kind: 'posts' | 'polls' | 'joins') {
+    if (!ip) return;
+    rateLimit(
+      `ip-${kind}:${ip}`,
+      addressLimits[kind],
+      kind === 'joins' ? JOIN_WINDOW_MS : undefined,
+    );
   }
 
   /** Recent hits for `who`, without counting a new one. */
   function recentHits(who: string): number[] {
     const t = now();
-    return (hits.get(who) ?? []).filter((at) => t - at < limits.windowMs);
+    const entry = hits.get(who);
+    return entry ? entry.at.filter((at) => t - at < entry.windowMs) : [];
   }
 
   /**
@@ -222,14 +309,25 @@ export function createRoomRuntime(opts: RuntimeOptions) {
 
   /** Counts a request for a lobby that doesn't exist against its address. */
   function noteMiss(ip: string) {
-    hits.set(`miss:${ip}`, [...recentHits(`miss:${ip}`), now()]);
-    if (hits.size > 10_000) hits.clear();
+    addHit(`miss:${ip}`, limits.windowMs);
   }
 
   // ── Storage helpers ─────────────────────────────────────────────────────────────────────
+  /** The stored lobby, or null when there is none or the document isn't a lobby. */
   async function load(code: string): Promise<Lobby | null> {
     const raw = await storage.get(lobbyKey(code));
-    return raw ? (JSON.parse(raw) as Lobby) : null;
+    if (!raw) return null;
+    let doc: unknown;
+    try {
+      doc = JSON.parse(raw);
+    } catch {
+      doc = null;
+    }
+    if (!isLobbyDoc(doc)) {
+      console.error(`[jackdaw] stored lobby ${code} is malformed; treating it as missing`);
+      return null;
+    }
+    return doc;
   }
 
   /** A read shared between polls on this instance for under a second. Treat as read-only. */
@@ -340,14 +438,16 @@ export function createRoomRuntime(opts: RuntimeOptions) {
   /**
    * Fires due game timers, but a game that throws while doing so (a bug, or a game no longer
    * registered) must not take the whole lobby down with it: the error is logged and the lobby
-   * carries on unchanged, so chat, leaving and the host's End game still work.
+   * carries on, with the failure noted on its session, so chat, leaving and the host's End game
+   * still work.
    */
   function safeTimers(lobby: Lobby, c: Ctx): Lobby {
     try {
       return runTimers(lobby, c);
     } catch (e) {
       console.error(`[jackdaw] a game timer failed in ${lobby.code}`, e);
-      return lobby;
+      // Remember it, so the next read doesn't try (and fail) all over again until the game moves.
+      return markTimerFailed(lobby);
     }
   }
 
@@ -420,18 +520,31 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     const link = links[game.meta.id];
     if (!link)
       throw new GameError('NOT_SET_UP', `${game.meta.name} isn't set up on this server yet.`);
+    // Start and End in a loop must not hammer the other app: one start per lobby per cooldown.
+    const t = now();
+    if (t - (linkStarts.get(lobby.code) ?? -Infinity) < linkCooldownMs)
+      throw new GameError('RATE_LIMITED', 'Wait a few seconds before starting again.');
+    linkStarts.set(lobby.code, t);
+    if (linkStarts.size > 1000) linkStarts.clear();
     const origin = (opts.siteUrl || info.origin || '').replace(/\/$/, '');
-    const data = await link.start({
-      lobbyCode: lobby.code,
-      hostId: lobby.hostId,
-      players: lobby.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar })),
-      options: game.optionsSchema.parse({
-        ...game.defaultOptions(lobby.players.length),
-        ...lobby.gameOptions,
-      }),
-      returnUrl: `${origin}/r/${lobby.code}`,
-      look: msg.look ?? 'light',
-    });
+    let data: unknown;
+    try {
+      data = await link.start({
+        lobbyCode: lobby.code,
+        hostId: lobby.hostId,
+        players: lobby.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar })),
+        options: game.optionsSchema.parse({
+          ...game.defaultOptions(lobby.players.length),
+          ...lobby.gameOptions,
+        }),
+        returnUrl: `${origin}/r/${lobby.code}`,
+        look: msg.look ?? 'light',
+      });
+    } catch (e) {
+      // Nothing was opened over there, so the host can press Start again at once.
+      linkStarts.delete(lobby.code);
+      throw e;
+    }
     return { data, playerIds: lobby.players.map((p) => p.id) };
   }
 
@@ -443,6 +556,7 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     info: RequestInfo = {},
   ): Promise<LobbySnapshot> {
     rateLimit(`post:${token}`, limits.posts);
+    limitAddress(info.ip, 'posts');
     const parsed = ClientMessage.safeParse(input);
     if (!parsed.success) {
       throw new RoomError(
@@ -453,6 +567,23 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     }
     const msg = parsed.data;
     const key = await tokenKey(token);
+
+    // Membership first, from the cheap shared read, so a stranger never takes the lobby's lock.
+    // A device that looks unseated gets one fresh read (the shared one may be a second old).
+    let known = await loadShared(code);
+    if (!known) throw notFound();
+    let seated = playerIdForToken(known, key) !== null;
+    if (!seated) {
+      known = await load(code);
+      if (!known) throw notFound();
+      seated = playerIdForToken(known, key) !== null;
+    }
+    if (msg.type === 'join') {
+      if (!seated) limitAddress(info.ip, 'joins');
+    } else if (!seated) {
+      throw new GameError('NOT_A_PLAYER', 'You are not in this lobby. Join it first.');
+    }
+
     const presence = await loadPresence(code);
     const linked =
       msg.type === 'start' || msg.type === 'playAgain'
@@ -462,25 +593,30 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     // A linked game the host ends here should end in its own app too (after the save).
     let ending: { gameId: string; state: unknown } | undefined;
     let previous: Lobby | null = null;
+    let refusal: { code: string; message: string } | undefined;
     const started = withLobby(code, (loaded) => {
+      refusal = undefined;
       const c = ctx();
       ending = undefined;
       previous = loaded;
       // A game timer that came due before this message fires first.
       const current = msg.type === 'endGame' ? loaded : safeTimers(loaded, c);
       if (msg.type === 'join') {
-        const joined = join(
+        const joined = joinOrKnock(
           current,
           {
             tokenKey: key,
             newPlayerId: randomString(10, ID_ALPHABET),
+            knockId: randomString(8, ID_ALPHABET),
             name: msg.name,
             avatar: cleanAvatar(msg.avatar),
             palette,
           },
           c,
         );
-        return { lobby: joined.lobby, result: joined.playerId };
+        // A removed player's knock is saved for the host, then refused below.
+        refusal = joined.refusal;
+        return { lobby: joined.lobby, result: joined.playerId ?? '' };
       }
       const me = playerIdForToken(current, key);
       if (!me) throw new GameError('NOT_A_PLAYER', 'You are not in this lobby. Join it first.');
@@ -507,6 +643,7 @@ export function createRoomRuntime(opts: RuntimeOptions) {
         })
       : await started;
 
+    if (refusal) throw new GameError(refusal.code, refusal.message);
     if (ending) await endLink(ending.gameId, ending.state);
     await notifyWaiting(previous, lobby);
     const fresh = await checkIn(code, playerId, presence);
@@ -559,7 +696,7 @@ export function createRoomRuntime(opts: RuntimeOptions) {
       case 'chat':
         return chat(lobby, me, msg.text, randomString(10, ID_ALPHABET), c);
       case 'createRejoinCode':
-        return createRejoinCode(lobby, me, randomString(6, CODE_ALPHABET), c);
+        return createRejoinCode(lobby, me, randomString(REJOIN_CODE_LENGTH, CODE_ALPHABET), c);
       case 'resetScores':
         return resetScores(lobby, me, c);
       case 'endGame':
@@ -575,6 +712,10 @@ export function createRoomRuntime(opts: RuntimeOptions) {
         );
       case 'setBotLevel':
         return setBotLevel(lobby, me, msg.level, c);
+      case 'setLocked':
+        return setLocked(lobby, me, msg.locked, c);
+      case 'answerKnock':
+        return answerKnock(lobby, me, msg.id, msg.allow, c);
     }
   }
 
@@ -584,17 +725,26 @@ export function createRoomRuntime(opts: RuntimeOptions) {
    */
   async function poll(
     code: string,
-    who: { token?: string | null; displayId?: string | null },
+    who: { token?: string | null; displayId?: string | null; ip?: string | null },
     sinceVersion?: number | null,
   ): Promise<LobbySnapshot | UnchangedSnapshot> {
     rateLimit(`poll:${who.token ?? who.displayId ?? code}`, limits.polls);
+    limitAddress(who.ip, 'polls');
     let lobby = await loadShared(code);
     if (!lobby) throw notFound();
     let presence = await loadPresence(code);
 
     const me = who.token ? playerIdForToken(lobby, await tokenKey(who.token)) : null;
     if (me) presence = await checkIn(code, me, presence);
-    else if (who.displayId) presence = await checkIn(code, `tv:${who.displayId}`, presence);
+    else if (who.displayId) {
+      // A display id is client-chosen, so only a few distinct ones are ever recorded: past the
+      // cap a new id is still served, just not counted.
+      const id = `tv:${who.displayId}`;
+      const tvs = Object.keys(presence).filter((k) => k.startsWith('tv:'));
+      const fresh = tvs.filter((k) => now() - (presence[k] ?? 0) <= ONLINE_WINDOW_MS).length;
+      if (id in presence || (fresh < TV_LIMIT && tvs.length < TV_FIELDS_MAX))
+        presence = await checkIn(code, id, presence);
+    }
 
     // Lazy host handover: only take the lock when the host really has been away.
     const c = ctx();
@@ -679,9 +829,15 @@ export function createRoomRuntime(opts: RuntimeOptions) {
    * Remember (or, with null, forget) this player's push subscription for the lobby, so they're
    * notified when it's their move.
    */
-  async function setPush(code: string, token: string, subscription: unknown): Promise<void> {
+  async function setPush(
+    code: string,
+    token: string,
+    subscription: unknown,
+    info: RequestInfo = {},
+  ): Promise<void> {
     rateLimit(`push:${token}`, 10);
-    if (!opts.push) throw new RoomError(404, 'NOT_SET_UP', 'Notifications aren’t set up here.');
+    limitAddress(info.ip, 'posts');
+    if (!opts.push) throw new RoomError(501, 'NOT_SET_UP', 'Notifications aren’t set up here.');
     if (subscription !== null && !isPushSubscription(subscription))
       throw new RoomError(400, 'BAD_REQUEST', 'That isn’t a push subscription.');
     const lobby = await loadShared(code);
@@ -702,13 +858,37 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     code: string,
     token: string,
     rejoinCode: string,
+    info: RequestInfo = {},
   ): Promise<LobbySnapshot> {
     rateLimit(`rejoin:${token}`, 10);
+    limitAddress(info.ip, 'posts');
     const key = await tokenKey(token);
+    // A wrong guess counts against the address like a wrong lobby code does.
+    const invalid = () => {
+      if (info.ip) noteMiss(info.ip);
+      return new GameError('REJOIN_INVALID', 'That rejoin code is wrong or has expired.');
+    };
+    // Check the lobby and the code from cheap reads before taking the lock.
+    const usable = (l: Lobby) => {
+      const entry = l.rejoinCodes[rejoinCode];
+      return Boolean(entry && entry.expiresAt > now());
+    };
+    let known = await loadShared(code);
+    if (!known) throw notFound();
+    if (!usable(known)) {
+      known = await load(code);
+      if (!known) throw notFound();
+      if (!usable(known)) throw invalid();
+    }
     const presence = await loadPresence(code);
     const { lobby, result: playerId } = await withLobby(code, (current) => {
-      const out = redeemRejoinCode(current, rejoinCode, key, ctx());
-      return { lobby: out.lobby, result: out.playerId };
+      try {
+        const out = redeemRejoinCode(current, rejoinCode, key, ctx());
+        return { lobby: out.lobby, result: out.playerId };
+      } catch (e) {
+        if (e instanceof GameError && e.code === 'REJOIN_INVALID' && info.ip) noteMiss(info.ip);
+        throw e;
+      }
     });
     // Notifications belonged to the old device.
     if (opts.push) await storage.hset(pushKey(code), playerId, '', LOBBY_TTL_SECONDS);
@@ -720,8 +900,13 @@ export function createRoomRuntime(opts: RuntimeOptions) {
    * The lobby's full record for the Game stats menu. Fetched on demand rather than with every
    * poll, since history can hold 200 games. Everything in it was revealed when each game ended.
    */
-  async function stats(code: string): Promise<{ stats: LobbyStats; history: HistoryEntry[] }> {
-    rateLimit(`stats:${code}`, limits.polls);
+  async function stats(
+    code: string,
+    who: { token?: string | null; ip?: string | null } = {},
+  ): Promise<{ stats: LobbyStats; history: HistoryEntry[] }> {
+    // One bucket per caller, not per lobby, so one noisy phone can't lock everyone out of stats.
+    rateLimit(`stats:${who.token ?? who.ip ?? code}`, limits.polls);
+    limitAddress(who.ip, 'polls');
     const lobby = await loadShared(code);
     if (!lobby) throw notFound();
     return { stats: lobbyStats(lobby.history), history: lobby.history };

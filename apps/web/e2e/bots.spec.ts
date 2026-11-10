@@ -41,7 +41,7 @@ test('the host seats a bot with the +, plays it, and ending early can save the r
   await rook.goto(`/r/${code}`);
   await rook.getByLabel('Your name').fill('Rook');
   await rook.getByRole('button', { name: 'Take a seat' }).click();
-  await expect(rook.getByText('At the table')).toBeVisible();
+  await expect(rook.getByRole('heading', { name: 'At the table' })).toBeVisible();
   await expect(rook.getByRole('button', { name: 'Add a computer player' })).toHaveCount(0);
 
   await host.getByRole('button', { name: 'Start Rock Paper Scissors' }).click();

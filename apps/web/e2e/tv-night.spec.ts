@@ -49,7 +49,7 @@ for (const scheme of SCHEMES) {
     await rook.waitForLoadState('networkidle');
     await rook.getByLabel('Your name').fill('Rook');
     await rook.getByRole('button', { name: 'Take a seat' }).click();
-    await expect(rook.getByText('At the table')).toBeVisible();
+    await expect(rook.getByRole('heading', { name: 'At the table' })).toBeVisible();
 
     const tv = await open(browser, 1920, 1080, scheme);
     await tv.goto(`/tv/${code}`);

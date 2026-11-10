@@ -32,7 +32,10 @@ test('names are unique, joins show in chat, reactions reach other phones, and th
   await host.getByRole('button', { name: 'Chat', exact: true }).click();
   const talk = host.getByRole('dialog', { name: 'Table talk' });
   await expect(talk.locator('.chat__system', { hasText: 'Rook joined.' })).toBeVisible();
-  await host.getByRole('button', { name: 'Close', exact: true }).click();
+  await host
+    .getByRole('dialog', { name: 'Table talk' })
+    .getByRole('button', { name: 'Close' })
+    .click();
 
   // Renaming to a taken name is refused in your sheet too.
   await rook.getByRole('button', { name: /^Rook \(you\): change/ }).click();

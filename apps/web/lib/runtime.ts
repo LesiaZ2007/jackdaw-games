@@ -39,9 +39,23 @@ export function vapidKeys(): VapidKeys | null {
   return publicKey && privateKey && subject ? { publicKey, privateKey, subject } : null;
 }
 
+/**
+ * JACKDAW_LIMITS=relaxed lifts the per-address limits and the linked-start cooldown. It's for
+ * the end-to-end tests, where a dozen browsers share one address and start games back to back;
+ * never set it on a public server.
+ */
+const relaxed =
+  process.env.JACKDAW_LIMITS === 'relaxed'
+    ? {
+        addressLimit: { misses: 5000, creates: 5000, posts: 50_000, polls: 50_000, joins: 5000 },
+        linkCooldownMs: 0,
+      }
+    : {};
+
 export function getRuntime(): RoomRuntime {
   const vapid = vapidKeys();
   g.__jackdawRuntime ??= createRoomRuntime({
+    ...relaxed,
     storage: getStorage(),
     games,
     links: links(),

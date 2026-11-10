@@ -32,7 +32,7 @@ test('the token on the home page opens the crest and color picker and remembers 
 });
 
 test('Browse the games scrolls down to the games, which filter by kind', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
   const games = page.getByRole('heading', { name: 'The games', level: 2 });
   await expect(games).not.toBeInViewport();

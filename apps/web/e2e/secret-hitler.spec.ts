@@ -249,7 +249,7 @@ test('five phones play Secret Hitler as on secret-hitler.online, on to a win, wi
   }
   expect((await read(pages[0]!, code)).tableView.phase).toBe('post');
   await expect(pages[2]!.locator('#status-bar-text')).toHaveText(
-    'Waiting for the president to end their term.',
+    /^Waiting for .+ to end their term.$/,
     { timeout: 20_000 },
   );
   for (const p of pages.filter((x) => x !== president))

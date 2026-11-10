@@ -581,6 +581,18 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
+/* three or more winners: a tighter row, name beside the token */
+.tv-winners__row--crowd {
+  gap: 12px 40px;
+}
+.tv-winners__row--crowd .tv-winner {
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 12px;
+}
+.tv-winners__row--crowd .tv-winner__name {
+  font-size: 32px;
+}
 @keyframes tv-rise {
   from {
     transform: translateY(80px);
@@ -611,14 +623,21 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   border-bottom: 1.5px solid var(--rule);
   font-size: 30px;
 }
+/* The name keeps its room; a long role or stats line gives way first. */
 .tv-standing__name {
+  flex: 0 1 auto;
   font-weight: 700;
-  min-width: 0;
+  min-width: min(8ch, 45%);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .tv-standing__role {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--ink-2);
   font-size: 24px;
 }

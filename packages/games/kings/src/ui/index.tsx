@@ -11,14 +11,13 @@ export const kingsUi: GameUi = {
   art: { band: 'gules', field: 'checky', glyph: 'crown' },
   about: {
     description:
-      'A square board split into colored regions. Place one king in every row, every column and every color, and no two kings may touch, not even at a corner. Every puzzle is made fresh for the game and has exactly one answer. Play alone, or race the table through the same puzzles.',
+      'Fill a square board of colored regions with kings. Put one in every row, every column and every color, and no two may touch, even at a corner. Each puzzle has exactly one answer. Play alone, or race the table through the same puzzles.',
     steps: [
-      'The host picks the board, from 5×5 to 10×10, and how many puzzles, from 1 to 20.',
-      'Tap a square once to cross it out, twice for a king, and a third time to clear it. Drag across empty squares to cross out a row of them.',
-      'Kings that break a rule turn red. Auto-cross, if you turn it on, crosses out every square your kings rule out.',
-      'A finished board counts by itself and the next puzzle opens. Everyone gets the same puzzles in the same order.',
-      'Playing alone, you can ask for a hint: it explains the next deduction and shows you where. Show a mistake points out the first thing that’s wrong. Hints are counted in the results, and are never there in a race.',
-      'Most puzzles solved wins, and the quickest to get there breaks a tie. Once someone has solved them all, everyone else has two minutes.',
+      'The host picks the board size, from 5×5 to 10×10, and 1 to 20 puzzles.',
+      'Tap a square once to cross it out, twice for a king, three times to clear it. Drag to cross out a run.',
+      'Kings that break a rule turn red. With Auto-cross on, squares your kings rule out are crossed for you.',
+      'Playing alone, ask for a hint or a mistake check. Both are counted, and neither is allowed in a race.',
+      'Most puzzles solved wins, and speed breaks ties. Once someone finishes, everyone else has two minutes.',
     ],
     credit:
       'After Queens, the daily puzzle on LinkedIn, itself a cousin of the Star Battle puzzles. The puzzles here are Jackdaw’s own.',

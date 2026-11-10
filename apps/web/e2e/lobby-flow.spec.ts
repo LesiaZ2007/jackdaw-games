@@ -9,7 +9,7 @@ async function join(page: Page, code: string, name: string) {
   await page.goto(`/r/${code}`);
   await page.getByLabel('Your name').fill(name);
   await page.getByRole('button', { name: 'Take a seat' }).click();
-  await expect(page.getByText('At the table')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'At the table' })).toBeVisible();
 }
 
 async function throwPick(page: Page, pick: 'Rock' | 'Paper' | 'Scissors') {

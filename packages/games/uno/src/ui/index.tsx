@@ -11,15 +11,13 @@ export const unoUi: GameUi = {
   art: { band: 'gules', field: 'checky', glyph: 'uno' },
   about: {
     description:
-      'The shedding game everyone knows. Match the card on the pile by color, number or symbol, hit the next player with Skips, Reverses and Draw Twos, and change the color with a Wild. Down to your last card? Say UNO before someone catches you.',
+      'The shedding game everyone knows. Match the card on the pile by color, number or symbol, hit the next player with Skips, Reverses and Draw Twos, and change the color with a Wild. When you’re down to your last card, say UNO before someone catches you.',
     steps: [
-      'Everyone gets seven cards and one is turned up. Play goes round from the dealer’s left.',
-      'On your turn play a card that matches the pile by color, number or symbol, or a Wild. Otherwise draw: if the card goes, you can play it.',
-      'Skip misses the next player, Reverse turns play round, and Draw Two makes the next player take two and miss their go.',
-      'A Wild Draw Four is only fair if you hold nothing in the color in play. The next player can challenge it: a bluff costs the bluffer four, a fair one costs the challenger six.',
-      'Down to one card, tap UNO! Anyone who catches you before the next player moves makes you take two.',
-      'Go out first to win the round and score everyone’s leftover cards: numbers at face value, action cards 20, Wilds 50.',
-      'Two small changes from the printed rules: the card turned up to start is always a number card, and with stacking on, a bluffer caught out takes the whole stack.',
+      'Everyone gets seven cards and one is turned up. Play starts to the dealer’s left.',
+      'Play a card that matches the pile, or a Wild. If you can’t, draw, and play that card if it fits.',
+      'Skip misses the next player, Reverse flips direction, and Draw Two makes them take two and miss a turn.',
+      'Play a Wild Draw Four only with no card in the color in play. If challenged, a bluffer draws four and a wrong challenger six.',
+      'Tap UNO! on your last card, or draw two if caught. Go out first to win the round and score the leftovers.',
     ],
     credit:
       'UNO is a trademark of Mattel. Played here by its published rules, with Jackdaw’s own cards.',
@@ -30,7 +28,7 @@ export const unoUi: GameUi = {
       },
       {
         src: '/games/uno/tv.png',
-        alt: 'UNO on a TV: the table printed in the color in play, the piles large in the middle, every player’s hand fanned face down round it with the count on a chit, and the play by play.',
+        alt: 'UNO on a TV: the table printed in the color in play, the piles large in the middle, every player’s hand fanned face down around it with the count on a chit, and the play by play.',
         desktop: true,
       },
     ],

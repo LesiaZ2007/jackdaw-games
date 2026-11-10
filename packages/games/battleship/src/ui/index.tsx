@@ -11,13 +11,13 @@ export const battleshipUi: GameUi = {
   art: { band: 'azure', field: 'fretty', glyph: 'ship' },
   about: {
     description:
-      'Each of you hides a fleet on a chart the other cannot see. Then you take turns calling a square. A hit is marked, a miss is marked, and a ship is named only once it has gone down. First to sink the fleet wins.',
+      'Each of you hides a fleet on a chart the other can’t see. Then you take turns calling squares. Hits and misses are marked, and a ship is named only once it goes down. Sink the whole fleet first to win.',
     steps: [
-      'Lay the carrier, battleship, cruiser, submarine and destroyer. Horizontal or vertical, with a water square between ships, even at the corners. On a computer, a faded copy of the ship follows the mouse.',
-      'When both fleets are placed, one of you is drawn to fire first.',
-      'Call one square. A hit, red on the ship, lets you fire again. A miss ends the turn. Sink the last ship and the battle ends.',
-      'Sink a ship and it is drawn on the chart. Until then, the squares you have not fired at stay blank.',
-      'Salvo, if you turn it on, lets you fire once for each ship you still have afloat.',
+      'Place your carrier, battleship, cruiser, submarine and destroyer, with water between the ships.',
+      'Once both fleets are placed, one of you is picked to fire first.',
+      'Call a square. A hit lets you fire again, and a miss ends your turn.',
+      'A ship shows on the chart only once it sinks. Until then, the squares you haven’t fired at stay blank.',
+      'Sink the last enemy ship to win. With Salvo on, you fire once for each ship you still have afloat.',
     ],
     credit:
       'Battleship is a trademark of Hasbro. The game was published by Milton Bradley. Played here by the classic rules, with a Salvo option from the same family.',

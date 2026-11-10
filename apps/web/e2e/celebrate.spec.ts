@@ -51,7 +51,7 @@ for (const [width, height, scheme] of RUNS) {
     await rook.waitForLoadState('networkidle');
     await rook.getByLabel('Your name').fill('Rook');
     await rook.getByRole('button', { name: 'Take a seat' }).click();
-    await expect(rook.getByText('At the table')).toBeVisible();
+    await expect(rook.getByRole('heading', { name: 'At the table' })).toBeVisible();
 
     const tv = await phone(browser, 1920, 1080, scheme);
     await tv.goto(`/tv/${code}`);

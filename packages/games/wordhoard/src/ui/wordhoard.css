@@ -11,8 +11,18 @@
   /* The pale double-letter square, mixed from azure and this paper white. */
   --wh-dl-paper: #f7f7f5;
   --wh-dl-ink: #1d1d1c;
-  /* An empty rack slot, dashed on the sable rack. */
+  /* An empty rack slot, dashed on the tray. */
   --wh-slot-edge: rgba(246, 240, 225, 0.35);
+  /* Printed dark ink and gold that stay the same by day and in the dark. */
+  --wh-print: #1d1d1c;
+  --wh-gold: #d2aa5c;
+  /* The hoard: a tenné cloth pouch with a cream cord. */
+  --wh-pouch: var(--tenne);
+  --wh-cord: var(--on-fill);
+  /* The rack, a wooden tray drawn flat: a dark tenné mix, a lighter lip, a printed thickness. */
+  --wh-tray: color-mix(in srgb, var(--tenne) 35%, var(--sable));
+  --wh-tray-lip: color-mix(in srgb, var(--tenne) 60%, var(--on-fill));
+  --wh-tray-edge: color-mix(in srgb, var(--wh-tray) 55%, var(--shade-base));
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -40,9 +50,90 @@
   border-color: var(--gules);
   color: var(--on-fill);
 }
-.wh__head p {
-  margin: var(--space-1) 0 0;
+/* The heading, the bag (a pouch with its count) and the last play; on a phone the Ledger button
+   sits beside the heading. */
+.wh__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--space-2);
+  row-gap: var(--space-1);
+}
+.wh__head h2 {
+  min-width: 0;
+}
+.wh__bag {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.wh__bag p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
   color: var(--ink-2);
+  font-size: 15px;
+  line-height: 1.25;
+}
+.wh-ledgerbtn {
+  min-width: 0;
+}
+
+/* ── The bag: a printed drawstring pouch ──────────────────────────────── */
+.wh-pouch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+.wh-pouch__art {
+  width: 40px;
+  height: 40px;
+  flex: none;
+}
+.wh-pouch__cloth {
+  fill: var(--wh-pouch);
+  stroke: var(--wh-print);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+.wh-pouch__cord {
+  fill: var(--wh-cord);
+  stroke: var(--wh-print);
+  stroke-width: 1.4;
+}
+.wh-pouch__cord-line {
+  fill: none;
+  stroke: var(--wh-cord);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+/* A card-shaped chit with the count. */
+.wh-pouch__chit {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  min-width: 26px;
+  height: 32px;
+  padding: 0 4px;
+  background: var(--sable);
+  color: var(--on-fill);
+  border: 2px solid var(--wh-print);
+  box-shadow: 0 2px 0 var(--wh-print);
+  font: 800 19px/1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+}
+.wh-pouch__label {
+  color: var(--ink-2);
+  font: 700 15px/1.1 var(--font-body);
+}
+.wh-pouch.is-empty .wh-pouch__chit {
+  background: var(--paper);
+  color: var(--ink-2);
+  border-style: dashed;
+  box-shadow: none;
 }
 
 /* ── Phone and laptop layout ─────────────────────────────────────────── */
@@ -82,9 +173,85 @@
 .wh-scores li + li {
   border-left: 1px solid var(--rule);
 }
+.wh-scores li {
+  position: relative;
+}
+/* Whose move: a solid vert plate with cream text and a "To play" tag. Your own plate is outlined
+   in gold. */
 .wh-scores li.is-turn {
-  background: color-mix(in srgb, var(--vert) 16%, var(--paper));
-  box-shadow: inset 0 -4px 0 var(--vert);
+  --ring-bg: var(--vert);
+  background: var(--vert);
+  color: var(--on-fill);
+}
+.wh-scores li.is-turn .wh-scores__name small {
+  color: var(--on-fill);
+}
+.wh-scores li.is-turn .jd-tally__n--up {
+  animation: none;
+}
+.wh-scores li.is-me {
+  outline: 3px solid var(--or);
+  outline-offset: -3px;
+  z-index: 1;
+}
+.wh-scores__tag {
+  flex: none;
+  order: 2;
+  padding: 1px 6px;
+  background: var(--on-fill);
+  color: var(--vert);
+  font: 800 13px/1.25 var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.wh-scores__n {
+  order: 3;
+}
+/* The "+n" of a word just scored, by the scorer's plate (our own, in place of the kit's, so it
+   also shows with reduced motion). */
+.wh-scores .jd-tally__gain {
+  display: none;
+}
+.wh-scores__gain {
+  position: absolute;
+  z-index: 2;
+  top: -22px;
+  right: 6px;
+  padding: 0 6px;
+  background: var(--wh-print);
+  color: var(--wh-gold);
+  border: 2px solid var(--wh-gold);
+  font: 800 18px/1.3 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  animation: wh-gain 1300ms var(--ease-out) 450ms both;
+}
+@keyframes wh-gain {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  22%,
+  78% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@keyframes wh-gain-still {
+  0% {
+    opacity: 0;
+  }
+  6%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 .wh-scores__toks {
   display: inline-flex;
@@ -127,14 +294,28 @@
   font: 800 24px var(--font-code);
   font-variant-numeric: tabular-nums;
 }
-/* Phones: name above the score, so four names still fit. */
+/* Phones: name above the score, so four names still fit; the "To play" tag is a strip across the
+   foot of the plate. */
 .wh--phone .wh-scores li {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto auto;
+  align-content: center;
   column-gap: 6px;
   row-gap: 0;
   padding: 5px 6px;
+}
+.wh--phone .wh-scores__tag,
+.wh--phone .wh-scores__n {
+  order: 0;
+}
+.wh--phone .wh-scores__tag {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin-top: 3px;
+  padding: 0;
+  font-size: 12px;
+  text-align: center;
 }
 .wh--phone .wh-scores__toks {
   grid-row: 1 / 3;
@@ -146,8 +327,17 @@
   grid-template-columns: 1fr 1fr;
 }
 .wh--phone .wh-scores--pairs li {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
   border-left: 0;
+}
+.wh--phone .wh-scores--pairs .wh-scores__toks {
+  grid-row: 1;
+}
+.wh--phone .wh-scores--pairs .wh-scores__tag {
+  grid-row: 2;
 }
 .wh--phone .wh-scores--pairs li:nth-child(even) {
   border-left: 1px solid var(--rule);
@@ -175,23 +365,97 @@
 .wh-stage {
   min-height: 0;
   display: grid;
-  place-items: center;
+  place-content: center;
+  justify-items: center;
+  row-gap: 6px;
   container-type: size;
 }
+/* The frame leaves room under the board for the legend row (about 34px). */
 .wh-stage .wh-boardwrap {
-  box-sizing: border-box;
-  width: calc(min(100cqw, 100cqh) - 10px);
-  aspect-ratio: 1;
+  width: calc(min(100cqw, 100cqh - 34px) - 14px);
 }
+/* An illuminated page: a 2px ink frame, the guide's inner rule, and a fleuron in each corner. The
+   board scrolls inside it when zoomed; the frame and corners stay. */
 .wh-boardwrap {
+  --wh-frame: 9px;
+  --wh-co: -8px;
+  position: relative;
+  box-sizing: border-box;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  padding: var(--wh-frame);
+  margin: 7px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+.wh-boardscroll {
+  min-width: 0;
+  min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  border: 2px solid var(--ink);
   outline: 1px solid var(--ink);
   outline-offset: 3px;
-  margin: 4px;
+}
+.wh-corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  color: var(--ink);
+  pointer-events: none;
+}
+.wh-corner.tl {
+  top: var(--wh-co);
+  left: var(--wh-co);
+}
+.wh-corner.tr {
+  top: var(--wh-co);
+  right: var(--wh-co);
+  transform: scaleX(-1);
+}
+.wh-corner.bl {
+  bottom: var(--wh-co);
+  left: var(--wh-co);
+  transform: scaleY(-1);
+}
+.wh-corner.br {
+  bottom: var(--wh-co);
+  right: var(--wh-co);
+  transform: scale(-1);
+}
+/* The four bonus squares, in a row under the board. */
+.wh-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 10px;
+  color: var(--ink);
+  font: 700 15px/1.2 var(--font-body);
+}
+.wh-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.wh-legend__sw {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--wh-print);
+  box-sizing: border-box;
+}
+.wh-legend__sw .wh-orn {
+  width: 80%;
+  height: 80%;
 }
 .wh-board {
+  position: relative;
   container-type: inline-size;
   display: grid;
   grid-template-columns: repeat(15, 1fr);
@@ -236,9 +500,60 @@ button.wh-sq:focus-visible {
   background: color-mix(in srgb, var(--azure) 42%, var(--wh-dl-paper));
   color: var(--wh-dl-ink);
 }
+/* A bonus square shows its engraved mark; zoomed in there's room to spell it out too. */
+.wh-sq--mark {
+  place-content: center;
+}
+.wh-orn {
+  display: block;
+  width: 68%;
+  height: 68%;
+}
 .wh-sq__label {
+  display: none;
   font: 800 2.4cqw / 1 var(--font-plaque);
   letter-spacing: 0.02em;
+}
+.wh-boardwrap.is-zoomed .wh-sq--mark {
+  gap: 1px;
+}
+.wh-boardwrap.is-zoomed .wh-sq--mark .wh-orn {
+  width: 46%;
+  height: 46%;
+}
+.wh-boardwrap.is-zoomed .wh-sq__label {
+  display: block;
+}
+/* The score of a word just played, rising from the word. */
+.wh-board__pop {
+  position: absolute;
+  z-index: 3;
+  translate: -50% -50%;
+  padding: 0 0.3em;
+  background: var(--wh-print);
+  color: var(--wh-gold);
+  border: 2px solid var(--wh-gold);
+  font: 800 max(18px, 6cqw) / 1.2 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  animation: wh-rise 860ms var(--ease-out) both;
+}
+@keyframes wh-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(40%) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: none;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-220%);
+  }
 }
 .wh-sq__star {
   font-size: 4.2cqw;
@@ -255,19 +570,21 @@ button.wh-sq:focus-visible {
   box-sizing: border-box;
   background: var(--wh-bone);
   color: var(--wh-tile-ink);
-  border-radius: 8%;
-  box-shadow: inset 0 -0.12em 0 var(--wh-bone-edge);
-  font-size: 4.6cqw;
+  border-radius: 6%;
+  /* A printed bottom and right edge, flat, so it reads as a piece. */
+  --wh-lip: max(1.5px, 0.07em);
+  box-shadow: inset calc(var(--wh-lip) * -1) calc(var(--wh-lip) * -1) 0 var(--wh-bone-edge);
+  font-size: 4.2cqw;
 }
 .wh-tile__letter {
   font: 800 1em / 1 var(--font-code);
-  translate: -6% -4%;
+  translate: -8% -6%;
 }
 .wh-tile__value {
   position: absolute;
-  right: 9%;
-  bottom: 7%;
-  font: 800 0.38em / 1 var(--font-plaque);
+  right: 8%;
+  bottom: 6%;
+  font: 800 max(9px, 0.4em) / 1 var(--font-plaque);
 }
 .wh-tile--blank .wh-tile__letter {
   color: var(--gules);
@@ -279,6 +596,21 @@ button.wh-sq:focus-visible {
 }
 .wh-tile--recent {
   background: color-mix(in srgb, var(--wh-bone) 78%, var(--or));
+}
+/* A word just played: its tiles flash a gold outline, then settle. */
+.wh-tile--scored {
+  outline: 2px solid var(--wh-gold);
+  outline-offset: -2px;
+  animation: wh-gold 900ms ease-out both;
+}
+@keyframes wh-gold {
+  0%,
+  55% {
+    outline-color: var(--wh-gold);
+  }
+  100% {
+    outline-color: transparent;
+  }
 }
 @keyframes wh-lay {
   from {
@@ -300,14 +632,17 @@ button.wh-sq:focus-visible {
 .wh-dock__status.is-bad {
   color: var(--danger);
 }
+/* A wooden tray drawn flat: a lighter lip along the top and a printed thickness underneath. */
 .wh-rack {
   container-type: inline-size;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 6px;
   padding: 8px;
-  background: var(--sable);
-  border: 2px solid var(--ink);
+  background: var(--wh-tray);
+  border: 2px solid var(--wh-print);
+  border-top: 4px solid var(--wh-tray-lip);
+  box-shadow: 0 5px 0 var(--wh-tray-edge);
 }
 .wh-rack__slot {
   aspect-ratio: 1;
@@ -319,6 +654,9 @@ button.wh-sq:focus-visible {
 }
 .wh-rack__slot .wh-tile {
   font-size: 7.6cqw;
+}
+.wh-rack__slot .wh-tile__value {
+  font-size: max(10px, 0.42em);
 }
 .wh-rack__slot.is-picked {
   translate: 0 -8px;
@@ -374,7 +712,7 @@ button.wh-sq:focus-visible {
 }
 .wh-rack__slot.is-drop .wh-tile {
   box-shadow:
-    inset 0 -0.12em 0 var(--wh-bone-edge),
+    inset calc(var(--wh-lip) * -1) calc(var(--wh-lip) * -1) 0 var(--wh-bone-edge),
     -6px 0 0 var(--or);
 }
 .wh-rack__slot.is-empty {
@@ -430,22 +768,98 @@ button.wh-sq:focus-visible {
   padding: calc(3 * var(--vh, 1vh)) calc(3 * var(--vw, 1vw));
   box-sizing: border-box;
 }
+/* The board, then the pouch and the legend under it. */
+.wh-tv__left {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
 .wh-tv__board {
-  width: calc(calc(100 * var(--vh, 1vh)) - 240px);
-  border: 3px solid var(--ink);
-  outline: 1px solid var(--ink);
-  outline-offset: 5px;
+  width: calc(calc(100 * var(--vh, 1vh)) - 340px);
+}
+.wh--tv .wh-boardwrap {
+  --wh-frame: 16px;
+  --wh-co: -18px;
+  margin: 14px;
+  border-width: 3px;
+}
+.wh--tv .wh-corner {
+  width: 40px;
+  height: 40px;
+}
+.wh-tv__hoard {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+  padding-left: 14px;
+}
+.wh--tv .wh-pouch {
+  gap: 16px;
+}
+.wh--tv .wh-pouch__art {
+  width: 96px;
+  height: 96px;
+}
+.wh--tv .wh-pouch__chit {
+  min-width: 64px;
+  height: 76px;
+  padding: 0 8px;
+  border-width: 3px;
+  box-shadow: 0 4px 0 var(--wh-print);
+  font-size: 48px;
+}
+.wh--tv .wh-pouch__label {
+  font-size: 34px;
+}
+.wh--tv .wh-legend {
+  justify-content: flex-start;
+  gap: 6px 22px;
+  font-size: 26px;
+}
+.wh--tv .wh-legend__sw {
+  width: 34px;
+  height: 34px;
+  border-width: 2px;
 }
 .wh-tv__side {
-  display: grid;
-  align-content: start;
-  gap: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   min-width: 0;
-  /* Four sides, a long definition and the latest plays can outgrow the screen: the oldest plays,
-     at the bottom, are what gets cut. */
+  /* Four sides and the ledger can outgrow the screen: the oldest words, at the bottom, are what
+     gets cut. */
   align-self: stretch;
   min-height: 0;
   overflow: hidden;
+}
+.wh-tv__last {
+  margin: 0;
+  font: 700 30px/1.2 var(--font-body);
+}
+.wh--tv .wh-ledger {
+  flex: 1;
+  min-height: 0;
+  --led-who: 76px;
+  --led-word: 46px;
+  --led-pts: 44px;
+  --led-mean: 28px;
+}
+.wh--tv .wh-ledger__head {
+  font-size: 24px;
+}
+.wh--tv .wh-ledger__list {
+  overflow: hidden;
+}
+.wh--tv .wh-ledger__mean {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.wh--tv .wh-ledger__row:not(.is-new) .wh-ledger__mean {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
 }
 .wh-tv__side h2 {
   font-size: 68px;
@@ -474,22 +888,41 @@ button.wh-sq:focus-visible {
 .wh--tv .wh-scores .jd-token {
   --z: 72px !important;
 }
-.wh-tv__bag {
-  margin: 0;
-  font: 800 30px var(--font-plaque);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-2);
+.wh--tv .wh-scores__tag {
+  padding: 2px 12px;
+  font-size: 26px;
 }
-.wh-tv__moves {
-  margin: 0;
-  padding-left: 1.2em;
-  display: grid;
-  gap: 10px;
-  font-size: 32px;
+.wh--tv .wh-scores__gain {
+  top: -16px;
+  right: 14px;
+  font-size: 36px;
 }
-.wh-tv__moves li:first-child {
-  font-weight: 800;
+/* Five or more sides (pairs from five players, up to eight): two columns, so the ledger keeps
+   its room. */
+.wh--tv .wh-scores:has(> li:nth-child(5)) {
+  grid-template-columns: 1fr 1fr;
+}
+.wh--tv .wh-scores:has(> li:nth-child(5)) li {
+  padding: 8px 14px;
+  gap: 12px;
+}
+.wh--tv .wh-scores:has(> li:nth-child(5)) li:nth-child(2) {
+  border-top: 0;
+}
+.wh--tv .wh-scores:has(> li:nth-child(5)) li:nth-child(even) {
+  border-left: 1px solid var(--rule);
+}
+.wh--tv .wh-scores:has(> li:nth-child(5)) .wh-scores__name {
+  font-size: 30px;
+}
+.wh--tv .wh-scores:has(> li:nth-child(5)) .wh-scores__name small {
+  display: none;
+}
+.wh--tv .wh-scores:has(> li:nth-child(5)) .wh-scores__n {
+  font-size: 44px;
+}
+.wh--tv .wh-scores:has(> li:nth-child(5)) .jd-token {
+  --z: 56px !important;
 }
 /* Watching on a phone: the latest plays where the rack would be, newest first and in bold. */
 .wh-watch__moves {
@@ -669,6 +1102,29 @@ button.wh-sq:focus-visible {
   .wh--phone > .wh-dock {
     grid-row: 4;
   }
+  /* The ledger fills the height between the scores and the rack. */
+  .wh--phone > .wh-ledger-slot {
+    grid-column: 2;
+    grid-row: 3;
+    display: flex;
+    min-height: 0;
+  }
+  .wh-ledger-slot > .wh-ledger {
+    flex: 1;
+    min-height: 0;
+  }
+  .wh--phone .wh-scores__tag {
+    order: 2;
+    margin: 0;
+    padding: 1px 6px;
+    font-size: 13px;
+  }
+  .wh--phone .wh-scores__n {
+    order: 3;
+  }
+  .wh--phone .wh__head {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .wh--phone .wh__head h2 {
     font-size: var(--step-3);
   }
@@ -689,6 +1145,7 @@ button.wh-sq:focus-visible {
   .wh--phone .wh-scores li,
   .wh--phone .wh-scores--pairs li {
     display: flex;
+    align-items: center;
     padding: 8px 10px;
   }
   .wh--phone .wh-scores__name small {
@@ -767,26 +1224,204 @@ button.wh-sq:focus-visible {
   display: grid;
   gap: 4px;
 }
-/* The TV: the board as big a square as the space beside the standings allows. */
+/* The finished board with the ledger beside it (a laptop) or under it (a phone). */
+.wh-final__spread {
+  display: grid;
+  gap: var(--space-4);
+}
+.wh-final .wh-ledger__list {
+  overflow: visible;
+}
+@media (min-width: 1024px) {
+  .wh-final:not(.wh-final--tv) {
+    max-width: 1000px;
+  }
+  .wh-final__spread {
+    grid-template-columns: minmax(0, 1.15fr) minmax(280px, 1fr);
+    align-items: start;
+  }
+}
+/* The TV: the board as big a square as the space allows, the ledger beside it. */
 .wh-final--tv {
   height: 100%;
   max-width: none;
   display: grid;
-  place-items: center;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  padding: 0 24px;
+  box-sizing: border-box;
 }
 .wh-final--tv .wh-boardwrap {
-  box-sizing: border-box;
-  width: calc(min(100cqw, 100cqh) - 12px);
-  aspect-ratio: 1;
+  --wh-frame: 14px;
+  --wh-co: -16px;
+  width: calc(min(56cqw, 100cqh) - 40px);
+  margin: 14px;
+  border-width: 3px;
+}
+.wh-final--tv .wh-corner {
+  width: 36px;
+  height: 36px;
+}
+.wh-final--tv .wh-ledger {
+  align-self: stretch;
+  min-height: 0;
+  max-height: 100cqh;
+  --led-who: 64px;
+  --led-word: 34px;
+  --led-pts: 34px;
+  --led-mean: 26px;
+}
+.wh-final--tv .wh-ledger__head,
+.wh-final--tv .wh-ledger__best {
+  font-size: 24px;
+}
+.wh-final--tv .wh-ledger__list {
   overflow: hidden;
+}
+
+/* ── The ledger: a ruled account-book sheet of the words played ─────── */
+.wh-ledger {
+  --led-who: 46px;
+  --led-word: 26px;
+  --led-pts: 24px;
+  --led-mean: 15px;
+  --ring-bg: var(--paper);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--paper);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+}
+.wh-ledger--flat {
+  border: 0;
+  background: none;
+}
+.wh-ledger__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 6px 12px;
+  border-bottom: 2px solid var(--ink);
+  color: var(--ink-2);
+  font: 800 15px/1.2 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.wh-ledger__best {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--rule);
+  font: 800 15px/1.2 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wh-ledger__best .wh-seal {
+  width: 22px;
+  height: 22px;
+}
+.wh-ledger__empty {
+  margin: 0;
+  padding: 12px;
+  color: var(--ink-2);
+}
+.wh-ledger__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.wh-ledger__row {
+  display: grid;
+  grid-template-columns: var(--led-who) minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  border-bottom: 1px solid var(--rule);
+}
+/* The player's token, on the left of a double red margin rule, like an account book. */
+.wh-ledger__who {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  padding: 6px 0;
+  border-right: 3px double var(--gules);
+}
+.wh-ledger__word {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 10px 4px;
+  font: 800 var(--led-word) / 1.05 var(--font-display);
+  overflow-wrap: anywhere;
+}
+.wh-ledger__pts {
+  align-self: center;
+  padding: 6px 12px 4px 0;
+  font: 800 var(--led-pts) / 1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+}
+.wh-ledger__mean {
+  grid-column: 2 / -1;
+  padding: 0 12px 8px 10px;
+  color: var(--ink-2);
+  font: 500 var(--led-mean) / 1.3 var(--font-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wh-ledger__mean b {
+  margin-right: 0.5em;
+  padding: 0 5px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 800 0.72em / 1.5 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.wh-ledger__mean.is-wait {
+  color: var(--rule);
+}
+.wh-seal {
+  width: 0.85em;
+  height: 0.85em;
+  flex: none;
+}
+.wh-seal__disc {
+  fill: var(--wh-gold);
+  stroke: var(--wh-print);
+  stroke-width: 1.2;
+}
+.wh-seal__ring {
+  fill: none;
+  stroke: var(--wh-print);
+  stroke-width: 0.9;
+}
+.wh-seal__star {
+  fill: var(--wh-print);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .wh-tile--pending,
   .wh-tile--drop,
+  .wh-tile--scored,
   .wh-landing__word .wh-tile,
   .wh-landing__score {
     animation: none;
+  }
+  /* The score rises from the word on the board; with reduced motion it only shows beside the
+     plate for a moment. */
+  .wh-board__pop {
+    display: none;
+  }
+  .wh-scores__gain {
+    animation-name: wh-gain-still;
+    animation-delay: 0ms !important;
   }
   /* The card still comes and goes (it clears itself when its animation ends), without moving. */
   .wh-landing {
@@ -979,5 +1614,13 @@ button.wh-sq:focus-visible {
     outline: 2px solid var(--or);
     outline-offset: -2px;
     z-index: 1;
+  }
+}
+
+/* On a wide screen the played-word card sits over the board, clear of the scores and ledger. */
+@container game (min-width: 700px) and (orientation: landscape) {
+  .wh-mean--pop {
+    left: 30%;
+    width: min(52%, 440px);
   }
 }

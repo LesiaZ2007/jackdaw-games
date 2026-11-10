@@ -13,25 +13,38 @@ export interface BoardHint {
   mistake?: boolean;
 }
 
-/** The king, in the house line style: a crown with a cross on top. */
-export function KingMark({ size }: { size?: number | string }) {
+/**
+ * The king: a woodcut crown in flat ink. On the board it sits on a small cream roundel with an
+ * ink ring so it reads on every fief; elsewhere (`roundel` off) it is the bare crown, which can
+ * be `hollow` (an outline, for a king not yet placed) or `gold` (a finished set).
+ */
+export function KingMark({
+  size,
+  roundel = false,
+  hollow = false,
+  gold = false,
+}: {
+  size?: number | string;
+  roundel?: boolean;
+  hollow?: boolean;
+  gold?: boolean;
+}) {
   return (
-    <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden="true" className="kg-king">
+    <svg
+      viewBox={roundel ? '0 0 32 32' : '4 4.5 24 22'}
+      width={size}
+      height={size}
+      aria-hidden="true"
+      className={`kg-king${hollow ? ' is-hollow' : ''}${gold ? ' is-gold' : ''}`}
+    >
+      {roundel && <circle cx="16" cy="16" r="14.6" className="kg-king__disc" />}
       <path
-        d="M16 3v6M13 6h6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinecap="round"
+        className="kg-king__body"
+        d="M8 22.2 6.8 11.5 12 15.4 16 8.2 20 15.4 25.2 11.5 24 22.2zM8 23.6h16v2.2H8z"
       />
-      <path
-        d="M5 13l4.5 3.5L16 10l6.5 6.5L27 13l-2.5 12h-17z"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <path d="M7.5 28h17" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+      <circle cx="6.8" cy="10" r="1.7" className="kg-king__body" />
+      <circle cx="16" cy="6.8" r="1.7" className="kg-king__body" />
+      <circle cx="25.2" cy="10" r="1.7" className="kg-king__body" />
     </svg>
   );
 }
@@ -124,6 +137,7 @@ export function Board({
       {puzzle.regions.map((g, i) => {
         const e = edges(puzzle, i);
         const m = marks[i] ?? 0;
+        const k = marks.slice(0, i).filter((x) => x === 2).length;
         return (
           <button
             key={i}
@@ -134,6 +148,7 @@ export function Board({
             aria-label={`${name(puzzle, i)}: ${m === 2 ? 'king' : m === 1 ? 'crossed out' : 'empty'}`}
             className={[
               'kg-cell',
+              `kg-f${g % 10}`,
               e.t && 'kg-t',
               e.b && 'kg-b',
               e.l && 'kg-l',
@@ -145,7 +160,7 @@ export function Board({
             ]
               .filter(Boolean)
               .join(' ')}
-            style={vars({ '--fill': `var(--kg-r${g})` })}
+            style={vars({ '--fill': `var(--kg-r${g % 10})`, '--k': k })}
             onKeyDown={(ev) => {
               if (!onMarks || (ev.key !== 'Enter' && ev.key !== ' ')) return;
               ev.preventDefault();
@@ -155,7 +170,7 @@ export function Board({
             }}
           >
             {m === 2 ? (
-              <KingMark size="62%" />
+              <KingMark size="82%" roundel />
             ) : m === 1 || (auto && faint[i]) ? (
               <span className="kg-cross" aria-hidden="true" />
             ) : null}

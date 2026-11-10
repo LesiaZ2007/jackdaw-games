@@ -18,14 +18,13 @@ export const catanUi: GameUi = {
   art: { band: 'tenne', field: 'semee', glyph: 'hexes' },
   about: {
     description:
-      'Settle an island of forests, fields, hills, pastures and mountains. The dice decide what the land gives each turn, so you trade with everyone for what you’re missing, then build roads, settlements and cities. First to ten points wins. Three or four play on the classic island; five or six get the big one and build alongside each other’s turns.',
+      'Settle an island of forests, fields, hills, pastures and mountains. The dice decide what the land gives each turn, so you trade with everyone for what you’re missing, then build roads, settlements and cities. First to ten points wins. Five or six players get a bigger island, and two expansions are optional: Seafarers, and Cities & Knights.',
     steps: [
-      'Everyone places two settlements and two roads, going round and back. The second settlement gives you your first cards.',
-      'On your turn roll the dice. Every settlement next to a tile with that number takes a card, every city two.',
-      'Trade with the others or with the bank (4 for 1, better at a harbor), then build what you can afford.',
-      'Roll a 7 and the robber moves: anyone holding more than 7 cards gives half back, and you take a card from someone next to the robber.',
-      'Settlements are 1 point, cities 2, and Longest Road and Largest Army 2 each. Development cards bring knights, free roads, plenty, monopolies and hidden points.',
-      'Choose an expansion in the lobby: Seafarers (ships, islands, gold and the pirate), Cities & Knights (commodities, city improvements, knights against the barbarians, progress cards), or both.',
+      'Take turns placing two settlements and two roads. Your second settlement earns your first cards.',
+      'On your turn, roll the dice. Each settlement beside that number takes a card, and each city takes two.',
+      'Trade with the others or the bank (4 for 1, better at a harbor), then build what you can afford.',
+      'Roll a 7 and the robber moves. Hands over 7 cards give half back, and you steal a card.',
+      'First to ten points wins: settlements 1, cities 2, Longest Road and Largest Army 2 each, plus hidden cards.',
     ],
     credit:
       'Based on CATAN by Klaus Teuber. CATAN is a trademark of CATAN GmbH; this is a fan version for friends, with our own art.',

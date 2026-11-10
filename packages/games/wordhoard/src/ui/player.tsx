@@ -10,6 +10,7 @@ import {
 import {
   Plaque,
   PlayerReaction,
+  Sheet,
   Tally,
   Token,
   useCountdown,
@@ -22,7 +23,8 @@ import { RACK, checkPlay, type Placement } from '../board';
 import type { Move, WordhoardAction, WordhoardPlayerView, WordhoardTableView } from '../rules';
 import { arrange, moveTo } from './arrange';
 import { MeaningPopup } from './define';
-import { BoardGrid, Tile } from './pieces';
+import { Ledger, Pouch, useWide } from './hoard';
+import { BoardFrame, BoardGrid, Legend, Tile } from './pieces';
 import './wordhoard.css';
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -54,11 +56,14 @@ export function Scores({
   players,
   me,
   reactions,
+  gain,
 }: {
   t: WordhoardTableView;
   players: ScreenPlayer[];
   me?: string;
   reactions?: Reaction[];
+  /** A word just scored: the "+n" shows by the scorer's plate (`delay` waits for the tiles). */
+  gain?: { player: string; n: number; key: number; delay?: number };
 }) {
   const byId = new Map(players.map((p) => [p.id, p]));
   const paired = t.sides.some((side) => side.length > 1);
@@ -67,8 +72,15 @@ export function Scores({
       {t.sides.map((side) => {
         const key = side[0]!;
         const turn = !t.over && t.turn === key;
+        const mine = Boolean(me && side.includes(me));
+        const names = (mine ? [me!, ...side.filter((id) => id !== me)] : side)
+          .map((id) => (id === me ? 'You' : (byId.get(id)?.name ?? 'Someone')))
+          .join(' & ');
         return (
-          <li key={key} className={turn ? 'is-turn' : undefined}>
+          <li
+            key={key}
+            className={[turn && 'is-turn', mine && 'is-me'].filter(Boolean).join(' ') || undefined}
+          >
             <span className="wh-scores__toks">
               {side.map((id) => {
                 const p = byId.get(id);
@@ -85,15 +97,29 @@ export function Scores({
                 );
               })}
             </span>
-            <span className="wh-scores__name">
-              {(me && side.includes(me) ? [me, ...side.filter((id) => id !== me)] : side).map(
-                (id) => (
-                  <span key={id}>{id === me ? 'You' : (byId.get(id)?.name ?? 'Someone')}</span>
-                ),
-              )}
-              <small>{turn ? 'Playing' : `${t.rackCounts[key] ?? 0} tiles`}</small>
+            <span className="wh-scores__name" title={names}>
+              {(mine ? [me!, ...side.filter((id) => id !== me)] : side).map((id) => {
+                const n = id === me ? 'You' : (byId.get(id)?.name ?? 'Someone');
+                return (
+                  <span key={id} title={n}>
+                    {n}
+                  </span>
+                );
+              })}
+              <small>{`${t.rackCounts[key] ?? 0} tiles`}</small>
             </span>
             <Tally className="wh-scores__n" value={t.scores[key] ?? 0} />
+            {turn && <b className="wh-scores__tag">To play</b>}
+            {gain && side.includes(gain.player) && (
+              <span
+                key={gain.key}
+                className="wh-scores__gain"
+                aria-hidden="true"
+                style={gain.delay !== undefined ? { animationDelay: `${gain.delay}ms` } : undefined}
+              >
+                +{gain.n}
+              </span>
+            )}
           </li>
         );
       })}
@@ -141,20 +167,44 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const [arranged, setArranged] = useState<string[]>([]);
   const order = arrange(v.rack, arranged);
   const meaning = fresh !== null && last?.kind === 'play' ? last : null;
+  const root = useRef<HTMLDivElement>(null);
+  const wide = useWide(root);
+  const [ledgerOpen, setLedgerOpen] = useState(false);
 
   return (
-    <div className="wh wh--phone">
+    <div className="wh wh--phone" ref={root}>
       <header className="wh__head">
         <h2 className="jd-display">
           {myTurn ? 'Your turn' : `${sideName(v, v.turn, name)}’s turn`}
           <TurnClock at={v.turnBy} now={now} />
         </h2>
-        <p>
-          {v.bagCount} tile{v.bagCount === 1 ? '' : 's'} in the bag
-          {last ? ` · ${moveText(last, (id) => (id === v.me ? 'You' : name(id)))}` : ''}
-        </p>
+        {!wide && (
+          <Plaque small className="wh-ledgerbtn" onClick={() => setLedgerOpen(true)}>
+            Ledger
+          </Plaque>
+        )}
+        <div className="wh__bag">
+          <Pouch count={v.bagCount} />
+          {last && <p>{moveText(last, (id) => (id === v.me ? 'You' : name(id)))}</p>}
+        </div>
       </header>
-      <Scores t={v} players={players} me={v.me} reactions={reactions} />
+      <Scores
+        t={v}
+        players={players}
+        me={v.me}
+        reactions={reactions}
+        gain={
+          meaning ? { player: meaning.player, n: meaning.score, key: v.moves.length } : undefined
+        }
+      />
+      {wide && (
+        <div className="wh-ledger-slot">
+          <Ledger moves={v.moves} players={players} />
+        </div>
+      )}
+      <Sheet open={ledgerOpen && !wide} onClose={() => setLedgerOpen(false)} title="Ledger">
+        <Ledger moves={v.moves} players={players} flat />
+      </Sheet>
       {/* Keyed by the move count, so a new turn starts with your tiles back on the rack. Its key
           differs from the meaning popup's below: siblings sharing a key left a stale rack on screen
           after a bot played a word (2026-10-24: "letters appear on top of other letters"). */}
@@ -164,6 +214,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
         myTurn={myTurn}
         partner={partner ? name(partner) : undefined}
         send={sendAction}
+        scored={meaning?.score}
         order={order}
         setOrder={(o) => setArranged(o.map((i) => v.rack[i]!))}
       />
@@ -313,11 +364,14 @@ function Turn({
   myTurn,
   partner,
   send,
+  scored,
   order,
   setOrder,
 }: {
   v: WordhoardPlayerView;
   myTurn: boolean;
+  /** The last word just scored this many points (a moment): its tiles flash gold. */
+  scored?: number;
   /** Your partner's name, playing in pairs. */
   partner?: string;
   send: (a: WordhoardAction) => Promise<boolean>;
@@ -435,18 +489,20 @@ function Turn({
   return (
     <>
       <div className="wh-stage">
-        <div className={zoom ? 'wh-boardwrap is-zoomed' : 'wh-boardwrap'}>
+        <BoardFrame zoomed={zoom}>
           <BoardGrid
             board={v.board}
             pending={pending.filter((p) => !dragging(p))}
             recent={last?.cells}
+            scored={scored}
             onSquare={myTurn && !swapping ? onSquare : undefined}
             onPendingDown={(e, row, col) => {
               const p = pending.find((x) => x.row === row && x.col === col);
               if (p) begin(e, { row, col }, p.letter);
             }}
           />
-        </div>
+        </BoardFrame>
+        <Legend />
       </div>
 
       <section className="wh-dock" aria-label="Your tiles">

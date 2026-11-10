@@ -44,13 +44,13 @@ export const solitaireUi: GameUi = {
   art: { band: 'sable', field: 'bendy', glyph: 'patience' },
   about: {
     description:
-      'Klondike, the solitaire everyone knows, played all at once around the table. Each of you lays out your own deck, but the aces go in the middle for everyone: build on anyone’s piles, race to put your cards up first, and be the first to get rid of every card.',
+      'Klondike, the solitaire everyone knows, played all at once around the table. Each of you lays out your own deck, but the aces go in the middle for everyone. Build on anyone’s piles, race to put your cards up first, and be the first to get rid of every card.',
     steps: [
-      'Everyone deals their own deck as usual: seven columns, the top card of each face up, the rest in the stock. Any uncovered aces go straight to the middle.',
-      'Play by the usual rules. Build your columns down in alternating colors, put a king in an empty column, and turn the stock one or three cards at a time, as often as you like.',
-      'The piles in the middle are everyone’s. Any ace starts a new one, and you can build up in suit on any of them, not just your own. Tap a card to send it up; if someone gets there first, it stays put.',
-      'If nobody can play anything, even turning through their whole stock, everyone pulls one of their covered cards onto their waste at once, again until a card can be played.',
-      'The first to get rid of every card wins. If nobody can play and nobody has a covered card left, the fewest cards left wins.',
+      'Everyone deals their own deck: seven columns, plus the stock. Uncovered aces go straight to the middle.',
+      'Build columns down in alternating colors, put a king in an empty column, and turn the stock as often as you like.',
+      'The middle piles are shared. Any ace starts one, and anyone can build up in suit. Tap a card to send it up.',
+      'If nobody can play, everyone pulls a covered card onto their waste at once.',
+      'The first to get rid of every card wins. If nobody can move, the fewest cards left wins.',
     ],
     credit:
       'Klondike is a traditional patience game; this way of racing it together is a house rule.',

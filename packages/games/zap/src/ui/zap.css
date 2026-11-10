@@ -1,32 +1,52 @@
 /*
- * Zap: a page from a printed puzzle book, the line drawn on it in orange ink. The board is
- * printed, so it stays the same by day and in the dark; the frame round it follows the shell.
- * All of the game's colors are in this token block. No gradients, no glows.
+ * Zap: a page from a puzzle book, solved in pen. The board sits on a printed page (paper, a ruled
+ * frame, a perforated top edge, a running head like a page number); numbers are stamped discs;
+ * the line is a bold pen stroke with a nib at its head; the race is a notebook strip with one
+ * ruled line per racer. Pages and paper are printed, so they stay the same by day and in the dark;
+ * the table round them follows the shell. All of the game's colors are in this token block.
+ * No gradients, no glows (the only gradients are hard-stop dots for the punched edge).
  */
 
 .zp {
   --zp-ink: #1d1d1c;
-  --zp-rule: rgba(29, 29, 28, 0.22);
+  --zp-ink-2: #4a4947;
+  /* Graph-paper hairlines between squares. */
+  --zp-rule: rgba(29, 29, 28, 0.24);
   --zp-paper: #f7f3ea;
-  --zp-line: #e0612a;
+  /* The race strip's paper: a shade warmer than the page so the two read as separate sheets. */
+  --zp-note: #efe7d3;
+  /*
+   * Pen ink: a printed vermilion, kept on purpose. It is off the heraldic palette, but it is the
+   * only warm hue that stands out on cream paper, against the near-black walls and discs, and
+   * against the red used for a number reached out of order (gules and tenne all sit too close to
+   * those; tenne against the walls is about 2.5:1, this is about 5:1). One ink for every line.
+   */
+  --zp-ink-pen: #e0612a;
+  /* The lighter flat center stroke that makes the line read as ink from a broad nib. */
+  --zp-ink-pen-lite: #f39a6b;
+  /* The squares the line has covered. */
   --zp-trail: #f5d8c4;
+  /* Ring on the next number to reach: the shell's gold as printed, the same by day and dark. */
+  --zp-gold: #a77d2c;
+  --zp-win: var(--vert);
   --zp-bad: #b3261e;
+  /* The punched holes show the table through the page. */
+  --zp-hole: var(--table);
   color: var(--ink);
 }
 
 /* ── The board ─────────────────────────────────────────────────────────── */
 .zp-board {
   position: relative;
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: repeat(var(--n), minmax(0, 1fr));
   grid-template-rows: repeat(var(--n), minmax(0, 1fr));
   aspect-ratio: 1;
   width: 100%;
-  border: 3px solid var(--zp-ink);
-  outline: 1px solid var(--ink);
-  outline-offset: 3px;
+  border: 2px solid var(--zp-ink);
   background: var(--zp-paper);
-  box-shadow: 0 20px 50px -24px var(--shadow);
+  color: var(--zp-ink);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -73,37 +93,72 @@
   pointer-events: none;
   z-index: 2;
 }
+/* The pen stroke: a bold line with round joins and caps, and a lighter flat stroke down its middle. */
 .zp-line {
   fill: none;
-  stroke: var(--zp-line);
+  stroke: var(--zp-ink-pen);
   stroke-width: 0.36;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.zp-pen {
-  fill: var(--zp-line);
+.zp-line-core {
+  fill: none;
+  stroke: var(--zp-ink-pen-lite);
+  stroke-width: 0.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* The nib at the head of the line, pointing the way it last went. */
+.zp-nib > path {
+  fill: var(--zp-ink);
   stroke: var(--zp-paper);
-  stroke-width: 0.07;
+  stroke-width: 0.04;
+  stroke-linejoin: round;
+}
+.zp-nib > .zp-nib__slit {
+  fill: none;
+  stroke: var(--zp-paper);
+  stroke-width: 0.035;
+  stroke-linecap: round;
 }
 .zp-wall {
   stroke: var(--zp-ink);
   stroke-width: 0.16;
   stroke-linecap: round;
 }
-.zp-dot circle {
+/* Numbers are stamped discs; the next one to reach wears a thin gold ring, and numbers the line
+   has passed turn to outlines (drawn under the line so it reads over them). */
+.zp-dot__disc {
   fill: var(--zp-ink);
+}
+.zp-dot__ring {
+  fill: none;
+  stroke: var(--zp-gold);
+  stroke-width: 0.07;
 }
 .zp-dot text {
   fill: var(--zp-paper);
-  font-family: var(--font-plaque);
+  font-family: var(--font-display);
   font-weight: 800;
-  font-size: 0.38px;
+  font-size: 0.5px;
   text-anchor: middle;
   dominant-baseline: central;
 }
-.zp-dot.is-bad circle {
+.zp-dot.is-past .zp-dot__disc {
+  fill: none;
+  stroke: var(--zp-ink);
+  stroke-width: 0.05;
+}
+.zp-dot.is-past text {
+  fill: var(--zp-ink);
+}
+.zp-dot.is-bad .zp-dot__disc {
   fill: var(--zp-bad);
 }
+.zp-dot.is-bad text {
+  fill: var(--zp-paper);
+}
+/* A solved line dries: the stroke swells for a beat and settles. */
 .zp-board.is-solved .zp-line {
   animation: zp-zapped 900ms var(--ease-out) both;
 }
@@ -124,6 +179,151 @@
 @media (hover: hover) and (pointer: fine) {
   .zp-board.is-live .zp-cell:hover {
     box-shadow: inset 0 0 0 2px var(--zp-ink);
+  }
+}
+
+/* ── The page ──────────────────────────────────────────────────────────── */
+.zp-page {
+  /* What the page adds round its board, for sizing the board from the room (see .zp-stage). */
+  --zp-cx: 24px;
+  --zp-cy: 48px;
+  position: relative;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 100%;
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px 10px;
+  border: 2px solid var(--zp-ink);
+  border-top: 0;
+  outline: 1px solid var(--zp-ink);
+  outline-offset: -6px;
+  background: var(--zp-paper);
+  color: var(--zp-ink);
+  box-shadow: 0 4px 0 var(--shadow);
+}
+/* The torn-from-a-pad edge: a row of punched half-holes along the top. */
+.zp-page::before,
+.zp-card::before,
+.zp-answer::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: radial-gradient(circle at 50% 0, var(--zp-hole) 3.5px, transparent 4px) 0 0 / 14px 4px
+    repeat-x;
+  pointer-events: none;
+  z-index: 3;
+}
+.zp-page.is-solved {
+  border-color: var(--zp-win);
+  outline-color: var(--zp-win);
+}
+.zp-page__head {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.zp-page__title {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 15px/1 var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.zp-page .zp-clock {
+  flex: none;
+  font: 800 18px/1 var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+.zp-page > .zp-board,
+.zp-page > .zp-done {
+  width: min(100cqw - var(--zp-cx), 100cqh - var(--zp-cy));
+}
+.zp-page > .zp-done {
+  aspect-ratio: 1;
+  align-content: center;
+  padding: var(--space-3);
+}
+.zp-page.is-solved .zp-done__line {
+  color: var(--zp-win);
+}
+/* The "Solved" stamp lands in the margin, a few degrees off true. */
+.zp-page__stamp {
+  position: absolute;
+  right: 6px;
+  bottom: 0;
+  padding: 2px 10px;
+  border: 3px double var(--zp-win);
+  background: var(--zp-paper);
+  color: var(--zp-win);
+  font: 800 18px/1.1 var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transform: rotate(-7deg);
+  pointer-events: none;
+  z-index: 4;
+  animation: zp-land 320ms var(--ease-out) both;
+}
+.zp-page__stamp--still {
+  animation: none;
+}
+@keyframes zp-land {
+  0% {
+    opacity: 0;
+    transform: rotate(-7deg) scale(1.8);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(-7deg) scale(1);
+  }
+}
+
+/* Turning the page: the old one lifts and slides away left, the new one settles in from the right. */
+.zp-turn {
+  display: grid;
+  place-items: center;
+  max-width: 100%;
+}
+.zp-turn > * {
+  grid-area: 1 / 1;
+}
+.zp-turn__old {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+  animation: zp-lift 420ms cubic-bezier(0.55, 0, 0.8, 0.4) both;
+}
+.zp-turn__new.is-turning {
+  animation: zp-settle 420ms var(--ease-out) both;
+}
+@keyframes zp-lift {
+  0% {
+    transform: none;
+  }
+  25% {
+    transform: translate(-3%, -10px) rotate(-1.5deg);
+  }
+  100% {
+    transform: translate(-125%, -14px) rotate(-8deg);
+  }
+}
+@keyframes zp-settle {
+  0% {
+    opacity: 0;
+    transform: translate(70%, 6px) rotate(5deg);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -168,17 +368,15 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
+/* The page is sized from this box: as large as its width allows, and never taller than it. */
 .zp-stage {
   flex: 1;
   min-height: 0;
   container-type: size;
   display: grid;
   place-items: center;
-}
-.zp-stage > .zp-board {
-  width: calc(min(100cqw, 100cqh) - 10px);
 }
 .zp-side {
   flex: none;
@@ -226,96 +424,206 @@
   font-size: var(--step-3);
   line-height: 1.05;
 }
-/* ── The race ──────────────────────────────────────────────────────────── */
+
+/* ── The race: lines of ink on notebook paper ─────────────────────────── */
 .zp-race {
   list-style: none;
+  flex: none;
   margin: 0;
-  padding: 0;
+  padding: 0 8px;
   display: grid;
-  gap: 2px;
-  max-height: 9.6em;
-  overflow-y: auto;
+  border: 2px solid var(--zp-ink);
+  background: var(--zp-note);
+  color: var(--zp-ink);
   min-height: 0;
 }
-.zp-lane {
+.zp-ln {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: 'tok name time' 'tok pips pips';
+  grid-template-columns: minmax(44px, 84px) minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: var(--space-2);
-  padding: 4px var(--space-2);
-  background: var(--paper);
-  border: 1px solid var(--rule);
+  column-gap: 8px;
+  height: 30px;
+  border-bottom: 1px solid var(--zp-rule);
 }
-.zp-lane.is-me {
-  border: 2px solid var(--ink);
+.zp-ln:last-child {
+  border-bottom: 0;
 }
-.zp-lane__tok {
-  grid-area: tok;
-  position: relative;
-  display: inline-flex;
-}
-.zp-lane__name {
-  grid-area: name;
+.zp-ln__name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 800;
+  font-size: 16px;
+  line-height: 1;
 }
-.zp-lane__time {
-  grid-area: time;
-  font: 800 16px var(--font-plaque);
+.zp-ln__track {
+  position: relative;
+  height: 100%;
+  margin: 0 15px;
+}
+.zp-ln__track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px solid var(--zp-ink-2);
+  opacity: 0.4;
+}
+.zp-ln__bar {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 5px;
+  width: calc(var(--p) * 100%);
+  transform: translateY(-50%);
+  border-radius: 3px;
+  background: var(--zp-ink-pen);
+  transition: width 500ms var(--ease-out);
+}
+.zp-ln__tick {
+  position: absolute;
+  top: calc(50% - 5px);
+  width: 2px;
+  height: 10px;
+  margin-left: -1px;
+  background: var(--zp-ink-2);
+}
+.zp-ln__head {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--p) * 100%);
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  border-radius: 50%;
+  transition: left 500ms var(--ease-out);
+  z-index: 2;
+}
+.zp-ln.is-me .zp-ln__head {
+  box-shadow: 0 0 0 2px var(--zp-gold);
+}
+.zp-ln__check {
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  width: 14px;
+  height: 14px;
+}
+.zp-ln__check circle {
+  fill: var(--zp-win);
+  stroke: var(--zp-note);
+  stroke-width: 1.5;
+}
+.zp-ln__check path {
+  fill: none;
+  stroke: var(--on-fill);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.zp-ln__time {
+  font: 800 16px/1 var(--font-plaque);
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
+  text-align: right;
   white-space: nowrap;
 }
-.zp-lane.is-done .zp-lane__time {
-  color: var(--win-ink);
+.zp-ln.is-done .zp-ln__time {
+  color: var(--zp-win);
 }
-.zp-pips {
-  grid-area: pips;
+/* "+n more": phones show the top three and you. */
+.zp-ln.is-extra {
+  display: none;
+}
+.zp-ln--more {
   display: flex;
-  gap: 3px;
-  min-width: 0;
-}
-.zp-pip {
-  flex: 1;
-  max-width: 22px;
-  height: 7px;
-  border: 1px solid var(--ink-2);
-}
-.zp-pip.is-on {
-  background: var(--ink);
-  border-color: var(--ink);
+  height: 24px;
+  color: var(--zp-ink-2);
+  font: 800 14px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
+/* ── Laptop: the page on the left, the race and tools on the right ─────── */
 @container game (min-width: 760px) {
   .zp-main {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+    grid-template-rows: minmax(0, auto) auto minmax(0, 1fr);
+    grid-template-areas: 'stage strip' 'stage side' 'stage fill';
+    column-gap: var(--space-5);
+    row-gap: var(--space-4);
+  }
+  .zp-main.is-solo {
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: 'stage side';
+  }
+  .zp-stage {
+    grid-area: stage;
+    place-items: start center;
+  }
+  .zp-race {
+    grid-area: strip;
+    align-self: start;
+    max-height: 100%;
+    overflow-y: auto;
   }
   .zp-side {
-    justify-content: center;
+    grid-area: side;
+    align-self: start;
     gap: var(--space-4);
   }
+  .zp-ln {
+    height: 44px;
+    grid-template-columns: minmax(60px, 120px) minmax(0, 1fr) auto;
+  }
+  .zp-ln__name {
+    font-size: 18px;
+  }
+  .zp-ln__time {
+    font-size: 18px;
+  }
+  .zp-ln__track {
+    margin: 0 19px;
+  }
+  .zp-ln__bar {
+    height: 6px;
+  }
+  .zp-ln__tick {
+    top: calc(50% - 7px);
+    height: 14px;
+  }
+  .zp-race--phone .zp-ln__head .jd-token {
+    --z: 34px !important;
+  }
+  .zp-ln.is-extra {
+    display: grid;
+  }
+  .zp-ln--more {
+    display: none;
+  }
   .zp-tools {
-    grid-template-columns: 1fr 1fr;
     gap: var(--space-3);
   }
   .zp-tool.jd-plaque {
-    min-height: 64px;
+    min-height: 56px;
     padding: 0 16px;
-    font-size: 21px;
-  }
-  .zp-race {
-    max-height: none;
+    font-size: 20px;
   }
 }
-@container game (max-height: 560px) {
-  .zp-race {
-    max-height: 6.4em;
+
+@media (prefers-reduced-motion: reduce) {
+  .zp-ln__bar,
+  .zp-ln__head {
+    transition: none;
+  }
+  .zp-page__stamp {
+    animation: none;
+  }
+  .zp-turn__old,
+  .zp-turn__new.is-turning {
+    animation: none;
   }
 }
 
@@ -327,12 +635,15 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 8px;
-  padding: 8px;
-  background: var(--paper);
-  border: 2px solid var(--ink);
+  padding: 12px 8px 8px;
+  background: var(--zp-paper);
+  color: var(--zp-ink);
+  border: 2px solid var(--zp-ink);
+  border-top: 0;
+  box-shadow: 0 3px 0 var(--shadow);
 }
 .zp-card.is-done {
-  background: color-mix(in srgb, var(--vert) 12%, var(--paper));
+  border-color: var(--zp-win);
 }
 .zp-card__head {
   min-width: 0;
@@ -347,13 +658,13 @@
   padding: 0 4px;
   display: grid;
   place-items: center;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--zp-ink);
+  color: var(--zp-paper);
   font: 800 14px/1 var(--font-plaque);
   font-variant-numeric: tabular-nums;
 }
 .zp-card.is-lead .zp-card__place {
-  background: var(--or);
+  background: var(--zp-gold);
   color: var(--zp-ink);
 }
 .zp-card__tok {
@@ -379,7 +690,7 @@
   white-space: nowrap;
 }
 .zp-card.is-done .zp-card__time {
-  color: var(--win-ink);
+  color: var(--zp-win);
 }
 .zp-card__board {
   position: relative;
@@ -414,7 +725,7 @@
   place-content: center;
   justify-items: center;
   gap: 4px;
-  color: var(--win-ink);
+  color: var(--zp-win);
   text-align: center;
 }
 .zp-card__done .zp-bolt {
@@ -440,7 +751,7 @@
 }
 .zp-card__count {
   flex: none;
-  color: var(--ink-2);
+  color: var(--zp-ink-2);
   font: 800 12px var(--font-plaque);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -451,13 +762,13 @@
   flex: 1;
   max-width: 180px;
   height: 8px;
-  border: 1px solid var(--ink-2);
-  background: var(--paper);
+  border: 1px solid var(--zp-ink-2);
+  background: var(--zp-paper);
 }
 .zp-meter > span {
   position: absolute;
   inset: 0;
-  background: var(--zp-line);
+  background: var(--zp-ink-pen);
   transform: scaleX(var(--done));
   transform-origin: left;
   transition: transform 300ms var(--ease-out);
@@ -473,11 +784,11 @@
   display: grid;
   justify-items: center;
   padding: 6px 14px;
-  border: 3px solid var(--vert);
-  outline: 1px solid var(--vert);
+  border: 3px solid var(--zp-win);
+  outline: 1px solid var(--zp-win);
   outline-offset: 2px;
-  background: var(--paper);
-  color: var(--vert);
+  background: var(--zp-paper);
+  color: var(--zp-win);
   font: 800 13px var(--font-code);
   pointer-events: none;
   animation: zp-stamp 1800ms var(--ease-out) both;
@@ -604,9 +915,54 @@
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 20px;
   padding: 16px 48px 24px;
+}
+.zp-tv.is-solo {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+/* The race strip across the top: one ruled line per racer, names 26px. */
+.zp-race--tv {
+  padding: 0 20px;
+  border-width: 3px;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  column-gap: 36px;
+}
+.zp-race--tv .zp-ln {
+  height: 52px;
+  grid-template-columns: minmax(0, min(28%, 200px)) minmax(0, 1fr) auto;
+  column-gap: 14px;
+  border-bottom: 0;
+}
+.zp-race--tv .zp-ln__name,
+.zp-race--tv .zp-ln__time {
+  font-size: 26px;
+}
+.zp-race--tv .zp-ln__track {
+  margin: 0 24px;
+}
+.zp-race--tv .zp-ln__track::before {
+  border-top-width: 2px;
+}
+.zp-race--tv .zp-ln__bar {
+  height: 8px;
+  border-radius: 4px;
+}
+.zp-race--tv .zp-ln__tick {
+  top: calc(50% - 8px);
+  width: 3px;
+  height: 16px;
+  margin-left: -1.5px;
+}
+.zp-race--tv .zp-ln.is-me .zp-ln__head {
+  box-shadow: 0 0 0 3px var(--zp-gold);
+}
+.zp-race--tv .zp-ln__check {
+  right: -8px;
+  bottom: -6px;
+  width: 22px;
+  height: 22px;
 }
 .zp-tv__head {
   display: grid;
@@ -993,13 +1349,36 @@
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: var(--space-4) var(--space-3);
 }
+/* Each answer is a small page of its own, solved: the win-colored frame and the stamp. */
 .zp-answer {
+  position: relative;
   margin: 0;
   min-width: 0;
   min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: var(--space-1);
+  padding: 12px 8px 8px;
+  border: 2px solid var(--zp-win);
+  border-top: 0;
+  background: var(--zp-paper);
+  color: var(--zp-ink);
+  box-shadow: 0 3px 0 var(--shadow);
+}
+.zp-answer .zp-page__stamp {
+  right: 2px;
+  bottom: 22px;
+  padding: 1px 6px;
+  border-width: 2px;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+}
+.zp-tv-end .zp-answer .zp-page__stamp {
+  right: 8px;
+  bottom: 40px;
+  padding: 2px 12px;
+  border-width: 3px;
+  font-size: 24px;
 }
 .zp-answer__fit {
   min-height: 0;
@@ -1027,7 +1406,7 @@
 .zp-answer figcaption span {
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--ink-2);
+  color: var(--zp-ink-2);
   font-family: var(--font-code);
   letter-spacing: 0;
   text-transform: none;

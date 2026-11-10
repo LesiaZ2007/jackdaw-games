@@ -19,7 +19,7 @@ import {
   type SolitaireTableView,
   type Source,
 } from '../rules';
-import { Middle, PlayingCard, StockWaste, Tableau, tintOf } from './pieces';
+import { Cascade, Middle, PlayingCard, StockWaste, Tableau, tintOf } from './pieces';
 import './solitaire.css';
 
 /** "Wren", "Wren and Rook", "Wren, Rook and Robin". */
@@ -46,7 +46,20 @@ export function statusLine(t: SolitaireTableView, me: string | null, name: (id: 
   return 'Everyone’s playing';
 }
 
-/** Everyone else (or everyone): crest, name, cards to go, and whether they're stuck. */
+/** A slim progress track: how much of their deck a player has put up. */
+export function Track({ played }: { played: number }) {
+  return (
+    <span
+      className="sol-track"
+      style={{ '--p': `${Math.round((played / 52) * 100)}%` } as React.CSSProperties}
+      aria-hidden="true"
+    >
+      <i />
+    </span>
+  );
+}
+
+/** Everyone else (or everyone): token, name, a chit of cards to go, and a progress track. */
 export function Rivals({
   t,
   players,
@@ -59,9 +72,11 @@ export function Rivals({
   reactions?: Parameters<typeof PlayerReaction>[0]['reactions'];
 }) {
   const leader = Math.min(...t.players.map((id) => t.seats[id]!.left));
+  // The leader first; ties keep table order.
+  const ordered = [...ids].sort((a, b) => t.seats[a]!.left - t.seats[b]!.left);
   return (
     <ul className="sol-rivals">
-      {ids.map((id) => {
+      {ordered.map((id) => {
         const p = players.find((x) => x.id === id);
         const s = t.seats[id]!;
         return (
@@ -76,18 +91,17 @@ export function Rivals({
               .join(' ')}
           >
             <span className="sol-rival__token">
-              {p && <Token avatar={p.avatar} away={!p.online} size={26} />}
+              {p && <Token avatar={p.avatar} away={!p.online} size={30} />}
               {reactions && <PlayerReaction reactions={reactions} playerId={id} />}
             </span>
-            <span className="sol-rival__name">{p?.name ?? 'Someone'}</span>
-            <span className="sol-rival__left">
-              <b>{s.left}</b> {s.stuck ? 'stuck' : 'to go'}
+            <span className="sol-rival__name" title={p?.name ?? 'Someone'}>
+              {p?.name ?? 'Someone'}
             </span>
-            <span
-              className="sol-rival__bar"
-              style={{ '--p': `${Math.round((s.played / 52) * 100)}%` } as React.CSSProperties}
-              aria-hidden="true"
-            />
+            <span className="sol-chit">
+              {s.left}
+              <span className="sol-sr">{s.stuck ? ' cards left, stuck' : ' cards to go'}</span>
+            </span>
+            <Track played={s.played} />
           </li>
         );
       })}
@@ -190,36 +204,56 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, reactio
 
   const marked = hint === 'stock' ? 'stock' : (hint?.card ?? null);
   const others = v.players.filter((id) => id !== v.me);
+  // Everything up: the finished piles do the cascade where the columns were.
+  const cleared = v.over && seat.left === 0;
 
   return (
     <div className="sol sol--phone">
-      <header className="sol__head">
-        <h2 className="jd-display">{statusLine(v, v.me, name)}</h2>
-        <Plaque small onClick={() => setHint(hintFor(seat, v))} disabled={v.over || seat.stuck}>
-          Hint
-        </Plaque>
-      </header>
+      <div className="sol-play">
+        <header className="sol__head">
+          <h2 className="jd-display">{statusLine(v, v.me, name)}</h2>
+        </header>
 
-      {others.length > 0 && <Rivals t={v} players={players} ids={others} reactions={reactions} />}
+        <Middle
+          foundations={v.foundations}
+          players={players}
+          landed={v.last}
+          hint={hint !== null && hint !== 'stock' && hint.type === 'up'}
+          seats={v.players.length}
+        />
 
-      <Middle
-        foundations={v.foundations}
-        players={players}
-        landed={v.last}
-        hint={hint !== null && hint !== 'stock' && hint.type === 'up'}
-      />
+        {/* On a phone the side column dissolves into the stack; on a laptop it is the right column. */}
+        <div className="sol-side">
+          <div className="sol-deal">
+            <StockWaste
+              seat={seat}
+              back={back}
+              onDraw={() => void send({ type: 'draw' })}
+              onWaste={(card) => tap('waste', card)}
+              marked={marked}
+              bump={bump}
+            />
+            <Plaque
+              small
+              className="sol-hint"
+              onClick={() => setHint(hintFor(seat, v))}
+              disabled={v.over || seat.stuck}
+            >
+              Hint
+            </Plaque>
+          </div>
+          {others.length > 0 && (
+            <Rivals t={v} players={players} ids={others} reactions={reactions} />
+          )}
+        </div>
 
-      <StockWaste
-        seat={seat}
-        back={back}
-        onDraw={() => void send({ type: 'draw' })}
-        onWaste={(card) => tap('waste', card)}
-        marked={marked}
-        bump={bump}
-      />
-
-      <div className="sol-stage">
-        <Tableau seat={seat} back={back} onCard={tap} marked={marked} bump={bump} />
+        <div className="sol-stage">
+          {cleared ? (
+            <Cascade foundations={v.foundations} players={players} />
+          ) : (
+            <Tableau seat={seat} back={back} onCard={tap} marked={marked} bump={bump} />
+          )}
+        </div>
       </div>
 
       <PullBanner t={v} me={v.me} name={name} />

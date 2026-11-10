@@ -15,7 +15,7 @@ import { ranking, type FandangoAction, type FandangoPlayerView } from '../rules'
 import { clock } from '../time';
 import { Board, PairMark } from './board';
 import { PlayerCard, Spectate } from './card';
-import { place, Race, useTick } from './race';
+import { place, Race, racersOf, Sky, useTick } from './race';
 import { findMistake, nextStep, type Hint } from '../hints';
 import './fandango.css';
 
@@ -211,6 +211,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       )}
 
       <div className={`fd-main${solo ? ' is-solo' : ''}`}>
+        <Sky racers={racersOf(v, players, v.me)} />
         <div className="fd-stage">
           {v.puzzle ? (
             <Board

@@ -3,6 +3,7 @@
 import type { GameUi } from '@jackdaw/ui';
 import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
+import { TvReveal } from './tv-reveal';
 import { TvScreen } from './tv';
 import { WatchScreen } from './watch';
 
@@ -63,4 +64,5 @@ export const monopolyUi: GameUi = {
   TvScreen,
   WatchScreen,
   Reveal,
+  TvReveal,
 };

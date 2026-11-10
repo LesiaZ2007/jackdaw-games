@@ -1,0 +1,240 @@
+/* TV results: the front page (city) and the proclamation (village). Colors come from the .mf
+   tokens in mafia.css. Fills the platform's reveal box (a size container, roughly 830 by 420 on
+   the 1920 stage); everything is px on the stage or fits the box, and nothing is under 24px.
+   Flat print: no gradients or glows. */
+.mf-rv {
+  height: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 12px 10px;
+  overflow: hidden;
+  border: 2px solid var(--mf-ink);
+  outline: 1px solid var(--mf-ink);
+  outline-offset: -7px;
+}
+.mf-rv__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 20px;
+  padding: 0 4px 4px;
+  border-bottom: 4px double var(--mf-ink);
+}
+.mf-rv__mast {
+  margin: 0;
+  font: 800 28px/1 var(--font-display);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.mf-rv__banner {
+  margin: 0;
+  font-size: clamp(34px, 5.6cqw, 48px);
+  line-height: 1;
+  animation: mf-press 520ms var(--mf-ease) both;
+}
+.mf--city .mf-rv__banner {
+  font-family: var(--font-plaque);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  color: var(--mf-red);
+}
+.mf--village .mf-rv__banner {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--mf-red);
+}
+
+.mf-rv__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-height: 0;
+}
+.mf-rv__body.has-nights {
+  grid-template-columns: minmax(0, 1fr) 236px;
+}
+
+/* The line-up: one flat grid, a tab for each team followed by its players. */
+.mf-rv__line {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+  display: grid;
+  align-content: center;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 84px));
+  gap: 4px;
+}
+.mf-rv__team,
+.mf-rv__p {
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  animation: mf-rv-in 260ms var(--mf-ease) both;
+  animation-delay: calc(var(--i) * 40ms);
+}
+.mf-rv__team {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 10px;
+  background: var(--mf-plate);
+  color: var(--mf-plate-ink);
+  font: 800 26px/1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.mf-rv__team b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mf-rv__team span {
+  flex: none;
+  font-size: 24px;
+}
+.mf-rv__team.is-won span {
+  padding: 3px 10px 1px;
+  background: var(--mf-vert);
+  color: var(--mf-cream);
+}
+.mf-rv__p {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border: 2px solid var(--mf-ink);
+  background: var(--mf-paper-2);
+  color: var(--mf-ink);
+}
+.mf--village .mf-rv__p {
+  outline: 1px solid var(--mf-ink);
+  outline-offset: -5px;
+}
+.mf-rv__p.is-won {
+  border-color: var(--mf-vert);
+  box-shadow: inset 5px 0 0 var(--mf-vert);
+}
+.mf-rv__p.is-dead {
+  border-style: dashed;
+  color: var(--mf-ink-2);
+}
+.mf-rv__p.is-dead .jd-token {
+  filter: grayscale(1);
+}
+.mf-rv__p .jd-token {
+  flex: none;
+}
+.mf-rv__gone {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px dashed var(--mf-ink-2);
+}
+.mf-rv__who {
+  display: grid;
+  min-width: 0;
+  line-height: 1;
+}
+.mf-rv__who b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 26px/1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.mf-rv__who span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font: 800 24px/1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mf-team, var(--mf-ink));
+}
+.mf-rv__who span .mf-mark {
+  flex: none;
+}
+.mf-rv__end {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--mf-ink-2);
+  font: 800 24px/1 var(--font-plaque);
+}
+.mf-rv__p:not(.is-dead) .mf-rv__end {
+  color: var(--mf-vert);
+}
+.mf-rv__glyph {
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+
+/* How the nights went: one line each, newest at the bottom. */
+.mf-rv__nights {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding-left: 14px;
+  border-left: 3px double var(--mf-ink);
+}
+.mf-rv__nights h3 {
+  margin: 0 0 4px;
+  font: 800 24px/1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.mf-rv__nights ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.mf-rv__nights li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--mf-ink);
+}
+.mf-rv__nights li b {
+  flex: none;
+  min-width: 1ch;
+  font: 800 24px/1 var(--font-plaque);
+}
+.mf-rv__nights li span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@keyframes mf-rv-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mf-rv__banner,
+  .mf-rv__team,
+  .mf-rv__p {
+    animation: none;
+  }
+}

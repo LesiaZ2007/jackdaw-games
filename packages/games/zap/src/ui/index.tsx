@@ -24,11 +24,11 @@ export const zapUi: GameUi = {
     pictures: [
       {
         src: '/games/zap/game-phone.png',
-        alt: 'Zap on a phone: a 6×6 board with ten numbered squares and a few walls, an orange line drawn from 1 through 5 and on, Undo and Clear, and the race between Wren, Rook and a bot.',
+        alt: 'Zap on a phone: each racer’s line of ink across the top, a puzzle-book page with numbered squares and a few walls, the next number ringed in gold, and Undo and Clear.',
       },
       {
         src: '/games/zap/desktop.png',
-        alt: 'Zap on a laptop: the board on the left with the line part drawn, the race beside it, and table talk on the right.',
+        alt: 'Zap on a laptop: the page on the left, each racer’s line of ink and the tools beside it, and table talk on the right.',
         desktop: true,
       },
     ],

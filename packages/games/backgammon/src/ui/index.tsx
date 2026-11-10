@@ -23,7 +23,7 @@ export const backgammonUi: GameUi = {
     pictures: [
       {
         src: '/games/backgammon/game-phone.png',
-        alt: 'Backgammon on a phone: the walnut tables with red and blue points, ivory and ebony checkers, two bone dice just played, and Undo and Done below.',
+        alt: 'Backgammon on a phone: the walnut tables with red and blue points, ivory and ebony checkers, both name plates with their pip counts, and Double and Roll below.',
       },
       {
         src: '/games/backgammon/desktop.png',

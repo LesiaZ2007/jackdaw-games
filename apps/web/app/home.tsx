@@ -16,7 +16,7 @@ import {
   Sheet,
   Token,
 } from '@jackdaw/ui';
-import { catalog, KINDS } from '@/lib/catalog';
+import { boxes, KINDS } from '@/lib/games-lite';
 import { rememberAvatar, rememberedAvatar, rememberedName, rememberName } from '@/lib/identity';
 import { createLobby } from '@/lib/use-lobby';
 import { InstallButton } from './pwa';
@@ -77,7 +77,7 @@ export function Home() {
   }
 
   // One box of each kind, in the shelves' order, so the fan shows every color once.
-  const fan = KINDS.flatMap((k) => catalog.find((e) => e.meta.category === k.kind) ?? []);
+  const fan = KINDS.flatMap((k) => boxes.find((e) => e.meta.category === k.kind) ?? []);
 
   return (
     <>

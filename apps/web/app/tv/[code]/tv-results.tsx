@@ -77,7 +77,13 @@ export function TvResults({
       ? 'No winner this time'
       : winnerNames.length === 1
         ? `${winnerNames[0]} wins`
-        : `${winnerNames.slice(0, -1).join(', ')} and ${winnerNames[winnerNames.length - 1]} share the win`;
+        : winnerNames.length === 2
+          ? `${winnerNames[0]} and ${winnerNames[1]} share the win`
+          : // Three or more names wrap the ribbon to three lines and crowd out the standings;
+            // the winners' tokens and names stand in a row just below anyway.
+            `${winnerNames.length} players share the win`;
+  // A row of several winners is drawn smaller, so the standings and the reveal keep their room.
+  const crowd = result.winners.length > 2;
 
   return (
     <div className="tv-results">
@@ -98,14 +104,18 @@ export function TvResults({
           avatar={result.winners.length === 1 ? byId.get(result.winners[0]!)?.avatar : undefined}
         />
         <ol
-          className={result.winners.length > 1 ? 'tv-winners__row' : 'sr-only'}
+          className={
+            result.winners.length > 1
+              ? `tv-winners__row${crowd ? ' tv-winners__row--crowd' : ''}`
+              : 'sr-only'
+          }
           aria-label="Winners"
         >
           {result.winners.map((id, i) => {
             const p = byId.get(id);
             return (
               <li key={id} className="tv-winner" style={{ animationDelay: `${900 + i * 160}ms` }}>
-                {p ? <Token avatar={p.avatar} size={96} /> : null}
+                {p ? <Token avatar={p.avatar} size={crowd ? 64 : 96} /> : null}
                 <span className="tv-winner__name">{names[id] ?? 'A player who left'}</span>
               </li>
             );

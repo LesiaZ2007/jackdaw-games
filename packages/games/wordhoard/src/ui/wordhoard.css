@@ -215,7 +215,7 @@
 .wh-scores__gain {
   position: absolute;
   z-index: 2;
-  top: -10px;
+  top: -22px;
   right: 6px;
   padding: 0 6px;
   background: var(--wh-print);

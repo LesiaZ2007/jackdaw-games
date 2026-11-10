@@ -11,6 +11,8 @@ export interface RoomTransport {
   subscribe(
     onSnapshot: (s: LobbySnapshot) => void,
     onError?: (e: TransportError) => void,
+    /** Called after every poll that reached the server, even when nothing changed. */
+    onReach?: () => void,
   ): () => void;
   /** Send one message; resolves with the caller's fresh snapshot or rejects with TransportError. */
   send(message: ClientMessage): Promise<LobbySnapshot>;
@@ -102,6 +104,7 @@ export class PollingTransport implements RoomTransport {
   private listeners = new Set<{
     onSnapshot: (s: LobbySnapshot) => void;
     onError?: (e: TransportError) => void;
+    onReach?: () => void;
   }>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   /** When the game's next timer fires (server time), to poll right then. */
@@ -124,8 +127,12 @@ export class PollingTransport implements RoomTransport {
     return this.snapshot;
   }
 
-  subscribe(onSnapshot: (s: LobbySnapshot) => void, onError?: (e: TransportError) => void) {
-    const entry = { onSnapshot, onError };
+  subscribe(
+    onSnapshot: (s: LobbySnapshot) => void,
+    onError?: (e: TransportError) => void,
+    onReach?: () => void,
+  ) {
+    const entry = { onSnapshot, onError, onReach };
     this.listeners.add(entry);
     if (this.snapshot) onSnapshot(this.snapshot);
     if (this.listeners.size === 1 && !this.timer && !this.inFlight) void this.poll();
@@ -223,6 +230,7 @@ export class PollingTransport implements RoomTransport {
         this.idlePolls = 0;
         this.publish(body);
       }
+      for (const l of this.listeners) l.onReach?.();
     } catch (e) {
       const err =
         e instanceof TransportError

@@ -52,7 +52,7 @@ function useArrivals(ids: string[]): Set<string> {
 
 export function TvLobby({ code }: { code: string }) {
   useWakeLock();
-  const { snapshot, missing } = useLobby(code, 'display');
+  const { snapshot, missing, reconnecting } = useLobby(code, 'display');
   const site = useSiteUrl();
   // The short link (/QGYR) redirects to the lobby, and makes a smaller QR code.
   const joinUrl = `${site}/${code}`;
@@ -82,7 +82,18 @@ export function TvLobby({ code }: { code: string }) {
       <TvStage>
         <div className="tv-closed">
           <BirdMark width={180} height={180} />
-          <p className="tv-closed__finding">Finding lobby {code}…</p>
+          {reconnecting ? (
+            <>
+              <p className="tv-closed__finding" role="status">
+                Can&apos;t reach Jackdaw
+              </p>
+              <p>Check this screen&apos;s connection. Trying again…</p>
+            </>
+          ) : (
+            <p className="tv-closed__finding" role="status">
+              Finding lobby {code}…
+            </p>
+          )}
         </div>
       </TvStage>
     );
@@ -93,7 +104,7 @@ export function TvLobby({ code }: { code: string }) {
 
   if (snapshot.status === 'results' && snapshot.results) {
     return (
-      <TvStage>
+      <TvStage reconnecting={reconnecting}>
         <TvResults snapshot={snapshot} players={players} hostName={hostName} />
       </TvStage>
     );
@@ -104,7 +115,7 @@ export function TvLobby({ code }: { code: string }) {
     const name = catalogEntry(snapshot.session.gameId)?.meta.name ?? 'The game';
     if (ui?.fullTv) {
       return (
-        <TvStage>
+        <TvStage reconnecting={reconnecting}>
           <div className="tv-game tv-game--full">
             <ui.TvScreen
               tableView={snapshot.tableView}
@@ -117,7 +128,7 @@ export function TvLobby({ code }: { code: string }) {
       );
     }
     return (
-      <TvStage>
+      <TvStage reconnecting={reconnecting}>
         <div className="tv-game">
           <header className="tv-strip">
             <BirdMark width={64} height={64} weight={3} />
@@ -175,7 +186,7 @@ export function TvLobby({ code }: { code: string }) {
   const OwnTvLobby = next?.ui?.TvLobby;
   if (OwnTvLobby) {
     return (
-      <TvStage below={<TvNight code={code} snapshot={snapshot} />}>
+      <TvStage reconnecting={reconnecting} below={<TvNight code={code} snapshot={snapshot} />}>
         <div className="tv-own-lobby">
           <OwnTvLobby
             code={snapshot.code}
@@ -193,7 +204,7 @@ export function TvLobby({ code }: { code: string }) {
   }
 
   return (
-    <TvStage below={<TvNight code={code} snapshot={snapshot} />}>
+    <TvStage reconnecting={reconnecting} below={<TvNight code={code} snapshot={snapshot} />}>
       <div className="tv-lobby">
         <header className="tv-lobby__top">
           <div className="tv-brand">

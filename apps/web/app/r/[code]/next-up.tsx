@@ -1,14 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { GameCover, GameTile, Icon } from '@jackdaw/ui';
-import { catalog, CATEGORY_LABEL, unfitReason, type CatalogEntry } from '@/lib/catalog';
+import { GameCover, GameTile, Icon, range } from '@jackdaw/ui';
+import { catalog, CATEGORY_LABEL, KINDS, unfitReason, type CatalogEntry } from '@/lib/catalog';
 import { optionsSummary } from '@/lib/lobby-view';
 import { games } from '@/lib/registry';
 import { OptionsPanel } from './options-panel';
 import '../next-up.css';
-
-const range = ([a, b]: [number, number]) => (a === b ? `${a}` : `${a}–${b}`);
 
 /** The host's shelf of games to choose from, as box covers. */
 export function GamePicker({
@@ -24,25 +22,41 @@ export function GamePicker({
 }) {
   return (
     <div className="picker">
-      <ul className="picker__grid">
-        {catalog.map((g) => (
-          <li key={g.meta.id}>
-            <GameCover
-              name={g.meta.name}
-              art={g.art}
-              players={[g.meta.minPlayers, g.meta.maxPlayers]}
-              minutes={g.meta.minutes}
-              tagline={g.meta.tagline}
-              kind={CATEGORY_LABEL[g.meta.category]}
-              soon={!g.playable}
-              unfit={g.playable ? unfitReason(g.meta, count) : null}
-              selected={g.meta.id === selectedId}
-              onClick={isHost && g.playable ? () => onChoose(g.meta.id) : undefined}
-            />
-          </li>
-        ))}
-      </ul>
       {!isHost && <p className="picker__hint">Only the host can choose the game.</p>}
+      {/* grouped by kind, in the same order and colors as the home page's shelves */}
+      {KINDS.map((k) => {
+        const group = catalog.filter((g) => g.meta.category === k.kind);
+        if (group.length === 0) return null;
+        return (
+          <section
+            key={k.kind}
+            className="picker__kind"
+            style={{ '--tint': `var(--${k.tint})` } as React.CSSProperties}
+            aria-labelledby={`picker-${k.kind}`}
+          >
+            <h3 id={`picker-${k.kind}`} className="picker__title">
+              {k.title}
+            </h3>
+            <ul className="picker__grid">
+              {group.map((g) => (
+                <li key={g.meta.id}>
+                  <GameCover
+                    name={g.meta.name}
+                    art={g.art}
+                    players={[g.meta.minPlayers, g.meta.maxPlayers]}
+                    minutes={g.meta.minutes}
+                    tagline={g.meta.tagline}
+                    soon={!g.playable}
+                    unfit={g.playable ? unfitReason(g.meta, count) : null}
+                    selected={g.meta.id === selectedId}
+                    onClick={isHost && g.playable ? () => onChoose(g.meta.id) : undefined}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })}
     </div>
   );
 }
@@ -137,7 +151,7 @@ export function NextUp({
                   <li key={s}>{s}</li>
                 ))}
               </ol>
-              <a href={`/games/${meta.id}`} target="_blank" rel="noreferrer" className="home-link">
+              <a href={`/games/${meta.id}`} target="_blank" rel="noreferrer" className="jd-link">
                 Full rules and pictures
               </a>
             </div>
@@ -146,7 +160,7 @@ export function NextUp({
       )}
 
       {isHost && (
-        <button type="button" className="home-link next-up__change" onClick={onChange}>
+        <button type="button" className="jd-link next-up__change" onClick={onChange}>
           Change game
         </button>
       )}

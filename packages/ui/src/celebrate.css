@@ -310,7 +310,9 @@
   font: 800 15px/1.1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  white-space: nowrap;
+  /* a long label wraps inside its border rather than spilling out of it */
+  text-align: center;
+  overflow-wrap: break-word;
   border: 1.5px solid var(--ink);
   animation: jd-pop 440ms var(--ease-out) both;
 }

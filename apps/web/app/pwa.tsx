@@ -31,7 +31,7 @@ const iosSafari = () =>
  * (Chrome, Edge, Android), and the Add to Home Screen steps on an iPhone or iPad. Hidden once
  * Jackdaw is running as an installed app.
  */
-export function InstallButton({ className = 'home-link' }: { className?: string }) {
+export function InstallButton({ className = 'jd-link' }: { className?: string }) {
   const [prompt, setPrompt] = useState<InstallPrompt | null>(null);
   const [howTo, setHowTo] = useState(false);
   const isInstalled = useSyncExternalStore(noSubscribe, installed, () => true);

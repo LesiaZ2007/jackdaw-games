@@ -43,10 +43,32 @@ const shoText = Montserrat({
   preload: false,
 });
 
+const TITLE = 'Jackdaw Games';
+const DESCRIPTION =
+  'One lobby for the whole game night. Everyone plays on their own phone; a TV can show the table.';
+
+/** The public address from NEXT_PUBLIC_SITE_URL (no hard-coded domain); unset or invalid means none. */
+function siteBase(): URL | undefined {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!raw) return undefined;
+  try {
+    return new URL(raw.includes('://') ? raw : `https://${raw}`);
+  } catch {
+    return undefined;
+  }
+}
+
 export const metadata: Metadata = {
-  title: { default: 'Jackdaw Games', template: '%s · Jackdaw Games' },
-  description:
-    'One lobby for the whole game night. Everyone plays on their own phone; a TV can show the table.',
+  metadataBase: siteBase(),
+  title: { default: TITLE, template: `%s · ${TITLE}` },
+  description: DESCRIPTION,
+  openGraph: {
+    type: 'website',
+    siteName: TITLE,
+    title: TITLE,
+    description: DESCRIPTION,
+  },
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
   icons: { icon: '/icon.svg', apple: '/icons/apple-touch-icon.png' },
   appleWebApp: { capable: true, title: 'Jackdaw', statusBarStyle: 'black' },
 };

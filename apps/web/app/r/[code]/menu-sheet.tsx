@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
-import { AvatarButton, Chits, Plaque, ReactionBar, Sheet } from '@jackdaw/ui';
+import { AvatarButton, Chits, Plaque, ReactionBar, Sheet, Token } from '@jackdaw/ui';
 import { forgetSeat } from '@/lib/identity';
 import { ThemeChoice } from '../../theme-toggle';
 import { AlertSettings } from './alert-settings';
@@ -97,6 +97,70 @@ export function EndGameSheet({
           </Plaque>
         </div>
       </section>
+    </Sheet>
+  );
+}
+
+/**
+ * Someone the host removed is asking to come back (2026-11-09: "have a notification pop up for
+ * the host in case they do want to let them rejoin… also provide the option to block for 10
+ * mins"). It opens by itself, one person at a time; closing it leaves them waiting, and it
+ * comes back when someone else asks.
+ */
+export function KnockSheet({
+  knocks,
+  send,
+}: {
+  knocks: LobbySnapshot['knocks'];
+  send: (m: ClientMessage) => Promise<LobbySnapshot | null>;
+}) {
+  const [later, setLater] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const knock = knocks?.find((k) => !later.includes(k.id));
+  // Keep the last one on screen while the sheet slides shut.
+  const [shown, setShown] = useState(knock);
+  if (knock && knock.id !== shown?.id) setShown(knock);
+
+  const answer = async (allow: boolean) => {
+    if (!knock) return;
+    setBusy(true);
+    await send({ type: 'answerKnock', id: knock.id, allow });
+    setBusy(false);
+    // Answered or gone stale: either way, don't ask about this one again.
+    setLater((ids) => [...ids, knock.id]);
+  };
+
+  return (
+    <Sheet
+      open={Boolean(knock)}
+      onClose={() => knock && setLater((ids) => [...ids, knock.id])}
+      title={shown ? `${shown.name} wants back in` : 'Someone wants back in'}
+    >
+      {shown && (
+        <section className="menu__block">
+          <div className="menu__me">
+            <Token avatar={shown.avatar} size={48} />
+            <b>{shown.name}</b>
+          </div>
+          <p>
+            You removed {shown.name} from this lobby, and they&rsquo;re asking to rejoin. Let them
+            back in, or block them for 10 minutes. Closing this leaves them waiting.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Plaque small go disabled={busy} onClick={() => void answer(true)}>
+              Let them back in
+            </Plaque>
+            <Plaque
+              small
+              className="menu__end is-armed"
+              disabled={busy}
+              onClick={() => void answer(false)}
+            >
+              Block for 10 minutes
+            </Plaque>
+          </div>
+        </section>
+      )}
     </Sheet>
   );
 }
@@ -199,6 +263,22 @@ export function MenuSheet({
               }}
             />
           </div>
+        </section>
+      )}
+
+      {s.hostId === s.me && (
+        <section className="menu__block">
+          <div className="menu__toggle">
+            <h3 className="jd-label">Lobby door</h3>
+            <Plaque small onClick={() => void send({ type: 'setLocked', locked: !s.locked })}>
+              {s.locked ? 'Unlock the lobby' : 'Lock the lobby'}
+            </Plaque>
+          </div>
+          <p>
+            {s.locked
+              ? 'Locked: nobody new can join with the code. Everyone here keeps their seat.'
+              : 'Open: anyone with the code can join. Lock it once everyone is here.'}
+          </p>
         </section>
       )}
 

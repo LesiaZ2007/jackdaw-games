@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import { systemText, type ChatMessage, type LobbySnapshot } from '@jackdaw/engine';
-import { BirdMark, Lid, Plaque, Toast, useModal, type LobbyChat } from '@jackdaw/ui';
+import { BirdMark, Lid, ReconnectingStrip, Sheet, Toast, type LobbyChat } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 import { screenPlayers } from '@/lib/lobby-view';
 import { forgetSeat, rememberedSeat, rememberSeat } from '@/lib/identity';
@@ -15,7 +15,7 @@ import { LobbyBar, type Panel } from './bar';
 import { Chat } from './chat';
 import { GameShell } from './game-shell';
 import { JoinCard } from './join-card';
-import { EndGameSheet, MenuSheet } from './menu-sheet';
+import { EndGameSheet, KnockSheet, MenuSheet } from './menu-sheet';
 import { MeSheet } from './me-sheet';
 import { Results } from './results';
 import { ShareSheet } from './share-sheet';
@@ -142,7 +142,14 @@ function useChatSeen(code: string, chat: ChatMessage[] | undefined, onScreen: bo
 
 /** One lobby, from joining through games and results, on this device. */
 export function LobbyRoom({ code }: { code: string }) {
-  const { snapshot: live, error, missing, send, clearError } = useLobby(code, 'player');
+  const {
+    snapshot: live,
+    error,
+    reconnecting,
+    missing,
+    send,
+    clearError,
+  } = useLobby(code, 'player');
   const snapshot = useStatusSwitch(live);
   useTurnAlert(live);
   const [panel, setPanel] = useState<Panel>(null);
@@ -242,9 +249,7 @@ export function LobbyRoom({ code }: { code: string }) {
       <Centered>
         <Lid className="grid gap-3 p-6 text-center">
           <BirdMark width={84} height={84} className="mx-auto" />
-          <h1 className="jd-display" style={{ fontSize: 'var(--step-3)' }}>
-            That lobby has closed
-          </h1>
+          <h1 className="jd-h1">That lobby has closed</h1>
           <p style={{ margin: 0, color: 'var(--ink-2)' }}>
             Lobby {code} doesn&rsquo;t exist, or it sat empty for a day and was tidied away.
           </p>
@@ -259,9 +264,19 @@ export function LobbyRoom({ code }: { code: string }) {
   if (!snapshot) {
     return (
       <Centered>
-        <p className="jd-label" role="status" style={{ fontSize: 16 }}>
-          Finding lobby {code}…
-        </p>
+        {reconnecting ? (
+          <Lid className="grid gap-3 p-6 text-center">
+            <BirdMark width={72} height={72} className="mx-auto" />
+            <h1 className="jd-h2">Can&rsquo;t reach Jackdaw</h1>
+            <p role="status" style={{ margin: 0, color: 'var(--ink-2)' }}>
+              Check your connection; trying again…
+            </p>
+          </Lid>
+        ) : (
+          <p className="jd-label lobby-status" role="status">
+            Finding lobby {code}…
+          </p>
+        )}
       </Centered>
     );
   }
@@ -269,7 +284,7 @@ export function LobbyRoom({ code }: { code: string }) {
   if (!snapshot.me && leaving) {
     return (
       <Centered>
-        <p className="jd-label" role="status" style={{ fontSize: 16 }}>
+        <p className="jd-label lobby-status" role="status">
           Leaving lobby {code}…
         </p>
       </Centered>
@@ -286,12 +301,20 @@ export function LobbyRoom({ code }: { code: string }) {
           removed={removed}
           onJoined={() => setHadSeat(null)}
           send={send}
+          refusal={error?.code}
+          onStopAsking={clearError}
           onForget={() => {
             forgetSeat(code);
             setHadSeat(null);
           }}
         />
-        <Toast message={notice} onDone={dismiss} />
+        {reconnecting && <ReconnectingStrip />}
+        {/* while the host decides, the card itself says so */}
+        <Toast
+          message={error?.code === 'ASK_HOST' ? null : notice}
+          onDone={dismiss}
+          alert={Boolean(error)}
+        />
       </Centered>
     );
   }
@@ -384,44 +407,19 @@ export function LobbyRoom({ code }: { code: string }) {
         canSave={Boolean(snapshot.canSave)}
       />
       <MeSheet open={panel === 'me'} onClose={close} snapshot={snapshot} send={send} />
-      {panel === 'chat' && !ownChat && (
-        <ChatSheet onClose={close}>
-          <Chat snapshot={snapshot} players={players} send={send} />
-        </ChatSheet>
-      )}
-      <Toast message={notice} onDone={dismiss} />
-    </div>
-  );
-}
-
-function ChatSheet({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
-  const panel = useRef<HTMLDivElement>(null);
-  useModal(true, panel, onClose);
-  return (
-    <div className="jd-sheet" role="presentation">
-      <button
-        type="button"
-        className="jd-sheet__backdrop"
-        aria-label="Close chat"
-        tabIndex={-1}
-        onClick={onClose}
-      />
-      <div
-        ref={panel}
-        className="jd-sheet__panel chat-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Table talk"
-        tabIndex={-1}
+      {isHost && <KnockSheet knocks={snapshot.knocks} send={send} />}
+      <Sheet
+        open={panel === 'chat' && !ownChat}
+        onClose={close}
+        title="Table talk"
+        className="chat-sheet"
       >
-        <header className="jd-sheet__head">
-          <h2 className="jd-display jd-sheet__title">Table talk</h2>
-          <Plaque small onClick={onClose}>
-            Close
-          </Plaque>
-        </header>
-        <div className="chat-sheet__body">{children}</div>
-      </div>
+        <div className="chat-sheet__body">
+          <Chat snapshot={snapshot} players={players} send={send} />
+        </div>
+      </Sheet>
+      {reconnecting && <ReconnectingStrip />}
+      <Toast message={notice} onDone={dismiss} alert={Boolean(error)} />
     </div>
   );
 }

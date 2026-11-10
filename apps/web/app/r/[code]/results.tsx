@@ -163,7 +163,7 @@ export function Results({
         <>
           {standings.length > 0 && (
             <section className="results__standings" aria-label="How everyone finished">
-              <h3 className="jd-display">Standings</h3>
+              <h2 className="jd-h2">Standings</h2>
               <ol>
                 {standings.map((st, i) => {
                   const p = byId.get(st.playerId);

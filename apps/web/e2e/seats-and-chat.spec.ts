@@ -9,7 +9,7 @@ async function join(page: Page, code: string, name: string) {
   await page.goto(`/r/${code}`);
   await page.getByLabel('Your name').fill(name);
   await page.getByRole('button', { name: 'Take a seat' }).click();
-  await expect(page.getByText('At the table')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'At the table' })).toBeVisible();
 }
 
 test('seats open your look or the host’s player sheet, and missed chat shows on the chat button', async ({
@@ -58,7 +58,7 @@ test('seats open your look or the host’s player sheet, and missed chat shows o
   await expect(host.getByRole('button', { name: 'Chat', exact: true })).toBeVisible();
   // A refresh doesn't bring it back as unread.
   await host.reload();
-  await expect(host.getByText('At the table')).toBeVisible();
+  await expect(host.getByRole('heading', { name: 'At the table' })).toBeVisible();
   await expect(host.getByRole('button', { name: 'Chat', exact: true })).toBeVisible();
 
   // The host taps Magpie's seat and removes her.

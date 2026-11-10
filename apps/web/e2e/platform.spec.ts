@@ -25,7 +25,7 @@ test('names are unique, joins show in chat, reactions reach other phones, and th
   );
   await rook.getByLabel('Your name').fill('Rook');
   await rook.getByRole('button', { name: 'Take a seat' }).click();
-  await expect(rook.getByText('At the table')).toBeVisible();
+  await expect(rook.getByRole('heading', { name: 'At the table' })).toBeVisible();
 
   // The join is a quiet system line in chat, and it doesn't count as unread.
   await expect(host.getByRole('button', { name: 'Chat', exact: true })).toBeVisible();
@@ -62,9 +62,9 @@ test('names are unique, joins show in chat, reactions reach other phones, and th
   await host.getByRole('button', { name: 'Lobby menu' }).click();
   await host.getByRole('button', { name: 'End this game' }).click();
   await host.getByRole('button', { name: 'Tap again to end the game for everyone' }).click();
-  await expect(host.getByText('At the table')).toBeVisible();
+  await expect(host.getByRole('heading', { name: 'At the table' })).toBeVisible();
   await expect(rook.getByText('The host ended the game. It won’t be scored.')).toBeVisible();
-  await expect(rook.getByText('At the table')).toBeVisible();
+  await expect(rook.getByRole('heading', { name: 'At the table' })).toBeVisible();
 
   // The host can also end any game straight from the bar; nobody else gets the button.
   await host.getByRole('button', { name: 'Start Rock Paper Scissors' }).click();
@@ -72,8 +72,8 @@ test('names are unique, joins show in chat, reactions reach other phones, and th
   await expect(rook.getByRole('button', { name: 'End game' })).toHaveCount(0);
   await host.getByRole('button', { name: 'End game' }).click();
   await host.getByRole('button', { name: 'End it for everyone' }).click();
-  await expect(host.getByText('At the table')).toBeVisible();
-  await expect(rook.getByText('At the table')).toBeVisible();
+  await expect(host.getByRole('heading', { name: 'At the table' })).toBeVisible();
+  await expect(rook.getByRole('heading', { name: 'At the table' })).toBeVisible();
   const stats = await (await host.request.get(`/api/lobby/${code}/stats`)).json();
   expect(stats.history).toHaveLength(0);
 });

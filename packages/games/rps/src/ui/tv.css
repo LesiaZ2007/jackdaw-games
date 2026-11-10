@@ -1,204 +1,112 @@
-/* Rock Paper Scissors on the TV, in TV pixels (the stage is 1920×1080, this fills below the strip).
-   Read from the sofa: nothing is smaller than 28px. */
+/* Rock Paper Scissors on the TV, in stage pixels (the stage is 1920×1080, this fills below the
+   strip). Read from the sofa: nothing is smaller than 24px. Colors are tokens in ring.css. */
 .rps-tv {
   height: 100%;
   display: grid;
-  grid-template-columns: 500px 1fr;
-  grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(0, 1fr) 760px;
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
-    'round now'
-    'board last';
-  gap: 36px 80px;
-  padding: 40px 72px 44px;
+    'head board'
+    'ring board';
+  gap: 16px 56px;
+  padding: 32px 64px 40px;
   position: relative;
 }
-.rps-tv__heading {
-  margin: 0 0 18px;
-  font: 800 56px/1 var(--font-display);
+.rps-tv__head {
+  grid-area: head;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 40px;
 }
 .rps-tv__round {
-  grid-area: round;
-  display: grid;
-  justify-items: start;
-  align-content: start;
-}
-.rps-tv__label {
-  font: 700 32px/1 var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--ink-2);
-}
-.rps-tv__num {
-  font: 800 240px/0.85 var(--font-code);
-}
-.rps-tv__of {
-  font: 800 52px/1 var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-2);
+  margin: 0;
+  font-size: 88px;
+  line-height: 1;
 }
 .rps-tv__status {
-  margin: 22px 0 0;
+  margin: 0;
   font: 800 40px/1.1 var(--font-plaque);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  color: var(--ink-2);
 }
 
+/* the ring takes the room the head leaves: the largest square that fits */
+.rps-tv__ring {
+  grid-area: ring;
+  min-height: 0;
+  display: flex;
+}
+.rps-tv__ring > .rps-ringbox {
+  flex: 1;
+}
+.rps-ring--tv {
+  --rps-fs: clamp(24px, 3.3cqw, 44px);
+}
+.rps-ring--tv .rps-ring__table {
+  border-width: 3px;
+}
+.rps-ring--tv .rps-seat__plate {
+  border-width: 3px;
+}
+.rps-ring--tv .rps-count__word {
+  font-size: clamp(48px, 9cqw, 140px);
+}
+.rps-ring--tv .rps-result__line {
+  font-size: clamp(32px, 6cqw, 84px);
+}
+.rps-ring--tv .rps-result__round {
+  font-size: max(24px, 3cqw);
+}
+.rps-ring--tv .rps-slot__empty {
+  border-width: 3px;
+}
+
+/* the tally board: points and the round history */
 .rps-tv__board {
   grid-area: board;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-.rps-tv__board ol {
-  list-style: none;
+.rps-tv__heading {
   margin: 0;
-  padding: 0;
-  display: grid;
+  font-size: 64px;
+  line-height: 1;
+}
+.rps-tv .rps-pad {
+  --w1: 330px;
+  flex: 0 1 auto;
+  border-width: 3px;
+}
+.rps-tv .rps-pad th,
+.rps-tv .rps-pad td {
+  padding: 6px 14px;
+}
+.rps-tv .rps-pad thead th {
+  font-size: 24px;
+}
+.rps-tv .rps-pad__name {
+  font-size: 32px;
+}
+.rps-tv .rps-pad__id {
+  gap: 14px;
+}
+.rps-tv .rps-pad__tot .jd-tally {
+  font-size: 44px;
+}
+.rps-tv .rps-pad__cell > span {
   gap: 12px;
 }
-.rps-tv__board li {
-  display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 120px 64px;
-  align-items: center;
-  gap: 18px;
-  font-size: 36px;
-  font-variant-numeric: tabular-nums;
+.rps-tv .rps-pad__cell .rps-disc {
+  --d: 44px;
 }
-.rps-tv__board .jd-tally {
-  font: 800 46px/1 var(--font-code);
-  text-align: right;
+.rps-tv .rps-pad__cell b {
+  font-size: 28px;
 }
-.rps-tv__who {
-  font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rps-tv__bar {
-  height: 16px;
-  background: var(--table-2);
-  position: relative;
-}
-.rps-tv__bar i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  background: var(--vert);
-}
-
-.rps-tv__now {
-  grid-area: now;
-}
-.rps-tv__seats {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 22px 20px;
-}
-.rps-tv__tok {
-  position: relative;
-  display: inline-grid;
-}
-.rps-tv__seats li {
-  display: grid;
-  justify-items: center;
-  gap: 14px;
-  padding: 24px 10px 18px;
-  background: var(--paper);
-  border: 3px solid var(--ink);
-  --ring-bg: var(--paper);
-}
-.rps-tv__seat-name {
-  max-width: 100%;
-  font: 800 36px/1 var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rps-tv__state {
-  font: 800 28px/1 var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 8px 16px;
-}
-.rps-tv__seats .is-picked .rps-tv__state {
-  background: var(--vert);
-  color: var(--on-fill);
-}
-.rps-tv__seats .is-thinking .rps-tv__state {
-  color: var(--ink-2);
-  border: 2px dashed var(--rule);
-  animation: rps-tv-think 1.6s ease-in-out infinite;
-}
-@keyframes rps-tv-think {
-  50% {
-    opacity: 0.45;
-  }
-}
-
-.rps-tv__last {
-  grid-area: last;
-  min-height: 0;
-}
-.rps-tv__throws {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 20px;
-}
-.rps-tv__card {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  padding: 20px 8px 18px;
-  border: 3px solid var(--ink);
-  background: var(--paper);
-  animation: rps-tv-flip 620ms var(--ease-out) both;
-}
-.rps-tv__card--win {
-  color: var(--on-fill);
-  background: var(--vert);
-}
-.rps-tv__card--win .rps-tv__throw-name,
-.rps-tv__card--win .rps-tv__pts {
-  color: var(--on-fill);
-}
-.rps-tv__card--loss {
-  border-color: var(--ink-2);
-}
-@keyframes rps-tv-flip {
-  from {
-    transform: perspective(800px) rotateY(90deg);
-    opacity: 0;
-  }
-}
-.rps-tv__throw-name {
-  font: 800 32px/1 var(--font-plaque);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-2);
-}
-.rps-tv__pts {
-  font: 800 46px/1 var(--font-code);
-  color: var(--ink-2);
-}
-.rps-tv__pts--won {
-  color: var(--win-ink);
-}
-.rps-tv__empty {
-  margin: 0;
-  max-width: 30ch;
-  font-size: 36px;
-  color: var(--ink-2);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .rps-tv__seats .is-thinking .rps-tv__state,
-  .rps-tv__card {
-    animation: none;
-  }
+.rps-tv .rps-pad__empty {
+  padding: 12px 20px;
+  font-size: 28px;
 }

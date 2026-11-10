@@ -129,10 +129,12 @@ function Answers({
   rv,
   players,
   captions = true,
+  stamps = true,
 }: {
   rv: ZapReveal;
   players: ScreenPlayer[];
   captions?: boolean;
+  stamps?: boolean;
 }) {
   const race = rv.order.length > 1;
   const best = fastest(rv);
@@ -144,6 +146,11 @@ function Answers({
           <div className="zp-answer__fit">
             <Board puzzle={p} path={p.answer} label={`Puzzle ${i + 1}, solved`} />
           </div>
+          {stamps && (
+            <span className="zp-page__stamp zp-page__stamp--still" aria-hidden="true">
+              Solved
+            </span>
+          )}
           {captions && (
             <figcaption>
               <b>Puzzle {i + 1}</b>
@@ -208,7 +215,7 @@ export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result, players }) =
         className="zp-tv-end__boards"
         style={{ '--cols': cols, '--rows': Math.ceil(rv.count / cols) } as CSSProperties}
       >
-        <Answers rv={rv} players={players} captions={rv.count <= 6} />
+        <Answers rv={rv} players={players} captions={rv.count <= 6} stamps={rv.count <= 6} />
       </div>
     </div>
   );

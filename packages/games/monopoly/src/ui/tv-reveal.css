@@ -1,0 +1,191 @@
+/* TV results: the final accounts, a ledger on cream card stock. Colors are the tokens in
+   monopoly.css. Fills the platform's reveal box (a size container, roughly 830 by 420 on the
+   1920 stage). Sizes in px on the stage; nothing with text is under 24px. */
+.mnp-rv {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  align-content: center;
+}
+.mnp-rv__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-rows: repeat(var(--n), minmax(0, 80px));
+  gap: 4px;
+  min-height: 0;
+}
+.mnp-rv__row {
+  position: relative;
+  min-height: 0;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 48px 210px 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px 0 10px;
+  background: var(--mnp-card);
+  color: var(--mnp-ink);
+  border: 2px solid var(--mnp-ink);
+  border-left: 10px solid var(--tint);
+  animation: mnp-rv-in 280ms var(--mnp-ease) both;
+  animation-delay: calc(var(--i) * 90ms);
+}
+.mnp-rv__row.is-winner {
+  border-color: var(--vert);
+  border-width: 3px 3px 3px 10px;
+  border-left-color: var(--tint);
+  box-shadow:
+    inset 0 0 0 3px var(--mnp-card),
+    inset 0 0 0 5px var(--vert);
+}
+.mnp-rv__row .jd-token {
+  --ring-bg: var(--mnp-card);
+}
+.mnp-rv__gone {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px dashed var(--mnp-ink-2);
+}
+.mnp-rv__name {
+  display: grid;
+  min-width: 0;
+  line-height: 1;
+}
+.mnp-rv__name b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 34px/1 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.mnp-rv__name span {
+  color: var(--mnp-ink-2);
+  font: 700 24px/1.1 var(--font-plaque);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+/* Cash as a stack of the bank's notes, taller the more there is. */
+.mnp-rv__notes {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  justify-self: center;
+  width: 48px;
+}
+.mnp-rv__slab {
+  display: block;
+  width: 40px;
+  height: 14px;
+  margin-top: -6px;
+  background: var(--note);
+  border: 2px solid var(--mnp-ink);
+  translate: calc(var(--k) * 1.5px) 0;
+}
+.mnp-rv__assets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: center;
+  gap: 2px 14px;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+/* The deeds, small: grouped hands of mini title-deed cards, wrapping to a second line if needed. */
+.mnp-rv__assets .mnp-deeds--tv {
+  gap: 2px 8px;
+}
+.mnp-rv__assets .mnp-deeds--tv .mnp-mini {
+  width: 20px;
+  height: 28px;
+  padding: 1px;
+  border-width: 1.5px;
+  box-shadow: none;
+}
+.mnp-rv__assets .mnp-deeds--tv .mnp-mini + .mnp-mini {
+  margin-left: -8px;
+}
+.mnp-rv__assets .mnp-deeds--tv .mnp-mini__band {
+  height: 12px;
+}
+.mnp-rv__assets .mnp-deeds--tv .mnp-mini__built {
+  display: none;
+}
+.mnp-rv__built {
+  display: inline-flex;
+  gap: 12px;
+  font: 800 24px/1 var(--font-plaque);
+}
+.mnp-rv__built span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.mnp-rv__built .mnp-house {
+  width: 14px;
+  height: 14px;
+}
+.mnp-rv__built .mnp-hotel {
+  width: 20px;
+  height: 12px;
+}
+.mnp-rv__total {
+  font: 800 40px/1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  text-align: right;
+}
+/* The winner's seal sits on the top edge of the row, like a tab. */
+.mnp-rv__seal {
+  position: absolute;
+  top: -13px;
+  right: 190px;
+  padding: 3px 12px 1px;
+  background: var(--vert);
+  color: var(--on-fill);
+  border: 2px solid var(--mnp-ink);
+  box-shadow:
+    inset 0 0 0 2px var(--vert),
+    inset 0 0 0 3px var(--on-fill);
+  font: 800 24px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-3deg);
+}
+/* The bankrupt: struck through, in caps. */
+.mnp-rv__row.is-out {
+  border-style: dashed;
+  border-left-style: solid;
+}
+.mnp-rv__row.is-out .mnp-rv__name b {
+  text-decoration: line-through;
+  text-decoration-thickness: 4px;
+  color: var(--mnp-ink-2);
+}
+.mnp-rv__bankrupt {
+  grid-column: 3 / -1;
+  justify-self: end;
+  padding: 3px 12px 1px;
+  border: 3px solid var(--mnp-red);
+  color: var(--mnp-red);
+  font: 800 30px/1 var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+@keyframes mnp-rv-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mnp-rv__row {
+    animation: none;
+  }
+}

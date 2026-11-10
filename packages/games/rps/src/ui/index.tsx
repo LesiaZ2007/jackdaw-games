@@ -10,10 +10,10 @@ export const rpsUi: GameUi = {
   art: { band: 'purpure', field: 'paly', glyph: 'rps' },
   about: {
     description:
-      'Everyone picks at the same time. You get a point for every person your throw beats, so it pays to guess what the rest of the table will do. Most points after the last round wins.',
+      'Everyone throws at the same time. You score a point for every player your throw beats, so it pays to guess what the rest of the table will pick. Most points after the last round wins.',
     steps: [
       'Pick rock, paper or scissors. Nobody sees it yet.',
-      'Once everyone has picked, all the throws are shown at once.',
+      'Once everyone has picked, all the throws are revealed at once.',
       'You score a point for each player you beat.',
       'Most points after the last round wins. Ties share the win.',
     ],

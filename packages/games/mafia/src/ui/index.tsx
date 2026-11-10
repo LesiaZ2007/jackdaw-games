@@ -4,6 +4,7 @@ import type { GameUi } from '@jackdaw/ui';
 import { LobbySeats, MafiaTvLobby } from './lobby';
 import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
+import { TvReveal } from './tv-reveal';
 import { TvScreen } from './tv';
 
 /** Mafia (and Werewolf): catalog art, detail page and screens. It uses Jackdaw's lobby. */
@@ -11,12 +12,11 @@ export const mafiaUi: GameUi = {
   art: { band: 'gules', field: 'fretty', glyph: 'fedora' },
   about: {
     description:
-      'Somebody at this table is a killer, and everyone is lying a little. Each night the killers pick a victim in secret on their phones, while the Angel guards someone and the Sheriff asks questions. Each morning the narrator reads out who didn’t make it, and the table argues it out and votes someone out. Nobody has to sit out as the moderator: the app runs the night and reads it aloud. Flip the setting to Werewolf and the city becomes the village of Thiercelieux, with werewolves, a Seer, a Witch, a Hunter and Cupid.',
+      'Somebody at this table is a killer, and everyone is lying a little. At night the killers pick a victim on their phones while the Angel guards and the Sheriff investigates. By day the table argues and votes someone out. The app runs the night, so nobody has to sit out as moderator. Switch to Werewolf for a village with a Seer, a Witch, a Hunter and Cupid.',
     steps: [
-      'Everyone gets a secret card: Mafia, Angel, Sheriff or Civilian (Werewolves, Seer and Villagers in the village).',
-      'Night: shield your screen. Killers agree on a victim, the powers do their work, and everyone else names a suspect, so the tapping gives nothing away.',
-      'Morning: the narrator reads out who died (and their card, if the dead are shown).',
-      'Day: talk it over until most of you are ready, or the talk timer runs out.',
+      'Everyone gets a secret card: Mafia, Angel, Sheriff or Civilian (Werewolf, Seer or Villager in the village).',
+      'Night: killers pick a victim and the powers act. Everyone else taps too, so nothing gives you away.',
+      'Morning: the narrator reads out who died. Then talk it over until most of you are ready to vote.',
       'Vote someone out, or skip. A tie, or as many skips, means nobody goes.',
       'The town wins when every killer is gone. The killers win once they match everyone else.',
     ],
@@ -62,4 +62,5 @@ export const mafiaUi: GameUi = {
   PlayerScreen,
   TvScreen,
   Reveal,
+  TvReveal,
 };

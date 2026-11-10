@@ -12,7 +12,7 @@ import {
 import { ranking, type FandangoTableView } from '../rules';
 import { clock } from '../time';
 import { columnsFor, PlayerCard } from './card';
-import { place, useTick } from './race';
+import { place, racersOf, Sky, useTick } from './race';
 import './fandango.css';
 
 interface Solve {
@@ -97,6 +97,8 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
           )}
         </div>
       </header>
+
+      <Sky racers={racersOf(t, players)} size="tv" />
 
       <div
         className={`fd-tv__cards${crowded ? ' is-crowded' : ''}`}

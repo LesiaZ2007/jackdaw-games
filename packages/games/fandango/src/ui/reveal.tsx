@@ -5,7 +5,7 @@ import { Token, useTheme, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import type { FandangoReveal } from '../rules';
 import { clock } from '../time';
 import { Board } from './board';
-import { place } from './race';
+import { place, racersOfReveal, Sky } from './race';
 import './fandango.css';
 
 /** Each player's time on each puzzle; undefined where they didn't solve it. */
@@ -166,6 +166,7 @@ export const Reveal: NonNullable<GameUi['Reveal']> = ({ result, players, me }) =
   const look = useTheme();
   return (
     <div className="fd fd-reveal" data-look={look}>
+      {rv.order.length > 1 && <Sky racers={racersOfReveal(rv, players, me)} />}
       {rv.order.length > 1 ? <Podium rv={rv} players={players} me={me} /> : <Facts rv={rv} />}
       <section className="fd-reveal__part" aria-label="The answers">
         <h3 className="jd-display fd-reveal__h">{rv.count === 1 ? 'The answer' : 'The answers'}</h3>
@@ -197,7 +198,8 @@ export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result, players }) =
   const name = (id: string) => players.find((p) => p.id === id)?.name ?? 'Someone';
   const cols = fitColumns(rv.count);
   return (
-    <div className="fd fd-tv-end" data-look={look}>
+    <div className={`fd fd-tv-end${rv.order.length > 1 ? ' has-sky' : ''}`} data-look={look}>
+      {rv.order.length > 1 && <Sky racers={racersOfReveal(rv, players)} size="tv" />}
       {quickest && (
         <p className="fd-tv-end__fact">
           <span>Fastest puzzle</span>

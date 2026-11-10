@@ -1,6 +1,7 @@
 'use client';
 
-import type { CSSProperties, PointerEvent } from 'react';
+import type { CSSProperties, PointerEvent, ReactNode } from 'react';
+import { Icon } from '@jackdaw/ui';
 import { CENTRE, PREMIUM, SIZE, VALUE, type Board, type Placement } from '../board';
 
 const PREMIUM_LABEL = { tw: '3W', dw: '2W', tl: '3L', dl: '2L' } as const;
@@ -10,6 +11,96 @@ const PREMIUM_NAME = {
   tl: 'triple letter',
   dl: 'double letter',
 } as const;
+
+type Premium = keyof typeof PREMIUM_LABEL;
+
+/**
+ * The engraved mark on a bonus square, drawn in the square's ink: a fleuron for a triple word, a
+ * lozenge for a double word, three pips for a triple letter and two for a double letter.
+ */
+export function Ornament({ kind }: { kind: Premium }) {
+  return (
+    <svg className="wh-orn" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      {kind === 'tw' && (
+        <g fill="currentColor">
+          <path d="M12 2c2.8 2.6 3.2 6.4 0 11-3.2-4.6-2.8-8.4 0-11z" />
+          <ellipse cx="6.6" cy="11.6" rx="2.3" ry="4.4" transform="rotate(-35 6.6 11.6)" />
+          <ellipse cx="17.4" cy="11.6" rx="2.3" ry="4.4" transform="rotate(35 17.4 11.6)" />
+          <rect x="6" y="15.6" width="12" height="2.4" />
+          <path d="M10.4 18h3.2L12 22.4z" />
+        </g>
+      )}
+      {kind === 'dw' && (
+        <g>
+          <path
+            d="M12 2.5 21.5 12 12 21.5 2.5 12z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+          />
+          <path d="M12 7.6 16.4 12 12 16.4 7.6 12z" fill="currentColor" />
+        </g>
+      )}
+      {kind === 'tl' && (
+        <g fill="currentColor">
+          <circle cx="12" cy="6.6" r="3.4" />
+          <circle cx="6.2" cy="16.6" r="3.4" />
+          <circle cx="17.8" cy="16.6" r="3.4" />
+        </g>
+      )}
+      {kind === 'dl' && (
+        <g fill="currentColor">
+          <circle cx="6.4" cy="12" r="4" />
+          <circle cx="17.6" cy="12" r="4" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
+/** The four bonus squares in a row, each as a swatch with its mark, so nobody has to squint. */
+export function Legend() {
+  const items: [Premium, string][] = [
+    ['tw', '3× word'],
+    ['dw', '2× word'],
+    ['tl', '3× letter'],
+    ['dl', '2× letter'],
+  ];
+  return (
+    <ul className="wh-legend" aria-label="Bonus squares">
+      {items.map(([k, text]) => (
+        <li key={k}>
+          <span className={`wh-legend__sw wh-sq--${k}`} aria-hidden="true">
+            <Ornament kind={k} />
+          </span>
+          {text}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * The board's printed frame: a 2px ink border, the inner rule, and a fleuron in each corner. The
+ * board scrolls inside it (when zoomed); the frame and its corners stay put.
+ */
+export function BoardFrame({
+  zoomed = false,
+  children,
+}: {
+  zoomed?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className={zoomed ? 'wh-boardwrap is-zoomed' : 'wh-boardwrap'}>
+      <div className="wh-boardscroll">{children}</div>
+      <Icon.fleuron className="wh-corner tl" />
+      <Icon.fleuron className="wh-corner tr" />
+      <Icon.fleuron className="wh-corner bl" />
+      <Icon.fleuron className="wh-corner br" />
+    </div>
+  );
+}
 
 /** A letter tile: bone stock, the letter in ink and its value in the corner. */
 export function Tile({
@@ -50,6 +141,7 @@ export function BoardGrid({
   onPendingDown,
   label = 'The board',
   dropIn,
+  scored,
 }: {
   board: Board;
   pending?: Placement[];
@@ -59,6 +151,8 @@ export function BoardGrid({
    * TV, as a move lands).
    */
   dropIn?: number;
+  /** A word was just played for this many points: its tiles flash gold and the score rises. */
+  scored?: number;
   onSquare?: (row: number, col: number) => void;
   /** A finger or pointer went down on a tile placed this turn (to drag it somewhere else). */
   onPendingDown?: (e: PointerEvent, row: number, col: number) => void;
@@ -66,6 +160,7 @@ export function BoardGrid({
 }) {
   const pend = new Map(pending.map((p) => [`${p.row},${p.col}`, p]));
   const fresh = new Map(recent.map(([r, c], i) => [`${r},${c}`, i]));
+  const mid = scored !== undefined ? recent[Math.floor(recent.length / 2)] : undefined;
   return (
     <div className="wh-board" role="group" aria-label={label}>
       {Array.from({ length: SIZE }, (_, r) =>
@@ -91,7 +186,9 @@ export function BoardGrid({
                   ? undefined
                   : dropIn !== undefined
                     ? 'wh-tile--recent wh-tile--drop'
-                    : 'wh-tile--recent'
+                    : scored !== undefined
+                      ? 'wh-tile--recent wh-tile--scored'
+                      : 'wh-tile--recent'
               }
               style={
                 dropIn !== undefined && fresh.has(key)
@@ -106,11 +203,20 @@ export function BoardGrid({
               ★
             </span>
           ) : premium ? (
-            <span className="wh-sq__label" aria-hidden="true">
-              {PREMIUM_LABEL[premium]}
-            </span>
+            <>
+              <Ornament kind={premium} />
+              <span className="wh-sq__label" aria-hidden="true">
+                {PREMIUM_LABEL[premium]}
+              </span>
+            </>
           ) : null;
-          const cls = ['wh-sq', premium && `wh-sq--${premium}`].filter(Boolean).join(' ');
+          const cls = [
+            'wh-sq',
+            premium && `wh-sq--${premium}`,
+            premium && !cell && !p && !star && 'wh-sq--mark',
+          ]
+            .filter(Boolean)
+            .join(' ');
           return onSquare && !cell ? (
             <button
               key={key}
@@ -129,6 +235,21 @@ export function BoardGrid({
             </span>
           );
         }),
+      )}
+      {mid && scored !== undefined && (
+        <span
+          className="wh-board__pop"
+          aria-hidden="true"
+          style={{
+            left: `${((mid[1] + 0.5) / SIZE) * 100}%`,
+            top: `${((mid[0] + 0.5) / SIZE) * 100}%`,
+            ...(dropIn !== undefined
+              ? { animationDelay: `${recent.length * dropIn + 200}ms` }
+              : {}),
+          }}
+        >
+          +{scored}
+        </span>
       )}
     </div>
   );

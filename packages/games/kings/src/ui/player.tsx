@@ -16,7 +16,7 @@ import { clock } from '../time';
 import { Board, KingMark } from './board';
 import type { Mark } from '../marks';
 import { PlayerCard, Spectate } from './card';
-import { place, Race, useTick } from './race';
+import { Court, place, Race, useTick } from './race';
 import { findMistake, nextStep, type Hint } from '../hints';
 import './kings.css';
 
@@ -55,6 +55,20 @@ function useMarks(key: string, cells: number) {
       return { ...s, marks: prev, undo: s.undo.slice(0, -1) };
     });
   return { marks: state.marks, set, undo, canUndo: state.undo.length > 0 };
+}
+
+/** A laptop-sized screen: two columns, room for every racer. */
+const WIDE = '(min-width: 1024px)';
+function useWide(): boolean {
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const q = window.matchMedia(WIDE);
+    const sync = () => setWide(q.matches);
+    sync();
+    q.addEventListener('change', sync);
+    return () => q.removeEventListener('change', sync);
+  }, []);
+  return wide;
 }
 
 function useAuto(): [boolean, (on: boolean) => void] {
@@ -100,6 +114,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     cells,
   );
   const [auto, setAuto] = useAuto();
+  const wide = useWide();
   const [sent, setSent] = useState<string | null>(null);
   const [refused, setRefused] = useState(false);
   const [fresh, dismiss] = useMoment(v.index);
@@ -221,14 +236,6 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 
   return (
     <div className="kg kg--phone" data-look={look}>
-      <header className="kg-head">
-        <p className="kg-head__title">
-          {doneAll ? (solo ? 'All solved' : 'Finished') : `Puzzle ${v.index + 1} of ${v.count}`}
-        </p>
-        <span className="kg-clock" aria-label="Time on this puzzle">
-          {doneAll ? clock(took) : clock(now() - v.since)}
-        </span>
-      </header>
       {closing !== null && !doneAll && (
         <p className="kg-closing" role="status">
           Someone has solved them all. The race ends in {clock(closing * 1000)}.
@@ -236,6 +243,13 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       )}
 
       <div className={`kg-main${solo ? ' is-solo' : ''}`}>
+        <Court
+          title={
+            doneAll ? (solo ? 'All solved' : 'Finished') : `Puzzle ${v.index + 1} of ${v.count}`
+          }
+          time={doneAll ? clock(took) : clock(now() - v.since)}
+          label="Time on this puzzle"
+        />
         <div className="kg-stage">
           {v.puzzle ? (
             <Board
@@ -311,7 +325,14 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
               </p>
             )
           ) : (
-            <Race t={v} players={players} me={v.me} now={now} reactions={reactions} />
+            <Race
+              t={v}
+              players={players}
+              me={v.me}
+              now={now}
+              reactions={reactions}
+              limit={wide ? undefined : 3}
+            />
           )}
         </aside>
       </div>

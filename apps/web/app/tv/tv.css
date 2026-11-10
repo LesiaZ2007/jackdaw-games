@@ -532,8 +532,8 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
 .tv-results {
   height: 100%;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 20px 80px;
   padding: 44px 88px 44px;
 }
@@ -581,6 +581,18 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
+/* three or more winners: a tighter row, name beside the token */
+.tv-winners__row--crowd {
+  gap: 12px 40px;
+}
+.tv-winners__row--crowd .tv-winner {
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 12px;
+}
+.tv-winners__row--crowd .tv-winner__name {
+  font-size: 32px;
+}
 @keyframes tv-rise {
   from {
     transform: translateY(80px);
@@ -607,20 +619,42 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   display: flex;
   align-items: center;
   gap: 18px;
+  min-width: 0;
   min-height: 70px;
   border-bottom: 1.5px solid var(--rule);
   font-size: 30px;
 }
+/* the outcome chip always shows whole, at the row's right edge */
+.tv-standing .tv-standing__outcome {
+  flex: none;
+}
+/* The name keeps its room; a long role or stats line gives way first. */
 .tv-standing__name {
+  flex: none;
+  max-width: 50%;
   font-weight: 700;
-  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* it wraps rather than running on, so it can't push the reveal's column off the screen */
 .tv-standing__role {
+  flex: 1 1 0;
+  min-width: 0;
   color: var(--ink-2);
   font-size: 24px;
+  line-height: 1.15;
+  /* two lines at most: a long stats line can't stretch a row off the screen */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.tv-standings {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 .tv-standing .tv-standing__outcome {
   margin-left: auto;

@@ -9,8 +9,12 @@
   --fd-rule: rgba(29, 29, 28, 0.22);
   --fd-paper: #f7f3ea;
   --fd-given: #e9e1cf;
-  --fd-sun: #f0a312;
-  --fd-sun-rim: #b8740a;
+  --fd-sun: #e3a92b;
+  --fd-sun-rim: #a8730f;
+  --fd-day: 14%;
+  --fd-night: 13%;
+  --fd-sky-ground: 28%;
+  --fd-sky-rise: 52%;
   --fd-moon: #3e5fa8;
   --fd-accent: #d98a10;
   --fd-bad: #b3261e;
@@ -25,11 +29,12 @@
   grid-template-rows: repeat(var(--n), minmax(0, 1fr));
   aspect-ratio: 1;
   width: 100%;
-  border: 3px solid var(--fd-ink);
+  border: 2px solid var(--fd-ink);
   outline: 1px solid var(--ink);
   outline-offset: 3px;
   background: var(--fd-paper);
   box-shadow: 0 20px 50px -24px var(--shadow);
+  transition: border-color 200ms var(--ease-out);
   user-select: none;
   -webkit-user-select: none;
 }
@@ -59,6 +64,19 @@
 .fd-cell.is-given {
   background: var(--fd-given);
 }
+/* A sun holds a faint day tint, a moon a faint night one; the shapes differ too. */
+.fd-cell.is-sun {
+  background: color-mix(in srgb, var(--fd-sun) var(--fd-day), var(--fd-paper));
+}
+.fd-cell.is-moon {
+  background: color-mix(in srgb, var(--fd-moon) var(--fd-night), var(--fd-paper));
+}
+.fd-cell.is-given.is-sun {
+  background: color-mix(in srgb, var(--fd-sun) var(--fd-day), var(--fd-given));
+}
+.fd-cell.is-given.is-moon {
+  background: color-mix(in srgb, var(--fd-moon) var(--fd-night), var(--fd-given));
+}
 .fd-cell.is-bad {
   background: repeating-linear-gradient(
     -45deg,
@@ -69,6 +87,31 @@
 .fd-cell.is-given.is-bad {
   background-color: var(--fd-given);
 }
+/* Tick marks round the player's board, like the scale on an almanac plate. */
+.fd-stage > .fd-board::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  padding: 12px;
+  pointer-events: none;
+  background-origin: content-box;
+  background-repeat: no-repeat;
+  background-image:
+    repeating-linear-gradient(90deg, var(--ink) 0 1.5px, transparent 1.5px calc(100% / var(--n))),
+    repeating-linear-gradient(90deg, var(--ink) 0 1.5px, transparent 1.5px calc(100% / var(--n))),
+    repeating-linear-gradient(0deg, var(--ink) 0 1.5px, transparent 1.5px calc(100% / var(--n))),
+    repeating-linear-gradient(0deg, var(--ink) 0 1.5px, transparent 1.5px calc(100% / var(--n)));
+  background-size:
+    100% 5px,
+    100% 5px,
+    5px 100%,
+    5px 100%;
+  background-position:
+    0 -10px,
+    0 calc(100% + 10px),
+    -10px 0,
+    calc(100% + 10px) 0;
+}
 .fd-board.is-live .fd-cell:not(:disabled) {
   cursor: pointer;
 }
@@ -78,8 +121,9 @@
   z-index: 1;
 }
 .fd-cell > svg {
-  width: 56%;
-  height: 56%;
+  width: 66%;
+  height: 66%;
+  overflow: visible;
 }
 .fd-board.is-live .fd-cell:not(.is-given) > svg {
   animation: fd-mark 160ms var(--ease-out) both;
@@ -90,22 +134,38 @@
     opacity: 0.4;
   }
 }
-.fd-sun {
+/* Flat printed fills with an ink outline: no gradients, no glow. */
+.fd-sun__ray {
   fill: var(--fd-sun);
+  stroke: var(--fd-ink);
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+}
+.fd-sun__disc {
+  fill: var(--fd-sun);
+  stroke: var(--fd-ink);
+  stroke-width: 1.3;
+}
+.fd-sun__ring {
+  fill: none;
   stroke: var(--fd-sun-rim);
-  stroke-width: 2.2;
+  stroke-width: 0.8;
 }
-.fd-moon {
+.fd-moon__body {
   fill: var(--fd-moon);
+  stroke: var(--fd-ink);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
 }
-.fd-pair .fd-sun {
-  stroke-width: 2.2;
+.fd-moon__star {
+  fill: var(--fd-ink);
 }
-.fd-cell.is-bad .fd-sun {
+.fd-cell.is-bad .fd-sun__disc,
+.fd-cell.is-bad .fd-sun__ray {
   stroke: var(--fd-bad);
-  stroke-width: 3.2;
+  stroke-width: 2;
 }
-.fd-cell.is-bad .fd-moon {
+.fd-cell.is-bad .fd-moon__body {
   fill: var(--fd-bad);
 }
 .fd-ink {
@@ -116,24 +176,28 @@
   pointer-events: none;
   z-index: 2;
 }
+/* The link marks: a small paper chip with an ink ring, straddling the border. */
 .fd-sign circle {
   fill: var(--fd-paper);
   stroke: var(--fd-ink);
-  stroke-width: 0.03;
+  stroke-width: 0.05;
 }
 .fd-sign path {
   fill: none;
   stroke: var(--fd-ink);
-  stroke-width: 0.04;
+  stroke-width: 0.055;
   stroke-linecap: round;
 }
+/* Solved: the border turns to the win color and the pieces stamp once. */
+.fd-board.is-solved {
+  border-color: var(--vert);
+}
 .fd-board.is-solved .fd-cell > svg {
-  animation: fd-solved 700ms var(--ease-out) both;
-  animation-delay: calc(var(--i) * 8ms);
+  animation: fd-solved 360ms var(--ease-out) both;
 }
 @keyframes fd-solved {
-  40% {
-    transform: scale(1.18);
+  50% {
+    transform: scale(1.2);
   }
 }
 .fd-pair {
@@ -196,7 +260,7 @@
   place-items: center;
 }
 .fd-stage > .fd-board {
-  width: calc(min(100cqw, 100cqh) - 10px);
+  width: calc(min(100cqw, 100cqh) - 28px);
 }
 .fd-side {
   flex: none;
@@ -251,17 +315,17 @@
   padding: 0;
   display: grid;
   gap: 2px;
-  max-height: 9.6em;
+  max-height: 158px;
   overflow-y: auto;
   min-height: 0;
 }
 .fd-lane {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: 'tok name time' 'tok pips pips';
+  grid-template-areas: 'tok name time';
   align-items: center;
   column-gap: var(--space-2);
-  padding: 4px var(--space-2);
+  padding: 3px var(--space-2);
   background: var(--paper);
   border: 1px solid var(--rule);
 }
@@ -291,32 +355,186 @@
 .fd-lane.is-done .fd-lane__time {
   color: var(--win-ink);
 }
-.fd-pips {
-  grid-area: pips;
-  display: flex;
-  gap: 3px;
-  min-width: 0;
+
+/* ── The sky track: dawn to dusk, a racer's token placed along the arc ── */
+.fd-sky {
+  --sky-base: var(--fd-sky-ground);
+  --sky-amp: var(--fd-sky-rise);
+  --sky-body: 30px;
+  --sky-tok: 28px;
+  position: relative;
+  flex: none;
+  height: 88px;
+  background: var(--fd-paper);
+  border: 2px solid var(--fd-ink);
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+  margin: 3px;
+  color: var(--fd-ink);
 }
-.fd-pip {
-  flex: 1;
-  max-width: 22px;
-  height: 7px;
-  border: 1px solid var(--ink-2);
+.fd-sky__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
-.fd-pip.is-on {
-  background: var(--ink);
-  border-color: var(--ink);
+.fd-sky__art path {
+  fill: none;
+  stroke: var(--fd-ink);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.fd-sky__arc {
+  stroke-dasharray: 2 4;
+}
+.fd-sky__horizon {
+  stroke-width: 2;
+}
+.fd-sky__ticks {
+  stroke-width: 1.5;
+}
+.fd-sky__sun,
+.fd-sky__moon {
+  position: absolute;
+  bottom: var(--sky-base);
+  width: var(--sky-body);
+  height: var(--sky-body);
+  transform: translate(-50%, 0);
+}
+.fd-sky__sun {
+  left: 5%;
+}
+.fd-sky__moon {
+  left: 95%;
+}
+.fd-sky__sun > svg,
+.fd-sky__moon > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.fd-sky__tok {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  transform: translate(-50%, 50%);
+  transition:
+    left 600ms var(--ease-out),
+    bottom 600ms var(--ease-out);
+}
+.fd-sky__tok.is-me {
+  z-index: 3;
+}
+.fd-sky__tok.is-done {
+  z-index: 2;
+}
+.fd-sky__face {
+  position: relative;
+  display: inline-flex;
+  border-radius: 50%;
+}
+.fd-sky__tok.is-me .fd-sky__face {
+  outline: 3px solid var(--or);
+  outline-offset: 1px;
+}
+.fd-sky__check {
+  position: absolute;
+  right: -5px;
+  top: -5px;
+  width: 14px;
+  height: 14px;
+}
+.fd-sky__check circle {
+  fill: var(--vert);
+  stroke: var(--fd-ink);
+  stroke-width: 1.2;
+}
+.fd-sky__check path {
+  fill: none;
+  stroke: var(--fd-paper);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fd-sky__name {
+  position: absolute;
+  top: 100%;
+  margin-top: 4px;
+  max-width: 180px;
+  padding: 0 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--fd-paper);
+  border: 2px solid var(--fd-ink);
+  font: 800 24px/1.3 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.fd-sky--tv {
+  --sky-body: 64px;
+  height: 210px;
+  border-width: 3px;
+  margin: 4px 8px;
+}
+.fd-sky--tv .fd-sky__art path {
+  stroke-width: 2.5;
+}
+.fd-sky--tv .fd-sky__check {
+  width: 28px;
+  height: 28px;
+  right: -10px;
+  top: -10px;
+}
+.fd-sky--tv .fd-sky__tok.is-me .fd-sky__face {
+  outline-width: 5px;
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fd-sky__tok {
+    transition: none;
+  }
 }
 
 @container game (min-width: 760px) {
   .fd-main {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: var(--space-5);
+    row-gap: var(--space-4);
     align-items: stretch;
   }
+  .fd-main > .fd-stage {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+  .fd-main > .fd-sky {
+    grid-column: 2;
+    grid-row: 1;
+    height: 220px;
+    --sky-body: 44px;
+  }
+  .fd-main > .fd-side {
+    grid-column: 2;
+    grid-row: 2;
+  }
   .fd-side {
-    justify-content: center;
-    gap: var(--space-4);
+    flex: 1;
+    justify-content: flex-start;
+    gap: var(--space-3);
+  }
+  .fd-side > * {
+    order: 2;
+  }
+  .fd-side > .fd-tools:not(.fd-tools--hints) {
+    margin-top: auto;
+  }
+  .fd-side > .fd-race {
+    order: 1;
   }
   .fd-tools {
     grid-template-columns: 1fr 1fr;
@@ -622,8 +840,8 @@
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 20px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 16px;
   padding: 16px 48px 24px;
 }
 .fd-tv__head {
@@ -1059,9 +1277,12 @@
 .fd-tv-end {
   height: 100%;
   min-height: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 16px;
+}
+.fd-tv-end > .fd-sky {
+  height: 180px;
 }
 .fd-tv-end__fact {
   margin: 0;
@@ -1084,6 +1305,7 @@
   font-size: 36px;
 }
 .fd-tv-end__boards {
+  flex: 1;
   min-height: 0;
 }
 .fd-tv-end .fd-answers {
@@ -1108,6 +1330,9 @@
   .fd-board.is-live .fd-cell:not(.is-given) > svg,
   .fd-board.is-solved .fd-cell > svg {
     animation: none;
+  }
+  .fd-board {
+    transition: none;
   }
   .fd-stamp {
     animation-name: fd-stamp-still;

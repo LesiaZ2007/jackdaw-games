@@ -3,6 +3,7 @@
 import type { GameUi } from '@jackdaw/ui';
 import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
+import { TvReveal } from './tv-reveal';
 import { TvScreen } from './tv';
 import { WatchScreen } from './watch';
 
@@ -17,15 +18,14 @@ export const monopolyUi: GameUi = {
       'Land on a deed nobody owns and buy it, or let it go to auction, where anyone can bid.',
       'Land on someone else’s deed and pay rent. A full color group doubles it, and houses raise it far more.',
       'Own a whole group and build on it evenly, one house at a time, up to a hotel.',
-      'Trade deeds, cash and Jail cards at any time from the Trade sheet. Mortgage deeds when you need money.',
-      'Can’t pay? Sell buildings and mortgage until you can, or go bankrupt. The last one standing wins, or the richest when the rounds run out.',
+      'Trade deeds and mortgage to stay afloat. Last player not bankrupt wins, or the richest after the set rounds.',
     ],
     credit:
       'Monopoly is a trademark of Hasbro. Played here by the classic rules on the classic board.',
     pictures: [
       {
         src: '/games/monopoly/game-phone.png',
-        alt: 'Monopoly on a phone: the printed board with its color bands and tokens, the dice in the pale green centre, everyone’s cash below and the End turn plaque.',
+        alt: 'Monopoly on a phone: the printed board with its color bands and tokens, the dice in the pale green center, everyone’s cash below and the End turn plaque.',
       },
       {
         src: '/games/monopoly/tv.png',
@@ -64,4 +64,5 @@ export const monopolyUi: GameUi = {
   TvScreen,
   WatchScreen,
   Reveal,
+  TvReveal,
 };

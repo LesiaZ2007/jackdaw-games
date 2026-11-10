@@ -1,0 +1,218 @@
+/* TV results: the case closed. Colors are the tokens in codenames.css. Fills the platform's reveal
+   box (a size container, roughly 830 by 500 on the 1920 stage): the board is a square mat as tall
+   as the box and the folders take the rest. Sizes in px on the stage or cq units. */
+.cn-rv {
+  height: 100%;
+  display: grid;
+  grid-template-columns: min(100cqh, 58cqw) minmax(0, 1fr);
+  gap: 20px;
+  min-height: 0;
+}
+.cn-rv__board {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  aspect-ratio: 1;
+  align-self: center;
+  background: var(--cn-desk);
+  border: 2px solid var(--cn-desk-line);
+}
+.cn-rv__card {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: var(--cn-card);
+  box-shadow: 0 1px 0 var(--cn-panel-edge);
+}
+/* The red rule of an index card. */
+.cn-rv__card::before {
+  content: '';
+  position: absolute;
+  inset: 22% 0 auto;
+  height: 2px;
+  background: var(--cn-card-rule);
+}
+.cn-rv__stamp {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  background: var(--cn-cover);
+  color: var(--cn-cover-ink, var(--cn-on));
+  animation: cn-rv-land 200ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 40ms);
+}
+.cn-rv__card.is-red {
+  --cn-cover: var(--cn-red);
+}
+.cn-rv__card.is-blue {
+  --cn-cover: var(--cn-blue);
+}
+.cn-rv__card.is-bystander {
+  --cn-cover: var(--cn-by);
+  --cn-cover-ink: var(--cn-by-ink);
+}
+.cn-rv__card.is-assassin {
+  --cn-cover: var(--cn-ass);
+}
+/* Never found: the stamp is only inked in outline on the bare card. */
+.cn-rv__card.is-missed .cn-rv__stamp {
+  background: var(--cn-card);
+  color: var(--cn-cover);
+  box-shadow: inset 0 0 0 3px var(--cn-cover);
+}
+.cn-rv__card.is-missed.is-bystander .cn-rv__stamp {
+  color: var(--cn-by-ink);
+  box-shadow: inset 0 0 0 3px var(--cn-by);
+}
+/* The assassin, ringed in red pen. */
+.cn-rv__card.is-ringed {
+  z-index: 2;
+}
+.cn-rv__card.is-ringed::after {
+  content: '';
+  position: absolute;
+  inset: -8px -10px;
+  z-index: 3;
+  border: 4px solid var(--cn-red);
+  border-radius: 50%;
+  transform: rotate(-4deg);
+  animation: cn-rv-ring 240ms var(--ease-out) 1000ms both;
+}
+@keyframes cn-rv-land {
+  from {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes cn-rv-ring {
+  from {
+    opacity: 0;
+    transform: rotate(-4deg) scale(1.3);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-4deg);
+  }
+}
+
+.cn-rv__side {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.cn-rv__line {
+  margin: 0;
+  font: 700 26px/1.15 var(--font-plaque);
+  letter-spacing: 0.02em;
+  color: var(--cn-text);
+}
+.cn-rv__file {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  padding: 8px 14px;
+  border: 2px solid var(--cn-panel-edge);
+  border-top: 8px solid var(--cn-team);
+  border-radius: 2px 6px 4px 4px;
+  background: var(--cn-panel);
+  color: var(--cn-text);
+}
+.cn-rv__file.is-stamped {
+  border-color: var(--cn-team);
+}
+.cn-rv__tab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 4px;
+}
+.cn-rv__tab h3 {
+  margin: 0;
+  color: var(--cn-team);
+  font: 800 34px/1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+/* The rubber stamp: team ink, double ruled, slightly crooked, pressed down. */
+.cn-rv__rubber {
+  padding: 4px 12px 2px;
+  border: 3px solid var(--cn-team);
+  border-radius: 4px;
+  box-shadow:
+    inset 0 0 0 2px var(--cn-panel),
+    inset 0 0 0 4px var(--cn-team);
+  color: var(--cn-team);
+  font: 800 32px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: rotate(-4deg);
+  animation: cn-rv-press 340ms var(--ease-out) 1250ms both;
+}
+@keyframes cn-rv-press {
+  from {
+    opacity: 0;
+    transform: rotate(-4deg) scale(1.7);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-4deg) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-4deg);
+  }
+}
+.cn-rv__people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 40px;
+  gap: 2px 12px;
+}
+.cn-rv__people li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.cn-rv__people .jd-token {
+  flex: none;
+}
+.cn-rv__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 26px;
+  font-weight: 700;
+}
+.cn-rv__spy {
+  display: inline-flex;
+  flex: none;
+  color: var(--cn-team);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cn-rv__stamp,
+  .cn-rv__rubber,
+  .cn-rv__card.is-ringed::after {
+    animation: none;
+  }
+}

@@ -12,17 +12,34 @@ export class RoomError extends Error {
   }
 }
 
-const STATUS_BY_CODE: Record<string, number> = {
+/**
+ * The one table from error code to HTTP status, for errors raised by the runtime and by the
+ * lobby rules alike. A code not listed is a rule violation (NOT_YOUR_TURN, WRONG_STATUS, STALE,
+ * NAME_TAKEN…), which is 409 Conflict. Clients match on `code`, not on the status.
+ */
+export const STATUS_BY_CODE: Record<string, number> = {
   BAD_REQUEST: 400,
   BAD_OPTIONS: 400,
   UNKNOWN_GAME: 400,
   REJOIN_INVALID: 400,
+  UNAUTHORIZED: 401,
   NOT_HOST: 403,
   NOT_A_PLAYER: 403,
+  LOCKED: 403,
+  ASK_HOST: 403,
+  BLOCKED: 403,
   NOT_FOUND: 404,
+  TOO_LARGE: 413,
   RATE_LIMITED: 429,
+  INTERNAL: 500,
+  NOT_SET_UP: 501,
   BUSY: 503,
 };
+
+/** The status for a code: the table's, or 409 for a rule violation. */
+export function statusFor(code: string): number {
+  return STATUS_BY_CODE[code] ?? 409;
+}
 
 /**
  * Turn anything thrown while handling a request into a status and an ErrorBody. Rule
@@ -30,12 +47,9 @@ const STATUS_BY_CODE: Record<string, number> = {
  * Unexpected errors become a generic 500 so internals never reach the client.
  */
 export function toErrorBody(e: unknown): { status: number; body: ErrorBody } {
-  if (e instanceof RoomError) {
-    return { status: e.status, body: { error: { code: e.code, message: e.message } } };
-  }
-  if (isGameError(e)) {
+  if (e instanceof RoomError || isGameError(e)) {
     return {
-      status: STATUS_BY_CODE[e.code] ?? 409,
+      status: statusFor(e.code),
       body: { error: { code: e.code, message: e.message } },
     };
   }

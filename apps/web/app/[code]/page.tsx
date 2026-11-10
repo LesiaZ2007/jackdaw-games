@@ -1,11 +1,9 @@
 import { notFound, redirect } from 'next/navigation';
-import { CODE_ALPHABET } from '@jackdaw/engine';
-
-const LOBBY_CODE = new RegExp(`^[${CODE_ALPHABET}]{4}$`);
+import { LobbyCode } from '@jackdaw/engine';
 
 /** Short room links: /QGYR (any case) opens lobby QGYR. Anything else is a missing page. */
 export default async function ShortLink({ params }: { params: Promise<{ code: string }> }) {
-  const code = (await params).code.toUpperCase();
-  if (!LOBBY_CODE.test(code)) notFound();
-  redirect(`/r/${code}`);
+  const code = LobbyCode.safeParse((await params).code);
+  if (!code.success) notFound();
+  redirect(`/r/${code.data}`);
 }

@@ -54,21 +54,64 @@ a {
 }
 
 /*
- * The welcome: the title card and the start card as a pair, the fan of boxes between them and
- * the shelves, which begin straight after (no full-screen hero, so the games show at once).
+ * The welcome fills the first screen on every device (2026-11-10: "first page on pc and mobile
+ * is still the full screen lobby joining… then you scroll down to see the games"): the title
+ * card and the start card as a pair with the fan of boxes, centered, and an arrow at the foot
+ * that says the games are below.
  */
-.home {
+.home-screen {
   position: relative;
+  min-height: 100svh;
+  display: grid;
+  align-items: center;
 }
 .home-hero {
   display: grid;
   grid-template-areas: 'title' 'fan' 'start';
-  gap: var(--space-4);
+  gap: var(--space-3);
   width: 100%;
   max-width: 1400px;
   margin-inline: auto;
-  /* room at the top for the day/dark button */
-  padding: calc(var(--space-6) + var(--tap)) var(--gutter) var(--space-6);
+  /* room at the foot for the "the games are below" arrow */
+  padding: var(--space-4) var(--gutter) calc(var(--space-4) + 76px);
+}
+/* Phones: keep the whole welcome on one screen. */
+@media (max-width: 599.98px) {
+  .home-title .jd-mark {
+    width: 84px;
+    height: 84px;
+  }
+  .home-hero .home-title {
+    padding-block: var(--space-4);
+  }
+  .home-title__line {
+    display: none;
+  }
+  .home-hero .home-fan {
+    height: 84px;
+  }
+  .home-hero .home-fan__lid {
+    width: 56px;
+    height: 74px;
+    margin-left: -28px;
+  }
+  .home-hero .home-fan__lid svg {
+    width: 28px;
+    height: 28px;
+  }
+  .home-hero .home-start {
+    padding-block: var(--space-4);
+  }
+  /* the arrow at the foot already points at the games */
+  .home-hero .home-nav__browse {
+    display: none;
+  }
+}
+/* A short phone screen: the fan gives way before anything you tap does. */
+@media (max-width: 599.98px) and (max-height: 700px) {
+  .home-hero .home-fan {
+    display: none;
+  }
 }
 .home-title {
   grid-area: title;
@@ -176,15 +219,11 @@ a {
       'title start'
       'fan fan';
     column-gap: var(--shelf-gap, 28px);
-    row-gap: var(--space-3);
-    padding: var(--space-7) var(--gutter) var(--space-4);
+    row-gap: var(--space-4);
+    padding: var(--space-6) var(--gutter) calc(var(--space-5) + 76px);
   }
   .home-start {
     padding: var(--space-6) var(--space-5);
-  }
-  /* the games are in sight below, so the nav doesn't need to point at them */
-  .home-nav__browse {
-    display: none;
   }
   .home-nav {
     justify-content: space-between;
@@ -274,6 +313,87 @@ a {
 .look-choice__opt:focus-visible {
   outline: 3px solid var(--or);
   outline-offset: 2px;
+}
+
+/* "the games are below": a printed ring with a chevron, bobbing at the foot of the welcome */
+.home-more {
+  appearance: none;
+  position: absolute;
+  left: 50%;
+  bottom: max(var(--space-4), env(safe-area-inset-bottom, 0px));
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  translate: -50% 0;
+  transition:
+    opacity 240ms,
+    visibility 240ms;
+}
+.home-more.is-gone {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.home-more__label {
+  padding: 3px 8px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  font: 800 14px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.home-more__ring {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4.5px var(--ink);
+  animation: home-more-bob 2.2s var(--ease-out) infinite;
+}
+.home-more__ring svg {
+  width: 24px;
+  height: 24px;
+}
+.home-more:focus-visible .home-more__ring {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .home-more:hover .home-more__ring {
+    background: color-mix(in srgb, var(--paper) 84%, var(--or));
+  }
+}
+@keyframes home-more-bob {
+  0%,
+  60%,
+  100% {
+    translate: 0 0;
+  }
+  30% {
+    translate: 0 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-more__ring {
+    animation: none;
+  }
+  .home-more {
+    transition: none;
+  }
 }
 
 /* The day/dark button in the top corner of the home page */

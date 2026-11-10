@@ -533,7 +533,7 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 20px 80px;
   padding: 44px 88px 44px;
 }
@@ -638,9 +638,17 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   color: var(--ink-2);
   font-size: 24px;
   line-height: 1.15;
+  /* two lines at most: a long stats line can't stretch a row off the screen */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 .tv-standings {
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 .tv-standing .tv-standing__outcome {
   margin-left: auto;

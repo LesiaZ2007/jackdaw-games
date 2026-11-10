@@ -1127,8 +1127,13 @@ export function endGameEarly(lobby: Lobby, hostId: string, ctx: Ctx, save = fals
   requireHost(lobby, hostId);
   requireStatus(lobby, 'in_game');
   const partial = save ? partialResultOf(lobby, ctx) : null;
-  if (partial)
-    return endGame(lobby, { ...partial, summary: `Ended early. ${partial.summary}` }, ctx);
+  if (partial) {
+    // A game that already says so in its own summary (Mafia) isn't told twice.
+    const summary = /^Ended early\b/.test(partial.summary)
+      ? partial.summary
+      : `Ended early. ${partial.summary}`;
+    return endGame(lobby, { ...partial, summary }, ctx);
+  }
   const stopped = touch({ ...lobby, status: 'waiting', session: null, results: null }, ctx.now);
   return say(stopped, ['The host ended the game early.'], ctx.now);
 }

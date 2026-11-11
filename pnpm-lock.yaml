@@ -50,6 +50,9 @@ importers:
       '@jackdaw/game-battleship':
         specifier: workspace:*
         version: link:../../packages/games/battleship
+      '@jackdaw/game-cambio':
+        specifier: workspace:*
+        version: link:../../packages/games/cambio
       '@jackdaw/game-catan':
         specifier: workspace:*
         version: link:../../packages/games/catan
@@ -187,6 +190,25 @@ importers:
         version: 19.3.0
 
   packages/games/battleship:
+    dependencies:
+      '@jackdaw/engine':
+        specifier: workspace:*
+        version: link:../../engine
+      '@jackdaw/ui':
+        specifier: workspace:*
+        version: link:../../ui
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+
+  packages/games/cambio:
     dependencies:
       '@jackdaw/engine':
         specifier: workspace:*

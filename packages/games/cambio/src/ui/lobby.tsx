@@ -45,7 +45,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
       {order.map((seat, k) => {
         const angle = Math.PI + (k / n) * Math.PI * 2;
         const style = {
-          left: `${50 + 45 * Math.sin(angle)}%`,
+          '--lx': `${50 + 45 * Math.sin(angle)}%`,
           top: `${50 - 43 * Math.cos(angle)}%`,
         } as CSSProperties;
         if (!seat) {
@@ -70,6 +70,7 @@ export const LobbySeats: NonNullable<GameUi['LobbySeats']> = ({
               .filter(Boolean)
               .join(' ')}
             style={style}
+            role="group"
             aria-label={`${seat.name}${seat.me ? ' (you)' : ''}${seat.bot ? ', computer player' : ''}${seat.host ? ', host' : ''}${seat.away ? ', away' : ''}`}
           >
             <span className="cmb-lseat__tok">

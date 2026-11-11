@@ -9,7 +9,7 @@ async function playATurn(page: Page) {
   await expect(page.getByRole('heading', { name: 'Your turn' })).toBeVisible({ timeout: 120_000 });
   await page.getByRole('button', { name: 'Draw from the stock' }).click();
   await expect(page.getByRole('button', { name: 'Discard', exact: false }).first()).toBeVisible();
-  await page.getByRole('button', { name: /^Your card, top left: face down/ }).click();
+  await page.getByRole('button', { name: /^Your card, top left/ }).click();
   await expect(page.getByRole('heading', { name: 'Your turn' })).toHaveCount(0, {
     timeout: 20_000,
   });
@@ -32,7 +32,7 @@ test('cambio: the host seats bots, peeks, plays turns, and ends the game from th
     .first()
     .click();
   await host.getByRole('button', { name: 'Add a computer player' }).first().click();
-  await expect(host.getByRole('listitem', { name: /Bot \w+, computer player/ })).toBeVisible();
+  await expect(host.getByRole('group', { name: /^Bot \w+, computer player/ })).toBeVisible();
   await host.getByRole('button', { name: 'Add a computer player' }).first().click();
   await host.getByRole('button', { name: 'Start Cambio' }).click();
 

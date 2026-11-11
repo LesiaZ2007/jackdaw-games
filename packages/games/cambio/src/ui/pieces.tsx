@@ -1,11 +1,15 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import { createContext, useContext, type CSSProperties } from 'react';
 import { BirdMark } from '@jackdaw/ui';
-import { cardOf, cardValue, isRed, type Suit } from '../cards';
+import { DEFAULT_HOUSE, cardOf, houseValue, isJoker, isRed, type House, type Suit } from '../cards';
+import { num } from './logic';
+
+/** The house rules in force, so a card can tag its real value. Screens provide it. */
+export const HouseContext = createContext<House>(DEFAULT_HOUSE);
 
 const RANK = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'] as const;
-export const rankOf = (id: number) => RANK[cardOf(id).rank - 1]!;
+export const rankOf = (id: number) => (isJoker(id) ? 'Jk' : RANK[cardOf(id).rank - 1]!);
 
 /** One plain suit, drawn flat in currentColor on a 24-unit square. */
 const SUIT_PATH: Record<Suit, string> = {
@@ -41,6 +45,18 @@ export function EyeMark({ className }: { className?: string }) {
         strokeLinejoin="round"
       />
       <circle cx="12" cy="12" r="3.4" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** A joker's one large mark: a plain five-point star. */
+export function StarMark({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M12 2.5l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8-6.1-3.4-6.1 3.4 1.4-6.8L2.2 9.6l6.9-.8z"
+        fill="currentColor"
+      />
     </svg>
   );
 }
@@ -112,6 +128,7 @@ export function GameCard({
   disabled,
   label,
 }: CardProps) {
+  const house = useContext(HouseContext);
   const known = id !== undefined && id !== null;
   const c = known ? cardOf(id) : null;
   const classes = [
@@ -146,7 +163,7 @@ export function GameCard({
           {note !== undefined && note !== null && (
             <span className={`cmb-note${isRed(note) ? ' cmb-note--red' : ''}`}>
               {rankOf(note)}
-              <SuitMark suit={cardOf(note).suit} />
+              {!isJoker(note) && <SuitMark suit={cardOf(note).suit} />}
             </span>
           )}
         </span>
@@ -154,11 +171,17 @@ export function GameCard({
           <span className="cmb-card__face">
             <span className="cmb-card__corner">
               <b>{rankOf(id)}</b>
-              <SuitMark suit={c.suit} />
+              {!isJoker(id) && <SuitMark suit={c.suit} />}
             </span>
-            <SuitMark suit={c.suit} className="cmb-card__big" />
-            {c.rank === 13 && <span className="cmb-card__tag">{isRed(id) ? '0' : '13'}</span>}
-            {value && <span className="cmb-card__value">{cardValue(id)}</span>}
+            {isJoker(id) ? (
+              <StarMark className="cmb-card__big" />
+            ) : (
+              <SuitMark suit={c.suit} className="cmb-card__big" />
+            )}
+            {c.rank === 13 && (
+              <span className="cmb-card__tag">{isRed(id) ? num(house.redKing) : '13'}</span>
+            )}
+            {value && <span className="cmb-card__value">{num(houseValue(id, house))}</span>}
           </span>
         )}
       </span>

@@ -10,14 +10,8 @@ import {
   type GameUi,
   type ScreenPlayer,
 } from '@jackdaw/ui';
-import { cardName, powerOf } from '../cards';
-import {
-  PEEK_MS,
-  PEEK_SLOTS,
-  lastRoundPlayed,
-  type CambioAction,
-  type CambioPlayerView,
-} from '../rules';
+import { cardName, housePower } from '../cards';
+import { PEEK_MS, lastRoundPlayed, type CambioAction, type CambioPlayerView } from '../rules';
 import { useAfter, useGlimpses, useSwapFlight } from './hooks';
 import {
   SLOT_NAME,
@@ -26,13 +20,15 @@ import {
   rankRound,
   roundLine,
   roundMoment,
+  dropLine,
   ruleLine,
   statusLine,
 } from './logic';
-import { GameCard } from './pieces';
+import { GameCard, HouseContext } from './pieces';
 import {
   CambioBand,
   CambioTable,
+  HouseRules,
   HandsList,
   HIDDEN,
   PlayByPlay,
@@ -54,7 +50,7 @@ function slotsFor(v: CambioPlayerView, glimpse: ReturnType<typeof useGlimpses>):
     if (
       v.phase === 'peek' &&
       owner === v.me &&
-      (PEEK_SLOTS as readonly number[]).includes(slot) &&
+      v.house.peekSlots.includes(slot) &&
       !v.ready.includes(v.me)
     ) {
       return { id: known, up: known !== null, note: null };
@@ -167,7 +163,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     discard:
       mine && v.step === 'held' && v.holding?.from === 'stock' && v.held !== null && !busy
         ? {
-            label: discardLabel(powerOf(v.held)),
+            label: discardLabel(housePower(v.held, v.house)),
             onClick: () => void send({ type: 'discard' }),
           }
         : null,
@@ -176,68 +172,72 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const scoring = v.phase === 'scoring' || v.phase === 'over';
 
   return (
-    <div
-      className={`cmb cmb--phone${mine ? ' is-mine' : ''}${scoring ? ' is-scoring' : ''}`}
-      ref={root}
-      data-count={v.players.length}
-    >
-      <header className="cmb__head">
-        <h2 className="jd-display">{statusLine(v, v.me, name)}</h2>
-        <p>
-          <span>{scoring ? 'Lowest wins' : roundLine(v)}</span>
-          <TurnClock t={v} now={now} />
-        </p>
-      </header>
-      <PlayByPlay moves={v.moves} name={name} me={v.me} limit={6} />
-
-      {scoring ? (
-        <>
-          <div className="cmb-main cmb-main--hands">
-            <HandsList
-              key={v.round}
-              order={rankRound(v.last!)}
-              hands={v.hands ?? v.last!.hands}
-              players={players}
-              me={v.me}
-              caller={v.last!.caller}
-              flip
-              size="phone"
-            />
+    <HouseContext.Provider value={v.house}>
+      <div
+        className={`cmb cmb--phone${mine ? ' is-mine' : ''}${scoring ? ' is-scoring' : ''}`}
+        ref={root}
+        data-count={v.players.length}
+      >
+        <header className="cmb__head">
+          <h2 className="jd-display">{statusLine(v, v.me, name)}</h2>
+          <div className="cmb__sub">
+            <span>{scoring ? 'Lowest wins' : roundLine(v)}</span>
+            <TurnClock t={v} now={now} />
+            {!scoring && <HouseRules house={v.house} mode="plaque" />}
           </div>
-          <ScoringPanel v={v} players={players} name={name} now={now} send={send} />
-        </>
-      ) : (
-        <>
-          <div className="cmb-main">
-            <CambioTable
-              t={v}
-              players={players}
-              me={v.me}
-              slots={slots}
-              ctl={ctl}
-              reactions={reactions}
-            />
-          </div>
-          <section className="cmb-side" aria-label="Your cards">
-            <MyGrid v={v} slots={slots} ctl={ctl} meP={meP} />
-            <Dock v={v} name={name} now={now} busy={busy} send={send} sel={sel} />
-          </section>
-          <Scores t={v} players={players} me={v.me} />
-        </>
-      )}
+        </header>
+        <PlayByPlay moves={v.moves} name={name} me={v.me} limit={6} />
 
-      <CambioBand t={v} name={name} />
-      {moment && (
-        <VerdictMoment
-          key={v.last?.round}
-          outcome={moment.outcome}
-          title={moment.title}
-          detail={moment.detail}
-          avatar={moment.outcome === 'reveal' ? undefined : meP?.avatar}
-          onDone={dismiss}
-        />
-      )}
-    </div>
+        {scoring ? (
+          <>
+            <div className="cmb-main cmb-main--hands">
+              <HandsList
+                key={v.round}
+                order={rankRound(v.last!)}
+                hands={v.hands ?? v.last!.hands}
+                players={players}
+                me={v.me}
+                caller={v.last!.caller}
+                flip
+                size="phone"
+              />
+            </div>
+            <ScoringPanel v={v} players={players} name={name} now={now} send={send} />
+          </>
+        ) : (
+          <>
+            <div className="cmb-main">
+              <CambioTable
+                t={v}
+                players={players}
+                me={v.me}
+                slots={slots}
+                ctl={ctl}
+                reactions={reactions}
+              />
+            </div>
+            <section className="cmb-side" aria-label="Your cards">
+              <MyGrid v={v} slots={slots} ctl={ctl} meP={meP} />
+              <Dock v={v} name={name} now={now} busy={busy} send={send} sel={sel} />
+            </section>
+            <Scores t={v} players={players} me={v.me} />
+          </>
+        )}
+
+        <HouseRules house={v.house} mode="list" />
+        <CambioBand t={v} name={name} />
+        {moment && (
+          <VerdictMoment
+            key={v.last?.round}
+            outcome={moment.outcome}
+            title={moment.title}
+            detail={moment.detail}
+            avatar={moment.outcome === 'reveal' ? undefined : meP?.avatar}
+            onDone={dismiss}
+          />
+        )}
+      </div>
+    </HouseContext.Provider>
   );
 };
 
@@ -290,8 +290,12 @@ function MyGrid({
         })}
         {v.caller === v.me && <span className="cmb-ribbon">Cambio</span>}
       </div>
-      {v.turns < v.players.length && v.phase !== 'peek' && (
-        <p className="cmb-me__hint">Bottom two: your opening peek</p>
+      {v.turns < v.players.length && v.phase !== 'peek' && v.house.peekSlots.length > 0 && (
+        <p className="cmb-me__hint">
+          {v.house.peekSlots.length === 1
+            ? 'Bottom left: your opening peek'
+            : 'Bottom two: your opening peek'}
+        </p>
       )}
     </div>
   );
@@ -349,7 +353,11 @@ function Dock({
           </p>
         ) : (
           <>
-            <p className="cmb-dock__say">Your two bottom cards are face up until you’re ready.</p>
+            <p className="cmb-dock__say">
+              {v.house.peekSlots.length === 1
+                ? 'Your bottom left card is face up until you’re ready.'
+                : 'Your two bottom cards are face up until you’re ready.'}
+            </p>
             <div className="cmb-dock__row">
               {left !== null && <Ring left={left} total={PEEK_MS / 1000} />}
               <Plaque go disabled={busy} onClick={() => void send({ type: 'ready' })}>
@@ -462,7 +470,10 @@ export function ScoringPanel({
   const ready = v.nextReady.includes(v.me);
   return (
     <section className="cmb-side cmb-side--score" aria-label="Round result">
-      {v.last && <p className="cmb-rule">{ruleLine(v.last, name, v.me)}</p>}
+      {v.last && <p className="cmb-rule">{ruleLine(v.last, name, v.me, v.house)}</p>}
+      {v.last && dropLine(v.last, name, v.me) && (
+        <p className="cmb-rule">{dropLine(v.last, name, v.me)}</p>
+      )}
       <Scores t={v} players={players} me={v.me} />
       {left !== null && v.phase === 'scoring' && (
         <p className="cmb-dock__count" role="status">

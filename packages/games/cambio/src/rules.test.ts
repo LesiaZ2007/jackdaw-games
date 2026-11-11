@@ -12,8 +12,16 @@ import {
   type Suit,
 } from './cards';
 import {
+  CALLER_BONUS_LABELS,
+  CALLER_PENALTY_LABELS,
   CALL_PENALTY,
+  EXACTLY_100_LABELS,
+  JOKER_LABELS,
+  KING_POWER_LABELS,
+  MEMORY_LABELS,
   NEXT_ROUND_MS,
+  OPENING_PEEK_LABELS,
+  RED_KING_LABELS,
   PEEK_MS,
   cambio as game,
   lastRoundPlayed,
@@ -877,6 +885,16 @@ describe('game length', () => {
       goal: 'First to 100',
       turnTimer: 'Off',
       memory: 'Remember it yourself',
+      peekCards: '7 and 8',
+      spyCards: '9 and 10',
+      swapCards: 'Jack and Queen',
+      kingPower: 'Black Kings',
+      redKings: '0',
+      callerPenalty: '10',
+      callerBonus: '0',
+      openingPeek: 'Two',
+      exactly100: 'Off',
+      jokers: 'None',
     });
     expect(game.optionsSchema.safeParse(game.defaultOptions(4)).success).toBe(true);
     expect(game.optionsSchema.safeParse({ goal: 'First to 10', turnTimer: 'Off' }).success).toBe(
@@ -1173,12 +1191,12 @@ describe('actions', () => {
 type Ref = Record<string, Record<string, boolean[]>>;
 
 /** Who knows what, worked out here from the actions alone, not from the game's own state. */
-function refDeal(players: string[]): Ref {
+function refDeal(players: string[], peeked: number[] = [2, 3]): Ref {
   const ref: Ref = {};
   for (const v of players) {
     ref[v] = {};
     for (const o of players)
-      ref[v]![o] = o === v ? [false, false, true, true] : [false, false, false, false];
+      ref[v]![o] = [0, 1, 2, 3].map((slot) => o === v && peeked.includes(slot));
   }
   return ref;
 }
@@ -1227,6 +1245,25 @@ function refApply(
   return next;
 }
 
+/** A random, playable set of house rules: no two powers on the same cards. */
+function randomHouse(rng: Rng): Partial<CambioOptions> {
+  const sets = rng.shuffle(['7 and 8', '9 and 10', 'Jack and Queen'] as const);
+  const some = <T>(x: T): T | 'None' => (rng.next() < 0.25 ? 'None' : x);
+  return {
+    peekCards: some(sets[0]!),
+    spyCards: some(sets[1]!),
+    swapCards: some(sets[2]!),
+    kingPower: rng.pick(KING_POWER_LABELS),
+    redKings: rng.pick(RED_KING_LABELS),
+    callerPenalty: rng.pick(CALLER_PENALTY_LABELS),
+    callerBonus: rng.pick(CALLER_BONUS_LABELS),
+    openingPeek: rng.pick(OPENING_PEEK_LABELS),
+    exactly100: rng.pick(EXACTLY_100_LABELS),
+    jokers: rng.pick(JOKER_LABELS),
+    memory: rng.pick(MEMORY_LABELS),
+  };
+}
+
 /** A random legal move for whoever is to act. */
 function randomMove(s: CambioState, rng: Rng): { who: string; a: CambioAction } {
   const me = s.toAct!;
@@ -1267,16 +1304,17 @@ function randomMove(s: CambioState, rng: Rng): { who: string; a: CambioAction } 
 }
 
 describe('hidden information', () => {
-  it('a fuzzed game never shows a player a face they don’t know', () => {
+  /** Plays whole random games, checking every view after every move; returns how many faces. */
+  const fuzz = (seeds: number[], extra: (seed: number) => Partial<CambioOptions>): number => {
     let checked = 0;
-    for (let seed = 1; seed <= 24; seed++) {
+    for (const seed of seeds) {
       const players = ['wren', 'rook', 'magpie', 'robin', 'finch', 'heron', 'jay', 'owl'].slice(
         0,
         2 + (seed % 7),
       );
       const rng = createRng(seed * 31);
-      let s = deal(players, { goal: seed % 2 ? '3 rounds' : 'First to 50' }, seed);
-      let ref = refDeal(players);
+      let s = deal(players, { goal: seed % 2 ? '3 rounds' : 'First to 50', ...extra(seed) }, seed);
+      let ref = refDeal(players, s.house.peekSlots);
       let round = s.round;
       for (let i = 0; i < 900 && s.phase !== 'over'; i++) {
         let who: string;
@@ -1290,7 +1328,10 @@ describe('hidden information', () => {
         } else ({ who, a } = randomMove(s, rng));
         const before = s;
         s = act(before, who, a, i, seed + i);
-        ref = s.round !== round ? refDeal(players) : refApply(ref, players, before, who, a);
+        ref =
+          s.round !== round
+            ? refDeal(players, s.house.peekSlots)
+            : refApply(ref, players, before, who, a);
         round = s.round;
 
         const revealed = s.phase === 'scoring' || s.phase === 'over';
@@ -1320,7 +1361,18 @@ describe('hidden information', () => {
         }
       }
     }
-    expect(checked).toBeGreaterThan(10_000);
+    return checked;
+  };
+
+  it('a fuzzed game never shows a player a face they don’t know', () => {
+    const seeds = Array.from({ length: 24 }, (_, i) => i + 1);
+    expect(fuzz(seeds, () => ({}))).toBeGreaterThan(10_000);
+  });
+
+  it('nor does one played under random house rules', () => {
+    const seeds = Array.from({ length: 16 }, (_, i) => 100 + i);
+    const checked = fuzz(seeds, (seed) => randomHouse(createRng(seed)));
+    expect(checked).toBeGreaterThan(5_000);
   });
 
   it('plays all of its cards through: nothing is lost or invented', () => {

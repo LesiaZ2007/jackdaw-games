@@ -7,7 +7,16 @@ import {
   type Rng,
 } from '@jackdaw/engine';
 import { z } from 'zod';
-import { cardName, cardShort, cardValue, fullDeck, powerOf, type PowerKind } from './cards';
+import {
+  cardName,
+  cardShort,
+  houseValue,
+  fullDeck,
+  housePower,
+  type House,
+  type PowerCards,
+  type PowerKind,
+} from './cards';
 import { meta } from './meta';
 import { cambioBot } from './bot';
 
@@ -31,9 +40,29 @@ import { cambioBot } from './bot';
 const GOALS = ['First to 100', 'First to 50', '3 rounds', '5 rounds'] as const;
 const CLOCKS = ['Off', '30 seconds', '60 seconds'] as const;
 const MEMORY = ['Remember it yourself', 'Keep notes'] as const;
+const PEEK_CARDS = ['7 and 8', '9 and 10', 'Jack and Queen', 'None'] as const;
+const SPY_CARDS = ['9 and 10', '7 and 8', 'Jack and Queen', 'None'] as const;
+const SWAP_CARDS = ['Jack and Queen', '7 and 8', '9 and 10', 'None'] as const;
+const KING_POWER = ['Black Kings', 'All Kings', 'None'] as const;
+const RED_KINGS = ['0', '-1', '13'] as const;
+const PENALTIES = ['10', '5', '20', 'Double'] as const;
+const BONUSES = ['0', 'Their total', '-5'] as const;
+const OPENING = ['Two', 'One', 'None'] as const;
+const EXACTLY = ['Off', 'Drops to 50'] as const;
+const JOKERS = ['None', 'Two per deck'] as const;
 export const GOAL_LABELS = GOALS;
 export const MEMORY_LABELS = MEMORY;
 export const CLOCK_LABELS = CLOCKS;
+export const PEEK_CARD_LABELS = PEEK_CARDS;
+export const SPY_CARD_LABELS = SPY_CARDS;
+export const SWAP_CARD_LABELS = SWAP_CARDS;
+export const KING_POWER_LABELS = KING_POWER;
+export const RED_KING_LABELS = RED_KINGS;
+export const CALLER_PENALTY_LABELS = PENALTIES;
+export const CALLER_BONUS_LABELS = BONUSES;
+export const OPENING_PEEK_LABELS = OPENING;
+export const EXACTLY_100_LABELS = EXACTLY;
+export const JOKER_LABELS = JOKERS;
 
 /** Cards in each player's grid. */
 export const SLOTS = 4;
@@ -52,6 +81,16 @@ export const optionsSchema = z.object({
   goal: z.enum(GOALS).describe('Game length'),
   turnTimer: z.enum(CLOCKS).describe('Turn timer'),
   memory: z.enum(MEMORY).describe('Memory'),
+  peekCards: z.enum(PEEK_CARDS).describe('Peek (your own)'),
+  spyCards: z.enum(SPY_CARDS).describe('Spy (theirs)'),
+  swapCards: z.enum(SWAP_CARDS).describe('Blind swap'),
+  kingPower: z.enum(KING_POWER).describe('Look and swap'),
+  redKings: z.enum(RED_KINGS).describe('Red Kings'),
+  callerPenalty: z.enum(PENALTIES).describe('Caller loses'),
+  callerBonus: z.enum(BONUSES).describe('Caller wins'),
+  openingPeek: z.enum(OPENING).describe('Opening peek'),
+  exactly100: z.enum(EXACTLY).describe('Exactly 100'),
+  jokers: z.enum(JOKERS).describe('Jokers'),
 });
 export type CambioOptions = z.infer<typeof optionsSchema>;
 
@@ -152,6 +191,8 @@ export interface RoundResult {
   callerWon: boolean;
   /** Every grid, all cards face up. */
   hands: Record<string, number[]>;
+  /** Players whose running score landed on exactly 100 and went down to 50 (that house rule). */
+  dropped?: string[];
 }
 
 /** Who knows which slots: `known[viewer][owner][slot]`. */
@@ -166,6 +207,8 @@ export interface CambioState {
   turnSecs: number;
   /** Screens mark the cards the viewer knows with a note chip (a display choice only). */
   notes: boolean;
+  /** The house rules this game is played with, resolved at setup and never recomputed. */
+  house: House;
   round: number;
   phase: Phase;
   dealer: string;
@@ -249,6 +292,8 @@ export interface CambioTableView {
   turnSecs: number;
   /** Keep notes: screens mark the cards you know with a small chip. */
   notes: boolean;
+  /** The house rules in force (public): screens and bots read powers and values from here. */
+  house: House;
 }
 
 export interface CambioPlayerView extends CambioTableView {
@@ -272,10 +317,45 @@ export interface CambioReveal {
   history: RoundResult[];
   /** Each player's four cards from the last round played. */
   lastHands: Record<string, number[]>;
+  /** The house rules the game was played under. */
+  house: House;
+}
+
+/** The house rules an options object asks for, resolved to numbers and slots. */
+export function houseOf(o: CambioOptions): House {
+  return {
+    peek: o.peekCards,
+    spy: o.spyCards,
+    swap: o.swapCards,
+    king: o.kingPower,
+    redKing: Number(o.redKings),
+    penalty: o.callerPenalty === 'Double' ? 'double' : Number(o.callerPenalty),
+    bonus: o.callerBonus === 'Their total' ? 'total' : Number(o.callerBonus),
+    peekSlots: o.openingPeek === 'Two' ? [...PEEK_SLOTS] : o.openingPeek === 'One' ? [2] : [],
+    exactly100: o.exactly100 === 'Drops to 50',
+    jokers: o.jokers === 'Two per deck',
+  };
+}
+
+/** Why these options can't be played, or null. Two powers can't share the same cards. */
+export function houseConflict(o: CambioOptions): string | null {
+  const powers: [string, PowerCards][] = [
+    ['Peek', o.peekCards],
+    ['Spy', o.spyCards],
+    ['Swap', o.swapCards],
+  ];
+  for (let i = 0; i < powers.length; i++)
+    for (let j = i + 1; j < powers.length; j++) {
+      const [a, b] = [powers[i]!, powers[j]!];
+      if (a[1] !== 'None' && a[1] === b[1])
+        return `${a[0]} and ${b[0].toLowerCase()} can’t both use ${a[1]}. Pick different cards for one of them.`;
+    }
+  return null;
 }
 
 function parseOptions(o: CambioOptions) {
   return {
+    house: houseOf(o),
     target: o.goal === 'First to 100' ? 100 : o.goal === 'First to 50' ? 50 : 0,
     rounds: o.goal === '3 rounds' ? 3 : o.goal === '5 rounds' ? 5 : 0,
     turnSecs: o.turnTimer === 'Off' ? 0 : Number(o.turnTimer.split(' ')[0]),
@@ -284,7 +364,7 @@ function parseOptions(o: CambioOptions) {
 }
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
-const total = (hand: number[]) => sum(hand.map(cardValue));
+const total = (hand: number[], house: House) => sum(hand.map((c) => houseValue(c, house)));
 
 /** The seat after `from`. */
 function seatAfter(s: Pick<CambioState, 'players'>, from: string): string {
@@ -359,7 +439,7 @@ function startRound(s: CambioState, rng: Rng): CambioState {
   if (s.round > 0 && lastRoundPlayed(s)) return { ...s, phase: 'over', toAct: null };
   const round = s.round + 1;
   const dealer = round === 1 ? s.dealer : seatAfter(s, s.dealer);
-  let stock = rng.shuffle(fullDeck(s.players.length));
+  let stock = rng.shuffle(fullDeck(s.players.length, s.house.jokers));
   const hands: Record<string, number[]> = {};
   for (const id of s.players) {
     hands[id] = stock.slice(0, SLOTS);
@@ -369,8 +449,8 @@ function startRound(s: CambioState, rng: Rng): CambioState {
   stock = stock.slice(1);
   let known = blankKnown(s.players);
   for (const id of s.players)
-    for (const slot of PEEK_SLOTS) known = mark(known, id, id, slot, true);
-  return {
+    for (const slot of s.house.peekSlots) known = mark(known, id, id, slot, true);
+  const dealt: CambioState = {
     ...s,
     round,
     phase: 'peek',
@@ -390,6 +470,8 @@ function startRound(s: CambioState, rng: Rng): CambioState {
     nextReady: [],
     moves: [],
   };
+  // With no opening peek there is nothing to look at: the round goes straight to play.
+  return s.house.peekSlots.length ? dealt : beginPlay(dealt);
 }
 
 /** The peek is over: the player after the dealer moves first. */
@@ -397,19 +479,35 @@ function beginPlay(s: CambioState): CambioState {
   return { ...s, phase: 'play', toAct: seatAfter(s, s.dealer), step: 'start' };
 }
 
+/**
+ * What the caller scores: with the lowest hand (or tied) the house bonus (0 by default, or their
+ * own total), otherwise their total plus the penalty, or doubled (a total of 0 or less is left
+ * as it is, since doubling can't make it worse).
+ */
+export function callerScore(total: number, won: boolean, house: House): number {
+  if (won) return house.bonus === 'total' ? total : house.bonus;
+  if (house.penalty === 'double') return total > 0 ? total * 2 : total;
+  return total + house.penalty;
+}
+
 /** All cards turn face up, and everyone is scored. */
 function finishRound(s: CambioState): CambioState {
   const caller = s.caller!;
-  const totals = Object.fromEntries(s.players.map((id) => [id, total(s.hands[id]!)]));
+  const house = s.house;
+  const totals = Object.fromEntries(s.players.map((id) => [id, total(s.hands[id]!, house)]));
   const others = s.players.filter((id) => id !== caller);
   const callerWon = totals[caller]! <= Math.min(...others.map((id) => totals[id]!));
   const scored = Object.fromEntries(
     s.players.map((id) => [
       id,
-      id !== caller ? totals[id]! : callerWon ? 0 : totals[id]! + CALL_PENALTY,
+      id !== caller ? totals[id]! : callerScore(totals[id]!, callerWon, house),
     ]),
   );
   const scores = Object.fromEntries(s.players.map((id) => [id, s.scores[id]! + scored[id]!]));
+  // The house rule: landing on exactly 100 in a game to 100 drops you to 50.
+  const dropped =
+    house.exactly100 && s.target === 100 ? s.players.filter((id) => scores[id] === 100) : [];
+  for (const id of dropped) scores[id] = 50;
   const hands = Object.fromEntries(s.players.map((id) => [id, [...s.hands[id]!]]));
   const low = Math.min(...Object.values(totals));
   const lowPlayer = s.players.find((id) => totals[id] === low)!;
@@ -417,7 +515,15 @@ function finishRound(s: CambioState): CambioState {
     !s.lowest || low < s.lowest.total
       ? { player: lowPlayer, total: low, round: s.round }
       : s.lowest;
-  const result: RoundResult = { round: s.round, caller, totals, scored, callerWon, hands };
+  const result: RoundResult = {
+    round: s.round,
+    caller,
+    totals,
+    scored,
+    callerWon,
+    hands,
+    ...(dropped.length ? { dropped } : {}),
+  };
   const beaten = others.filter((id) => totals[id]! < totals[caller]!);
   const text = callerWon
     ? `Round ${s.round}: {${caller}} called Cambio with ${totals[caller]} and had the lowest hand.`
@@ -444,7 +550,7 @@ function finishRound(s: CambioState): CambioState {
     secret: s.players
       .map((id) => `{${id}}: ${hands[id]!.map(cardShort).join(' ')} = ${totals[id]}`)
       .join('; '),
-    tag: callerWon ? '0' : `+${scored[caller]! - totals[caller]!}`,
+    tag: callerWon ? String(scored[caller]) : `+${scored[caller]! - totals[caller]!}`,
     tone: callerWon ? 'good' : 'bad',
     key: true,
     data: { totals, scored, scores, hands },
@@ -588,7 +694,7 @@ function move(
       const held = s.holding!;
       if (held.from === 'discard')
         throw new GameError('took_it', 'You took that card, so it has to go into your grid.');
-      const kind = powerOf(held.card);
+      const kind = housePower(held.card, s.house);
       const n = log(
         { ...s, discard: [...s.discard, held.card], holding: null },
         { player: me, kind: 'discard', card: held.card, late },
@@ -770,6 +876,7 @@ function view(s: CambioState): CambioTableView {
     actBy: s.actBy,
     turnSecs: s.turnSecs,
     notes: s.notes,
+    house: s.house,
   };
 }
 
@@ -805,6 +912,7 @@ function resultOf(s: CambioState): GameResult {
     target: s.target,
     history: s.history,
     lastHands,
+    house: s.house,
   };
   return {
     winners,
@@ -858,7 +966,18 @@ export const cambio: GameModule<
     goal: 'First to 100',
     turnTimer: 'Off',
     memory: 'Remember it yourself',
+    peekCards: '7 and 8',
+    spyCards: '9 and 10',
+    swapCards: 'Jack and Queen',
+    kingPower: 'Black Kings',
+    redKings: '0',
+    callerPenalty: '10',
+    callerBonus: '0',
+    openingPeek: 'Two',
+    exactly100: 'Off',
+    jokers: 'None',
   }),
+  validateOptions: (options) => houseConflict(options),
 
   setup({ playerIds, options, rng, now }) {
     const o = parseOptions(options);
@@ -868,6 +987,7 @@ export const cambio: GameModule<
       rounds: o.rounds,
       turnSecs: o.turnSecs,
       notes: o.notes,
+      house: o.house,
       round: 0,
       phase: 'scoring',
       dealer: rng.pick(playerIds),

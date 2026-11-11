@@ -36,25 +36,78 @@ export const DECK_SIZE = 52;
 /** Decks in play: two for six or more players, one otherwise. */
 export const decksFor = (players: number): 1 | 2 => (players >= 6 ? 2 : 1);
 
-/** Every card id for a table of this size, in deck order. */
-export const fullDeck = (players: number): number[] =>
-  Array.from({ length: DECK_SIZE * decksFor(players) }, (_, i) => i);
+/** Jokers have ids from here up (two per deck, when the house plays with them). */
+export const JOKER_BASE = 104;
+export const isJoker = (id: number) => id >= JOKER_BASE;
+
+/** Every card id for a table of this size, in deck order, with two jokers per deck on request. */
+export const fullDeck = (players: number, jokers = false): number[] => [
+  ...Array.from({ length: DECK_SIZE * decksFor(players) }, (_, i) => i),
+  ...(jokers ? Array.from({ length: 2 * decksFor(players) }, (_, i) => JOKER_BASE + i) : []),
+];
+
+/** Which ranks give a power (7 and 8 are ranks 7 and 8; Jack and Queen 11 and 12). */
+export const RANKS_OF = {
+  '7 and 8': [7, 8],
+  '9 and 10': [9, 10],
+  'Jack and Queen': [11, 12],
+  None: [],
+} as const;
+export type PowerCards = keyof typeof RANKS_OF;
+
+/**
+ * The house rules a game is played with, resolved once at setup and public (everyone sees them).
+ * DEFAULT_HOUSE is the traditional game this package started with.
+ */
+export interface House {
+  peek: PowerCards;
+  spy: PowerCards;
+  swap: PowerCards;
+  king: 'Black Kings' | 'All Kings' | 'None';
+  /** What a red King is worth: 0, -1 or 13. */
+  redKing: number;
+  /** A caller who isn't lowest scores their total plus this, or doubled. */
+  penalty: number | 'double';
+  /** A caller who is lowest scores this, or their own total. */
+  bonus: number | 'total';
+  /** The grid slots everyone may look at when a round starts (none: the peek is skipped). */
+  peekSlots: number[];
+  /** With a 100 goal, landing on exactly 100 drops a player to 50. */
+  exactly100: boolean;
+  jokers: boolean;
+}
+
+export const DEFAULT_HOUSE: House = {
+  peek: '7 and 8',
+  spy: '9 and 10',
+  swap: 'Jack and Queen',
+  king: 'Black Kings',
+  redKing: 0,
+  penalty: 10,
+  bonus: 0,
+  peekSlots: [2, 3],
+  exactly100: false,
+  jokers: false,
+};
 
 /** The card's rank (1 Ace to 13 King) and suit. */
 export function cardOf(id: number): { rank: number; suit: Suit } {
+  if (isJoker(id)) return { rank: 0, suit: 'S' };
   const n = ((id % DECK_SIZE) + DECK_SIZE) % DECK_SIZE;
   return { rank: (n % 13) + 1, suit: SUITS[Math.floor(n / 13)]! };
 }
 
 export const isRed = (id: number) => {
+  if (isJoker(id)) return false;
   const { suit } = cardOf(id);
   return suit === 'H' || suit === 'D';
 };
 
 /** What the card counts for: Ace 1, 2–10 face value, Jack 11, Queen 12, black King 13, red King 0. */
-export function cardValue(id: number): number {
+export function houseValue(id: number, house: House): number {
   const { rank } = cardOf(id);
-  if (rank === 13) return isRed(id) ? 0 : 13;
+  if (rank === 0) return 0;
+  if (rank === 13) return isRed(id) ? house.redKing : 13;
   return rank;
 }
 
@@ -67,24 +120,33 @@ export const POWER_NAME: Record<PowerKind, string> = {
   king: 'Look at one of yours and one of theirs, then swap or not',
 };
 
-/** 7 and 8 peek, 9 and 10 spy, Jack and Queen swap blind, black Kings look and then swap. */
-export function powerOf(id: number): PowerKind | null {
+/** By default 7 and 8 peek, 9 and 10 spy, Jack and Queen swap blind, black Kings look and swap. */
+export function housePower(id: number, house: House): PowerKind | null {
   const { rank } = cardOf(id);
-  if (rank === 7 || rank === 8) return 'peek';
-  if (rank === 9 || rank === 10) return 'spy';
-  if (rank === 11 || rank === 12) return 'swap';
-  if (rank === 13 && !isRed(id)) return 'king';
+  if (rank === 0) return null;
+  const has = (cards: PowerCards) => (RANKS_OF[cards] as readonly number[]).includes(rank);
+  if (has(house.peek)) return 'peek';
+  if (has(house.spy)) return 'spy';
+  if (has(house.swap)) return 'swap';
+  if (rank === 13 && (house.king === 'All Kings' || (house.king === 'Black Kings' && !isRed(id))))
+    return 'king';
   return null;
 }
 
+/** The traditional values and powers (no house rules). */
+export const cardValue = (id: number): number => houseValue(id, DEFAULT_HOUSE);
+export const powerOf = (id: number): PowerKind | null => housePower(id, DEFAULT_HOUSE);
+
 /** "Queen of hearts". */
 export function cardName(id: number): string {
+  if (isJoker(id)) return 'Joker';
   const { rank, suit } = cardOf(id);
   return `${RANK_NAME[rank - 1]} of ${SUIT_NAME[suit]}`;
 }
 
 /** "Q♥". */
 export function cardShort(id: number): string {
+  if (isJoker(id)) return 'Jk';
   const { rank, suit } = cardOf(id);
   return `${RANK_SHORT[rank - 1]}${SUIT_SYMBOL[suit]}`;
 }

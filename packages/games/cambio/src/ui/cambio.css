@@ -45,7 +45,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.cmb__head p {
+.cmb__head .cmb__sub {
   margin: var(--space-1) 0 0;
   display: flex;
   align-items: center;
@@ -1055,6 +1055,55 @@ button.cmb-pile__btn:focus-visible {
   }
 }
 
+/* ── House rules: a plaque and sheet on a phone, a short list elsewhere ── */
+.cmb-house__list {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: 4px;
+  font: 700 var(--f-m) / 1.3 var(--font-body);
+}
+.cmb__head .cmb__sub .cmb-house {
+  margin-left: auto;
+}
+.cmb-house__btn {
+  min-height: 44px;
+}
+.cmb-house--list,
+.cmb-house--tv {
+  display: none;
+  padding: 8px 12px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4.5px var(--rule);
+}
+.cmb-house--list h3,
+.cmb-house--tv h3 {
+  margin: 0 0 4px;
+}
+.cmb-house--tv {
+  display: block;
+  padding: 16px 22px;
+  border-width: 3px;
+}
+.cmb-house--tv .cmb-house__list {
+  font-size: 26px;
+  gap: 6px;
+}
+.cmb-house--tv h3 {
+  font-size: 24px;
+}
+.cmb-reveal .cmb-house--list {
+  display: block;
+}
+.jd-sheet .cmb-house__list {
+  font: 700 18px / 1.35 var(--font-body);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 /* ── Watching on a phone ───────────────────────────────────────────────── */
 .cmb--watch {
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -1081,7 +1130,7 @@ button.cmb-pile__btn:focus-visible {
     --mine: clamp(84px, 11.5cqh, 112px);
     max-width: 1440px;
     grid-template-columns: minmax(0, 1fr) 440px;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
     column-gap: var(--space-6);
   }
   .cmb--phone:not(.cmb--watch) > .cmb__head {
@@ -1090,7 +1139,7 @@ button.cmb-pile__btn:focus-visible {
   }
   .cmb--phone:not(.cmb--watch) > .cmb-main {
     grid-column: 1;
-    grid-row: 2 / 4;
+    grid-row: 2 / 5;
     container-type: size;
     place-items: center;
   }
@@ -1111,9 +1160,17 @@ button.cmb-pile__btn:focus-visible {
     grid-column: 2;
     grid-row: 2;
   }
-  .cmb--phone:not(.cmb--watch) > .cmb-pbp {
+  .cmb--phone:not(.cmb--watch) .cmb-house--plaque {
+    display: none;
+  }
+  .cmb--phone:not(.cmb--watch) > .cmb-house--list {
+    display: block;
     grid-column: 2;
     grid-row: 3;
+  }
+  .cmb--phone:not(.cmb--watch) > .cmb-pbp {
+    grid-column: 2;
+    grid-row: 4;
     align-content: start;
     overflow: hidden;
   }

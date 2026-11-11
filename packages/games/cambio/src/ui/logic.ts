@@ -1,6 +1,6 @@
 import type { Outcome } from '@jackdaw/ui';
-import { cardName, type PowerKind } from '../cards';
-import { CALL_PENALTY, type CambioTableView, type Move, type RoundResult } from '../rules';
+import { DEFAULT_HOUSE, cardName, type House, type PowerKind } from '../cards';
+import { type CambioTableView, type Move, type RoundResult } from '../rules';
 
 type Name = (id: string) => string;
 
@@ -39,7 +39,8 @@ export function around(players: string[], me?: string | null): string[] {
 export function statusLine(t: CambioTableView, me: string | null, name: Name): string {
   if (t.phase === 'peek') {
     const left = t.players.filter((id) => !t.ready.includes(id));
-    if (me && left.includes(me)) return 'Remember these two';
+    if (me && left.includes(me))
+      return t.house.peekSlots.length === 1 ? 'Remember this card' : 'Remember these two';
     if (left.length === 0) return 'Here we go';
     return `Waiting for ${left.map(name).join(', ')}`;
   }
@@ -118,19 +119,71 @@ export function eyesOf(t: CambioTableView): Map<string, string> {
   return eyes;
 }
 
+/** A number with a proper minus sign. */
+export const num = (n: number) => (n < 0 ? `−${-n}` : String(n));
+/** A change in score: +10, or −5. */
+export const delta = (n: number) => (n < 0 ? `−${-n}` : `+${n}`);
+
 /** How the round's scoring worked, spelled out for the caller. */
-export function ruleLine(r: RoundResult, name: Name, me?: string | null): string {
+export function ruleLine(
+  r: RoundResult,
+  name: Name,
+  me?: string | null,
+  house: House = DEFAULT_HOUSE,
+): string {
   const caller = r.caller === me ? 'You' : name(r.caller);
   const mine = r.totals[r.caller]!;
+  const got = r.scored[r.caller]!;
   const others = Object.keys(r.totals).filter((id) => id !== r.caller);
   const low = Math.min(...others.map((id) => r.totals[id]!));
   if (r.callerWon) {
     const tied = low === mine;
-    return `${caller} called and ${tied ? 'tied for' : 'had'} the lowest: 0`;
+    return `${caller} called and ${tied ? 'tied for' : 'had'} the lowest: ${num(got)}`;
   }
   const beat = others.filter((id) => r.totals[id] === low)[0]!;
   const rival = beat === me ? 'you' : name(beat);
-  return `${caller} called but ${rival} ${beat === me ? 'were' : 'was'} lower: ${mine} + ${CALL_PENALTY}`;
+  const lead = `${caller} called but ${rival} ${beat === me ? 'were' : 'was'} lower:`;
+  if (house.penalty === 'double')
+    return mine > 0
+      ? `${lead} ${num(mine)} doubled: ${num(got)}`
+      : `${lead} ${num(mine)}, and doubling can’t make it worse`;
+  return `${lead} ${num(mine)} + ${house.penalty}`;
+}
+
+/** A line for players who landed on exactly 100 and went back to 50, or null. */
+export function dropLine(r: RoundResult, name: Name, me?: string | null): string | null {
+  if (!r.dropped?.length) return null;
+  const who = r.dropped.map((id) => (id === me ? 'You' : name(id)));
+  return `${who.join(' and ')} landed on exactly 100: back to 50.`;
+}
+
+/** The rules that differ from the traditional game, in plain words. Empty for the standard game. */
+export function houseRules(h: House): string[] {
+  const d = DEFAULT_HOUSE;
+  const out: string[] = [];
+  if (h.peek !== d.peek) out.push(h.peek === 'None' ? 'No card lets you peek' : `${h.peek} peek`);
+  if (h.spy !== d.spy) out.push(h.spy === 'None' ? 'No spying' : `${h.spy} spy`);
+  if (h.swap !== d.swap) out.push(h.swap === 'None' ? 'No blind swaps' : `${h.swap} swap`);
+  if (h.king !== d.king)
+    out.push(h.king === 'None' ? 'Kings have no power' : 'Every King looks and swaps');
+  if (h.redKing !== d.redKing) out.push(`Red Kings are worth ${num(h.redKing)}`);
+  if (h.penalty !== d.penalty)
+    out.push(
+      h.penalty === 'double'
+        ? 'A caller who isn’t lowest doubles their total'
+        : `A caller who isn’t lowest adds ${h.penalty}`,
+    );
+  if (h.bonus !== d.bonus)
+    out.push(
+      h.bonus === 'total'
+        ? 'A caller who is lowest scores their total'
+        : `A caller who is lowest scores ${num(h.bonus)}`,
+    );
+  if (h.peekSlots.length !== d.peekSlots.length)
+    out.push(h.peekSlots.length === 0 ? 'No opening peek' : 'Opening peek: one card');
+  if (h.exactly100) out.push('Landing on exactly 100 drops you to 50');
+  if (h.jokers) out.push('Two jokers per deck, worth 0');
+  return out;
 }
 
 /** Everyone's score for the round, lowest first. */
@@ -153,7 +206,7 @@ export function roundMoment(
     return {
       outcome: 'reveal',
       title: best.length > 1 ? `${names} tied` : `${names} had the lowest`,
-      detail: `${low} ${low === 1 ? 'point' : 'points'} this round`,
+      detail: `${num(low)} ${low === 1 ? 'point' : 'points'} this round`,
     };
   }
   const mine = r.scored[me]!;
@@ -165,17 +218,17 @@ export function roundMoment(
           detail: `You and ${best
             .filter((id) => id !== me)
             .map(name)
-            .join(' and ')} scored ${mine}`,
+            .join(' and ')} scored ${num(mine)}`,
         }
       : {
           outcome: 'win',
           title: 'You had the lowest!',
-          detail: `${mine} ${mine === 1 ? 'point' : 'points'} this round`,
+          detail: `${num(mine)} ${mine === 1 ? 'point' : 'points'} this round`,
         };
   }
   return {
     outcome: 'loss',
     title: `${names} had the lowest`,
-    detail: `You scored ${mine} this round.`,
+    detail: `You scored ${num(mine)} this round.`,
   };
 }

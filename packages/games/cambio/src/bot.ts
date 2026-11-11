@@ -1,8 +1,11 @@
 import { botSlips, type BotContext, type BotLevel } from '@jackdaw/engine';
-import { cardValue } from './cards';
+import { houseValue, type House } from './cards';
 import type { CambioAction, CambioPlayerView, CambioTableView } from './rules';
 
 /**
+ * (Card values and which cards give powers come from the view's house rules, so every variant
+ * plays by its own table.)
+ *
  * A computer player for Cambio, deciding from its own view (the faces it knows) and the public
  * table only. It keeps a drawn card when it beats a known high card of its own, or is low and
  * there is a card it hasn't seen; uses 7 and 8 to learn an unknown card of its own, 9 and 10 to
@@ -30,7 +33,8 @@ export function cambioBot(ctx: BotContext<CambioPlayerView, CambioTableView>): C
   const slots = mine.map((_, i) => i);
   const unknown = slots.filter((i) => mine[i] === null);
   const known = slots.filter((i) => mine[i] !== null);
-  const worth = (i: number) => cardValue(mine[i]!);
+  const worthOf = (c: number) => houseValue(c, v.house);
+  const worth = (i: number) => worthOf(mine[i]!);
   // The highest card it knows of its own.
   const high = known.length ? known.reduce((a, b) => (worth(b) > worth(a) ? b : a)) : null;
   const rivals = v.players.filter((id) => id !== me && id !== v.caller);
@@ -40,11 +44,11 @@ export function cambioBot(ctx: BotContext<CambioPlayerView, CambioTableView>): C
     const n = v.players.length;
     if (v.turns > 0 && !v.caller) {
       const sure =
-        unknown.length === 0 && known.reduce((t, i) => t + worth(i), 0) <= CALL_AT[level];
+        unknown.length === 0 && known.reduce((t, i) => t + worth(i), 0) <= callAt(level, v.house);
       if (sure || v.turns >= n * TOO_LONG) return { type: 'call' };
     }
     if (v.top !== null && high !== null && !slip) {
-      const top = cardValue(v.top);
+      const top = worthOf(v.top);
       if (top <= 3 && worth(high) > top) return { type: 'take' };
     }
     return { type: 'draw' };
@@ -53,7 +57,7 @@ export function cambioBot(ctx: BotContext<CambioPlayerView, CambioTableView>): C
   if (v.step === 'held') {
     const card = v.held;
     if (card === null) return null;
-    const value = cardValue(card);
+    const value = worthOf(card);
     const fromPile = v.holding?.from === 'discard';
     if (slip) return place(rng.pick(slots));
     if (high !== null && value < worth(high)) return place(high);
@@ -78,7 +82,7 @@ export function cambioBot(ctx: BotContext<CambioPlayerView, CambioTableView>): C
         if (slip || high === null || worth(high) < 7) return { type: 'skipPower' };
         const lows = rivals.flatMap((p) =>
           (v.grid[p] ?? []).flatMap((c, slot) =>
-            c !== null && cardValue(c) <= 3 ? [{ player: p, slot, value: cardValue(c) }] : [],
+            c !== null && worthOf(c) <= 3 ? [{ player: p, slot, value: worthOf(c) }] : [],
           ),
         );
         const blind = rivals.flatMap((p) =>
@@ -114,9 +118,22 @@ export function cambioBot(ctx: BotContext<CambioPlayerView, CambioTableView>): C
     const mineNow = l ? v.grid[me]?.[l.mySlot] : null;
     const theirs = l ? v.grid[l.player]?.[l.slot] : null;
     if (mineNow == null || theirs == null) return { type: 'skipPower' };
-    return cardValue(theirs) < cardValue(mineNow) ? { type: 'kingSwap' } : { type: 'kingKeep' };
+    return worthOf(theirs) < worthOf(mineNow) ? { type: 'kingSwap' } : { type: 'kingKeep' };
   }
   return null;
 }
 
 const place = (slot: number): CambioAction => ({ type: 'keep', slot });
+
+/**
+ * The total at or under which it calls, moved by the house rules: a steeper penalty (20, or
+ * doubled) makes it wait for a lower hand, while a gentler one, or a bonus for winning, makes it
+ * bolder.
+ */
+function callAt(level: BotLevel, house: House): number {
+  let at = CALL_AT[level];
+  if (house.penalty === 'double' || house.penalty >= 20) at -= 2;
+  else if (house.penalty <= 5) at += 1;
+  if (house.bonus !== 'total' && house.bonus < 0) at += 1;
+  return at;
+}

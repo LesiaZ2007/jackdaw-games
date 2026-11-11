@@ -1186,10 +1186,13 @@ button.cmb-pile__btn:focus-visible {
   .cmb--phone:not(.cmb--watch) > .cmb__head {
     grid-column: 1;
     grid-row: 1;
+    align-self: start;
   }
   .cmb--phone:not(.cmb--watch) > .cmb-main {
     grid-column: 1;
-    grid-row: 2 / 5;
+    /* the whole height of the left column, under the heading: the right column sets the rows */
+    grid-row: 1 / 5;
+    margin-top: 124px;
     container-type: size;
     place-items: center;
   }

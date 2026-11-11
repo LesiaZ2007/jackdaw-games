@@ -197,6 +197,16 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 56h48" />
     </g>
   ),
+  /** A playing card with one corner lifted and an eye on it (Cambio). */
+  peek: (
+    <g {...stroke(3.4)}>
+      <path d="M12 6h26l12 12v32H12z" />
+      <path d="M38 6v12h12" />
+      <path d="M18 36c4-6 10-9 14-9s10 3 14 9c-4 6-10 9-14 9s-10-3-14-9z" />
+      <circle cx="32" cy="36" r="3.2" fill="currentColor" />
+      <path d="M8 58h48" />
+    </g>
+  ),
   /** A column of cards fanned down, an ace beside it (Solitaire). */
   patience: (
     <g {...stroke(3.4)}>

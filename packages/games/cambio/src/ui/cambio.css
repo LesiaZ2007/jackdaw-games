@@ -1,0 +1,1822 @@
+/*
+ * Cambio: the back room. A purpure felt card table with a sable rail and a gold double rule,
+ * plain cream cards in charcoal ink, and rubber stamps for the powers. The cards and the felt are
+ * printed, so they look the same by day and in dark; everything around them uses the kit's tokens.
+ */
+.cmb {
+  --cmb-ink: #1d1d1c;
+  --cmb-stock: var(--on-fill);
+  --cmb-red: var(--gules);
+  --cmb-felt: var(--purpure);
+  --cmb-rail: var(--sable);
+  --cmb-gold: #b8892a;
+  --cmb-back: var(--purpure);
+  --cmb-lozenge: var(--on-fill);
+  --cmb-plate: var(--on-fill);
+  --cmb-plate-ink: #1d1d1c;
+  --cmb-ok: var(--vert);
+  /* Text sizes on the felt: the TV overrides them (nothing under 24px there). */
+  --f-s: 12px;
+  --f-m: 15px;
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+/* ── Phone: heading, play by play, the felt, your cards and the dock ──── */
+.cmb--phone {
+  --mine: clamp(60px, 21cqw, 84px);
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: var(--space-2);
+}
+.cmb__head h2 {
+  margin: 0;
+  font-size: var(--step-2);
+  line-height: 1.05;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.cmb__head .cmb__sub {
+  margin: var(--space-1) 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--ink-2);
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cmb-main {
+  min-height: 0;
+  display: grid;
+}
+.cmb--phone > .cmb-scores {
+  display: none;
+}
+.cmb--phone.is-scoring > .cmb-pbp {
+  display: none;
+}
+.cmb--phone.is-scoring {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.cmb-main--hands {
+  overflow-y: auto;
+  align-content: start;
+}
+.cmb-clock {
+  min-width: 3.2em;
+  padding: 2px 8px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 16px/1.2 var(--font-code);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.cmb-clock.is-low {
+  background: var(--gules);
+  border-color: var(--gules);
+  color: var(--on-fill);
+}
+
+/* What just happened: one line each, the newest in ink. */
+.cmb-pbp {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-height: 42px;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+}
+.cmb-pbp li {
+  color: var(--ink-2);
+  font: 600 var(--f-m) / 1.3 var(--font-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cmb-pbp li.is-new {
+  color: var(--ink);
+  font-weight: 800;
+  animation: cmb-pop 360ms var(--ease-out) both;
+}
+.cmb--phone .cmb-pbp li:nth-child(n + 3) {
+  display: none;
+}
+
+/* ── Cards ─────────────────────────────────────────────────────────────── */
+.cmb-card {
+  --w: 56px;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  box-sizing: border-box;
+  width: var(--w);
+  aspect-ratio: 5 / 7;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  perspective: calc(var(--w) * 6);
+  transition:
+    translate 160ms var(--ease-out),
+    outline-offset 160ms;
+}
+button.cmb-card {
+  cursor: pointer;
+}
+button.cmb-card:disabled {
+  cursor: default;
+}
+button.cmb-card:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+.cmb-card__in {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 360ms var(--ease-out);
+}
+.cmb-card.is-up .cmb-card__in {
+  transform: rotateY(180deg);
+}
+.cmb-card__back,
+.cmb-card__face {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  backface-visibility: hidden;
+  border: max(1px, calc(var(--w) * 0.03)) solid var(--cmb-ink);
+  border-radius: calc(var(--w) * 0.1);
+  box-shadow: 0 calc(var(--w) * 0.04) 0 var(--shadow);
+}
+.cmb-card__back {
+  background: var(--cmb-back);
+}
+.cmb-card__back > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.cmb-card__rule {
+  fill: none;
+  stroke: var(--cmb-lozenge);
+  stroke-width: 1.2;
+}
+.cmb-card__lozenge {
+  fill: none;
+  stroke: var(--cmb-lozenge);
+  stroke-width: 0.7;
+  opacity: 0.6;
+}
+.cmb-card__mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: 58%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--cmb-back);
+  border: max(1px, calc(var(--w) * 0.03)) solid var(--cmb-lozenge);
+  color: var(--cmb-lozenge);
+}
+.cmb-card__mark svg {
+  width: 72%;
+  height: 72%;
+}
+.cmb-card__face {
+  background: var(--cmb-stock);
+  color: var(--cmb-ink);
+  transform: rotateY(180deg);
+}
+.cmb-card--red .cmb-card__face {
+  color: var(--cmb-red);
+}
+.cmb-card__corner {
+  position: absolute;
+  top: 5%;
+  left: 8%;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  font: 800 calc(var(--w) * 0.3) / 1 var(--font-code);
+}
+.cmb-card__corner svg {
+  width: calc(var(--w) * 0.24);
+  height: calc(var(--w) * 0.24);
+}
+.cmb-card__big {
+  position: absolute;
+  left: 52%;
+  top: 56%;
+  translate: -50% -50%;
+  width: calc(var(--w) * 0.54);
+  height: calc(var(--w) * 0.54);
+}
+/* Red Kings count 0 and black Kings 13: a tiny tag says which. */
+.cmb-card__tag {
+  position: absolute;
+  top: 6%;
+  right: 7%;
+  padding: 0 0.25em;
+  background: var(--cmb-ink);
+  color: var(--cmb-stock);
+  font: 800 max(8px, calc(var(--w) * 0.2)) / 1.2 var(--font-plaque);
+}
+.cmb-card__value {
+  position: absolute;
+  right: 7%;
+  bottom: 5%;
+  padding: 0 0.22em;
+  border: 1px solid currentColor;
+  font: 800 max(8px, calc(var(--w) * 0.22)) / 1.25 var(--font-code);
+}
+/* A card you know, noted on its back. */
+.cmb-note {
+  position: absolute;
+  top: 6%;
+  left: 6%;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 3px;
+  background: var(--cmb-stock);
+  color: var(--cmb-ink);
+  border: 1px solid var(--cmb-ink);
+  border-radius: 2px;
+  font: 800 max(9px, calc(var(--w) * 0.24)) / 1.3 var(--font-code);
+}
+.cmb-note svg {
+  width: 0.85em;
+  height: 0.85em;
+}
+.cmb-note--red {
+  color: var(--cmb-red);
+}
+/* The eye of a peek or a spy, stamped over the card. */
+.cmb-card__eye {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  rotate: -10deg;
+  z-index: 3;
+  width: max(16px, calc(var(--w) * 0.58));
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: max(2px, calc(var(--w) * 0.04)) solid var(--cmb-red);
+  border-radius: 50%;
+  background: var(--cmb-stock);
+  color: var(--cmb-red);
+  pointer-events: none;
+  animation: cmb-stamp 420ms var(--ease-out) both;
+}
+.cmb-card__eye svg {
+  width: 72%;
+  height: 72%;
+}
+.cmb-card__lock {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  z-index: 3;
+  width: max(10px, calc(var(--w) * 0.34));
+  aspect-ratio: 1;
+  padding: 2px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--cmb-ink);
+  color: var(--cmb-stock);
+  pointer-events: none;
+}
+.cmb-card__lock svg {
+  width: 100%;
+  height: 100%;
+}
+.cmb-card--can {
+  outline: 3px solid var(--cmb-gold);
+  outline-offset: 2px;
+  animation: cmb-pulse 1.3s ease-in-out infinite;
+}
+.cmb-card--picked {
+  outline: 3px solid var(--cmb-stock);
+  outline-offset: 2px;
+  translate: 0 -6px;
+}
+/* Scoring: the cards turn over in a quick stagger. */
+.cmb-card--flip .cmb-card__in {
+  animation: cmb-reveal 380ms var(--ease-out) var(--d, 0ms) both;
+}
+@keyframes cmb-reveal {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(180deg);
+  }
+}
+@keyframes cmb-pulse {
+  50% {
+    outline-offset: 5px;
+  }
+}
+@keyframes cmb-pop {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+@keyframes cmb-stamp {
+  from {
+    opacity: 0;
+    scale: 1.8;
+  }
+}
+
+/* ── The felt ──────────────────────────────────────────────────────────── */
+/* These sizes are mirrored, as numbers, in layout.ts, whose test checks that no seat block
+   (status tag, grid, name plate) ever touches the middle block (piles, labels, a held card). */
+.cmb-felt {
+  --ring: 13px;
+  --mc: min(64px, 7.6cqw);
+  --pile: min(56px, 11.5cqw);
+  --hold: min(92px, 15cqw);
+  --tag-h: 16px;
+  --band: 14px;
+  --grid-gap: 3px;
+  --row-gap: 3px;
+  --pile-gap: 14px;
+  --cap-h: 14px;
+  --plate-h: clamp(22px, calc(var(--mc) * 0.42), 34px);
+  --tok: calc(var(--plate-h) - 2px);
+  --seat-w: max(calc(var(--mc) * 2 + 8px), 60px);
+  --seat-h: calc(
+    var(--tag-h) + var(--plate-h) + var(--mc) * 2.8 + var(--grid-gap) + var(--row-gap) * 2
+  );
+  container-type: inline-size;
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 340px;
+  background: var(--cmb-felt);
+  border: 7px solid var(--cmb-rail);
+  border-radius: 36px;
+  box-shadow:
+    inset 0 0 0 3px var(--cmb-felt),
+    inset 0 0 0 4.5px var(--cmb-gold),
+    inset 0 0 0 8px var(--cmb-felt),
+    inset 0 0 0 9.5px var(--cmb-gold),
+    0 5px 0 var(--shadow);
+}
+.cmb-felt[data-count='5'] {
+  --mc: min(52px, 6.8cqw);
+}
+.cmb-felt[data-count='7'] {
+  --mc: min(44px, 5.8cqw);
+  --hold: min(80px, 14cqw);
+  --seat-w: max(calc(var(--mc) * 2 + 8px), 56px);
+}
+/* Side seats at these x positions: the middle keeps clear of them. */
+.cmb-felt[data-n='3'],
+.cmb-felt[data-n='4'] {
+  --mid-l: calc(12% + var(--seat-w) / 2 + 8px);
+}
+.cmb-felt[data-n='5'] {
+  --mid-l: calc(11% + var(--seat-w) / 2 + 8px);
+}
+.cmb-felt[data-n='6'],
+.cmb-felt[data-n='7'] {
+  --mid-l: calc(10% + var(--seat-w) / 2 + 8px);
+}
+.cmb-ring {
+  position: absolute;
+  inset: var(--ring);
+}
+.cmb-seat {
+  position: absolute;
+  left: var(--x);
+  top: calc((100% - var(--seat-h)) * var(--y));
+  translate: -50% 0;
+  width: var(--seat-w);
+  height: var(--seat-h);
+  display: grid;
+  grid-template-rows: var(--tag-h) auto var(--plate-h);
+  row-gap: var(--row-gap);
+  justify-items: center;
+}
+.cmb-felt--oval .cmb-seat {
+  left: calc((100% - var(--seat-w)) * var(--px));
+  top: calc((100% - var(--seat-h)) * var(--py));
+  translate: none;
+}
+.cmb-seat__tag {
+  height: var(--tag-h);
+  display: grid;
+  place-items: center;
+}
+.cmb-seat__grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, var(--mc));
+  gap: var(--grid-gap);
+  justify-content: center;
+  align-self: start;
+}
+.cmb-seat .cmb-card {
+  --w: var(--mc);
+  display: block;
+}
+.cmb-seat__open {
+  display: block;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.cmb-seat__open:focus-visible {
+  outline: 3px solid var(--cmb-stock);
+  outline-offset: 3px;
+}
+.cmb-seat.is-turn .cmb-seat__grid {
+  outline: 3px solid var(--cmb-gold);
+  outline-offset: 3px;
+}
+.cmb-seat.is-target .cmb-seat__grid {
+  outline: 3px solid var(--cmb-stock);
+  outline-offset: 3px;
+  animation: cmb-pulse 1.3s ease-in-out infinite;
+}
+.cmb-seat__plate {
+  max-width: 100%;
+  height: var(--plate-h);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-right: 4px;
+  background: var(--cmb-plate);
+  color: var(--cmb-plate-ink);
+  border: 1.5px solid var(--cmb-ink);
+}
+.cmb-seat .jd-token {
+  --z: var(--tok);
+  flex: none;
+  margin-left: -1px;
+}
+.cmb-seat__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 var(--f-s) / 1 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+/* The status tag sits in its own row above the grid, never on a card. */
+.cmb-chip {
+  box-sizing: border-box;
+  height: calc(var(--tag-h) - 1px);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  background: var(--cmb-plate);
+  color: var(--cmb-plate-ink);
+  border: 1.5px solid var(--cmb-ink);
+  font: 800 var(--f-s) / 1 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.cmb-chip--last {
+  background: var(--cmb-red);
+  color: var(--cmb-stock);
+}
+.cmb-chip--ok {
+  background: var(--cmb-ok);
+  color: var(--cmb-stock);
+}
+/* A caller's grid: a ribbon across it and a lock on every card. */
+.cmb-ribbon {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  top: 50%;
+  translate: 0 -50%;
+  rotate: -8deg;
+  z-index: 4;
+  padding: 1px 0;
+  background: var(--cmb-red);
+  color: var(--cmb-stock);
+  border-block: 1.5px solid var(--cmb-stock);
+  font: 800 max(10px, var(--f-s)) / 1.15 var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: none;
+  animation: cmb-stamp 420ms var(--ease-out) both;
+}
+
+/* The middle: stock, discard (and a small card someone holds) in a row, your own held card
+   under them, and a stamp for a power. It sits under the top row of seats and between the side
+   seats, in the felt's lower middle. */
+.cmb-mid {
+  position: absolute;
+  left: var(--mid-l, 0px);
+  right: var(--mid-l, 0px);
+  top: calc(var(--seat-h) + var(--band));
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.cmb-felt--oval .cmb-mid {
+  left: 50%;
+  right: auto;
+  top: 52%;
+  bottom: auto;
+  translate: -50% -50%;
+}
+.cmb-piles {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--pile-gap);
+}
+.cmb-pile {
+  width: var(--pile);
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+}
+.cmb-pile .cmb-card {
+  --w: var(--pile);
+  display: block;
+}
+.cmb-pile__btn {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+.cmb-pile__btn > * {
+  grid-area: 1 / 1;
+}
+/* A tap target of at least 44px wide, without making the pile any wider. */
+button.cmb-pile__btn::before {
+  content: '';
+  position: absolute;
+  inset: 0 min(0px, calc((var(--pile) - 44px) / 2));
+}
+button.cmb-pile__btn {
+  cursor: pointer;
+}
+button.cmb-pile__btn:focus-visible {
+  outline: 3px solid var(--cmb-stock);
+  outline-offset: 4px;
+}
+.cmb-pile__under--1 {
+  translate: 3px 3px;
+}
+.cmb-pile__under--2 {
+  translate: 6px 6px;
+}
+.cmb-pile__empty {
+  width: var(--pile);
+  aspect-ratio: 5 / 7;
+  border: 2px dashed var(--cmb-stock);
+  border-radius: 6px;
+}
+.cmb-pile__btn.is-live .cmb-card:last-of-type {
+  outline: 3px solid var(--cmb-gold);
+  outline-offset: 3px;
+  animation: cmb-nudge 1.5s var(--ease-out) infinite;
+}
+@keyframes cmb-nudge {
+  50% {
+    translate: 0 -4px;
+  }
+}
+/* A label under a pile; it may be wider than the pile but takes no room in the row. */
+.cmb-pile__cap {
+  /* clear of the stack's offset edges, and drawn over them */
+  position: relative;
+  z-index: 1;
+  margin-top: 7px;
+  width: var(--pile);
+  height: var(--cap-h);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;
+  color: var(--cmb-stock);
+  font: 800 var(--f-s) / 1 var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+/* How many are left in the stock, on a card-shaped chit at the stack's top right corner. */
+.cmb-chit {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0.12em 0.3em 0.06em;
+  box-sizing: border-box;
+  background: var(--cmb-rail);
+  color: var(--cmb-stock);
+  border: 2px solid var(--cmb-stock);
+  border-radius: 4px;
+  box-shadow: 0 0 0 1.5px var(--cmb-ink);
+  font: 800 13px / 1.15 var(--font-code);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.cmb-chit--stock {
+  position: absolute;
+  right: -10px;
+  top: -9px;
+  z-index: 2;
+  place-self: start end;
+}
+/* Your held card, under the piles, with its plaque beside it. */
+.cmb-held {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cmb-held__card {
+  --w: var(--hold);
+  animation: cmb-rise 340ms var(--ease-out) both;
+}
+@keyframes cmb-rise {
+  from {
+    opacity: 0;
+    translate: 0 40px;
+    scale: 0.6;
+  }
+}
+.jd-plaque.cmb-held__discard {
+  width: 90px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 2px 6px;
+  font-size: 14px;
+  line-height: 1.05;
+  white-space: normal;
+}
+.cmb-look {
+  display: flex;
+  gap: 8px;
+}
+.cmb-look > span {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+.cmb-look .cmb-card {
+  --w: calc(var(--hold) * 0.8);
+}
+.cmb-look small {
+  max-width: 7em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--cmb-stock);
+  font: 800 var(--f-s) / 1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+/* A rubber stamp names the power across the table. */
+.cmb-stamp {
+  padding: 0 0.3em;
+  rotate: -7deg;
+  background: var(--cmb-stock);
+  color: var(--cmb-red);
+  border: 3px solid var(--cmb-red);
+  box-shadow: inset 0 0 0 2px var(--cmb-stock);
+  outline: 2px solid var(--cmb-red);
+  outline-offset: -7px;
+  font: 400 clamp(22px, 7cqw, 40px) / 1.05 var(--font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  pointer-events: none;
+  animation: cmb-stamp 480ms var(--ease-out) both;
+}
+/* Choosing one of an opponent's four cards, big enough to tap. */
+.cmb-zoom {
+  position: absolute;
+  inset: 8px;
+  z-index: 8;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--cmb-rail);
+  border: 3px solid var(--cmb-gold);
+  color: var(--cmb-stock);
+}
+.cmb-zoom p {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 var(--f-m) / 1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cmb-zoom__grid {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 8px;
+}
+.cmb-zoom .cmb-card {
+  --w: clamp(48px, 9cqw, 84px);
+}
+
+/* ── Your cards and the dock ───────────────────────────────────────────── */
+.cmb-side {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+}
+.cmb-me__plate {
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.cmb-me__plate b {
+  margin-left: auto;
+  font: 800 16px var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+.cmb-me .jd-token {
+  --z: 26px;
+}
+.cmb-me__grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, var(--mine));
+  gap: 10px;
+  padding: 8px;
+  background: var(--cmb-felt);
+  border: 4px solid var(--cmb-rail);
+  border-radius: 14px;
+  box-shadow:
+    inset 0 0 0 2px var(--cmb-felt),
+    inset 0 0 0 3.5px var(--cmb-gold);
+}
+.cmb-me.is-turn .cmb-me__grid {
+  outline: 3px solid var(--cmb-gold);
+  outline-offset: 3px;
+}
+.cmb-me__card {
+  --w: var(--mine);
+}
+.cmb-me__grid .cmb-ribbon {
+  font-size: 18px;
+}
+.cmb-me__hint {
+  max-width: calc(var(--mine) * 2 + 36px);
+  margin: 6px 0 0;
+  color: var(--ink-2);
+  font: 700 12px / 1.2 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.cmb-dock {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-width: 0;
+}
+.cmb-dock .jd-plaque {
+  width: 100%;
+}
+.cmb-dock__say {
+  margin: 0;
+  color: var(--ink);
+  font: 700 var(--f-m) / 1.25 var(--font-body);
+}
+.cmb-dock__why {
+  margin: 0;
+  color: var(--ink-2);
+  font: 800 13px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cmb-dock__last {
+  margin: 0;
+  padding: 2px 8px;
+  background: var(--gules);
+  color: var(--on-fill);
+  font: 800 13px / 1.25 var(--font-plaque);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.cmb-dock__count {
+  margin: 0;
+  font: 800 var(--step-0) / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.cmb-dock__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.cmb-dock__row--two {
+  display: grid;
+}
+.cmb-ring-clock {
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 52px;
+}
+.cmb-ring-clock svg {
+  width: 100%;
+  height: 100%;
+  rotate: -90deg;
+  fill: none;
+  stroke-width: 4;
+}
+.cmb-ring-clock__track {
+  stroke: var(--rule);
+}
+.cmb-ring-clock__arc {
+  stroke: var(--cmb-gold);
+  stroke-linecap: butt;
+  transition: stroke-dasharray 1s linear;
+}
+.cmb-ring-clock b {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 800 18px var(--font-code);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Scoring: hands, totals, the rule and the ranked strip ─────────────── */
+.cmb-hands {
+  --hc: clamp(30px, 10cqw, 44px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.cmb-hands[data-count='6'],
+.cmb-hands[data-count='7'],
+.cmb-hands[data-count='8'] {
+  --hc: clamp(28px, 9cqw, 34px);
+}
+.cmb-hand {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 6px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+}
+.cmb-hand.is-me {
+  background: color-mix(in srgb, var(--cmb-gold) 22%, var(--paper));
+}
+.cmb-hand.is-caller {
+  border-color: var(--gules);
+  box-shadow: inset 0 0 0 2px var(--gules);
+}
+.cmb-hand .jd-token {
+  --z: 26px;
+}
+.cmb-hand__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 15px / 1.1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.cmb-hand__name small {
+  display: block;
+  color: var(--gules);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.cmb-hand__cards {
+  display: flex;
+  gap: 3px;
+}
+.cmb-hand .cmb-card {
+  --w: var(--hc);
+}
+.cmb-hand .cmb-chit {
+  display: grid;
+  place-items: center;
+  width: calc(var(--hc) * 1.15);
+  aspect-ratio: 5 / 6;
+  padding: 0;
+  font-size: calc(var(--hc) * 0.55);
+  background: var(--sable);
+}
+.cmb-rule {
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4.5px var(--rule);
+  font: 800 var(--step-0) / 1.15 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.cmb-scores {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4.5px var(--rule);
+}
+.cmb-scores h3 {
+  margin: 0;
+}
+.cmb-scores ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.cmb-scores li {
+  display: grid;
+  grid-template-columns: 18px 24px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  font: 700 16px var(--font-body);
+}
+.cmb-scores li.is-me {
+  font-weight: 800;
+}
+.cmb-scores .jd-token {
+  --z: 24px;
+}
+.cmb-scores__rank {
+  color: var(--ink-2);
+  font: 800 15px var(--font-code);
+}
+.cmb-scores__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmb-scores__gain {
+  color: var(--ink-2);
+  font: 800 14px var(--font-code);
+}
+.cmb-scores__n {
+  font: 800 18px var(--font-code);
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+  text-align: right;
+}
+.cmb-scores__goal {
+  margin: 0;
+  color: var(--ink-2);
+  font: 700 13px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cmb-side--score {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+.cmb-side--score > .cmb-rule,
+.cmb-side--score > .cmb-scores {
+  grid-column: 1 / -1;
+}
+.cmb-side--score > .jd-plaque {
+  grid-column: 2;
+  min-width: 170px;
+}
+.cmb-side--score .cmb-scores ol {
+  grid-template-columns: 1fr 1fr;
+  column-gap: 14px;
+}
+.cmb-side--score .cmb-scores li {
+  grid-template-columns: 16px 22px minmax(0, 1fr) auto auto;
+  gap: 5px;
+  min-height: 28px;
+  font-size: 14px;
+}
+
+/* ── The call: a printed band sweeps across ───────────────────────────── */
+.cmb-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  z-index: 20;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 14px;
+  padding: 6px 12px;
+  background: var(--cmb-red);
+  color: var(--cmb-stock);
+  border-block: 4px solid var(--cmb-ink);
+  box-shadow: inset 0 0 0 2px var(--cmb-stock);
+  pointer-events: none;
+  animation: cmb-sweep 2.6s var(--ease-out) both;
+}
+.cmb-band__word {
+  font: 400 clamp(36px, 12cqw, 68px) / 1 var(--font-display);
+}
+.cmb-band__who {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 clamp(18px, 6cqw, 30px) / 1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+@keyframes cmb-sweep {
+  0% {
+    translate: -110% 0;
+  }
+  14%,
+  82% {
+    translate: 0 0;
+    opacity: 1;
+  }
+  100% {
+    translate: 110% 0;
+    opacity: 0;
+  }
+}
+@keyframes cmb-fade {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ── House rules: a plaque and sheet on a phone, a short list elsewhere ── */
+.cmb-house__list {
+  margin: 0;
+  padding-left: 1.1em;
+  display: grid;
+  gap: 4px;
+  font: 700 var(--f-m) / 1.3 var(--font-body);
+}
+.cmb__head .cmb__sub .cmb-house {
+  margin-left: auto;
+}
+.cmb-house__btn {
+  min-height: 44px;
+}
+.cmb-house--list,
+.cmb-house--tv {
+  display: none;
+  padding: 8px 12px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow:
+    inset 0 0 0 3px var(--paper),
+    inset 0 0 0 4.5px var(--rule);
+}
+.cmb-house--list h3,
+.cmb-house--tv h3 {
+  margin: 0 0 4px;
+}
+.cmb-house--tv {
+  display: block;
+  padding: 16px 22px;
+  border-width: 3px;
+}
+.cmb-house--tv .cmb-house__list {
+  font-size: 26px;
+  gap: 6px;
+}
+.cmb-house--tv h3 {
+  font-size: 24px;
+}
+.cmb-reveal .cmb-house--list {
+  display: block;
+}
+.jd-sheet .cmb-house__list {
+  font: 700 18px / 1.35 var(--font-body);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* ── Watching on a phone ───────────────────────────────────────────────── */
+.cmb--watch {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.cmb--watch .cmb-felt {
+  min-height: 330px;
+}
+.cmb-watch {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-height: 108px;
+  padding-top: var(--space-1);
+  border-top: 2px solid var(--rule);
+}
+.cmb-watch .cmb-scores ol {
+  grid-template-columns: 1fr 1fr;
+  column-gap: 14px;
+}
+
+/* ── Laptop: the felt on the left sized by height, your side on the right ── */
+@container game (min-width: 760px) {
+  .cmb--phone:not(.cmb--watch) {
+    --mine: clamp(84px, 11.5cqh, 112px);
+    max-width: 1440px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    column-gap: var(--space-6);
+  }
+  .cmb--phone:not(.cmb--watch) > .cmb__head {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+  }
+  .cmb--phone:not(.cmb--watch) > .cmb-main {
+    grid-column: 1;
+    /* the whole height of the left column, under the heading: the right column sets the rows */
+    grid-row: 1 / 5;
+    margin-top: 124px;
+    container-type: size;
+    place-items: center;
+  }
+  .cmb--phone:not(.cmb--watch) > .cmb-main .cmb-felt {
+    /* fill the column: as wide as it is, and as tall as the screen allows (up to a tall table) */
+    width: 100cqw;
+    height: min(100cqh, 130cqw);
+    aspect-ratio: auto;
+    min-height: 0;
+  }
+  .cmb--phone:not(.cmb--watch) > .cmb-side {
+    grid-column: 2;
+    grid-row: 1;
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+  .cmb--phone:not(.cmb--watch) > .cmb-scores {
+    display: grid;
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .cmb--phone:not(.cmb--watch) .cmb-house--plaque {
+    display: none;
+  }
+  .cmb--phone:not(.cmb--watch) > .cmb-house--list {
+    display: block;
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .cmb--phone:not(.cmb--watch) > .cmb-pbp {
+    grid-column: 2;
+    grid-row: 4;
+    align-content: start;
+    overflow: hidden;
+  }
+  .cmb--phone:not(.cmb--watch) .cmb-pbp li {
+    white-space: normal;
+  }
+  .cmb--phone:not(.cmb--watch) .cmb-pbp li:nth-child(n + 3) {
+    display: block;
+  }
+  .cmb--phone:not(.cmb--watch) .cmb-pbp li:nth-child(n + 7) {
+    display: none;
+  }
+  .cmb--phone:not(.cmb--watch) .cmb-dock {
+    width: min(100%, 360px);
+  }
+  .cmb--phone.is-scoring:not(.cmb--watch) {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .cmb--phone.is-scoring:not(.cmb--watch) > .cmb-main {
+    grid-row: 2;
+    container-type: normal;
+  }
+  .cmb--phone.is-scoring:not(.cmb--watch) > .cmb-side--score {
+    grid-row: 1 / 3;
+    align-self: start;
+  }
+  .cmb--phone.is-scoring:not(.cmb--watch) .cmb-hands {
+    --hc: 56px;
+  }
+}
+
+/* Short phones: smaller cards so the felt keeps its room. */
+@container game (max-height: 640px) and (orientation: portrait) {
+  .cmb--phone {
+    --mine: clamp(52px, 17cqw, 64px);
+  }
+  .cmb-felt {
+    min-height: 200px;
+  }
+  .cmb-felt[data-count='7'] {
+    min-height: 236px;
+  }
+}
+
+/* ── The lobby: everyone round the felt before the deal ────────────────── */
+.cmb-lobby {
+  --tok: clamp(34px, 11cqw, 58px);
+  container-type: inline-size;
+  width: min(100%, 520px);
+  aspect-ratio: 1 / 1.02;
+  margin: 14px auto 28px;
+}
+.cmb-lobby__felt {
+  position: absolute;
+  inset: 7% 3%;
+  background: var(--cmb-felt);
+  border: 7px solid var(--cmb-rail);
+  border-radius: 44px;
+  box-shadow:
+    inset 0 0 0 3px var(--cmb-felt),
+    inset 0 0 0 4.5px var(--cmb-gold),
+    inset 0 0 0 8px var(--cmb-felt),
+    inset 0 0 0 9.5px var(--cmb-gold),
+    0 5px 0 var(--shadow);
+}
+.cmb-lobby__mid {
+  position: absolute;
+  inset: 30% 24%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--cmb-stock);
+}
+.cmb-lobby__mid p {
+  margin: 0;
+  font: 400 clamp(20px, 7cqw, 34px) / 1.05 var(--font-display);
+}
+.cmb-lobby__mid small {
+  display: block;
+  margin-top: 4px;
+  font: 800 clamp(12px, 3cqw, 15px) var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.cmb-lobby__stock {
+  display: grid;
+}
+.cmb-lobby__stock > * {
+  grid-area: 1 / 1;
+}
+.cmb-lobby__stock .cmb-card {
+  --w: clamp(40px, 11cqw, 64px);
+}
+.cmb-lseat {
+  position: absolute;
+  z-index: 2;
+  width: calc(var(--tok) * 2.1);
+  /* Edge seats are kept at least 8px inside the felt, so a plate never touches the screen edge. */
+  left: clamp(calc(var(--tok) * 1.05 + 8px), var(--lx), calc(100% - var(--tok) * 1.05 - 8px));
+  translate: -50% -50%;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+}
+.cmb-lseat__tok {
+  position: relative;
+  display: inline-grid;
+}
+.cmb-lseat .jd-token {
+  --z: var(--tok);
+}
+.cmb-lseat__name {
+  max-width: 100%;
+  padding: 1px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--cmb-plate);
+  border: 1.5px solid var(--cmb-ink);
+  color: var(--cmb-plate-ink);
+  font: 800 clamp(12px, 3.6cqw, 20px) / 1.25 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.cmb-lseat.is-me .cmb-lseat__name {
+  background: var(--cmb-ink);
+  color: var(--cmb-stock);
+}
+.cmb-lseat__open {
+  display: block;
+  width: var(--tok);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 2px dashed var(--cmb-stock);
+}
+.cmb-addseat {
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  color: var(--cmb-stock);
+}
+.cmb-addseat .jd-addseat__ring {
+  width: var(--tok);
+  min-width: 0;
+  border-color: var(--cmb-stock);
+  background: var(--cmb-felt);
+}
+.cmb-addseat:focus-visible {
+  outline: 3px solid var(--cmb-stock);
+  outline-offset: 2px;
+}
+.cmb-lseat--open:has(.cmb-addseat) .cmb-lseat__open {
+  visibility: hidden;
+}
+.cmb-lseat__bot {
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  translate: -50% 0;
+  padding: 1px 4px 2px;
+  background: var(--cmb-ink);
+  color: var(--cmb-stock);
+  font: 800 12px / 1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.cmb-lseat__tap {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.cmb-lseat__tap:focus-visible {
+  outline: 3px solid var(--cmb-stock);
+  outline-offset: 2px;
+}
+.cmb-lseat.is-landing .cmb-lseat__tok {
+  animation: cmb-land 520ms var(--ease-out) both;
+}
+@keyframes cmb-land {
+  from {
+    opacity: 0;
+    transform: translateY(-24px) scale(1.25);
+  }
+}
+
+/* ── Results: the score pad ────────────────────────────────────────────── */
+.cmb-reveal {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 720px;
+}
+.cmb-reveal section {
+  overflow-x: auto;
+}
+.cmb-reveal .cmb-hands {
+  --hc: clamp(34px, 11cqw, 48px);
+}
+.cmb-reveal__note {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font: 700 13px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cmb-pad {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  font: 700 16px var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.cmb-pad caption {
+  padding: 0 0 4px;
+  text-align: left;
+}
+.cmb-pad th,
+.cmb-pad td {
+  padding: 5px 8px;
+  border: 1px solid var(--rule);
+  text-align: center;
+}
+.cmb-pad thead th {
+  color: var(--ink-2);
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cmb-pad tbody th {
+  text-align: left;
+}
+.cmb-pad tr.is-me {
+  background: color-mix(in srgb, var(--cmb-gold) 22%, var(--paper));
+}
+.cmb-pad td.is-call {
+  outline: 2px solid var(--ink);
+  outline-offset: -4px;
+}
+.cmb-pad__total {
+  font: 800 20px var(--font-code);
+}
+.cmb-pad__who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cmb-pad__who .jd-token {
+  --z: 26px;
+}
+.cmb-pad__rank {
+  min-width: 1.2em;
+  color: var(--ink-2);
+  font: 800 15px var(--font-code);
+}
+.cmb-pad__name {
+  min-width: 0;
+  max-width: 11em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmb-pad__hand {
+  white-space: nowrap;
+}
+.cmb-pad__hand .cmb-card {
+  --w: 46px;
+  margin-inline: 1px;
+}
+
+/* ── TV ────────────────────────────────────────────────────────────────── */
+/* Sizes are TV pixels on the 1920-wide stage, read from across the room; nothing under 24px. */
+.cmb-tv {
+  --f-s: 26px;
+  --f-m: 28px;
+  max-width: none;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 470px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 6px 40px;
+  padding: 22px 48px 30px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.cmb-tv__head {
+  grid-column: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 28px;
+  min-width: 0;
+}
+.cmb-tv__head h2 {
+  margin: 0;
+  font-size: 72px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cmb-tv__head p {
+  margin: 0 0 0 auto;
+  color: var(--ink-2);
+  font: 700 28px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.cmb-tv__head .cmb-clock {
+  align-self: center;
+  padding: 4px 14px;
+  border-width: 3px;
+  font-size: 34px;
+}
+.cmb-tv__table {
+  grid-column: 1;
+  min-height: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+.cmb-felt--tv {
+  --ring: 24px;
+  --mc: 56px;
+  --pile: 104px;
+  --hold: 104px;
+  --tag-h: 34px;
+  --band: 14px;
+  --grid-gap: 6px;
+  --row-gap: 8px;
+  --pile-gap: 40px;
+  --cap-h: 34px;
+  --plate-h: 64px;
+  --tok: 58px;
+  --seat-w: 230px;
+  width: min(100cqw, 150cqh);
+  height: auto;
+  aspect-ratio: 1.5;
+  min-height: 0;
+  border-width: 14px;
+  border-radius: 80px;
+  box-shadow:
+    inset 0 0 0 5px var(--cmb-felt),
+    inset 0 0 0 8px var(--cmb-gold),
+    inset 0 0 0 16px var(--cmb-felt),
+    inset 0 0 0 19px var(--cmb-gold),
+    0 10px 0 var(--shadow);
+}
+.cmb-felt--tv[data-count='5'] {
+  --mc: 52px;
+}
+.cmb-felt--tv[data-count='7'] {
+  --mc: 46px;
+  --hold: 120px;
+  --seat-w: 230px;
+}
+.cmb-felt--tv .cmb-seat__plate {
+  padding-right: 10px;
+  gap: 8px;
+  border-width: 3px;
+}
+.cmb-felt--tv .cmb-seat__name {
+  font-size: 34px;
+}
+.cmb-felt--tv .cmb-chip {
+  padding: 0 12px;
+  border-width: 3px;
+}
+.cmb-felt--tv .cmb-ribbon {
+  font-size: 30px;
+  border-block-width: 3px;
+}
+.cmb-felt--tv .cmb-card__lock {
+  width: 28px;
+}
+.cmb-felt--tv .cmb-card__eye {
+  width: 36px;
+}
+.cmb-felt--tv .cmb-chit {
+  font-size: 26px;
+  right: -22px;
+  top: -16px;
+}
+/* On the TV the stamp lies across the whole table, over the piles. */
+.cmb-felt--tv .cmb-stamp {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  z-index: 6;
+  font-size: 100px;
+  border-width: 6px;
+}
+.cmb-tv .cmb-band {
+  top: 38%;
+  padding: 14px 40px;
+  border-block-width: 8px;
+  gap: 36px;
+}
+.cmb-tv .cmb-band__word {
+  font-size: 190px;
+}
+.cmb-tv .cmb-band__who {
+  font-size: 72px;
+}
+
+.cmb-tv__side {
+  grid-column: 2;
+  grid-row: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+}
+.cmb-scores--tv {
+  padding: 16px 22px;
+  gap: 8px;
+  border-width: 3px;
+}
+.cmb-scores--tv li {
+  grid-template-columns: 34px 52px minmax(0, 1fr) auto auto;
+  gap: 12px;
+  min-height: 62px;
+  font-size: 32px;
+}
+.cmb-scores--tv .jd-token {
+  --z: 52px;
+}
+.cmb-scores--tv .cmb-scores__rank {
+  font-size: 28px;
+}
+.cmb-scores--tv .cmb-scores__gain {
+  font-size: 26px;
+}
+.cmb-scores--tv .cmb-scores__n {
+  font-size: 40px;
+}
+.cmb-scores--tv .cmb-scores__goal {
+  font-size: 24px;
+}
+.cmb-tv__feed {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 18px 22px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  box-shadow:
+    inset 0 0 0 7px var(--paper),
+    inset 0 0 0 9px var(--rule);
+}
+.cmb-tv__feed h3 {
+  margin: 0 0 8px;
+}
+.cmb-tv__feed .cmb-pbp li {
+  white-space: normal;
+  min-height: 56px;
+  padding: 6px 4px;
+  border-bottom: 2px solid var(--rule);
+}
+.cmb-tv__feed .cmb-pbp li:nth-child(n + 5) {
+  display: none;
+}
+.cmb-tv__results {
+  width: 100%;
+  display: grid;
+  gap: 18px;
+  align-content: center;
+}
+.cmb-rule--tv {
+  font-size: 44px;
+  padding: 12px 24px;
+}
+.cmb-tv .cmb-hands {
+  --hc: 100px;
+  gap: 10px;
+}
+.cmb-tv .cmb-hands[data-count='5'],
+.cmb-tv .cmb-hands[data-count='6'],
+.cmb-tv .cmb-hands[data-count='7'],
+.cmb-tv .cmb-hands[data-count='8'] {
+  --hc: 80px;
+  grid-template-columns: 1fr 1fr;
+}
+.cmb-tv .cmb-hand {
+  grid-template-columns: 58px minmax(0, 1fr) auto auto;
+  gap: 16px;
+  padding: 8px 14px;
+  border-width: 3px;
+}
+.cmb-tv .cmb-hand .jd-token {
+  --z: 58px;
+}
+.cmb-tv .cmb-hand__name {
+  font-size: 34px;
+}
+.cmb-tv .cmb-hand__name small {
+  font-size: 24px;
+}
+.cmb-tv .cmb-card__value {
+  font-size: calc(var(--w) * 0.3);
+}
+.cmb-tv .cmb-hand .cmb-chit {
+  font-size: 48px;
+  border-width: 3px;
+}
+.cmb-tv .cmb-dock__count {
+  font-size: 40px;
+}
+
+/* The ending on a TV: the pad with every last hand in its row. The box it sits in (`.tv-reveal`)
+   is a size container, so every row is an equal share of its height and the pad never scrolls. */
+.cmb-reveal--tv {
+  --rh: calc((100cqh - 78px) / var(--n, 4));
+  max-width: none;
+  height: 100%;
+  gap: 0;
+  align-content: center;
+  overflow: hidden;
+}
+.cmb-reveal--tv .cmb-pad {
+  font-size: 26px;
+  border-width: 3px;
+}
+.cmb-reveal--tv .cmb-pad caption {
+  height: 32px;
+  padding: 0 0 4px;
+  font-size: 24px;
+  line-height: 28px;
+}
+.cmb-reveal--tv .cmb-pad th,
+.cmb-reveal--tv .cmb-pad td {
+  padding: 0 8px;
+}
+.cmb-reveal--tv .cmb-pad thead th {
+  height: 34px;
+  font-size: 24px;
+}
+.cmb-reveal--tv .cmb-pad tbody tr {
+  height: var(--rh);
+}
+.cmb-reveal--tv .cmb-pad__total {
+  font-size: 34px;
+}
+.cmb-reveal--tv .cmb-pad__rank,
+.cmb-reveal--tv .cmb-pad__name {
+  font-size: 28px;
+}
+.cmb-reveal--tv .cmb-pad__who .jd-token {
+  --z: min(52px, calc(var(--rh) - 8px));
+}
+.cmb-reveal--tv .cmb-pad__hand {
+  line-height: 0;
+}
+.cmb-reveal--tv .cmb-pad__hand .cmb-card {
+  --w: min(72px, calc((var(--rh) - 8px) / 1.4));
+}
+
+/* ── Motion ────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .cmb-card__in {
+    transition: none;
+  }
+  .cmb-card--flip .cmb-card__in,
+  .cmb-card--can,
+  .cmb-card__eye,
+  .cmb-seat.is-target .cmb-seat__grid,
+  .cmb-ribbon,
+  .cmb-stamp,
+  .cmb-held__card,
+  .cmb-pile__btn.is-live .cmb-card:last-of-type,
+  .cmb-pbp li.is-new,
+  .cmb-lseat.is-landing .cmb-lseat__tok {
+    animation: none;
+  }
+  .cmb-ring-clock__arc {
+    transition: none;
+  }
+  .cmb-band {
+    animation: cmb-fade 2.6s both;
+  }
+}
+
+/* Hover on a computer: your cards rise to meet the pointer. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  button.cmb-me__card:not(:disabled):hover {
+    translate: 0 -4px;
+  }
+}

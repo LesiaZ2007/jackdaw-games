@@ -353,21 +353,31 @@ button.cmb-card:focus-visible {
 }
 
 /* ── The felt ──────────────────────────────────────────────────────────── */
+/* These sizes are mirrored, as numbers, in layout.ts, whose test checks that no seat block
+   (status tag, grid, name plate) ever touches the middle block (piles, labels, a held card). */
 .cmb-felt {
-  --mc: min(64px, 8.8cqw);
-  --pile: min(56px, 13cqw);
-  --hold: min(120px, 24cqw);
+  --ring: 13px;
+  --mc: min(64px, 7.6cqw);
+  --pile: min(56px, 11.5cqw);
+  --hold: min(92px, 15cqw);
+  --tag-h: 16px;
+  --band: 14px;
+  --grid-gap: 3px;
+  --row-gap: 3px;
+  --pile-gap: 14px;
+  --cap-h: 14px;
   --plate-h: clamp(22px, calc(var(--mc) * 0.42), 34px);
   --tok: calc(var(--plate-h) - 2px);
-  --seat-w: max(calc(var(--mc) * 2 + 8px), 66px);
-  --seat-h: calc(var(--mc) * 2.8 + 3px + var(--plate-h) + 4px);
-  --side: calc(var(--seat-w) + 6px);
+  --seat-w: max(calc(var(--mc) * 2 + 8px), 60px);
+  --seat-h: calc(
+    var(--tag-h) + var(--plate-h) + var(--mc) * 2.8 + var(--grid-gap) + var(--row-gap) * 2
+  );
   container-type: inline-size;
   position: relative;
   box-sizing: border-box;
   width: 100%;
   height: 100%;
-  min-height: 290px;
+  min-height: 340px;
   background: var(--cmb-felt);
   border: 7px solid var(--cmb-rail);
   border-radius: 36px;
@@ -379,46 +389,62 @@ button.cmb-card:focus-visible {
     0 5px 0 var(--shadow);
 }
 .cmb-felt[data-count='5'] {
-  --mc: min(52px, 7.4cqw);
+  --mc: min(52px, 6.8cqw);
 }
 .cmb-felt[data-count='7'] {
   --mc: min(44px, 5.8cqw);
-  --hold: min(96px, 19cqw);
-  min-height: 262px;
+  --hold: min(80px, 14cqw);
+  --seat-w: max(calc(var(--mc) * 2 + 8px), 56px);
 }
-.cmb-felt[data-n='1'],
-.cmb-felt[data-n='2'] {
-  --side: 0px;
+/* Side seats at these x positions: the middle keeps clear of them. */
+.cmb-felt[data-n='3'],
+.cmb-felt[data-n='4'] {
+  --mid-l: calc(12% + var(--seat-w) / 2 + 8px);
+}
+.cmb-felt[data-n='5'] {
+  --mid-l: calc(11% + var(--seat-w) / 2 + 8px);
+}
+.cmb-felt[data-n='6'],
+.cmb-felt[data-n='7'] {
+  --mid-l: calc(10% + var(--seat-w) / 2 + 8px);
 }
 .cmb-ring {
   position: absolute;
-  inset: 12px;
+  inset: var(--ring);
 }
 .cmb-seat {
   position: absolute;
   left: var(--x);
-  top: calc(var(--seat-h) / 2 + (100% - var(--seat-h)) * var(--y));
-  translate: -50% -50%;
+  top: calc((100% - var(--seat-h)) * var(--y));
+  translate: -50% 0;
   width: var(--seat-w);
   height: var(--seat-h);
   display: grid;
+  grid-template-rows: var(--tag-h) auto var(--plate-h);
+  row-gap: var(--row-gap);
   justify-items: center;
-  align-content: start;
-  gap: 4px;
 }
 .cmb-felt--oval .cmb-seat {
-  left: calc(50% + (50% - var(--seat-w) / 2) * var(--cx));
-  top: calc(50% + (50% - var(--seat-h) / 2) * var(--sy));
+  left: calc((100% - var(--seat-w)) * var(--px));
+  top: calc((100% - var(--seat-h)) * var(--py));
+  translate: none;
+}
+.cmb-seat__tag {
+  height: var(--tag-h);
+  display: grid;
+  place-items: center;
 }
 .cmb-seat__grid {
   position: relative;
   display: grid;
   grid-template-columns: repeat(2, var(--mc));
-  gap: 3px;
+  gap: var(--grid-gap);
   justify-content: center;
+  align-self: start;
 }
 .cmb-seat .cmb-card {
   --w: var(--mc);
+  display: block;
 }
 .cmb-seat__open {
   display: block;
@@ -468,17 +494,17 @@ button.cmb-card:focus-visible {
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
+/* The status tag sits in its own row above the grid, never on a card. */
 .cmb-chip {
-  position: absolute;
-  top: -9px;
-  left: 50%;
-  translate: -50% 0;
-  z-index: 4;
-  padding: 1px 5px;
+  box-sizing: border-box;
+  height: calc(var(--tag-h) - 1px);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
   background: var(--cmb-plate);
   color: var(--cmb-plate-ink);
   border: 1.5px solid var(--cmb-ink);
-  font: 800 var(--f-s) / 1.2 var(--font-plaque);
+  font: 800 var(--f-s) / 1 var(--font-plaque);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -512,13 +538,15 @@ button.cmb-card:focus-visible {
   animation: cmb-stamp 420ms var(--ease-out) both;
 }
 
-/* The middle: stock, the card held, the discard pile, and a stamp for a power. */
+/* The middle: stock, discard (and a small card someone holds) in a row, your own held card
+   under them, and a stamp for a power. It sits under the top row of seats and between the side
+   seats, in the felt's lower middle. */
 .cmb-mid {
   position: absolute;
-  left: var(--side);
-  right: var(--side);
-  top: calc(var(--seat-h) + 18px);
-  bottom: 14px;
+  left: var(--mid-l, 0px);
+  right: var(--mid-l, 0px);
+  top: calc(var(--seat-h) + var(--band));
+  bottom: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -526,32 +554,31 @@ button.cmb-card:focus-visible {
   gap: 8px;
 }
 .cmb-felt--oval .cmb-mid {
-  top: calc(var(--seat-h) + 18px);
-  bottom: calc(var(--seat-h) + 18px);
-  left: calc(var(--seat-w) + 10px);
-  right: calc(var(--seat-w) + 10px);
+  left: 50%;
+  right: auto;
+  top: 50%;
+  bottom: auto;
+  translate: -50% -50%;
 }
 .cmb-piles {
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  gap: 12px;
-}
-.cmb-piles:has(.cmb-look) {
-  --pile: 36px;
+  gap: var(--pile-gap);
 }
 .cmb-pile {
+  width: var(--pile);
   display: grid;
   justify-items: center;
   gap: 3px;
 }
 .cmb-pile .cmb-card {
   --w: var(--pile);
+  display: block;
 }
 .cmb-pile__btn {
   position: relative;
   display: grid;
-  min-width: 44px;
   justify-items: center;
   padding: 0;
   border: 0;
@@ -561,6 +588,12 @@ button.cmb-card:focus-visible {
 }
 .cmb-pile__btn > * {
   grid-area: 1 / 1;
+}
+/* A tap target of at least 44px wide, without making the pile any wider. */
+button.cmb-pile__btn::before {
+  content: '';
+  position: absolute;
+  inset: 0 min(0px, calc((var(--pile) - 44px) / 2));
 }
 button.cmb-pile__btn {
   cursor: pointer;
@@ -591,13 +624,20 @@ button.cmb-pile__btn:focus-visible {
     translate: 0 -4px;
   }
 }
+/* A label under a pile; it may be wider than the pile but takes no room in the row. */
 .cmb-pile__cap {
+  width: var(--pile);
+  height: var(--cap-h);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;
   color: var(--cmb-stock);
   font: 800 var(--f-s) / 1 var(--font-plaque);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
-/* How many are left in the stock, on a card-shaped chit beside it. */
+/* How many are left in the stock, on a card-shaped chit at the stack's top right corner. */
 .cmb-chit {
   display: inline-block;
   min-width: 1.4em;
@@ -614,14 +654,15 @@ button.cmb-pile__btn:focus-visible {
 }
 .cmb-chit--stock {
   position: absolute;
-  right: -14px;
-  bottom: -4px;
+  right: -10px;
+  top: -9px;
   z-index: 2;
-  place-self: end end;
+  place-self: start end;
 }
+/* Your held card, under the piles, with its plaque beside it. */
 .cmb-held {
-  display: grid;
-  justify-items: center;
+  display: flex;
+  align-items: center;
   gap: 6px;
 }
 .cmb-held__card {
@@ -631,13 +672,18 @@ button.cmb-pile__btn:focus-visible {
 @keyframes cmb-rise {
   from {
     opacity: 0;
-    translate: 0 50px;
+    translate: 0 40px;
     scale: 0.6;
   }
 }
 .jd-plaque.cmb-held__discard {
+  width: 90px;
+  min-width: 0;
   min-height: 44px;
-  white-space: nowrap;
+  padding: 2px 6px;
+  font-size: 14px;
+  line-height: 1.05;
+  white-space: normal;
 }
 .cmb-look {
   display: flex;
@@ -671,7 +717,7 @@ button.cmb-pile__btn:focus-visible {
   box-shadow: inset 0 0 0 2px var(--cmb-stock);
   outline: 2px solid var(--cmb-red);
   outline-offset: -7px;
-  font: 400 clamp(26px, 9cqw, 56px) / 1.05 var(--font-display);
+  font: 400 clamp(22px, 7cqw, 40px) / 1.05 var(--font-display);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   pointer-events: none;
@@ -1125,11 +1171,11 @@ button.cmb-pile__btn:focus-visible {
 }
 
 /* ── Laptop: the felt on the left sized by height, your side on the right ── */
-@container game (min-width: 1024px) {
+@container game (min-width: 760px) {
   .cmb--phone:not(.cmb--watch) {
     --mine: clamp(84px, 11.5cqh, 112px);
     max-width: 1440px;
-    grid-template-columns: minmax(0, 1fr) 440px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
     grid-template-rows: auto auto auto minmax(0, 1fr);
     column-gap: var(--space-6);
   }
@@ -1144,9 +1190,9 @@ button.cmb-pile__btn:focus-visible {
     place-items: center;
   }
   .cmb--phone:not(.cmb--watch) > .cmb-main .cmb-felt {
-    width: min(100cqw, 145cqh);
+    width: min(100cqw, 115cqh);
     height: auto;
-    aspect-ratio: 1.45;
+    aspect-ratio: 1.15;
     min-height: 0;
   }
   .cmb--phone:not(.cmb--watch) > .cmb-side {
@@ -1270,6 +1316,8 @@ button.cmb-pile__btn:focus-visible {
   position: absolute;
   z-index: 2;
   width: calc(var(--tok) * 2.1);
+  /* Edge seats are kept at least 8px inside the felt, so a plate never touches the screen edge. */
+  left: clamp(calc(var(--tok) * 1.05 + 8px), var(--lx), calc(100% - var(--tok) * 1.05 - 8px));
   translate: -50% -50%;
   display: grid;
   justify-items: center;
@@ -1497,19 +1545,25 @@ button.cmb-pile__btn:focus-visible {
   place-items: center;
 }
 .cmb-felt--tv {
-  --mc: 84px;
-  --pile: 150px;
-  --hold: 190px;
+  --ring: 24px;
+  --mc: 56px;
+  --pile: 120px;
+  --hold: 120px;
+  --tag-h: 34px;
+  --band: 14px;
+  --grid-gap: 6px;
+  --row-gap: 8px;
+  --pile-gap: 40px;
+  --cap-h: 34px;
   --plate-h: 64px;
   --tok: 58px;
-  --seat-w: 240px;
-  --seat-h: calc(var(--mc) * 2.8 + 6px + var(--plate-h) + 8px);
+  --seat-w: 230px;
   width: min(100cqw, 150cqh);
   height: auto;
   aspect-ratio: 1.5;
   min-height: 0;
   border-width: 14px;
-  border-radius: 50%;
+  border-radius: 80px;
   box-shadow:
     inset 0 0 0 5px var(--cmb-felt),
     inset 0 0 0 8px var(--cmb-gold),
@@ -1518,21 +1572,12 @@ button.cmb-pile__btn:focus-visible {
     0 10px 0 var(--shadow);
 }
 .cmb-felt--tv[data-count='5'] {
-  --mc: 66px;
+  --mc: 52px;
 }
 .cmb-felt--tv[data-count='7'] {
-  --mc: 50px;
-  --hold: 190px;
-  min-height: 0;
-}
-.cmb-felt--tv .cmb-ring {
-  inset: 24px;
-}
-.cmb-felt--tv .cmb-seat__grid {
-  gap: 6px;
-}
-.cmb-felt--tv .cmb-seat {
-  gap: 8px;
+  --mc: 46px;
+  --hold: 120px;
+  --seat-w: 230px;
 }
 .cmb-felt--tv .cmb-seat__plate {
   padding-right: 10px;
@@ -1543,8 +1588,7 @@ button.cmb-pile__btn:focus-visible {
   font-size: 34px;
 }
 .cmb-felt--tv .cmb-chip {
-  top: -20px;
-  padding: 2px 12px;
+  padding: 0 12px;
   border-width: 3px;
 }
 .cmb-felt--tv .cmb-ribbon {
@@ -1558,19 +1602,19 @@ button.cmb-pile__btn:focus-visible {
   width: 36px;
 }
 .cmb-felt--tv .cmb-chit {
-  font-size: 30px;
-  right: -26px;
-  bottom: -8px;
+  font-size: 26px;
+  right: -22px;
+  top: -16px;
 }
-.cmb-felt--tv .cmb-pile__cap {
-  font-size: 28px;
-}
+/* On the TV the stamp lies across the whole table, over the piles. */
 .cmb-felt--tv .cmb-stamp {
-  font-size: 110px;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  z-index: 6;
+  font-size: 100px;
   border-width: 6px;
-}
-.cmb-felt--tv .cmb-piles {
-  gap: 56px;
 }
 .cmb-tv .cmb-band {
   top: 38%;
@@ -1689,46 +1733,52 @@ button.cmb-pile__btn:focus-visible {
   font-size: 40px;
 }
 
-/* The ending on a TV: the pad with every last hand in its row. */
+/* The ending on a TV: the pad with every last hand in its row. The box it sits in (`.tv-reveal`)
+   is a size container, so every row is an equal share of its height and the pad never scrolls. */
 .cmb-reveal--tv {
+  --rh: calc((100cqh - 78px) / var(--n, 4));
   max-width: none;
   height: 100%;
-  place-items: center;
+  gap: 0;
+  align-content: center;
+  overflow: hidden;
 }
 .cmb-reveal--tv .cmb-pad {
   font-size: 26px;
   border-width: 3px;
 }
 .cmb-reveal--tv .cmb-pad caption {
+  height: 32px;
+  padding: 0 0 4px;
   font-size: 24px;
+  line-height: 28px;
 }
 .cmb-reveal--tv .cmb-pad th,
 .cmb-reveal--tv .cmb-pad td {
-  padding: 4px 8px;
+  padding: 0 8px;
 }
 .cmb-reveal--tv .cmb-pad thead th {
+  height: 34px;
   font-size: 24px;
+}
+.cmb-reveal--tv .cmb-pad tbody tr {
+  height: var(--rh);
 }
 .cmb-reveal--tv .cmb-pad__total {
   font-size: 34px;
 }
 .cmb-reveal--tv .cmb-pad__rank,
 .cmb-reveal--tv .cmb-pad__name {
-  font-size: 30px;
+  font-size: 28px;
 }
 .cmb-reveal--tv .cmb-pad__who .jd-token {
-  --z: 52px;
+  --z: min(52px, calc(var(--rh) - 8px));
+}
+.cmb-reveal--tv .cmb-pad__hand {
+  line-height: 0;
 }
 .cmb-reveal--tv .cmb-pad__hand .cmb-card {
-  --w: 72px;
-}
-.cmb-reveal--tv[data-count='5'] .cmb-pad__hand .cmb-card,
-.cmb-reveal--tv[data-count='6'] .cmb-pad__hand .cmb-card {
-  --w: 62px;
-}
-.cmb-reveal--tv[data-count='7'] .cmb-pad__hand .cmb-card,
-.cmb-reveal--tv[data-count='8'] .cmb-pad__hand .cmb-card {
-  --w: 52px;
+  --w: min(72px, calc((var(--rh) - 8px) / 1.4));
 }
 
 /* ── Motion ────────────────────────────────────────────────────────────── */

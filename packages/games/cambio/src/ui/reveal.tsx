@@ -1,5 +1,6 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import { Token, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
 import { DEFAULT_HOUSE, cardName, houseValue } from '../cards';
 import type { CambioReveal } from '../rules';
@@ -120,7 +121,11 @@ export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result, players }) =
   const rv = result.reveal as CambioReveal;
   return (
     <HouseContext.Provider value={rv.house ?? DEFAULT_HOUSE}>
-      <div className="cmb cmb-reveal cmb-reveal--tv" data-count={rv.players.length}>
+      <div
+        className="cmb cmb-reveal cmb-reveal--tv"
+        data-count={rv.players.length}
+        style={{ '--n': rv.players.length } as CSSProperties}
+      >
         <ScorePad rv={rv} players={players} cards />
       </div>
     </HouseContext.Provider>

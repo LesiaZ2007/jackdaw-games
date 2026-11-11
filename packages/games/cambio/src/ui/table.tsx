@@ -15,6 +15,7 @@ import {
 import { cardName, houseValue, type House } from '../cards';
 import type { CambioTableView, Move } from '../rules';
 import { GameCard, HouseContext } from './pieces';
+import { RECT, bucketOf, ovalPlan } from './layout';
 import { SLOT_NAME, STAMP, around, delta, eyesOf, houseRules, moveLine, num } from './logic';
 
 /** What to draw for one slot of one grid. */
@@ -41,56 +42,6 @@ export interface Ctl {
   discard?: { label: string; onClick: () => void } | null;
   /** A King's look: the two cards, yours and theirs. */
   look?: { mine: number | null; theirs: number | null; who: string } | null;
-}
-
-/** Where opponents sit on a phone, when you are at the bottom: x in percent, y 0 (top) to 1. */
-const RECT: Record<number, [number, number][]> = {
-  1: [[50, 0]],
-  2: [
-    [27, 0],
-    [73, 0],
-  ],
-  3: [
-    [12, 0.55],
-    [50, 0],
-    [88, 0.55],
-  ],
-  4: [
-    [12, 0.7],
-    [36, 0],
-    [64, 0],
-    [88, 0.7],
-  ],
-  5: [
-    [11, 0.75],
-    [26, 0],
-    [50, 0],
-    [74, 0],
-    [89, 0.75],
-  ],
-  6: [
-    [10, 1],
-    [10, 0.35],
-    [36, 0],
-    [64, 0],
-    [90, 0.35],
-    [90, 1],
-  ],
-  7: [
-    [10, 1],
-    [10, 0.4],
-    [30, 0],
-    [50, 0],
-    [70, 0],
-    [90, 0.4],
-    [90, 1],
-  ],
-};
-
-/** Everyone in turn order round an oval, the first at the bottom, the next to their left. */
-function ovalPos(k: number, n: number): CSSProperties {
-  const a = (k / n) * Math.PI * 2;
-  return { '--cx': (-Math.sin(a)).toFixed(3), '--sy': Math.cos(a).toFixed(3) } as CSSProperties;
 }
 
 export function TurnClock({ t, now }: { t: CambioTableView; now: () => number }) {
@@ -346,17 +297,20 @@ export function CambioTable({
   const heldFace = holder === me ? (ctl?.held ?? null) : (t.holding?.card ?? null);
   const kind = t.phase === 'play' ? t.power?.kind : undefined;
   const zoomed = ctl?.zoom && seats.includes(ctl.zoom) ? ctl.zoom : null;
+  const plan = oval ? ovalPlan(k, !!tv) : null;
+  // Someone else's held card is a small card beside the piles; yours rises under them.
+  const otherHeld = t.holding && holder !== me ? holder : null;
 
   return (
     <div
       className={`cmb-felt${oval ? ' cmb-felt--oval' : ''}${tv ? ' cmb-felt--tv' : ''}`}
-      data-count={k <= 3 ? 3 : k <= 5 ? 5 : 7}
+      data-count={bucketOf(k)}
       data-n={oval ? 8 : k}
     >
       <div className="cmb-ring">
         {seats.map((id, i) => {
           const pos = oval
-            ? ovalPos(i, k)
+            ? ({ '--px': plan!.at[i]![0], '--py': plan!.at[i]![1] } as CSSProperties)
             : ({
                 '--x': `${RECT[Math.min(Math.max(k, 1), 7)]![i]![0]}%`,
                 '--y': RECT[Math.min(Math.max(k, 1), 7)]![i]![1],
@@ -398,6 +352,14 @@ export function CambioTable({
                 .join(' ')}
               style={pos}
             >
+              <span className="cmb-seat__tag">
+                {lastTurn && <span className="cmb-chip cmb-chip--last">Last turn</span>}
+                {t.phase === 'peek' && (
+                  <span className={`cmb-chip${t.ready.includes(id) ? ' cmb-chip--ok' : ''}`}>
+                    {t.ready.includes(id) ? 'Ready' : 'Looking'}
+                  </span>
+                )}
+              </span>
               {open ? (
                 <button
                   type="button"
@@ -416,55 +378,98 @@ export function CambioTable({
                   {nm}
                 </span>
               </span>
-              {lastTurn && <span className="cmb-chip cmb-chip--last">Last turn</span>}
-              {t.phase === 'peek' && (
-                <span className={`cmb-chip${t.ready.includes(id) ? ' cmb-chip--ok' : ''}`}>
-                  {t.ready.includes(id) ? 'Ready' : 'Looking'}
-                </span>
-              )}
               <PlayerReaction reactions={reactions} playerId={id} name={nm} />
             </div>
           );
         })}
-      </div>
 
-      <div className="cmb-mid">
-        <div className="cmb-piles">
-          {(() => {
-            const n = t.stockCount;
-            const canDraw = !!ctl?.onDraw;
-            const stack = (
-              <>
-                <GameCard className="cmb-pile__under cmb-pile__under--2" />
-                <GameCard className="cmb-pile__under cmb-pile__under--1" />
-                <GameCard />
-                <span className="cmb-chit cmb-chit--stock" aria-hidden="true">
-                  {n}
-                </span>
-              </>
-            );
-            return (
-              <div className="cmb-pile cmb-pile--stock">
-                {canDraw ? (
+        <div className="cmb-mid">
+          <div className="cmb-piles">
+            {(() => {
+              const n = t.stockCount;
+              const canDraw = !!ctl?.onDraw;
+              const stack = (
+                <>
+                  <GameCard className="cmb-pile__under cmb-pile__under--2" />
+                  <GameCard className="cmb-pile__under cmb-pile__under--1" />
+                  <GameCard />
+                  <span className="cmb-chit cmb-chit--stock" aria-hidden="true">
+                    {n}
+                  </span>
+                </>
+              );
+              return (
+                <div className="cmb-pile cmb-pile--stock">
+                  {canDraw ? (
+                    <button
+                      type="button"
+                      className="cmb-pile__btn is-live"
+                      onClick={ctl.onDraw}
+                      aria-label="Draw from the stock"
+                    >
+                      {stack}
+                    </button>
+                  ) : (
+                    <span className="cmb-pile__btn" role="img" aria-label={`The stock, ${n} cards`}>
+                      {stack}
+                    </span>
+                  )}
+                  <span className="cmb-pile__cap">{canDraw ? 'Draw' : 'Stock'}</span>
+                </div>
+              );
+            })()}
+
+            <div className="cmb-pile cmb-pile--discard">
+              {(() => {
+                const top = t.top;
+                if (top === null)
+                  return (
+                    <span
+                      className="cmb-pile__btn cmb-pile__empty"
+                      aria-label="Discard pile, empty"
+                      role="img"
+                    />
+                  );
+                const face = <GameCard id={top} up className="cmb-pile__top" />;
+                return ctl?.onTake ? (
                   <button
                     type="button"
                     className="cmb-pile__btn is-live"
-                    onClick={ctl.onDraw}
-                    aria-label="Draw from the stock"
+                    onClick={ctl.onTake}
+                    aria-label={`Take the ${cardName(top)}`}
                   >
-                    {stack}
+                    {face}
                   </button>
                 ) : (
-                  <span className="cmb-pile__btn" role="img" aria-label={`The stock, ${n} cards`}>
-                    {stack}
+                  <span
+                    className="cmb-pile__btn"
+                    role="img"
+                    aria-label={`On the discard pile: the ${cardName(top)}`}
+                  >
+                    {face}
                   </span>
-                )}
-                <span className="cmb-pile__cap">{canDraw ? 'Draw' : 'Stock'}</span>
+                );
+              })()}
+              <span className="cmb-pile__cap">{ctl?.onTake ? 'Take' : 'Discard'}</span>
+            </div>
+            {otherHeld && (
+              <div className="cmb-pile cmb-pile--held">
+                <span className="cmb-pile__btn">
+                  <GameCard
+                    id={heldFace}
+                    up={heldFace !== null}
+                    label={
+                      heldFace !== null
+                        ? `${name(otherHeld)} holds the ${cardName(heldFace)}`
+                        : `${name(otherHeld)} holds a face-down card`
+                    }
+                  />
+                </span>
+                <span className="cmb-pile__cap">In hand</span>
               </div>
-            );
-          })()}
-
-          {ctl?.look ? (
+            )}
+          </div>
+          {ctl?.look && (
             <div className="cmb-look" role="group" aria-label="The two cards you looked at">
               <span>
                 <GameCard
@@ -483,68 +488,33 @@ export function CambioTable({
                 <small>{ctl.look.who}</small>
               </span>
             </div>
-          ) : (
-            t.holding && (
-              <div className="cmb-held">
-                <GameCard
-                  id={heldFace}
-                  up={heldFace !== null}
-                  className="cmb-held__card"
-                  label={
-                    heldFace !== null
-                      ? `${holder === me ? 'You hold' : `${name(holder ?? '')} holds`} the ${cardName(heldFace)}`
-                      : `${name(holder ?? '')} holds a face-down card`
-                  }
-                />
-                {ctl?.discard && (
-                  <Plaque go className="cmb-held__discard" onClick={ctl.discard.onClick}>
-                    {ctl.discard.label}
-                  </Plaque>
-                )}
-              </div>
-            )
           )}
-
-          <div className="cmb-pile cmb-pile--discard">
-            {(() => {
-              const top = t.top;
-              if (top === null)
-                return (
-                  <span
-                    className="cmb-pile__btn cmb-pile__empty"
-                    aria-label="Discard pile, empty"
-                    role="img"
-                  />
-                );
-              const face = <GameCard id={top} up className="cmb-pile__top" />;
-              return ctl?.onTake ? (
-                <button
-                  type="button"
-                  className="cmb-pile__btn is-live"
-                  onClick={ctl.onTake}
-                  aria-label={`Take the ${cardName(top)}`}
-                >
-                  {face}
-                </button>
-              ) : (
-                <span
-                  className="cmb-pile__btn"
-                  role="img"
-                  aria-label={`On the discard pile: the ${cardName(top)}`}
-                >
-                  {face}
-                </span>
-              );
-            })()}
-            <span className="cmb-pile__cap">{ctl?.onTake ? 'Take' : 'Discard'}</span>
-          </div>
+          {!ctl?.look && t.holding && holder === me && (
+            <div className="cmb-held">
+              <GameCard
+                id={heldFace}
+                up={heldFace !== null}
+                className="cmb-held__card"
+                label={
+                  heldFace !== null
+                    ? `You hold the ${cardName(heldFace)}`
+                    : 'You hold a face-down card'
+                }
+              />
+              {ctl?.discard && (
+                <Plaque go className="cmb-held__discard" onClick={ctl.discard.onClick}>
+                  {ctl.discard.label}
+                </Plaque>
+              )}
+            </div>
+          )}
+          {kind && !ctl?.look && (
+            <span className="cmb-stamp" key={`${t.turns}-${kind}`} aria-hidden="true">
+              {STAMP[kind]}
+            </span>
+          )}
+          {children}
         </div>
-        {kind && (
-          <span className="cmb-stamp" key={`${t.turns}-${kind}`} aria-hidden="true">
-            {STAMP[kind]}
-          </span>
-        )}
-        {children}
       </div>
 
       {zoomed && ctl && (

@@ -77,6 +77,50 @@ has pressed next, or after 15 seconds, whichever comes first.
   discarded, and if it came from the discard pile it goes into a random slot. A power on offer is
   skipped, and a King's look is left as it was.
 
+## House rules
+
+Cambio has many local variants, so the host can change the numbers. Every option is a plain choice
+in the lobby's options panel, and the defaults are the traditional game described above: with the
+defaults nothing here applies. The choices are resolved once, when the game starts, into
+`state.house` (and `house` on the table view, since they are public: the screens and the bot read
+card values and powers from it, never from the defaults). Changing the options mid-game does not
+touch a game under way.
+
+| Option          | Choices (default first)                 | Effect                                                                          |
+| --------------- | --------------------------------------- | ------------------------------------------------------------------------------- |
+| `peekCards`     | 7 and 8, 9 and 10, Jack and Queen, None | Discarding a card of these ranks lets you look at one of your own.              |
+| `spyCards`      | 9 and 10, 7 and 8, Jack and Queen, None | ...lets you look at one card of another player.                                 |
+| `swapCards`     | Jack and Queen, 7 and 8, 9 and 10, None | ...lets you swap one of yours with another player's, unseen.                    |
+| `kingPower`     | Black Kings, All Kings, None            | ...look at one of yours and one of theirs, then swap or not.                    |
+| `redKings`      | 0, -1, 13                               | What a red King counts. Black Kings are always 13.                              |
+| `callerPenalty` | 10, 5, 20, Double                       | A caller who isn't lowest scores their total plus this, or their total doubled. |
+| `callerBonus`   | 0, Their total, -5                      | A caller who is lowest (or tied) scores this; "Their total" gives no bonus.     |
+| `openingPeek`   | Two, One, None                          | Cards looked at when a round starts: slots 2 and 3, slot 2 only, or none.       |
+| `exactly100`    | Off, Drops to 50                        | In a game to 100, a score of exactly 100 after a round goes down to 50.         |
+| `jokers`        | None, Two per deck                      | Adds two jokers to each deck: worth 0, no power.                                |
+
+- **Two powers can't share ranks.** `peekCards`, `spyCards` and `swapCards` must name different
+  cards (None can repeat), or the lobby refuses to start: "Peek and spy can't both use 7 and 8.
+  Pick different cards for one of them." King power is on the Kings and can't clash.
+- **Opening peek None** skips the peek phase altogether: the round is dealt and goes straight to
+  play with the player after the dealer, and nobody knows any card. With One, only slot 2 (the
+  bottom left) is shown, and the phase works as before.
+- **Doubling** only makes a positive total worse: a caller with 0 or less keeps their total. The
+  caller's score lines on the screens say which rule applied ("14 + 10", "14 doubled: 28",
+  "lowest: -5").
+- **Exactly 100.** After the round's scores are added, any player at exactly 100 is set to 50
+  (`RoundResult.dropped` lists them, and the round's `scored` numbers stay as played). The game ends
+  only if someone is at 100 or more after that, so a dropped player does not end it on their own
+  account. Only a game to 100 is affected.
+- **Negative numbers.** Red Kings at -1 and a -5 caller bonus let totals and running scores go
+  below zero. Ranking, the lowest hand of the game, the winner and the summary all use the plain
+  numbers, and the screens print a proper minus sign.
+- **Jokers.** Their ids start at 104 (two per deck: 104 and 105, plus 106 and 107 with two decks),
+  so the existing ids 0 to 103 are untouched. They are black, worth 0, never give a power, and show a
+  star where a suit would be.
+- The screens list only the rules that differ from the default: a small "House rules" plaque
+  opens a sheet on a phone, and a short list sits in the side panel on a laptop and the TV.
+
 ## The knowledge model
 
 The state keeps `known[viewer][owner][slot]`: whether this player currently knows the face of that

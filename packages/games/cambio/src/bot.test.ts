@@ -389,3 +389,69 @@ describe('the computer player', () => {
     }
   });
 });
+
+describe('the computer player under house rules', () => {
+  const birds = ['wren', 'rook', 'magpie', 'robin', 'finch', 'heron'];
+  const variants: [string, number, Partial<CambioOptions>][] = [
+    ['no opening peek', 3, { goal: '3 rounds', openingPeek: 'None' }],
+    [
+      'every power off',
+      4,
+      {
+        goal: '3 rounds',
+        peekCards: 'None',
+        spyCards: 'None',
+        swapCards: 'None',
+        kingPower: 'None',
+      },
+    ],
+    ['red Kings at -1', 3, { goal: 'First to 50', redKings: '-1', callerBonus: '-5' }],
+    ['a doubled penalty', 4, { goal: '3 rounds', callerPenalty: 'Double' }],
+    [
+      'moved powers and All Kings',
+      5,
+      {
+        goal: '3 rounds',
+        peekCards: 'Jack and Queen',
+        swapCards: '7 and 8',
+        kingPower: 'All Kings',
+      },
+    ],
+    [
+      'red Kings at 13 with jokers',
+      6,
+      { redKings: '13', jokers: 'Two per deck', goal: '3 rounds' },
+    ],
+    [
+      'one peek card and exactly 100',
+      4,
+      { goal: 'First to 100', openingPeek: 'One', exactly100: 'Drops to 50' },
+    ],
+  ];
+  for (const [name, n, o] of variants)
+    for (const level of ['easy', 'normal', 'hard'] as const)
+      it(`finishes a game of ${n} ${level} bots with ${name}`, () => {
+        for (const seed of [1, 2]) {
+          const { s, moves } = playOut(birds.slice(0, n), o, seed, level);
+          expect(s.phase, `after ${moves} moves, round ${s.round}`).toBe('over');
+          expect(game.getResult(s)).not.toBe(null);
+        }
+      });
+
+  it('waits for a lower hand before calling when the penalty is doubled', () => {
+    const hands = { wren: [c(1, 'S'), c(2, 'S'), c(2, 'C'), c(3, 'S')], rook: R, magpie: M };
+    const s = table({ turns: 3 }, [true, true, true, true], hands);
+    expect(ask(s, 'wren')).toEqual({ type: 'call' });
+    const harsh = { ...s, house: { ...s.house, penalty: 'double' as const } };
+    expect(ask(harsh, 'wren')).not.toEqual({ type: 'call' });
+  });
+
+  it('reads card values from the house rules: a red King at 13 is a high card to swap out', () => {
+    const hands = { wren: [c(13, 'H'), c(1, 'S'), c(1, 'C'), c(2, 'S')], rook: R, magpie: M };
+    const base = table({ turns: 3, discard: [c(3, 'C')] }, [true, true, true, false], hands);
+    // A red King is worth 0, so a 3 on the pile is no better than the 2 or 1 it already has.
+    expect(ask(base, 'wren')).toEqual({ type: 'draw' });
+    const high = { ...base, house: { ...base.house, redKing: 13 } };
+    expect(ask(high, 'wren')).toEqual({ type: 'take' });
+  });
+});

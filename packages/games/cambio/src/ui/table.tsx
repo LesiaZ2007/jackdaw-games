@@ -1,20 +1,21 @@
 'use client';
 
-import { useEffect, type CSSProperties, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Reaction } from '@jackdaw/engine';
 import {
   Plaque,
   PlayerReaction,
+  Sheet,
   Tally,
   Token,
   useCountdown,
   useMoment,
   type ScreenPlayer,
 } from '@jackdaw/ui';
-import { cardName, cardValue } from '../cards';
+import { cardName, houseValue, type House } from '../cards';
 import type { CambioTableView, Move } from '../rules';
-import { GameCard } from './pieces';
-import { SLOT_NAME, STAMP, around, eyesOf, moveLine } from './logic';
+import { GameCard, HouseContext } from './pieces';
+import { SLOT_NAME, STAMP, around, delta, eyesOf, houseRules, moveLine, num } from './logic';
 
 /** What to draw for one slot of one grid. */
 export interface SlotShow {
@@ -150,6 +151,49 @@ export function CambioBand({ t, name }: { t: CambioTableView; name: (id: string)
   );
 }
 
+/**
+ * The house rules that differ from the traditional game, so nobody is surprised mid-game. On a
+ * phone it is a small plaque that opens a sheet; on a laptop and the TV it is a short list. Nothing
+ * is drawn when the game is played the standard way.
+ */
+export function HouseRules({
+  house,
+  mode,
+}: {
+  house: House;
+  /** `plaque`: the small button and its sheet (phones). `list`: the rules written out. */
+  mode: 'plaque' | 'list' | 'tv';
+}) {
+  const [open, setOpen] = useState(false);
+  const rules = houseRules(house);
+  if (rules.length === 0) return null;
+  const list = (
+    <ul className="cmb-house__list">
+      {rules.map((r) => (
+        <li key={r}>{r}</li>
+      ))}
+    </ul>
+  );
+  if (mode === 'plaque') {
+    return (
+      <span className="cmb-house cmb-house--plaque">
+        <Plaque small className="cmb-house__btn" onClick={() => setOpen(true)}>
+          House rules
+        </Plaque>
+        <Sheet open={open} onClose={() => setOpen(false)} title="House rules">
+          {list}
+        </Sheet>
+      </span>
+    );
+  }
+  return (
+    <section className={`cmb-house cmb-house--${mode}`} aria-label="House rules">
+      <h3 className="jd-label">House rules</h3>
+      {list}
+    </section>
+  );
+}
+
 /** The ranked running scores, lowest first (lowest wins). */
 export function Scores({
   t,
@@ -174,7 +218,6 @@ export function Scores({
       <ol>
         {ranked.map((id, i) => {
           const p = byId.get(id);
-          const prior = (t.scores[id] ?? 0) - (gained?.[id] ?? 0);
           return (
             <li key={id} className={id === me ? 'is-me' : undefined}>
               <span className="cmb-scores__rank">{i + 1}</span>
@@ -182,9 +225,13 @@ export function Scores({
               <span className="cmb-scores__name" title={p?.name}>
                 {id === me ? 'You' : (p?.name ?? 'Someone')}
               </span>
-              {gained && <span className="cmb-scores__gain">+{gained[id]}</span>}
+              {gained && (
+                <span className="cmb-scores__gain">
+                  {t.last?.dropped?.includes(id) ? 'to 50' : delta(gained[id] ?? 0)}
+                </span>
+              )}
               <span className="cmb-scores__n">
-                <Tally value={gained ? prior + (gained[id] ?? 0) : (t.scores[id] ?? 0)} />
+                <Tally value={t.scores[id] ?? 0} />
               </span>
             </li>
           );
@@ -217,13 +264,14 @@ export function HandsList({
   size: 'phone' | 'tv' | 'reveal';
 }) {
   const byId = new Map(players.map((p) => [p.id, p]));
+  const house = useContext(HouseContext);
   const total = order.length * 4;
   return (
     <ol className={`cmb-hands cmb-hands--${size}`} data-count={order.length}>
       {order.map((id, row) => {
         const p = byId.get(id);
         const hand = hands[id] ?? [];
-        const sum = hand.reduce((a, c) => a + cardValue(c), 0);
+        const sum = hand.reduce((a, c) => a + houseValue(c, house), 0);
         const nm = id === me ? 'You' : (p?.name ?? 'Someone');
         return (
           <li
@@ -245,7 +293,7 @@ export function HandsList({
                   up
                   value
                   flipAfter={flip ? Math.round(((row * 4 + slot) / total) * 520) : undefined}
-                  label={`${nm}, ${SLOT_NAME[slot]}: ${cardName(c)}, worth ${cardValue(c)}`}
+                  label={`${nm}, ${SLOT_NAME[slot]}: ${cardName(c)}, worth ${num(houseValue(c, house))}`}
                 />
               ))}
             </span>

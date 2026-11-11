@@ -5,7 +5,16 @@ import { useMoment, VerdictMoment, type GameUi, type ScreenPlayer } from '@jackd
 import type { CambioTableView } from '../rules';
 import { useAfter, useSwapFlight } from './hooks';
 import { rankRound, roundLine, roundMoment, ruleLine, statusLine } from './logic';
-import { CambioBand, CambioTable, HandsList, PlayByPlay, Scores, TurnClock } from './table';
+import { HouseContext } from './pieces';
+import {
+  CambioBand,
+  CambioTable,
+  HandsList,
+  HouseRules,
+  PlayByPlay,
+  Scores,
+  TurnClock,
+} from './table';
 import { BetweenRounds, publicSlots } from './tv';
 import './cambio.css';
 
@@ -32,55 +41,64 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
   const scoring = t.phase === 'scoring' || t.phase === 'over';
 
   return (
-    <div className="cmb cmb--phone cmb--watch" ref={root} data-count={t.players.length}>
-      <header className="cmb__head">
-        <h2 className="jd-display">{statusLine(t, null, name)}</h2>
-        <p>
-          <span>{scoring ? 'Lowest wins' : roundLine(t)}</span>
-          <TurnClock t={t} now={now} />
-        </p>
-      </header>
+    <HouseContext.Provider value={t.house}>
+      <div className="cmb cmb--phone cmb--watch" ref={root} data-count={t.players.length}>
+        <header className="cmb__head">
+          <h2 className="jd-display">{statusLine(t, null, name)}</h2>
+          <div className="cmb__sub">
+            <span>{scoring ? 'Lowest wins' : roundLine(t)}</span>
+            <TurnClock t={t} now={now} />
+          </div>
+        </header>
 
-      {scoring && t.last ? (
-        <div className="cmb-main cmb-main--hands">
-          <HandsList
-            key={t.round}
-            order={rankRound(t.last)}
-            hands={t.hands ?? t.last.hands}
-            players={players}
-            caller={t.last.caller}
-            flip
-            size="phone"
-          />
-        </div>
-      ) : (
-        <div className="cmb-main">
-          <CambioTable t={t} players={players} slots={publicSlots(t)} reactions={reactions} oval />
-        </div>
-      )}
-
-      <section className="cmb-watch" aria-label="What just happened">
         {scoring && t.last ? (
-          <>
-            <p className="cmb-rule">{ruleLine(t.last, name)}</p>
-            <Scores t={t} players={players} />
-            <BetweenRounds t={t} now={now} />
-          </>
+          <div className="cmb-main cmb-main--hands">
+            <HandsList
+              key={t.round}
+              order={rankRound(t.last)}
+              hands={t.hands ?? t.last.hands}
+              players={players}
+              caller={t.last.caller}
+              flip
+              size="phone"
+            />
+          </div>
         ) : (
-          <PlayByPlay moves={t.moves} name={name} limit={3} />
+          <div className="cmb-main">
+            <CambioTable
+              t={t}
+              players={players}
+              slots={publicSlots(t)}
+              reactions={reactions}
+              oval
+            />
+          </div>
         )}
-      </section>
 
-      <CambioBand t={t} name={name} />
-      {moment && (
-        <VerdictMoment
-          key={t.last?.round}
-          outcome="reveal"
-          title={moment.title}
-          detail={moment.detail}
-          onDone={dismiss}
-        />
-      )}
-    </div>
+        <section className="cmb-watch" aria-label="What just happened">
+          {scoring && t.last ? (
+            <>
+              <p className="cmb-rule">{ruleLine(t.last, name, null, t.house)}</p>
+              <Scores t={t} players={players} />
+              <BetweenRounds t={t} now={now} />
+            </>
+          ) : (
+            <PlayByPlay moves={t.moves} name={name} limit={3} />
+          )}
+          <HouseRules house={t.house} mode="plaque" />
+        </section>
+
+        <CambioBand t={t} name={name} />
+        {moment && (
+          <VerdictMoment
+            key={t.last?.round}
+            outcome="reveal"
+            title={moment.title}
+            detail={moment.detail}
+            onDone={dismiss}
+          />
+        )}
+      </div>
+    </HouseContext.Provider>
   );
 };

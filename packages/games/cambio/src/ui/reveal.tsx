@@ -1,10 +1,11 @@
 'use client';
 
 import { Token, type GameUi, type ScreenPlayer } from '@jackdaw/ui';
-import { cardName, cardValue } from '../cards';
+import { DEFAULT_HOUSE, cardName, houseValue } from '../cards';
 import type { CambioReveal } from '../rules';
-import { GameCard } from './pieces';
-import { HandsList } from './table';
+import { GameCard, HouseContext } from './pieces';
+import { num } from './logic';
+import { HandsList, HouseRules } from './table';
 import './cambio.css';
 
 /**
@@ -61,7 +62,7 @@ function ScorePad({
                       key={s}
                       id={c}
                       up
-                      label={`${nm}: ${cardName(c)}, worth ${cardValue(c)}`}
+                      label={`${nm}: ${cardName(c)}, worth ${num(houseValue(c, rv.house ?? DEFAULT_HOUSE))}`}
                     />
                   ))}
                 </td>
@@ -72,10 +73,10 @@ function ScorePad({
                   className={r.caller === id ? 'is-call' : undefined}
                   title={r.caller === id ? 'Called Cambio' : undefined}
                 >
-                  {r.scored[id] ?? 0}
+                  {num(r.scored[id] ?? 0)}
                 </td>
               ))}
-              <td className="cmb-pad__total">{rv.scores[id] ?? 0}</td>
+              <td className="cmb-pad__total">{num(rv.scores[id] ?? 0)}</td>
             </tr>
           );
         })}
@@ -89,25 +90,28 @@ export const Reveal: NonNullable<GameUi['Reveal']> = ({ result, players, me }) =
   const rv = result.reveal as CambioReveal;
   const last = rv.history[rv.history.length - 1];
   return (
-    <div className="cmb cmb-reveal">
-      <section aria-label="Score pad">
-        <ScorePad rv={rv} players={players} me={me} />
-        <p className="cmb-reveal__note">A boxed score is a Cambio call.</p>
-      </section>
-      {last && (
-        <section aria-label="Last hands">
-          <h3 className="jd-label">Last hands, round {last.round}</h3>
-          <HandsList
-            order={rv.players}
-            hands={rv.lastHands}
-            players={players}
-            me={me}
-            caller={last.caller}
-            size="reveal"
-          />
+    <HouseContext.Provider value={rv.house ?? DEFAULT_HOUSE}>
+      <div className="cmb cmb-reveal">
+        <section aria-label="Score pad">
+          <ScorePad rv={rv} players={players} me={me} />
+          <p className="cmb-reveal__note">A boxed score is a Cambio call.</p>
         </section>
-      )}
-    </div>
+        <HouseRules house={rv.house ?? DEFAULT_HOUSE} mode="list" />
+        {last && (
+          <section aria-label="Last hands">
+            <h3 className="jd-label">Last hands, round {last.round}</h3>
+            <HandsList
+              order={rv.players}
+              hands={rv.lastHands}
+              players={players}
+              me={me}
+              caller={last.caller}
+              size="reveal"
+            />
+          </section>
+        )}
+      </div>
+    </HouseContext.Provider>
   );
 };
 
@@ -115,8 +119,10 @@ export const Reveal: NonNullable<GameUi['Reveal']> = ({ result, players, me }) =
 export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result, players }) => {
   const rv = result.reveal as CambioReveal;
   return (
-    <div className="cmb cmb-reveal cmb-reveal--tv" data-count={rv.players.length}>
-      <ScorePad rv={rv} players={players} cards />
-    </div>
+    <HouseContext.Provider value={rv.house ?? DEFAULT_HOUSE}>
+      <div className="cmb cmb-reveal cmb-reveal--tv" data-count={rv.players.length}>
+        <ScorePad rv={rv} players={players} cards />
+      </div>
+    </HouseContext.Provider>
   );
 };

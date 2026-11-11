@@ -556,7 +556,7 @@ button.cmb-card:focus-visible {
 .cmb-felt--oval .cmb-mid {
   left: 50%;
   right: auto;
-  top: 50%;
+  top: 52%;
   bottom: auto;
   translate: -50% -50%;
 }
@@ -626,6 +626,10 @@ button.cmb-pile__btn:focus-visible {
 }
 /* A label under a pile; it may be wider than the pile but takes no room in the row. */
 .cmb-pile__cap {
+  /* clear of the stack's offset edges, and drawn over them */
+  position: relative;
+  z-index: 1;
+  margin-top: 7px;
   width: var(--pile);
   height: var(--cap-h);
   display: flex;
@@ -1190,9 +1194,10 @@ button.cmb-pile__btn:focus-visible {
     place-items: center;
   }
   .cmb--phone:not(.cmb--watch) > .cmb-main .cmb-felt {
-    width: min(100cqw, 115cqh);
-    height: auto;
-    aspect-ratio: 1.15;
+    /* fill the column: as wide as it is, and as tall as the screen allows (up to a tall table) */
+    width: 100cqw;
+    height: min(100cqh, 130cqw);
+    aspect-ratio: auto;
     min-height: 0;
   }
   .cmb--phone:not(.cmb--watch) > .cmb-side {
@@ -1547,8 +1552,8 @@ button.cmb-pile__btn:focus-visible {
 .cmb-felt--tv {
   --ring: 24px;
   --mc: 56px;
-  --pile: 120px;
-  --hold: 120px;
+  --pile: 104px;
+  --hold: 104px;
   --tag-h: 34px;
   --band: 14px;
   --grid-gap: 6px;

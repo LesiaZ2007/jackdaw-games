@@ -22,7 +22,17 @@ export const cambioUi: GameUi = {
     ],
     credit:
       'Cambio is a traditional card game, also played as Cactus or Pablo, with many house rules. Played here with a standard deck (two from six players), and cards and table drawn for Jackdaw.',
-    pictures: [],
+    pictures: [
+      {
+        src: '/games/cambio/game-phone.png',
+        alt: 'Cambio on a phone: three other players around a purple felt, each with four cards face down, the stock and the discard pile in the middle, and your own four cards large below.',
+      },
+      {
+        src: '/games/cambio/desktop.png',
+        alt: 'Cambio on a laptop: the felt on the left with everyone’s cards and the piles, and your four cards, the scores and the play by play beside it.',
+        desktop: true,
+      },
+    ],
   },
   optionHelp: {
     goal: {

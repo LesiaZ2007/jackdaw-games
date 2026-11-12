@@ -47,6 +47,7 @@ const config: NextConfig = {
     '@jackdaw/game-risk',
     '@jackdaw/game-avalon',
     '@jackdaw/game-backgammon',
+    '@jackdaw/game-tetra',
     '@jackdaw/game-battleship',
     '@jackdaw/game-kings',
     '@jackdaw/game-monopoly',

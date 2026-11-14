@@ -20,7 +20,7 @@ import type { MazeOptions } from './options';
 import { mazeBot } from './bot';
 import { initShared, settleShared } from './shared';
 import type { Turn } from './sim/chomper';
-import type { Aim, GhostEvent } from './sim/ghosts';
+import type { Aim, GhostCheckpoint, GhostEvent } from './sim/ghosts';
 import { MAZE_LAYOUTS, SIZE_DIMS, layoutsOf } from './sim/layouts';
 import type { MazeLayout } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
@@ -130,13 +130,23 @@ export interface PowerSpot {
   backAt: number;
 }
 
+/** The server's ghosts at a beat (round ms `atMs`), for everyone to restore and step on from. */
+export interface GhostBase {
+  atMs: number;
+  /** Goes up each time a base is made or stepped again, so a phone knows to restore it. */
+  rev: number;
+  c: GhostCheckpoint;
+}
+
 export interface SharedRec {
   /** base64 of one byte per pellet: 0 = free, k = player index + 1. */
   owner: string;
-  /** A beat every 2000 ms; the last 3 are kept. */
+  /** A beat every 2000 ms: the ones a sim restored from the oldest base still needs. */
   aims: Aim[];
-  /** Events at or after the oldest kept aim. */
+  /** Events not yet taken into the oldest base. */
   events: GhostEvent[];
+  /** The server's ghosts at the last few beats, oldest first (see shared.ts). */
+  bases: GhostBase[];
   spots: PowerSpot[];
   /** The bonus fruit on the board (FRUIT index), from `atMs` until `untilMs` (round ms). */
   fruit: { fruit: number; atMs: number; untilMs: number } | null;
@@ -165,20 +175,9 @@ export interface MazeState {
   showBy: number | null;
   players: Record<string, PlayerRec>;
   shared: SharedRec | null;
-  /**
-   * Shared maze only: every aim and ghost event of the round, oldest first. The table view keeps
-   * just the last few; a bot rebuilds the ghosts from the maze start with this, so they are
-   * exactly the ghosts the phones run. About one aim per 2 s, so a few hundred at most.
-   */
-  history: GhostHistory | null;
   /** Last attack id handed out. */
   attackId: number;
   log: RecapEvent[];
-}
-
-export interface GhostHistory {
-  aims: Aim[];
-  events: GhostEvent[];
 }
 
 const int = (min: number, max: number) => z.number().int().min(min).max(max);
@@ -273,8 +272,6 @@ export interface MazePlayerView {
   facts: MazeFacts;
   /** The player's last ≤40 turns (the table view keeps only the last few). */
   turns: Turn[];
-  /** Shared maze: the round's full aim and event history (see MazeState.history), else null. */
-  history: GhostHistory | null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -892,7 +889,6 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
       showBy: null,
       players: {},
       shared: null,
-      history: null,
       attackId: 0,
       log: [],
     };
@@ -900,8 +896,7 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
     for (const id of playerIds) players[id] = { ...freshPlayer(), pos: placeAt(base, id, 0) };
     const out = { ...base, players };
     if (options.mode !== 'Shared') return out;
-    const shared = initShared(out);
-    return { ...out, shared, history: { aims: shared.aims, events: shared.events } };
+    return { ...out, shared: initShared(out) };
   },
 
   getPlayerView(s, playerId) {
@@ -917,7 +912,6 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
       lives: own.lives,
       facts: own.facts,
       turns: own.turns,
-      history: s.history,
     };
   },
 

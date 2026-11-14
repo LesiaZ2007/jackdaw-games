@@ -12,9 +12,18 @@ import {
   mergeCaught,
   spotKind,
 } from './rules';
-import type { MazeFacts, MazeState, MazeTick, PlayerRec, PowerSpot, SharedRec } from './rules';
+import type {
+  GhostBase,
+  MazeFacts,
+  MazeState,
+  MazeTick,
+  PlayerRec,
+  PowerSpot,
+  SharedRec,
+} from './rules';
 import { FRUIT_EVERY, FRUIT_MS } from './sim/chomper';
-import type { Aim, GhostCheckpoint, GhostEvent, GhostInput, GhostSim } from './sim/ghosts';
+import { GhostSim, ghostSeed, stepAt } from './sim/ghosts';
+import type { Aim, GhostCheckpoint, GhostEvent, GhostInput } from './sim/ghosts';
 import { wrapX } from './sim/layouts';
 import type { MazeLayout } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
@@ -37,12 +46,17 @@ import type { Vec } from './sim/walker';
  *   fruit tile for FRUIT_MS; the first claim wins.
  * - Aims: on any tick, once AIM_MS have passed since the last beat, the server records every
  *   player's last reported tile. Silent players keep their last tile and never hold anyone up.
+ * - Ghost bases: at each beat the server steps its own GhostSim to the beat and keeps the result
+ *   (`bases`, the last BASES_KEPT). Phones, the TV and bots restore the newest base and step on
+ *   with the few aims and events kept after it, so no one needs the round's whole history. A
+ *   ghost event dated before the newest base re-steps the later bases from an older one; one
+ *   dated before the oldest base can't be replayed everywhere and doesn't count.
  * - The round ends at the bell or when every pellet (power spots aside) is owned.
  */
 
 export const AIM_MS = 2_000;
-/** Aims kept: the ones ghosts steer by, plus one older, so a restore a little back still has one. */
-export const AIMS_KEPT = 4;
+/** Ghost bases kept: the newest, plus older ones a late event can re-step from. */
+export const BASES_KEPT = 3;
 export const SPOT_BACK_MS = 12_000;
 /** A pickup reported this much before a spot is back still counts (clocks differ a little). */
 export const SPOT_SLACK_MS = 1_000;
@@ -84,12 +98,54 @@ export function spotPellets(m: MazeLayout): number[] {
 }
 
 /**
- * The earliest event time the server still keeps. Once old aims have been dropped, a phone that
- * restores a checkpoint (up to CHECKPOINT_MS before a late event) must still find an aim at or
- * before the restore point, so events within CHECKPOINT_MS of the oldest kept aim go too.
+ * The earliest round ms a ghost event may be dated and still count: the oldest kept base (an
+ * event before it is already past for every base the server could re-step from).
  */
-export function eventsFrom(aims: Aim[]): number {
-  return aims.length < AIMS_KEPT ? -Infinity : (aims[0]?.atMs ?? 0) + CHECKPOINT_MS;
+export function eventsFrom(shared: Pick<SharedRec, 'bases'>): number {
+  return shared.bases[0]?.atMs ?? 0;
+}
+
+/** Whether an event at `atMs` lands at or after a base (the base hasn't taken it in). */
+const after = (atMs: number, b: GhostBase) => stepAt(atMs) >= b.c.step;
+
+/** A fresh GhostSim for the Shared maze of a game. */
+const sharedSim = (s: MazeState) => new GhostSim(layoutOf(s, 0), ghostSeed(s.seed, 0), 1);
+
+/**
+ * The bases after a tick: the ones a new event lands before are stepped again from the last base
+ * it doesn't touch, and a beat adds one. Only the last BASES_KEPT are kept.
+ */
+function rebase(
+  s: MazeState,
+  bases0: GhostBase[],
+  input: GhostInput,
+  added: GhostEvent[],
+  beatAt: number | null,
+): GhostBase[] {
+  let keep = bases0.length;
+  while (keep > 1 && added.some((e) => !after(e.atMs, bases0[keep - 1]!))) keep--;
+  const redo = bases0.slice(keep).map((b) => b.atMs);
+  if (beatAt !== null) redo.push(beatAt);
+  if (!redo.length) return bases0;
+  const sim = sharedSim(s);
+  sim.restore(bases0[keep - 1]!.c);
+  let rev = Math.max(...bases0.map((b) => b.rev));
+  const out = bases0.slice(0, keep);
+  for (const atMs of redo) {
+    sim.stepTo(atMs, input);
+    out.push({ atMs, rev: ++rev, c: sim.checkpoint() });
+  }
+  return out.slice(-BASES_KEPT);
+}
+
+/**
+ * Aims a sim restored from a base at `fromMs` still needs: the one in effect then and the one
+ * before it (ghosts read the heading from the two), and everything later.
+ */
+function aimsFrom(aims: Aim[], fromMs: number): Aim[] {
+  let last = -1;
+  for (let i = 0; i < aims.length; i++) if (aims[i]!.atMs < fromMs) last = i;
+  return aims.slice(Math.max(0, last - 1));
 }
 
 /** Whether a spot holds a power-up at round ms `t`. */
@@ -115,6 +171,7 @@ export function initShared(s: MazeState): SharedRec {
     owner: encodeOwners(new Uint8Array(pelletIndex(m).size)),
     aims: [aimNow(s, 0)],
     events: [],
+    bases: [{ atMs: 0, rev: 0, c: sharedSim(s).checkpoint() }],
     spots: m.powers.map((_, spot) => ({ spot, kind: spotKind(m, powers, spot, 1), backAt: 0 })),
     fruit: null,
     fruitN: 0,
@@ -192,20 +249,20 @@ export function settleShared(
   // Ghosts eaten: each new one is an event every phone applies; a ghost two players ate at
   // once counts for the first report only.
   let events = [...sh0.events];
-  // A ghost eaten before the history the server still keeps can't be replayed on every phone,
-  // so it doesn't count (the phone's report of it is simply never taken in).
   // Aims: a beat every AIM_MS, on whichever tick comes along.
   let aims = sh0.aims;
   const last = aims[aims.length - 1];
   const beat = !last || nowMs - last.atMs >= AIM_MS ? aimNow(s, nowMs) : null;
-  if (beat) aims = [...aims, beat].slice(-AIMS_KEPT);
-  // Everything added to the ghosts' inputs this tick, for the full history.
+  if (beat) aims = [...aims, beat];
+  // Everything added to the ghosts' inputs this tick (the bases are stepped again for these).
   const added: GhostEvent[] = [];
-  const keptFrom = eventsFrom(aims);
+  // A ghost eaten before the oldest base can't be replayed on every phone, so it doesn't count
+  // (the phone's report of it is simply never taken in).
+  const oldest = sh0.bases[0]!;
   const seen = new Set(prev.facts.ghosts.map(([t, g]) => `${t}:${g}`));
   for (const [t, g] of [...tick.ghosts].sort((a, b) => a[0] - b[0] || a[1] - b[1])) {
     const k = `${t}:${g}`;
-    if (seen.has(k) || facts.ghosts.length >= 64 || t < keptFrom) continue;
+    if (seen.has(k) || facts.ghosts.length >= 64 || !after(t, oldest)) continue;
     seen.add(k);
     const dup = events.some(
       (e) => e.kind === 'eaten' && e.ghost === g && Math.abs(e.atMs - t) < GHOST_SAME_MS,
@@ -260,31 +317,28 @@ export function settleShared(
     if (kind === 'jinx') {
       const to = leaderOther(out, playerId);
       if (!to) continue;
-      const e: GhostEvent = { atMs: t, kind: 'jinx', target: to, untilMs: t + POWER_MS.jinx };
+      // Never before the oldest base, so every phone can replay it.
+      const atMs = Math.max(t, oldest.atMs);
+      const e: GhostEvent = { atMs, kind: 'jinx', target: to, untilMs: atMs + POWER_MS.jinx };
       events.push(e);
       added.push(e);
       out = sendAttack(out, to, 'jinx', playerId, now);
     } else out = attackOnPickup(out, playerId, kind, now);
   }
 
-  const oldest = aims[0]?.atMs ?? 0;
-  const from = eventsFrom(aims);
-  events = events.filter((e) => e.atMs >= from || (e.kind === 'jinx' && e.untilMs > oldest));
+  // Ghost bases, then only the aims and events a sim restored from the oldest one still needs.
+  const bases = rebase(s, sh0.bases, { aims, events }, added, beat ? beat.atMs : null);
+  const base0 = bases[0]!;
+  events = events.filter((e) => after(e.atMs, base0));
+  aims = aimsFrom(aims, base0.atMs);
 
-  const h0 = s.history ?? { aims: sh0.aims, events: sh0.events };
   out = {
     ...out,
-    history:
-      beat || added.length
-        ? {
-            aims: beat ? [...h0.aims, beat] : h0.aims,
-            events: added.length ? [...h0.events, ...added] : h0.events,
-          }
-        : h0,
     shared: {
       owner: encodeOwners(owners),
       aims,
       events,
+      bases,
       spots,
       fruit,
       fruitN,
@@ -315,6 +369,8 @@ export interface GhostCheckpoints {
   list: { tMs: number; c: GhostCheckpoint }[];
   /** Aims and events the sim has already taken in. */
   seen: Set<string>;
+  /** The `rev` of the server base last restored (syncSharedGhosts). */
+  baseRev?: number;
 }
 
 /** Starts the checkpoint list for a fresh sim. */
@@ -368,4 +424,34 @@ export function syncGhosts(
   }
   while (list.length > 1 && list[1]!.tMs <= at - CHECKPOINT_KEEP_MS) list.shift();
   checkpoints.seen = new Set(keys.keys());
+}
+
+/** What the table view holds of the Shared ghosts. */
+export type SharedGhosts = Pick<SharedRec, 'bases' | 'aims' | 'events'>;
+
+/**
+ * syncGhosts for the Shared maze, from the table view: whenever the server has a new ghost base
+ * (and the clock has reached it), the sim restores it and steps on from there, so a phone that
+ * joins late, refreshes or guessed wrong ends up with exactly the server's ghosts. `extra` are
+ * events this phone knows before the server does (its own ghost eats).
+ */
+export function syncSharedGhosts(
+  sim: GhostSim,
+  checkpoints: GhostCheckpoints,
+  sh: SharedGhosts,
+  tMs: number,
+  extra: GhostEvent[] = [],
+): void {
+  const input: GhostInput = {
+    aims: sh.aims,
+    events: extra.length ? [...sh.events, ...extra] : sh.events,
+  };
+  const base = sh.bases[sh.bases.length - 1];
+  if (base && base.rev !== checkpoints.baseRev && base.atMs <= tMs) {
+    sim.restore(base.c);
+    checkpoints.list = [{ tMs: base.atMs, c: base.c }];
+    checkpoints.seen = new Set([...input.events.map(eventKey), ...input.aims.map(aimKey)]);
+    checkpoints.baseRev = base.rev;
+  }
+  syncGhosts(sim, checkpoints, input, tMs);
 }

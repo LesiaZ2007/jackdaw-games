@@ -5,7 +5,7 @@ import type { MazeOptions } from './options';
 import { BELL_GRACE_MS, layoutOf, maze as game } from './rules';
 import type { MazeState, MazeTick } from './rules';
 import {
-  AIMS_KEPT,
+  BASES_KEPT,
   eventsFrom,
   SPOT_BACK_MS,
   decodeOwners,
@@ -14,9 +14,10 @@ import {
   ownerOf,
   spotPellets,
   syncGhosts,
+  syncSharedGhosts,
 } from './shared';
 import { FRUIT_EVERY } from './sim/chomper';
-import { GhostSim } from './sim/ghosts';
+import { GhostSim, ghostSeed } from './sim/ghosts';
 import type { Aim, GhostEvent, GhostInput } from './sim/ghosts';
 import { MAZE_LAYOUTS, layoutsOf } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
@@ -185,7 +186,8 @@ describe('a silent player (review focus 3)', () => {
       expect(game.waitingOn!(s)).toEqual([]);
     }
     expect(s.players[FINCH]!.score).toBe(finch);
-    expect(s.shared!.aims).toHaveLength(AIMS_KEPT);
+    expect(s.shared!.bases).toHaveLength(BASES_KEPT);
+    expect(s.shared!.aims.length).toBeLessThanOrEqual(BASES_KEPT + 2);
     for (const a of s.shared!.aims) expect(a.tiles[FINCH]).toEqual([5, 7]);
     // The aims keep beating every 2 s.
     const times = s.shared!.aims.map((a) => a.atMs);
@@ -331,15 +333,16 @@ describe('ghosts, aims and fruit', () => {
     expect(s.shared!.events.filter((e) => e.kind === 'eaten')).toHaveLength(1);
   });
 
-  it('aims beat every 2 s, keep the last 4, and old events go with them', () => {
+  it('aims beat every 2 s, each with a ghost base; old aims and events go', () => {
     let s = setup([WREN, ROOK], only('hunt'));
     s = act(s, WREN, tick(s, WREN, { t: 1000, powers: [[900, 0, 'hunt']], ghosts: [[1000, 0]] }));
     for (let t = 1500; t <= 12_000; t += 500)
       s = act(s, ROOK, tick(s, ROOK, { t, pos: [t / 1000, 1, 'right'] }));
     const aims = s.shared!.aims;
-    expect(aims).toHaveLength(AIMS_KEPT);
-    expect(aims.map((a) => a.atMs)).toEqual([6000, 8000, 10_000, 12_000]);
-    expect(aims[3]!.tiles[ROOK]).toEqual([12, 1]);
+    expect(s.shared!.bases.map((b) => b.atMs)).toEqual([8000, 10_000, 12_000]);
+    // A sim restored from the 8 s base steers by the 6 s aim and reads its heading from 4 s.
+    expect(aims.map((a) => a.atMs)).toEqual([4000, 6000, 8000, 10_000, 12_000]);
+    expect(aims[4]!.tiles[ROOK]).toEqual([12, 1]);
     expect(s.shared!.events).toEqual([]);
   });
 
@@ -369,16 +372,41 @@ describe('ghosts, aims and fruit', () => {
   });
 });
 
-describe('ghost history the server keeps', () => {
+/** Every aim and event the server held during a run, oldest first. */
+class Gathered {
+  private aims = new Map<string, Aim>();
+  private events = new Map<string, GhostEvent>();
+  add(s: MazeState): MazeState {
+    for (const a of s.shared!.aims) this.aims.set(JSON.stringify(a), a);
+    for (const e of s.shared!.events) this.events.set(JSON.stringify(e), e);
+    return s;
+  }
+  input(): GhostInput {
+    const by = <T extends { atMs: number }>(xs: Iterable<T>) =>
+      [...xs].sort((a, b) => a.atMs - b.atMs);
+    return { aims: by(this.aims.values()), events: by(this.events.values()) };
+  }
+}
+
+/** A sim fed everything from the round start, as a phone that saw it all would run it. */
+function reference(s: MazeState, input: GhostInput, tMs: number): GhostSim {
+  const sim = new GhostSim(layoutOf(s, 0), ghostSeed(s.seed, 0), 1);
+  sim.stepTo(tMs, input);
+  return sim;
+}
+
+describe('ghost bases the server keeps', () => {
   /** Ticks for Wren every 900 ms up to `until`. */
-  function run(s0: MazeState, until: number): MazeState {
+  function run(s0: MazeState, until: number, seen?: Gathered): MazeState {
     let s = s0;
-    for (let t = 900; t <= until; t += 900)
+    for (let t = 900; t <= until; t += 900) {
       s = act(s, WREN, tick(s, WREN, { t, pos: [1, 1, 'right'] }));
+      seen?.add(s);
+    }
     return s;
   }
 
-  it('keeps a running jinx while older events and aims drop away', () => {
+  it('a jinx ghost lives on in the bases after its event drops away', () => {
     let s = setup([WREN, ROOK]);
     s = {
       ...s,
@@ -392,22 +420,118 @@ describe('ghost history the server keeps', () => {
     };
     s = run(s, 11_000);
     const sh = s.shared!;
-    expect(sh.aims).toHaveLength(AIMS_KEPT);
-    expect(sh.aims[0]!.atMs).toBeGreaterThan(1500);
-    expect(sh.events.some((e) => e.kind === 'jinx')).toBe(true);
-    expect(sh.events.some((e) => e.kind === 'eaten')).toBe(false);
+    expect(sh.bases).toHaveLength(BASES_KEPT);
+    expect(sh.bases[0]!.atMs).toBeGreaterThan(1500);
+    expect(sh.events).toEqual([]);
+    expect(sh.bases[BASES_KEPT - 1]!.c.ghosts.some((g) => g.jinx?.target === ROOK)).toBe(true);
   });
 
-  it('a ghost eaten before the kept history does not score', () => {
+  it('a ghost eaten before the oldest base does not score', () => {
     let s = setup([WREN, ROOK]);
     s = run(s, 12_000);
-    const from = eventsFrom(s.shared!.aims);
+    const from = eventsFrom(s.shared!);
     expect(from).toBeGreaterThan(0);
     s = act(s, WREN, tick(s, WREN, { t: 12_900, ghosts: [[from - 100, 2]] }));
     expect(s.players[WREN]!.ghostsEaten).toBe(0);
     expect(s.shared!.events.some((e) => e.kind === 'eaten')).toBe(false);
     s = act(s, WREN, tick(s, WREN, { t: 13_800, ghosts: [[13_000, 2]] }));
     expect(s.players[WREN]!.ghostsEaten).toBe(1);
+  });
+
+  it('ghosts restored from the newest base equal a sim fed everything from the start', () => {
+    const seen = new Gathered();
+    let s = seen.add(setup([WREN, ROOK], only('hunt')));
+    let rookX = 1;
+    for (let t = 900; t <= 40_000; t += 900) {
+      const eats: [number, number][] = t === 9900 ? [[9500, 0]] : t === 24_300 ? [[24_000, 1]] : [];
+      s = seen.add(
+        act(
+          s,
+          WREN,
+          tick(s, WREN, {
+            t,
+            pos: [1, 1, 'right'],
+            ghosts: [...s.players[WREN]!.facts.ghosts, ...eats],
+          }),
+        ),
+      );
+      rookX = rookX >= 10 ? 1 : rookX + 1;
+      s = seen.add(act(s, ROOK, tick(s, ROOK, { t: t + 300, pos: [rookX, 1, 'right'] })));
+    }
+    expect(s.players[WREN]!.ghostsEaten).toBe(2);
+    const input = seen.input();
+    // Every kept base is the reference at its time.
+    for (const b of s.shared!.bases) expect(b.c).toEqual(reference(s, input, b.atMs).checkpoint());
+    // A phone that has only the table view now, stepped to a moment after the last report.
+    const tv = game.getTableView(s);
+    const sim = new GhostSim(layoutOf(s, 0), ghostSeed(s.seed, 0), 1);
+    const cps = ghostCheckpoints(sim);
+    syncSharedGhosts(sim, cps, tv.shared!, 40_500);
+    expect(sim.ghosts()).toEqual(reference(s, input, 40_500).ghosts());
+  });
+
+  it('a late ghost eat dated before the newest base steps it again from an older one', () => {
+    const seen = new Gathered();
+    let s = run(seen.add(setup([WREN, ROOK])), 9000, seen);
+    const before = s.shared!.bases;
+    expect(before.map((b) => b.atMs)).toEqual([2700, 5400, 8100]);
+    // Rook reports a ghost it ate at 6 s (between the two older bases) only now.
+    s = seen.add(act(s, ROOK, tick(s, ROOK, { t: 9300, ghosts: [[6000, 0]] })));
+    expect(s.players[ROOK]!.ghostsEaten).toBe(1);
+    const after = s.shared!.bases;
+    expect(after.map((b) => b.atMs)).toEqual([2700, 5400, 8100]);
+    expect(after[1]).toBe(before[1]);
+    expect(after[2]!.rev).toBeGreaterThan(before[2]!.rev);
+    expect(after[2]!.c).not.toEqual(before[2]!.c);
+    expect(after[2]!.c).toEqual(reference(s, seen.input(), 8100).checkpoint());
+  });
+
+  it('an 8-player table view at three minutes stays small', () => {
+    const ids = ['wren', 'rook', 'finch', 'lark', 'robin', 'jay', 'kite', 'swift'];
+    let s = setup(ids, { minutes: 4 });
+    const m = layoutOf(s, 0);
+    expect(m.size).toBe('Large');
+    const n = size(s);
+    const open: [number, number][] = [...pelletIndex(m).keys()].map(
+      (k) => k.split(',').map(Number) as [number, number],
+    );
+    const turns: Record<string, [number, number, number, 'up' | 'down' | 'left' | 'right'][]> = {};
+    const dirs = ['up', 'down', 'left', 'right'] as const;
+    for (let t = 900, k = 0; t <= 180_000; t += 900, k++) {
+      ids.forEach((id, seat) => {
+        const p = s.players[id]!;
+        const at1 = open[(k * 7 + seat * 31) % open.length]!;
+        const at2 = open[(k * 7 + seat * 31 + 3) % open.length]!;
+        turns[id] = [
+          ...(turns[id] ?? []),
+          [t - 600, at1[0], at1[1], dirs[(k + seat) % 4]!] as const,
+          [t - 300, at2[0], at2[1], dirs[(k + seat + 1) % 4]!] as const,
+        ].slice(-40) as (typeof turns)[string];
+        // Claims creep up to about half the maze over the three minutes.
+        const claim = new Uint8Array(n);
+        for (let i = seat; i < Math.floor((n * t) / 360_000); i += ids.length) claim[i] = 1;
+        const ghosts: [number, number][] =
+          k % 25 === seat ? [...p.facts.ghosts, [t - 200, seat % 4]] : p.facts.ghosts;
+        s = act(
+          s,
+          id,
+          tick(s, id, {
+            t,
+            pos: [at2[0], at2[1], dirs[(k + seat + 1) % 4]!],
+            turns: turns[id]!,
+            eaten: encodeBits(claim),
+            ghosts,
+          }),
+          at(s, t),
+        );
+      });
+    }
+    expect(s.phase).toBe('play');
+    const table = JSON.stringify(game.getTableView(s)).length;
+    const view = JSON.stringify(game.getPlayerView(s, 'rook')).length;
+    console.log(`8-player Shared at 3 min: table view ${table} bytes, player view ${view} bytes`);
+    expect(table).toBeLessThan(8 * 1024);
+    expect(view).toBeLessThan(2 * 1024);
   });
 });
 
@@ -449,33 +573,5 @@ describe('syncGhosts', () => {
     sim.stepTo(6500, { aims, events: [] });
     sim.stepTo(10_000, { aims, events: late });
     expect(sim.ghosts()).not.toEqual(ref.ghosts());
-  });
-
-  it('matches the reference when fed only what the server keeps', () => {
-    const beats: Aim[] = [];
-    for (let t = 0; t <= 14_000; t += 2000)
-      beats.push({ atMs: t, tiles: { wren: [13 - (t / 2000) * 1, 18], rook: [1 + t / 2000, 1] } });
-    const events: GhostEvent[] = [
-      { atMs: 3100, kind: 'jinx', target: 'rook', untilMs: 11_100 },
-      { atMs: 4200, kind: 'eaten', ghost: 0 },
-      { atMs: 8300, kind: 'eaten', ghost: 1 },
-    ];
-    const ref = new GhostSim(m, 7, 1);
-    ref.stepTo(14_000, { aims: beats, events });
-
-    const sim = new GhostSim(m, 7, 1);
-    const cps = ghostCheckpoints(sim);
-    for (let t = 100; t <= 14_000; t += 100) {
-      // What the server holds at t (aims 700 ms late; the 8.3 s event arrives at 9.9 s).
-      const aims = beats.filter((a) => a.atMs <= t - 700).slice(-AIMS_KEPT);
-      const from = eventsFrom(aims);
-      const held = events.filter(
-        (e) =>
-          (e.atMs >= from || (e.kind === 'jinx' && e.untilMs > aims[0]!.atMs)) &&
-          (e.atMs < 8000 || t >= 9900),
-      );
-      syncGhosts(sim, cps, { aims: aims.length ? aims : [beats[0]!], events: held }, t);
-    }
-    expect(sim.ghosts()).toEqual(ref.ghosts());
   });
 });

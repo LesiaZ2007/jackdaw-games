@@ -6,9 +6,9 @@ import type { MazeOptions } from './options';
 import { actionSchema, layoutOf, maze as game } from './rules';
 import type { MazeState, MazeTick } from './rules';
 import { isWall } from './sim/layouts';
-import { ghostSeed, mazeBot } from './bot';
+import { clearGhostCache, ghostSeed, mazeBot } from './bot';
 import { GhostSim } from './sim/ghosts';
-import type { GhostView } from './sim/ghosts';
+import type { Aim, GhostEvent, GhostView } from './sim/ghosts';
 
 type Vec2 = [number, number];
 
@@ -151,7 +151,7 @@ describe('mazeBot', () => {
         now: s.startAt + 180_900,
         level: 'normal',
       });
-    // The first call replays the ghosts from the maze start; later ones carry on from there.
+    // The ghosts restore the server base from the tick at three minutes and step on from there.
     const c0 = performance.now();
     expect(call(0)).not.toBeNull();
     const cold = performance.now() - c0;
@@ -167,7 +167,7 @@ describe('mazeBot', () => {
 
 describe('mazeBot ghosts', () => {
   it.each(['Medium', 'Large'] as const)(
-    'rebuilds exactly the phones’ ghosts from the full Shared history (%s)',
+    'rebuilds exactly the phones’ ghosts from the server’s ghost bases (%s)',
     (size) => {
       // Few enough bots that they don't clear the maze before two minutes are up.
       const ids = IDS.slice(0, size === 'Large' ? 3 : 2);
@@ -175,6 +175,14 @@ describe('mazeBot ghosts', () => {
       const rng = createRng(11);
       const seen: { t: number; ghosts: GhostView[]; eat?: { ghost: number; pos: Vec2 } }[] = [];
       let eats = 0;
+      // Every aim and event the server ever held, gathered as the round goes.
+      const aims = new Map<string, Aim>();
+      const events = new Map<string, GhostEvent>();
+      const gather = (x: MazeState) => {
+        for (const a of x.shared!.aims) aims.set(JSON.stringify(a), a);
+        for (const e of x.shared!.events) events.set(JSON.stringify(e), e);
+      };
+      gather(s);
       let now = s.startAt;
       while (s.phase === 'play' && now - s.startAt < 150_000) {
         now += 900;
@@ -195,19 +203,21 @@ describe('mazeBot ghosts', () => {
             },
           );
           if (a) s = game.applyAction(s, id, a, rng, now);
+          gather(s);
         }
       }
       // A Medium maze is cleared by one bot in about 100 s; the Large one lasts past 2 minutes.
       expect(now - s.startAt).toBeGreaterThanOrEqual(size === 'Large' ? 120_000 : 90_000);
-      // The table view still carries only the recent window.
-      expect(game.getTableView(s)).not.toHaveProperty('history');
-      expect(s.shared!.aims.length).toBeLessThan(s.history!.aims.length);
-      expect(s.history!.aims.length).toBeGreaterThan(30);
+      // The table view carries only the recent window.
+      expect(s.shared!.aims.length).toBeLessThan(10);
+      expect(aims.size).toBeGreaterThan(30);
 
       // A reference sim fed the full history, as a phone that saw everything would run it.
       const m = layoutOf(s, 0);
       const ref = new GhostSim(m, ghostSeed(s.seed, 0), 1);
-      const input = { aims: s.history!.aims, events: s.history!.events };
+      const byTime = <T extends { atMs: number }>(xs: Iterable<T>) =>
+        [...xs].sort((a, b) => a.atMs - b.atMs);
+      const input = { aims: byTime(aims.values()), events: byTime(events.values()) };
       seen.sort((a, b) => a.t - b.t);
       for (const x of seen) {
         ref.stepTo(x.t, input);
@@ -234,6 +244,35 @@ describe('mazeBot ghosts', () => {
     const table = game.getTableView(run.s).players.find((p) => p.id === 'wren')!;
     expect(view.turns.length).toBeGreaterThan(table.turns.length);
     expect(view.turns.slice(-table.turns.length)).toEqual(table.turns);
-    expect(view.history).toBeNull();
+  });
+
+  it('Race bots play the same with or without the ghost cache', () => {
+    const s0 = start(IDS.slice(0, 2), { mode: 'Race', mazes: 1 }, 4);
+    const ticks = (cold: boolean) => {
+      clearGhostCache();
+      let s = s0;
+      const rng = createRng(6);
+      const out: MazeTick[] = [];
+      for (let now = s.startAt + 900; now - s.startAt < 40_000; now += 900)
+        for (const id of IDS.slice(0, 2)) {
+          if (cold) clearGhostCache();
+          const a = mazeBot({
+            playerId: id,
+            playerIds: s.ids,
+            view: game.getPlayerView(s, id),
+            tableView: game.getTableView(s),
+            rng,
+            now,
+            level: 'hard',
+          });
+          if (!a) continue;
+          out.push(a);
+          s = game.applyAction(s, id, a, rng, now);
+        }
+      return out;
+    };
+    const warm = ticks(false);
+    expect(warm.length).toBeGreaterThan(60);
+    expect(ticks(true)).toEqual(warm);
   });
 });

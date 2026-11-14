@@ -65,10 +65,14 @@ const EATEN_WAIT = 48;
 const JINX_WAIT = 18;
 const JINX_FIRST_ID = 4;
 
-/** The step at or after `ms` (a step k starts at k × 1000/60 ms). */
-const stepAt = (ms: number) => Math.ceil((ms * 3) / 50);
-/** How many whole steps fit in `ms`. */
-const stepsIn = (ms: number) => Math.floor((ms * 3) / 50);
+/** The step at or after `ms` (a step k starts at k × 1000/60 ms); an event applies at this step. */
+export const stepAt = (ms: number) => Math.ceil((ms * 3) / 50);
+/** How many whole steps fit in `ms` (where `stepTo(ms)` stops). */
+export const stepsIn = (ms: number) => Math.floor((ms * 3) / 50);
+
+/** The seed ghosts use on maze `maze` (the first maze uses the table seed itself). */
+export const ghostSeed = (seed: number, maze: number): number =>
+  (seed + Math.imul(maze, 0x9e3779b1)) >>> 0;
 
 const key = (x: number, y: number) => `${x},${y}`;
 const copyGhost = (g: GhostState): GhostState => ({

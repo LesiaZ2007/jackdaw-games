@@ -4,7 +4,7 @@ import type { MazeAction, MazePlayerView, MazeTableView } from './rules';
 import { AIM_MS, spotPellets, takenBits } from './shared';
 import { ChomperSim, DYING_MS } from './sim/chomper';
 import type { Turn } from './sim/chomper';
-import { GhostSim } from './sim/ghosts';
+import { GhostSim, ghostSeed } from './sim/ghosts';
 import type { GhostCheckpoint, GhostEvent, GhostInput, GhostView } from './sim/ghosts';
 import { DIRS, DIR_ORDER, MAZE_LAYOUTS, opposite, wrapX } from './sim/layouts';
 import type { MazeLayout } from './sim/layouts';
@@ -20,13 +20,14 @@ import type { Dir, Vec, Walker } from './sim/walker';
  * the server's clock with the same chomper and ghost sims the phones use, and returns the next
  * cumulative tick with the turns it made.
  *
- * Nothing is remembered between calls, so the ghosts are rebuilt from the maze start each call.
- * In the Shared maze the player view carries the round's full aim and ghost event history, so
- * up to the last aim the bot's ghosts are exactly the phones' (later aims and other players'
- * unreported eats can't be known yet, by the bot or by a phone). In Solo and Race the ghosts
- * chase the bot's own chomper and nobody else runs them: earlier aims are rebuilt from the last
- * 40 turns it reported (the last turn point before each beat), so a long maze's early aims are
- * only approximate.
+ * In the Shared maze the bot restores the server's ghost base from the table view (the newest
+ * one at or before its last report) and steps on with the kept aims and events, exactly as a
+ * phone does, so its ghosts are the phones' (later aims and other players' unreported eats can't
+ * be known yet, by the bot or by a phone). In Solo and Race the ghosts chase the bot's own
+ * chomper and nobody else runs them: they are rebuilt from the maze start each call, with
+ * earlier aims taken from the last 40 turns it reported (the last turn point before each beat),
+ * so a long maze's early aims are only approximate. A small cache (`ghostCache`) saves replaying
+ * the whole maze each call; it never changes the result.
  */
 
 /** Fixed bot step, in ms (the chomper and ghosts are stepped at about 60 Hz). */
@@ -38,9 +39,7 @@ const DANGER: Record<BotLevel, number> = { easy: 2, normal: 3, hard: 4 };
 const FREEZE_MS = 2500;
 const JINX_MS = 8000;
 
-/** The seed ghosts use on maze `maze` (the first maze uses the table seed itself). */
-export const ghostSeed = (seed: number, maze: number): number =>
-  (seed + Math.imul(maze, 0x9e3779b1)) >>> 0;
+export { ghostSeed };
 
 const key = (m: MazeLayout, x: number, y: number) => y * m.w + x;
 
@@ -120,13 +119,18 @@ function walkerAt(m: MazeLayout, pos: [number, number, Dir | null]): Walker {
 }
 
 /**
- * Where the last rebuild of each game's ghosts got to, so the next call (about 900 ms later) can
- * carry on from there instead of replaying the whole maze. Only a shortcut: an entry is used only
- * when every aim and event up to its time is exactly what it was built from, and the ghosts then
- * come out the same as a replay from the start.
+ * Solo and Race: where the last rebuild of each bot's ghosts got to, so the next call (about
+ * 900 ms later) can carry on from there instead of replaying the whole maze. Only a shortcut: an
+ * entry is used only when every aim and event up to its time is exactly what it was built from,
+ * and the ghosts then come out the same as a replay from the start (tested).
  */
 const ghostCache = new Map<string, { tMs: number; sig: string; c: GhostCheckpoint }>();
 const GHOST_CACHE_MAX = 64;
+
+/** Empties the ghost cache (tests compare runs with and without it). */
+export function clearGhostCache(): void {
+  ghostCache.clear();
+}
 
 const inputSig = (input: GhostInput, tMs: number): string =>
   JSON.stringify([
@@ -181,10 +185,9 @@ export function mazeBot(
   });
   const facts = view.facts;
   if (shared) {
-    const h = view.history ?? tv.shared;
-    if (h) {
-      input.aims.push(...h.aims);
-      input.events.push(...h.events);
+    if (tv.shared) {
+      input.aims.push(...tv.shared.aims);
+      input.events.push(...tv.shared.events);
     }
   } else {
     for (const [t, , kind] of facts.powers) if (kind === 'hunt') input.events.push(fright(t));
@@ -194,7 +197,7 @@ export function mazeBot(
       input.events.push({ atMs: at, kind: 'jinx', target: me, untilMs: at + JINX_MS });
     }
   }
-  // Its own ghost eats, unless the Shared history already holds them.
+  // Its own ghost eats, unless the Shared events already hold them (older ones are in the base).
   const known = new Set(
     input.events.map((e) => (e.kind === 'eaten' ? `${e.atMs}:${e.ghost}` : '')),
   );
@@ -246,12 +249,15 @@ export function mazeBot(
       lastBeat = b;
     }
   }
-  catchUp(
-    ghosts,
-    `${tv.seed}:${rec.maze}:${tv.layouts[rec.maze] ?? 0}:${shared ? '' : me}`,
-    input,
-    from - off,
-  );
+  if (shared) {
+    // The newest server base at or before the last report (the oldest one if none is).
+    const bases = tv.shared?.bases ?? [];
+    let base = bases[0];
+    for (const b of bases) if (b.atMs <= from) base = b;
+    if (base) ghosts.restore(base.c);
+    ghosts.stepTo(from, input);
+  } else
+    catchUp(ghosts, `${tv.seed}:${rec.maze}:${tv.layouts[rec.maze] ?? 0}:${me}`, input, from - off);
   trace?.start?.(from, ghosts.ghosts());
 
   const fruitSeen = tv.shared?.fruitSeen[me] ?? 0;

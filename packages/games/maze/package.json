@@ -1,0 +1,27 @@
+{
+  "name": "@jackdaw/game-maze",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Maze: chomp the maze, dodge the ghosts, alone or against friends",
+  "exports": {
+    ".": "./src/index.ts",
+    "./meta": "./src/meta.ts",
+    "./ui": "./src/ui/index.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jackdaw/engine": "workspace:*",
+    "@jackdaw/ui": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.0"
+  }
+}

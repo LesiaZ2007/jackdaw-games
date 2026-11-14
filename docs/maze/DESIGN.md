@@ -48,6 +48,13 @@ The host picks the mode in the lobby options. 1 player for Solo, 2–8 for Share
   opponents (_what and how much is the builder's call, drawn from the attack power-ups below_).
   The TV shows everyone's maze side by side, with which maze each player is on.
 
+### Maze size
+
+2026-11-14: "select maze size… auto selects when playing with several people but you can change
+it". A host option, **Auto** (default), Small (21×20), Medium (27×24) or Large (33×30). Auto picks
+Medium for Solo and Race, and for the Shared maze Medium with 2–4 players and Large with 5–8. Each
+size has at least two original mazes. The maze always fits the screen whatever its size.
+
 ### Telling who's who (Shared maze)
 
 Your own chomper is full strength, a little larger, with a pulsing ring and a **YOU** tag.

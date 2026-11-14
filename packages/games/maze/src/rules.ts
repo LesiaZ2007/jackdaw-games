@@ -54,6 +54,8 @@ export const INBOX_MAX = 3;
 export const INBOX_MS = 10_000;
 export const LIVES = 3;
 export const TURNS_KEPT = 40;
+/** Solo has no timer, but a backstop bell rings this long after play starts. */
+export const SOLO_BELL_MS = 30 * 60_000;
 /** Pellets a tick may add beyond what the fastest chomper could reach (Magnet grabs a few). */
 const EAT_SLACK = 24;
 
@@ -78,6 +80,8 @@ export interface MazeFacts {
   fruit: number[];
   /** Power spots picked up: [tMs, spot, kind] (kind as the server reads the spot). */
   powers: [number, number, PowerKind][];
+  /** Round ms of each catch on this maze; a catch starts the ghost combo over. */
+  caughtAt: number[];
 }
 
 export interface PlayerRec {
@@ -148,7 +152,7 @@ export interface MazeState {
   layouts: number[];
   /** Server time when the round clock reads 0 (play starts). */
   startAt: number;
-  /** The bell (Shared, Race), or when the first Race finish ended it. */
+  /** The bell (Shared, Race; a backstop in Solo), or when the first Race finish ended it. */
   endAt: number | null;
   /** When the end of the round gives way to the results. */
   showBy: number | null;
@@ -181,6 +185,8 @@ export const tickSchema = z.object({
   ghosts: z.array(z.tuple([int(0, 3_600_000), int(0, 15)])).max(64),
   /** Cumulative this round. */
   caught: int(0, 10_000),
+  /** Cumulative this maze: round ms of each catch (the last 16 are enough; they merge). */
+  caughtAt: z.array(int(0, 3_600_000)).max(16).optional(),
   /** Cumulative this maze, FRUIT indexes in order. */
   fruit: z.array(int(0, FRUIT.length - 1)).max(16),
   /** Cumulative pickups this maze: [tMs, spot, kind]. */
@@ -264,12 +270,15 @@ function popcount(bits: Uint8Array): number {
 // ---------------------------------------------------------------------------------------------
 // Score
 
-/** Ghost points: combos count from the latest Hunt pickup before each ghost, up to 1600. */
+/**
+ * Ghost points: combos count from the latest Hunt pickup or catch before each ghost, up to 1600
+ * (the phone's chomper starts its combo over at both too).
+ */
 export function ghostPoints(facts: MazeFacts): number {
-  const hunts = facts.powers
-    .filter((p) => p[2] === 'hunt')
-    .map((p) => p[0])
-    .sort((a, b) => a - b);
+  const hunts = [
+    ...facts.powers.filter((p) => p[2] === 'hunt').map((p) => p[0]),
+    ...(facts.caughtAt ?? []),
+  ].sort((a, b) => a - b);
   const ghosts = [...facts.ghosts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   let pts = 0;
   let hi = -1;
@@ -427,7 +436,7 @@ function freshPlayer(): PlayerRec {
     power: null,
     inbox: [],
     done: false,
-    facts: { ghosts: [], fruit: [], powers: [] },
+    facts: { ghosts: [], fruit: [], powers: [], caughtAt: [] },
     banked: 0,
     adjust: 0,
   };
@@ -528,6 +537,7 @@ export function endRound(s: MazeState, now: number): MazeState {
 }
 
 function topScorers(s: MazeState): string[] {
+  if (!s.ids.length) return [];
   const best = Math.max(...s.ids.map((id) => s.players[id]!.score));
   return s.ids.filter((id) => s.players[id]!.score === best);
 }
@@ -596,7 +606,14 @@ function mergeFacts(s: MazeState, p: PlayerRec, a: MazeTick): MazeFacts {
     got.push([t, spot, kind]);
   }
   const fruit = a.fruit.length > p.facts.fruit.length ? [...a.fruit] : p.facts.fruit;
-  return { ghosts, fruit, powers: got };
+  return { ghosts, fruit, powers: got, caughtAt: mergeCaught(p.facts, a) };
+}
+
+/** Catch times merged so they only grow (at most 64 kept). */
+export function mergeCaught(facts: MazeFacts, a: MazeTick): number[] {
+  const had = facts.caughtAt ?? [];
+  const add = (a.caughtAt ?? []).filter((t) => !had.includes(t));
+  return add.length ? [...had, ...add].sort((x, y) => x - y).slice(-64) : had;
 }
 
 /** The power running at round ms `t`, from the latest non-attack pickup. */
@@ -610,7 +627,14 @@ export function powerAt(facts: MazeFacts, level: number, t: number): PlayerRec['
 }
 
 /** Solo and Race: the phone's own pellets are trusted; score, mazes and attacks follow. */
-function settleOwn(s: MazeState, id: string, a: MazeTick, now: number): MazeState {
+function settleOwn(
+  s: MazeState,
+  id: string,
+  a: MazeTick,
+  now: number,
+  /** Round ms of this player's previous tick: the maze wasn't cleared yet then. */
+  since: number,
+): MazeState {
   const prev = s.players[id]!;
   const m = layoutOf(s, prev.maze);
   const n = pelletIndex(m).size;
@@ -680,11 +704,13 @@ function settleOwn(s: MazeState, id: string, a: MazeTick, now: number): MazeStat
       ...p,
       banked,
       eaten: '',
-      facts: { ghosts: [], fruit: [], powers: [] },
+      facts: { ghosts: [], fruit: [], powers: [], caughtAt: [] },
       cleared: p.cleared + 1,
       power: null,
       done: true,
-      finishMs: a.finishMs ?? a.t,
+      // A finish can't be before this maze started, before the previous tick (which hadn't
+      // finished) or after the tick reporting it.
+      finishMs: Math.min(Math.max(a.finishMs ?? a.t, p.mazeAt, since), a.t),
     };
     out = rescore({ ...out, players: { ...out.players, [id]: p } }, id);
     if (solo) return endRound(out, now);
@@ -698,7 +724,7 @@ function settleOwn(s: MazeState, id: string, a: MazeTick, now: number): MazeStat
     maze: p.maze + 1,
     mazeAt: a.t + COUNTDOWN_MS,
     eaten: '',
-    facts: { ghosts: [], fruit: [], powers: [] },
+    facts: { ghosts: [], fruit: [], powers: [], caughtAt: [] },
     cleared: p.cleared + 1,
     power: null,
     turns: [],
@@ -707,12 +733,13 @@ function settleOwn(s: MazeState, id: string, a: MazeTick, now: number): MazeStat
   return rescore({ ...out, players: { ...out.players, [id]: p } }, id);
 }
 
-function tick(s: MazeState, id: string, a: MazeTick, now: number): MazeState {
+/** One tick, without the safety net applyAction adds (exported for tests). */
+export function tick(s: MazeState, id: string, a: MazeTick, now: number): MazeState {
   const admitted = admit(s, id, a, now);
   if (!admitted) return s;
   return s.options.mode === 'Shared'
     ? settleShared(admitted, id, a, now)
-    : settleOwn(admitted, id, a, now);
+    : settleOwn(admitted, id, a, now, s.players[id]!.lastT);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -789,7 +816,8 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
       ids: [...playerIds],
       layouts: pickLayouts(options, rng),
       startAt: now + COUNTDOWN_MS,
-      endAt: options.mode === 'Solo' ? null : now + COUNTDOWN_MS + options.minutes * 60_000,
+      endAt:
+        now + COUNTDOWN_MS + (options.mode === 'Solo' ? SOLO_BELL_MS : options.minutes * 60_000),
       showBy: null,
       players: {},
       shared: null,

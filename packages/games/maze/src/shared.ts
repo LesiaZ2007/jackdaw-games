@@ -9,6 +9,7 @@ import {
   scoreOf,
   sendAttack,
   leaderOther,
+  mergeCaught,
   spotKind,
 } from './rules';
 import type { MazeFacts, MazeState, MazeTick, PlayerRec, PowerSpot, SharedRec } from './rules';
@@ -159,6 +160,7 @@ export function settleShared(
     ghosts: [...prev.facts.ghosts],
     fruit: [...prev.facts.fruit],
     powers: [...prev.facts.powers],
+    caughtAt: mergeCaught(prev.facts, tick),
   };
   const attacks: MazeFacts['powers'] = [];
   let pickupN = sh0.pickups;

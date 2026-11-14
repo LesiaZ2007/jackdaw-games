@@ -5,16 +5,19 @@ import type { MazeOptions } from './options';
 import {
   BELL_GRACE_MS,
   COUNTDOWN_MS,
+  FUTURE_MS,
   INBOX_MAX,
   SHOW_MS,
+  SOLO_BELL_MS,
   actionSchema,
   layoutOf,
   maze as game,
   powerIndexes,
   spotKind,
+  tick as rawTick,
 } from './rules';
 import type { MazeState, MazeTick } from './rules';
-import { encodeBits, pelletIndex } from './sim/pellets';
+import { decodeBits as decodeBitsOf, encodeBits, pelletIndex } from './sim/pellets';
 import { POINTS } from './sim/powers';
 
 const WREN = 'wren';
@@ -174,6 +177,65 @@ describe('stale and odd ticks (review focus 1)', () => {
       for (const p of Object.values(cur.players)) expect(p.score).toBeGreaterThanOrEqual(0);
     }
   });
+
+  it('near-valid ticks never throw; broken ones change nothing; most good ones count', () => {
+    const rng = createRng(7);
+    let accepted = 0;
+    let good = 0;
+    for (const mode of ['Solo', 'Race', 'Shared'] as const) {
+      const ids = mode === 'Solo' ? [WREN] : [WREN, ROOK, FINCH];
+      let cur = setup(ids, { mode });
+      for (let i = 0; i < 150; i++) {
+        if (cur.phase !== 'play') cur = setup(ids, { mode }, i + 2);
+        const id = rng.pick(ids);
+        const p = cur.players[id]!;
+        if (p.done) continue;
+        const n = size(cur, p.maze);
+        const b = new Uint8Array(n);
+        const had = decodeBitsOf(p.eaten, n);
+        for (let k = 0; k < n; k++) b[k] = had[k]!;
+        for (let k = 0; k < rng.int(6); k++) b[rng.int(n)] = 1;
+        const t = Math.max(p.lastT, p.mazeAt) + 200 + rng.int(1500);
+        const powers = [...p.facts.powers];
+        if (rng.int(4) === 0) powers.push([t - 100, rng.int(4), 'hunt']);
+        const ghosts = [...p.facts.ghosts];
+        if (rng.int(4) === 0) ghosts.push([t - 50, rng.int(4)]);
+        const caughtAt = [...p.facts.caughtAt];
+        if (rng.int(8) === 0) caughtAt.push(t - 20);
+        const a = tick(cur, id, {
+          t,
+          eaten: encodeBits(b),
+          powers: powers.slice(-32),
+          ghosts: ghosts.slice(-64),
+          caught: p.caught + (caughtAt.length - p.facts.caughtAt.length),
+          caughtAt: caughtAt.slice(-16),
+          fruit: rng.int(10) === 0 ? [...p.facts.fruit, rng.int(3)] : p.facts.fruit,
+          pos: [rng.int(27), rng.int(24), rng.pick(['up', 'down', 'left', 'right'] as const)],
+          turns: [[t - 10, 1, 1, 'left']],
+          lives: Math.max(0, p.lives - (rng.int(12) === 0 ? 1 : 0)),
+        });
+        expect(actionSchema.safeParse(a).success).toBe(true);
+        const now = at(cur, t);
+        const broken = rng.int(5) === 0;
+        if (broken) {
+          const bad = rng.pick([
+            { ...a, seq: p.seq },
+            { ...a, round: cur.round + 1 },
+            { ...a, maze: p.maze + 1 },
+            { ...a, t: t + FUTURE_MS + 5_000 },
+          ]);
+          expect(rawTick(cur, id, bad, now)).toBe(cur);
+          continue;
+        }
+        good++;
+        const next = rawTick(cur, id, a, now);
+        if (next !== cur) accepted++;
+        for (const q of Object.values(next.players)) expect(q.score).toBeGreaterThanOrEqual(0);
+        cur = next;
+      }
+    }
+    expect(accepted / good).toBeGreaterThan(0.8);
+  });
 });
 
 describe('Solo', () => {
@@ -270,6 +332,45 @@ describe('Solo', () => {
   });
 });
 
+describe('Solo backstop and combos', () => {
+  it('a stalled Solo game ends at the backstop bell', () => {
+    let s = setup([WREN]);
+    expect(s.endAt).toBe(s.startAt + SOLO_BELL_MS);
+    expect(game.nextTimer!(s)).toEqual({ id: 'bell', at: s.endAt! + BELL_GRACE_MS });
+    s = game.onTimer!(s, 'bell', createRng(1), s.endAt! + BELL_GRACE_MS);
+    expect(s.phase).toBe('between');
+  });
+
+  it('a catch starts the ghost combo over, as the phone does', () => {
+    let s = setup([WREN], { powerUps: 'Classic' });
+    s = act(
+      s,
+      WREN,
+      tick(s, WREN, {
+        t: 9_000,
+        powers: [[4_000, 0, 'hunt']],
+        ghosts: [
+          [4_500, 0],
+          [5_000, 1],
+          [6_000, 2],
+        ],
+        caught: 1,
+        caughtAt: [5_500],
+      }),
+    );
+    const g = POINTS.ghost;
+    expect(s.players[WREN]!.score).toBe(POINTS.power + g[0] + g[1] + g[0] + POINTS.caught);
+    // Repeating (or dropping) the catch list changes nothing.
+    s = act(s, WREN, tick(s, WREN, { t: 10_000, caughtAt: [] }));
+    expect(s.players[WREN]!.facts.caughtAt).toEqual([5_500]);
+  });
+
+  it('no players: no winners, no throw', () => {
+    const s = { ...setup([WREN]), ids: [], players: {}, phase: 'over' as const };
+    expect(game.getResult(s)!.winners).toEqual([]);
+  });
+});
+
 describe('Race', () => {
   const race = (n = 2, mazes = 1) =>
     setup([WREN, ROOK, FINCH].slice(0, n), { mode: 'Race', mazes });
@@ -305,6 +406,19 @@ describe('Race', () => {
     expect(wren.adjust).toBe(0);
     s = game.onTimer!(s, 'show', createRng(1), s.showBy!);
     expect(game.getResult(s)!.winners).toEqual([ROOK]);
+  });
+
+  it('a finish time from before the last unfinished tick does not beat an honest one', () => {
+    let s = race(2, 1);
+    // Rook hasn't finished at 29.5 s; Wren honestly finished at 29 s.
+    s = act(s, ROOK, tick(s, ROOK, { t: 29_500, eaten: bits(s, 0, size(s, 0) - 10) }));
+    s = clear(s, WREN, { finishMs: 29_000 });
+    s = act(s, ROOK, tick(s, ROOK, { t: 30_500, eaten: bits(s, 0), finishMs: 0 }), s.endAt! + 500);
+    expect(s.players[ROOK]!.finishMs).toBe(29_500);
+    expect(s.phase).toBe('between');
+    expect(s.players[ROOK]!.finishMs).toBeGreaterThanOrEqual(s.players[ROOK]!.mazeAt);
+    expect(s.players[WREN]!.adjust).toBe(POINTS.raceFinish);
+    expect(s.players[ROOK]!.adjust).toBe(0);
   });
 
   it('a finish ends the round at the bell grace; the top score wins, not the finisher', () => {

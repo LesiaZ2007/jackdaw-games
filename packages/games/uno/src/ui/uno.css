@@ -323,6 +323,39 @@ button.uno-card:focus-visible {
   display: grid;
   min-width: var(--uno-pile);
 }
+/* The pile is a pile: the last few cards played lie under the top one, each at its own angle. */
+.uno-discard > * {
+  grid-area: 1 / 1;
+  display: grid;
+  transform: rotate(var(--tilt, 0deg));
+}
+.uno-discard__under {
+  filter: brightness(0.9);
+}
+/* Cards someone else drew, flying from the deck to their seat, then gone. */
+.uno-ghosts {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  translate: -50% -50%;
+  z-index: 4;
+  display: grid;
+  pointer-events: none;
+}
+.uno-ghosts > .uno-card {
+  --w: calc(var(--uno-pile) * 0.5);
+  grid-area: 1 / 1;
+  animation: uno-ghost 1s both;
+}
+@keyframes uno-ghost {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
 .uno-land {
   animation: uno-land 380ms var(--ease-out) both;
 }
@@ -606,34 +639,42 @@ button.uno-card:focus-visible {
 }
 
 /* ── Your hand and the dock (phone) ───────────────────────────────────── */
-/* The whole hand always fits the width: cards overlap more as it grows. */
+/* Each card sits at its row (--r) and place in it (--c of --rn), worked out in hand-layout.ts so
+   no card is ever narrower than a thumb: a long hand breaks into rows that overlap from the top,
+   each row spread across the width and centered. Cards slide to their new places as the hand
+   changes. */
 .uno-hand {
   --w: clamp(52px, 16cqw, 84px);
+  --lift: calc(var(--w) * 0.2);
+  /* How far each row sits below the one before: enough of every card above stays showing to
+     read its corner and tap it, never under a thumb's height. */
+  --row-step: max(var(--w) * 0.74, 44px);
   container-type: inline-size;
-  display: flex;
-  justify-content: center;
-  padding-top: calc(var(--w) * 0.2);
-  min-height: calc(var(--w) * 1.48);
+}
+.uno-hand__cards {
+  position: relative;
+  height: calc(var(--lift) + var(--w) * 1.48 + (var(--rows) - 1) * var(--row-step));
 }
 .uno-hand .uno-card {
   --w: inherit;
+  /* Spread across the row, overlapping at least a little, but never closer than a thumb. */
+  --step: min(max(var(--w) * 0.9, 44px), (100cqw - var(--w)) / max(1, var(--rn) - 1));
+  position: absolute;
+  left: calc((100cqw - var(--w) - (var(--rn) - 1) * var(--step)) / 2 + var(--c) * var(--step));
+  top: calc(var(--lift) + var(--r) * var(--row-step));
   width: var(--w);
+  transition:
+    left 280ms var(--ease-out),
+    top 280ms var(--ease-out),
+    transform 220ms var(--ease-out),
+    opacity 220ms,
+    filter 220ms;
 }
-.uno-hand .uno-card + .uno-card {
-  margin-left: min(
-    calc(var(--w) * -0.1),
-    calc((100cqw - var(--w)) / max(1, var(--n) - 1) - var(--w))
-  );
-}
-.uno-hand__card {
-  animation: uno-deal 340ms var(--ease-out) both;
-  animation-delay: calc(min(var(--i), 10) * 30ms);
-}
-@keyframes uno-deal {
-  from {
-    opacity: 0;
-    transform: translateY(40%);
-  }
+/* A very long hand: three rows show, and the rest scroll, so the table keeps its room. */
+.uno-hand--scroll {
+  max-height: calc(var(--lift) + var(--w) * 1.48 + 2 * var(--row-step));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .uno-hand__card--drawn {
   box-shadow:
@@ -1271,7 +1312,6 @@ button.uno-card:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .uno-arrows,
   .uno-land,
-  .uno-hand__card,
   .uno-seat--turn .jd-token,
   .uno-seat--landing .uno-seat__tok,
   .uno-deck:not(:disabled) .uno-card:last-of-type,
@@ -1286,6 +1326,14 @@ button.uno-card:focus-visible {
   .uno-tv__feed li.is-new,
   .uno-watch li.is-new {
     animation: none;
+  }
+  .uno-ghosts {
+    display: none;
+  }
+  .uno-hand .uno-card {
+    transition:
+      opacity 220ms,
+      filter 220ms;
   }
   .uno-tv__flash {
     animation: uno-fade 1.3s both;
@@ -1308,14 +1356,16 @@ button.uno-card:focus-visible {
 /* Only with a mouse: phones never see these. Movement is left out for reduced motion. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   /* Your cards rise to meet the pointer, on top of the lift a playable card already has. */
-  button.uno-hand__card {
+  .uno-hand button.uno-hand__card {
     transition:
+      left 280ms var(--ease-out),
+      top 280ms var(--ease-out),
       transform 220ms var(--ease-out),
       translate 140ms var(--ease-out),
       opacity 220ms,
       filter 220ms;
   }
-  button.uno-hand__card:not(:disabled):hover {
+  .uno-hand button.uno-hand__card:not(:disabled):hover {
     translate: 0 calc(var(--w) * -0.14);
     z-index: 2;
   }

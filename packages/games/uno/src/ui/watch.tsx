@@ -55,7 +55,7 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
 
       <section className="uno-watch" aria-label="Play by play">
         {done ? (
-          <Between key={t.round} t={t} now={now} />
+          <Between key={`next-${t.round}`} t={t} now={now} />
         ) : t.moves.length === 0 ? (
           <p className="uno-watch__quiet">The first card is down.</p>
         ) : (
@@ -81,7 +81,7 @@ export const WatchScreen: NonNullable<GameUi['WatchScreen']> = ({
 
       {moment && (
         <VerdictMoment
-          key={t.last?.round}
+          key={`moment-${t.last?.round}`}
           outcome="reveal"
           title={moment.title}
           detail={moment.detail}

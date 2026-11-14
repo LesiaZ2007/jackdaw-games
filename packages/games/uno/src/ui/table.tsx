@@ -1,10 +1,11 @@
 'use client';
 
-import type { CSSProperties } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import type { Reaction } from '@jackdaw/engine';
 import { PlayerReaction, Tally, Token, type ScreenPlayer } from '@jackdaw/ui';
 import { COLOUR_NAME, cardName, cardOf } from '../cards';
 import type { UnoTableView, Move } from '../rules';
+import { cardRectAt, flyFrom, tiltOf } from './fly';
 import { GameCard } from './pieces';
 
 /** What the newest moves did to each seat: "Skipped", "+2", "Caught! +2". */
@@ -28,6 +29,22 @@ export function seatTags(moves: Move[]): Map<string, { text: string; seq: number
     }
   }
   return tags;
+}
+
+/** Who the move handed cards to (a draw, a Draw Two or Four taken, a catch, a challenge), and how many. */
+export function takerOf(m: Move | undefined): { id: string; count: number } | null {
+  if (!m || !m.count) return null;
+  const id =
+    m.kind === 'draw' || m.kind === 'take'
+      ? m.player
+      : m.kind === 'catch'
+        ? m.target
+        : m.kind === 'challenge'
+          ? m.ok
+            ? m.target
+            : m.player
+          : undefined;
+  return id ? { id, count: m.count } : null;
 }
 
 /** The word stamped over the pile when an action card goes down. */
@@ -54,6 +71,7 @@ export function UnoTable({
   me,
   reactions,
   onDraw,
+  launchedFrom,
 }: {
   t: UnoTableView;
   players: ScreenPlayer[];
@@ -61,6 +79,8 @@ export function UnoTable({
   reactions?: Reaction[];
   /** Tapping the draw pile draws (on your turn). */
   onDraw?: () => void;
+  /** Where a card you just played left your hand, so it flies from there to the pile. */
+  launchedFrom?: (card: number) => DOMRect | null;
 }) {
   const byId = new Map(players.map((p) => [p.id, p]));
   const name = (id: string) => byId.get(id)?.name ?? 'Someone';
@@ -72,9 +92,46 @@ export function UnoTable({
   const lastPlay = [...t.moves].reverse().find((m) => m.kind === 'play');
   const flash = lastMove && lastMove.kind === 'play' ? flashOf(lastMove) : null;
   const done = t.phase !== 'play';
+  // The last few cards played this round lie under the top one, each at its own angle.
+  const plays = t.moves.filter((m) => m.kind === 'play' && m.card !== undefined);
+  const under = lastPlay ? plays.slice(-3, -1) : [];
+  const taker = done ? null : takerOf(lastMove);
+  const ghosts = taker && taker.id !== me ? Math.min(taker.count, 4) : 0;
+
+  const tableRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLSpanElement>(null);
+  const ghostRef = useRef<HTMLSpanElement>(null);
+  const seatEls = useRef(new Map<string, HTMLElement>());
+  // What has already been animated: nothing flies for moves made before this screen opened.
+  const shown = useRef(lastMove?.seq ?? 0);
+
+  useLayoutEffect(() => {
+    const seq = lastMove?.seq ?? 0;
+    if (seq <= shown.current) return;
+    shown.current = seq;
+    const table = tableRef.current;
+    const pileW = table?.querySelector('.uno-deck .uno-card')?.getBoundingClientRect().width ?? 0;
+    // A card played: from your hand, or from the player's seat, onto the pile.
+    if (lastMove?.kind === 'play' && lastMove.card !== undefined) {
+      const top = topRef.current;
+      const from =
+        (lastMove.player === me ? launchedFrom?.(lastMove.card) : null) ??
+        cardRectAt(seatEls.current.get(lastMove.player), pileW * 0.5);
+      if (!flyFrom(top, from, { duration: 480, spin: tiltOf(seq) - 24 })) {
+        top?.classList.add('uno-land');
+      }
+    }
+    // Cards drawn by someone else: backs from the deck to their seat (yours land in your hand).
+    const deck = table?.querySelector('.uno-deck .uno-card:last-of-type');
+    const from = deck?.getBoundingClientRect();
+    Array.from(ghostRef.current?.children ?? []).forEach((el, k) =>
+      flyFrom(el, from, { delay: k * 90, duration: 420 }),
+    );
+  });
 
   return (
     <div
+      ref={tableRef}
       className="uno-table"
       data-count={n}
       style={{ '--uno-now': `var(--uno-${t.colour})` } as CSSProperties}
@@ -110,14 +167,25 @@ export function UnoTable({
             <span className="uno-deck__n">{t.deckCount}</span>
           </button>
           <span className="uno-discard" aria-live="polite">
+            {under.map((m) => (
+              <span
+                key={m.seq}
+                className="uno-discard__under"
+                style={{ '--tilt': `${tiltOf(m.seq)}deg` } as CSSProperties}
+                aria-hidden="true"
+              >
+                <GameCard id={m.card} called={m.colour} />
+              </span>
+            ))}
             {t.top !== null && (
-              <GameCard
+              <span
                 key={`${t.round}-${lastPlay?.seq ?? 0}`}
-                id={t.top}
-                called={t.colour}
-                className={lastPlay ? 'uno-land' : undefined}
-                label={`On the pile: ${cardOfName(t)}`}
-              />
+                ref={topRef}
+                className="uno-discard__top"
+                style={{ '--tilt': `${lastPlay ? tiltOf(lastPlay.seq) : 0}deg` } as CSSProperties}
+              >
+                <GameCard id={t.top} called={t.colour} label={`On the pile: ${cardOfName(t)}`} />
+              </span>
             )}
           </span>
         </div>
@@ -156,7 +224,13 @@ export function UnoTable({
             style={{ left: `${x}%`, top: `${y}%` }}
             aria-label={`${name(id)}${id === me ? ' (you)' : ''}, ${count} ${count === 1 ? 'card' : 'cards'}${t.toAct === id ? ', to play' : ''}`}
           >
-            <span className="uno-seat__tok">
+            <span
+              className="uno-seat__tok"
+              ref={(el) => {
+                if (el) seatEls.current.set(id, el);
+                else seatEls.current.delete(id);
+              }}
+            >
               {p && <Token avatar={p.avatar} away={!p.online} />}
               <PlayerReaction reactions={reactions} playerId={id} name={name(id)} />
               {id !== me && count > 0 && (
@@ -192,6 +266,18 @@ export function UnoTable({
               </span>
             )}
             {won && <span className="uno-tag uno-tag--won">Out!</span>}
+            {ghosts > 0 && taker!.id === id && (
+              <span
+                key={`ghosts-${lastMove!.seq}`}
+                ref={ghostRef}
+                className="uno-ghosts"
+                aria-hidden="true"
+              >
+                {Array.from({ length: ghosts }, (_, k) => (
+                  <GameCard key={k} down />
+                ))}
+              </span>
+            )}
           </div>
         );
       })}

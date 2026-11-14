@@ -72,6 +72,12 @@
     width: 40px;
   }
 }
+/* The narrowest phones (360px): smaller code chits too, or the menu runs off the edge. */
+@media (max-width: 379px) {
+  .lobby-bar:has(.lobby-bar__end) .lobby-bar__code {
+    zoom: 0.8;
+  }
+}
 @media (min-width: 768px) {
   .lobby-bar__actions .lobby-bar__end {
     display: inline-flex;

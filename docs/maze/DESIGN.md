@@ -61,16 +61,16 @@ quietly and scores nothing.
 
 Power pellets come in colors, and the color is the effect:
 
-| Name   | Modes        | Effect                                                         |
-| ------ | ------------ | -------------------------------------------------------------- |
-| Hunt   | all          | Ghosts turn edible, for you only. Combo 200, 400, 800, 1600.   |
-| Dash   | all          | Super speed for a few seconds, with an afterimage trail.       |
-| Phase  | all          | Pass through ghosts for a few seconds.                         |
-| Magnet | all          | Pulls nearby pellets in.                                       |
-| Jinx   | multiplayer  | Sends an extra ghost after the leader (or second place, if you lead) for 8 s. |
-| Freeze | multiplayer  | Everyone else crawls for about 2½ s.                           |
-| Steal  | multiplayer  | Takes up to 200 (15%) from the leader (or second place).       |
-| Fog    | multiplayer  | Everyone else sees only a small circle around their own chomper for 4 s. |
+| Name   | Modes       | Effect                                                                        |
+| ------ | ----------- | ----------------------------------------------------------------------------- |
+| Hunt   | all         | Ghosts turn edible, for you only. Combo 200, 400, 800, 1600.                  |
+| Dash   | all         | Super speed for a few seconds, with an afterimage trail.                      |
+| Phase  | all         | Pass through ghosts for a few seconds.                                        |
+| Magnet | all         | Pulls nearby pellets in.                                                      |
+| Jinx   | multiplayer | Sends an extra ghost after the leader (or second place, if you lead) for 8 s. |
+| Freeze | multiplayer | Everyone else crawls for about 2½ s.                                          |
+| Steal  | multiplayer | Takes up to 200 (15%) from the leader (or second place).                      |
+| Fog    | multiplayer | Everyone else sees only a small circle around their own chomper for 4 s.      |
 
 A big banner tells the target what happened ("FOGGED BY ROOK", "WREN STOLE 120!").
 

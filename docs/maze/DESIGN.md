@@ -169,8 +169,13 @@ tetra").
   for Tetra.
 - **Race.** Attacks go through the server and apply on the receiving phone at its next reply.
   Finishes are ordered by the finish time each phone reports on the round clock.
-- **Bots.** The host adds bots the way other Jackdaw games do. A bot's simulation runs on the
-  host's phone, which reports for it; if the host drops, bots pause until the host rejoins.
+- **Bots.** The host adds bots the way other Jackdaw games do ("Add a computer player"). Bots
+  run on the server through the game's `bot()`, as Tetra's do: each bot move advances that bot's
+  chomper from its last report to `now` with the shared simulation and returns a normal report
+  (with its path, so it glides like a person). To keep server writes low, bots report about every
+  900 ms in play.
+- **Rate limits.** The server allows 30 sends and 40 polls per 10 s per phone, so a phone reports
+  at most every 450 ms and live-polls no faster than 800 ms.
 
 ## Later
 

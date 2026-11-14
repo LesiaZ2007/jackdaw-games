@@ -6,6 +6,11 @@ import type { MazeOptions } from './options';
 import { actionSchema, layoutOf, maze as game } from './rules';
 import type { MazeState, MazeTick } from './rules';
 import { isWall } from './sim/layouts';
+import { ghostSeed, mazeBot } from './bot';
+import { GhostSim } from './sim/ghosts';
+import type { GhostView } from './sim/ghosts';
+
+type Vec2 = [number, number];
 
 const T0 = 10_000;
 const IDS = ['wren', 'rook', 'finch', 'lark'];
@@ -125,7 +130,8 @@ describe('mazeBot', () => {
       seq: 1,
       t: 180_000,
       maze: 0,
-      pos: [9, 17, 'left'],
+      // Rook's own start tile, which is open in every layout.
+      pos: [...layoutOf(s, 0).starts[1]!],
       turns: [],
       eaten: '',
       ghosts: [],
@@ -145,12 +151,89 @@ describe('mazeBot', () => {
         now: s.startAt + 180_900,
         level: 'normal',
       });
+    // The first call replays the ghosts from the maze start; later ones carry on from there.
+    const c0 = performance.now();
     expect(call(0)).not.toBeNull();
+    const cold = performance.now() - c0;
     for (let i = 0; i < 10; i++) call(i);
     const t0 = performance.now();
     for (let i = 0; i < 20; i++) call(i);
     const per = (performance.now() - t0) / 20;
-    console.log(`bot call ms (${size})`, per);
-    expect(per).toBeLessThan(40);
+    console.log(`bot call ms (${size}): first ${cold.toFixed(1)}, then ${per.toFixed(1)}`);
+    expect(cold).toBeLessThan(150);
+    expect(per).toBeLessThan(20);
+  });
+});
+
+describe('mazeBot ghosts', () => {
+  it.each(['Medium', 'Large'] as const)(
+    'rebuilds exactly the phones’ ghosts from the full Shared history (%s)',
+    (size) => {
+      // Few enough bots that they don't clear the maze before two minutes are up.
+      const ids = IDS.slice(0, size === 'Large' ? 3 : 2);
+      let s = start(ids, { mode: 'Shared', minutes: 3, size }, 7);
+      const rng = createRng(11);
+      const seen: { t: number; ghosts: GhostView[]; eat?: { ghost: number; pos: Vec2 } }[] = [];
+      let eats = 0;
+      let now = s.startAt;
+      while (s.phase === 'play' && now - s.startAt < 150_000) {
+        now += 900;
+        for (const id of ids.slice(1)) {
+          const a = mazeBot(
+            {
+              playerId: id,
+              playerIds: s.ids,
+              view: game.getPlayerView(s, id),
+              tableView: game.getTableView(s),
+              rng,
+              now,
+              level: size === 'Large' ? 'normal' : 'easy',
+            },
+            {
+              start: (t, ghosts) => seen.push({ t, ghosts }),
+              eat: (t, ghost, pos, ghosts) => seen.push({ t, ghosts, eat: { ghost, pos } }),
+            },
+          );
+          if (a) s = game.applyAction(s, id, a, rng, now);
+        }
+      }
+      // A Medium maze is cleared by one bot in about 100 s; the Large one lasts past 2 minutes.
+      expect(now - s.startAt).toBeGreaterThanOrEqual(size === 'Large' ? 120_000 : 90_000);
+      // The table view still carries only the recent window.
+      expect(game.getTableView(s)).not.toHaveProperty('history');
+      expect(s.shared!.aims.length).toBeLessThan(s.history!.aims.length);
+      expect(s.history!.aims.length).toBeGreaterThan(30);
+
+      // A reference sim fed the full history, as a phone that saw everything would run it.
+      const m = layoutOf(s, 0);
+      const ref = new GhostSim(m, ghostSeed(s.seed, 0), 1);
+      const input = { aims: s.history!.aims, events: s.history!.events };
+      seen.sort((a, b) => a.t - b.t);
+      for (const x of seen) {
+        ref.stepTo(x.t, input);
+        const want = ref.ghosts();
+        expect(x.ghosts, `ghosts at ${x.t}`).toEqual(want);
+        if (x.eat) {
+          eats++;
+          const g = want.find((v) => v.id === x.eat!.ghost)!;
+          const dx = Math.abs(g.pos[0] - x.eat.pos[0]);
+          expect(Math.min(dx, m.w - dx)).toBeLessThan(1);
+          expect(Math.abs(g.pos[1] - x.eat.pos[1])).toBeLessThan(1);
+        }
+      }
+      expect(seen.length).toBeGreaterThan(100);
+      console.log(`${size}: ${seen.length} checks, ${eats} ghost eats`);
+    },
+    120_000,
+  );
+
+  it('Race bots read their own full turns from the player view', () => {
+    const s0 = start(IDS.slice(0, 2), { mode: 'Race', mazes: 1 }, 4);
+    const run = play(s0, IDS.slice(0, 2), 'hard', 6, 60_000);
+    const view = game.getPlayerView(run.s, 'wren');
+    const table = game.getTableView(run.s).players.find((p) => p.id === 'wren')!;
+    expect(view.turns.length).toBeGreaterThan(table.turns.length);
+    expect(view.turns.slice(-table.turns.length)).toEqual(table.turns);
+    expect(view.history).toBeNull();
   });
 });

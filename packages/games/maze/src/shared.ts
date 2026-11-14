@@ -197,7 +197,10 @@ export function settleShared(
   // Aims: a beat every AIM_MS, on whichever tick comes along.
   let aims = sh0.aims;
   const last = aims[aims.length - 1];
-  if (!last || nowMs - last.atMs >= AIM_MS) aims = [...aims, aimNow(s, nowMs)].slice(-AIMS_KEPT);
+  const beat = !last || nowMs - last.atMs >= AIM_MS ? aimNow(s, nowMs) : null;
+  if (beat) aims = [...aims, beat].slice(-AIMS_KEPT);
+  // Everything added to the ghosts' inputs this tick, for the full history.
+  const added: GhostEvent[] = [];
   const keptFrom = eventsFrom(aims);
   const seen = new Set(prev.facts.ghosts.map(([t, g]) => `${t}:${g}`));
   for (const [t, g] of [...tick.ghosts].sort((a, b) => a[0] - b[0] || a[1] - b[1])) {
@@ -209,7 +212,9 @@ export function settleShared(
     );
     if (dup) continue;
     facts.ghosts.push([t, g]);
-    events.push({ atMs: t, kind: 'eaten', ghost: g });
+    const e: GhostEvent = { atMs: t, kind: 'eaten', ghost: g };
+    events.push(e);
+    added.push(e);
   }
 
   // Fruit: a claim is a longer fruit list than this phone sent last time.
@@ -255,7 +260,9 @@ export function settleShared(
     if (kind === 'jinx') {
       const to = leaderOther(out, playerId);
       if (!to) continue;
-      events.push({ atMs: t, kind: 'jinx', target: to, untilMs: t + POWER_MS.jinx });
+      const e: GhostEvent = { atMs: t, kind: 'jinx', target: to, untilMs: t + POWER_MS.jinx };
+      events.push(e);
+      added.push(e);
       out = sendAttack(out, to, 'jinx', playerId, now);
     } else out = attackOnPickup(out, playerId, kind, now);
   }
@@ -264,8 +271,16 @@ export function settleShared(
   const from = eventsFrom(aims);
   events = events.filter((e) => e.atMs >= from || (e.kind === 'jinx' && e.untilMs > oldest));
 
+  const h0 = s.history ?? { aims: sh0.aims, events: sh0.events };
   out = {
     ...out,
+    history:
+      beat || added.length
+        ? {
+            aims: beat ? [...h0.aims, beat] : h0.aims,
+            events: added.length ? [...h0.events, ...added] : h0.events,
+          }
+        : h0,
     shared: {
       owner: encodeOwners(owners),
       aims,

@@ -165,9 +165,20 @@ export interface MazeState {
   showBy: number | null;
   players: Record<string, PlayerRec>;
   shared: SharedRec | null;
+  /**
+   * Shared maze only: every aim and ghost event of the round, oldest first. The table view keeps
+   * just the last few; a bot rebuilds the ghosts from the maze start with this, so they are
+   * exactly the ghosts the phones run. About one aim per 2 s, so a few hundred at most.
+   */
+  history: GhostHistory | null;
   /** Last attack id handed out. */
   attackId: number;
   log: RecapEvent[];
+}
+
+export interface GhostHistory {
+  aims: Aim[];
+  events: GhostEvent[];
 }
 
 const int = (min: number, max: number) => z.number().int().min(min).max(max);
@@ -260,6 +271,10 @@ export interface MazePlayerView {
   caught: number;
   lives: number;
   facts: MazeFacts;
+  /** The player's last ≤40 turns (the table view keeps only the last few). */
+  turns: Turn[];
+  /** Shared maze: the round's full aim and event history (see MazeState.history), else null. */
+  history: GhostHistory | null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -877,13 +892,16 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
       showBy: null,
       players: {},
       shared: null,
+      history: null,
       attackId: 0,
       log: [],
     };
     const players: Record<string, PlayerRec> = {};
     for (const id of playerIds) players[id] = { ...freshPlayer(), pos: placeAt(base, id, 0) };
     const out = { ...base, players };
-    return options.mode === 'Shared' ? { ...out, shared: initShared(out) } : out;
+    if (options.mode !== 'Shared') return out;
+    const shared = initShared(out);
+    return { ...out, shared, history: { aims: shared.aims, events: shared.events } };
   },
 
   getPlayerView(s, playerId) {
@@ -898,6 +916,8 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
       caught: own.caught,
       lives: own.lives,
       facts: own.facts,
+      turns: own.turns,
+      history: s.history,
     };
   },
 
@@ -964,6 +984,6 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
     return s;
   },
 
-  bot: mazeBot,
+  bot: (ctx) => mazeBot(ctx),
   botDelayMs: (s) => (s.phase === 'play' ? 900 : 2_000),
 };

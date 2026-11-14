@@ -1,6 +1,6 @@
 import { createRng } from '@jackdaw/engine';
 import type { Rng, RngState } from '@jackdaw/engine';
-import { DIRS, DIR_ORDER, MAZE_H, MAZE_W, houseTiles, isDoor, opposite, wrapX } from './layouts';
+import { DIRS, DIR_ORDER, houseTiles, isDoor, opposite, wrapX } from './layouts';
 import type { MazeLayout } from './layouts';
 import { speeds } from './powers';
 import { advance, canEnter, posOf } from './walker';
@@ -310,14 +310,14 @@ export class GhostSim {
     if (g.scared) {
       const c = this.nearest(g, aim);
       if (!c) return [1, 1];
-      return [c.tile[0] < MAZE_W / 2 ? MAZE_W - 2 : 1, c.tile[1] < MAZE_H / 2 ? MAZE_H - 2 : 1];
+      return [c.tile[0] < m.w / 2 ? m.w - 2 : 1, c.tile[1] < m.h / 2 ? m.h - 2 : 1];
     }
     if (k % CYCLE_STEPS < SCATTER_STEPS) {
       const corners: Vec[] = [
         [1, 1],
-        [MAZE_W - 2, 1],
-        [1, MAZE_H - 2],
-        [MAZE_W - 2, MAZE_H - 2],
+        [m.w - 2, 1],
+        [1, m.h - 2],
+        [m.w - 2, m.h - 2],
       ];
       return corners[g.id % 4]!;
     }
@@ -332,7 +332,7 @@ export class GhostSim {
       case 3: {
         // shy: backs off to its corner when close
         const d = (px - g.tile[0]) ** 2 + (py - g.tile[1]) ** 2;
-        return d < 64 ? [1, MAZE_H - 2] : c.tile;
+        return d < 64 ? [1, m.h - 2] : c.tile;
       }
       default: // direct
         return c.tile;
@@ -346,7 +346,7 @@ export class GhostSim {
       if (!canEnter(this.m, g.tile, d, true)) return false;
       // Out in the maze, only eyes go back in through the door.
       if (!g.eyes && !inside) {
-        const nx = wrapX(g.tile[0] + DIRS[d][0]);
+        const nx = wrapX(this.m, g.tile[0] + DIRS[d][0]);
         if (isDoor(this.m, nx, g.tile[1] + DIRS[d][1])) return false;
       }
       return true;

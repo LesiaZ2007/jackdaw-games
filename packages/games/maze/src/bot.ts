@@ -6,7 +6,7 @@ import { ChomperSim, DYING_MS } from './sim/chomper';
 import type { Turn } from './sim/chomper';
 import { GhostSim } from './sim/ghosts';
 import type { GhostEvent, GhostInput } from './sim/ghosts';
-import { DIRS, DIR_ORDER, MAZE_H, MAZE_LAYOUTS, MAZE_W, opposite, wrapX } from './sim/layouts';
+import { DIRS, DIR_ORDER, MAZE_LAYOUTS, opposite, wrapX } from './sim/layouts';
 import type { MazeLayout } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
 import { powerMs } from './sim/powers';
@@ -40,15 +40,15 @@ const JINX_MS = 8000;
 export const ghostSeed = (seed: number, maze: number): number =>
   (seed + Math.imul(maze, 0x9e3779b1)) >>> 0;
 
-const key = (x: number, y: number) => y * MAZE_W + x;
+const key = (m: MazeLayout, x: number, y: number) => y * m.w + x;
 
 /** Steps from the nearest source tile (multi-source BFS); -1 where unreachable. */
 function bfs(m: MazeLayout, sources: Vec[], ghost: boolean): Int16Array {
-  const dist = new Int16Array(MAZE_W * MAZE_H).fill(-1);
+  const dist = new Int16Array(m.w * m.h).fill(-1);
   const q: number[] = [];
   for (const [x, y] of sources) {
-    if (y < 0 || y >= MAZE_H) continue;
-    const k = key(wrapX(x), y);
+    if (y < 0 || y >= m.h) continue;
+    const k = key(m, wrapX(m, x), y);
     if (dist[k]! < 0) {
       dist[k] = 0;
       q.push(k);
@@ -56,11 +56,11 @@ function bfs(m: MazeLayout, sources: Vec[], ghost: boolean): Int16Array {
   }
   for (let h = 0; h < q.length; h++) {
     const k = q[h]!;
-    const x = k % MAZE_W;
-    const y = (k - x) / MAZE_W;
+    const x = k % m.w;
+    const y = (k - x) / m.w;
     for (const d of DIR_ORDER) {
       if (!canEnter(m, [x, y], d, ghost)) continue;
-      const nk = key(wrapX(x + DIRS[d][0]), y + DIRS[d][1]);
+      const nk = key(m, wrapX(m, x + DIRS[d][0]), y + DIRS[d][1]);
       if (dist[nk]! < 0) {
         dist[nk] = dist[k]! + 1;
         q.push(nk);
@@ -80,7 +80,7 @@ function safeRoom(
   from: [number, number],
   first: number,
 ): number {
-  const seen = new Set<number>([key(from[0], from[1]), first]);
+  const seen = new Set<number>([key(m, from[0], from[1]), first]);
   const q: [number, number][] = [[first, 1]];
   let count = 0;
   for (let h = 0; h < q.length && count < 40; h++) {
@@ -88,11 +88,11 @@ function safeRoom(
     const gd = ghostDist[k]!;
     if (gd >= 0 && steps >= gd) continue;
     count++;
-    const x = k % MAZE_W;
-    const y = (k - x) / MAZE_W;
+    const x = k % m.w;
+    const y = (k - x) / m.w;
     for (const d of DIR_ORDER) {
       if (!canEnter(m, [x, y], d, false)) continue;
-      const nk = key(wrapX(x + DIRS[d][0]), y + DIRS[d][1]);
+      const nk = key(m, wrapX(m, x + DIRS[d][0]), y + DIRS[d][1]);
       if (seen.has(nk)) continue;
       seen.add(nk);
       q.push([nk, steps + 1]);
@@ -102,17 +102,17 @@ function safeRoom(
 }
 
 /** A reported position as a walker: on a tile, or part way along its heading. */
-function walkerAt(pos: [number, number, Dir | null]): Walker {
+function walkerAt(m: MazeLayout, pos: [number, number, Dir | null]): Walker {
   const [x, y, d] = pos;
   const near = (v: number) => Math.abs(v - Math.round(v)) < 1e-6;
   if (!d || (near(x) && near(y))) {
-    return { tile: [wrapX(Math.round(x)), Math.round(y)], dir: d, next: null, prog: 0 };
+    return { tile: [wrapX(m, Math.round(x)), Math.round(y)], dir: d, next: null, prog: 0 };
   }
   const [dx, dy] = DIRS[d];
   const tile: [number, number] =
     dx > 0 || dy > 0
-      ? [wrapX(Math.floor(x + 1e-9)), Math.floor(y + 1e-9)]
-      : [wrapX(Math.ceil(x - 1e-9)), Math.ceil(y - 1e-9)];
+      ? [wrapX(m, Math.floor(x + 1e-9)), Math.floor(y + 1e-9)]
+      : [wrapX(m, Math.ceil(x - 1e-9)), Math.ceil(y - 1e-9)];
   const prog = dx ? Math.abs(x - tile[0]) : Math.abs(y - tile[1]);
   return { tile, dir: d, next: null, prog: Math.min(Math.max(prog, 0), 0.999) };
 }
@@ -177,7 +177,7 @@ export function mazeBot(ctx: BotContext<MazePlayerView, MazeTableView>): MazeAct
   });
   const lastDead = facts.caughtAt[facts.caughtAt.length - 1];
   chomper.resume({
-    walker: walkerAt(rec.pos),
+    walker: walkerAt(m, rec.pos),
     power: rec.power && rec.power.untilMs > from ? rec.power : null,
     dyingUntil: lastDead !== undefined ? lastDead + DYING_MS : 0,
     ate: had.reduce((a, b) => a + b, 0),
@@ -190,7 +190,8 @@ export function mazeBot(ctx: BotContext<MazePlayerView, MazeTableView>): MazeAct
   // Solo and Race aims: the bot's own tile at each beat, from its turns for the past.
   const tileAt = (t: number): Vec => {
     let tile: Vec = [st[0], st[1]];
-    for (const [tt, x, y] of rec.turns) if (tt <= t) tile = [wrapX(Math.round(x)), Math.round(y)];
+    for (const [tt, x, y] of rec.turns)
+      if (tt <= t) tile = [wrapX(m, Math.round(x)), Math.round(y)];
     return tile;
   };
   let lastBeat = -Infinity;
@@ -222,7 +223,7 @@ export function mazeBot(ctx: BotContext<MazePlayerView, MazeTableView>): MazeAct
     const live = ghosts.ghosts();
     const power = chomper.state().power?.kind;
     const hunting = power === 'hunt';
-    const tileOf = (p: [number, number]): Vec => [wrapX(Math.round(p[0])), Math.round(p[1])];
+    const tileOf = (p: [number, number]): Vec => [wrapX(m, Math.round(p[0])), Math.round(p[1])];
     const targets: Vec[] = [];
     for (const g of live)
       if ((hunting || g.mode === 'fright') && g.mode !== 'eyes' && g.mode !== 'house')
@@ -251,9 +252,9 @@ export function mazeBot(ctx: BotContext<MazePlayerView, MazeTableView>): MazeAct
         : [];
     const dd = scary.length ? bfs(m, scary, true) : null;
     const reach = DANGER[level];
-    const near = dd && dd[key(tile[0], tile[1])]! >= 0 && dd[key(tile[0], tile[1])]! < 10;
+    const near = dd && dd[key(m, tile[0], tile[1])]! >= 0 && dd[key(m, tile[0], tile[1])]! < 10;
     const scored = opts.map((d) => {
-      const k = key(wrapX(tile[0] + DIRS[d][0]), tile[1] + DIRS[d][1]);
+      const k = key(m, wrapX(m, tile[0] + DIRS[d][0]), tile[1] + DIRS[d][1]);
       let s = dist[k]!;
       if (s < 0) s = 99;
       if (dd) {
@@ -285,7 +286,7 @@ export function mazeBot(ctx: BotContext<MazePlayerView, MazeTableView>): MazeAct
     const g = t - off;
     if (!shared && g - lastBeat >= AIM_MS) {
       const [px, py] = chomper.position();
-      input.aims.push({ atMs: g, tiles: { [me]: [wrapX(Math.round(px)), Math.round(py)] } });
+      input.aims.push({ atMs: g, tiles: { [me]: [wrapX(m, Math.round(px)), Math.round(py)] } });
       lastBeat = g;
     }
     ghosts.stepTo(g, input);

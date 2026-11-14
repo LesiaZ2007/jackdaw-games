@@ -70,6 +70,29 @@ describe('mazeBot', () => {
     for (const id of IDS.slice(1)) expect(run.s.players[id]!.score).toBeGreaterThan(0);
   });
 
+  for (const size of ['Small', 'Large'] as const) {
+    it(`plays a ${size} Shared maze and a ${size} Race`, () => {
+      const ids = size === 'Large' ? [...IDS, 'robin', 'jay'] : IDS;
+      const s = start(ids, { mode: 'Shared', minutes: 2 }, 3);
+      // Six players get the Large maze on Auto; Small has to be picked.
+      const shared = size === 'Large' ? s : start(ids, { mode: 'Shared', minutes: 2, size }, 3);
+      expect(layoutOf(shared, 0).size).toBe(size);
+      const run = play(shared, ids.slice(1), 'normal', 5, 2 * 60_000 + 5000);
+      expect(run.invalid).toBe(0);
+      expect(run.walled).toBe(0);
+      expect(run.s.phase).not.toBe('play');
+      for (const id of ids.slice(1)) expect(run.s.players[id]!.score).toBeGreaterThan(0);
+
+      const race = start(IDS.slice(0, 2), { mode: 'Race', mazes: 1, size }, 4);
+      expect(layoutOf(race, 0).size).toBe(size);
+      const r = play(race, IDS.slice(0, 2), 'hard', 6, 8 * 60_000);
+      expect(r.invalid).toBe(0);
+      expect(r.walled).toBe(0);
+      expect(r.s.phase).not.toBe('play');
+      expect(r.s.players.wren!.score).toBeGreaterThan(500);
+    }, 60_000);
+  }
+
   it('plays a Race of two bots to a finish', () => {
     const s = start(IDS.slice(0, 2), { mode: 'Race', mazes: 1 }, 4);
     const run = play(s, IDS.slice(0, 2), 'hard', 6, 6 * 60_000);
@@ -94,8 +117,8 @@ describe('mazeBot', () => {
     expect(hard).toBeGreaterThan(easy);
   }, 120_000);
 
-  it('stays quick three minutes into a round', () => {
-    let s = start(IDS, { mode: 'Shared', minutes: 8 }, 9);
+  it.each(['Medium', 'Large'] as const)('stays quick three minutes into a %s round', (size) => {
+    let s = start(IDS, { mode: 'Shared', minutes: 8, size }, 9);
     const tick: MazeTick = {
       type: 'tick',
       round: 1,
@@ -127,7 +150,7 @@ describe('mazeBot', () => {
     const t0 = performance.now();
     for (let i = 0; i < 20; i++) call(i);
     const per = (performance.now() - t0) / 20;
-    console.log('bot call ms', per);
+    console.log(`bot call ms (${size})`, per);
     expect(per).toBeLessThan(40);
   });
 });

@@ -47,7 +47,7 @@ export function posOf(w: Walker): [number, number] {
 export function advance(w: Walker, dist: number, m: MazeLayout, o: AdvanceOpts): boolean {
   if (w.next && w.dir && w.next === opposite(w.dir) && w.prog > 0) {
     const [dx, dy] = DIRS[w.dir];
-    w.tile = [wrapX(w.tile[0] + dx), w.tile[1] + dy];
+    w.tile = [wrapX(m, w.tile[0] + dx), w.tile[1] + dy];
     w.prog = 1 - w.prog;
     w.dir = w.next;
     w.next = null;
@@ -68,7 +68,7 @@ export function advance(w: Walker, dist: number, m: MazeLayout, o: AdvanceOpts):
     dist -= step;
     if (w.prog >= 1 - 1e-9) {
       const [dx, dy] = DIRS[dir];
-      w.tile = [wrapX(w.tile[0] + dx), w.tile[1] + dy];
+      w.tile = [wrapX(m, w.tile[0] + dx), w.tile[1] + dy];
       w.prog = 0;
       o.arrive?.(w);
     }

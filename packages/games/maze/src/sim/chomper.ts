@@ -1,5 +1,5 @@
 import type { GhostSim } from './ghosts';
-import { MAZE_W, opposite } from './layouts';
+import { opposite } from './layouts';
 import type { MazeLayout } from './layouts';
 import { pelletIndex } from './pellets';
 import { ATTACK_POWERS, FRUIT, powerMs, speeds } from './powers';
@@ -239,7 +239,7 @@ export class ChomperSim {
         if (this.gone[i] || this.kinds[i]) continue;
         const [x, y] = this.pos[i]!;
         const dx = Math.abs(x - px);
-        if (Math.hypot(Math.min(dx, MAZE_W - dx), y - py) < MAGNET_RANGE) this.eat(i, tMs, ev);
+        if (Math.hypot(Math.min(dx, this.m.w - dx), y - py) < MAGNET_RANGE) this.eat(i, tMs, ev);
       }
     }
     this.contact(tMs, ev);
@@ -317,7 +317,7 @@ export class ChomperSim {
       if (g.mode === 'eyes' || g.mode === 'house') continue;
       if (g.jinxTarget !== undefined && g.jinxTarget !== this.id) continue;
       const dx = Math.abs(g.pos[0] - px);
-      if (Math.min(dx, MAZE_W - dx) >= HIT || Math.abs(g.pos[1] - py) >= HIT) continue;
+      if (Math.min(dx, this.m.w - dx) >= HIT || Math.abs(g.pos[1] - py) >= HIT) continue;
       if (hunting || g.mode === 'fright') {
         ev.push({ kind: 'ghost', ghost: g.id, combo: Math.min(this.combo++, 3) });
         this.ateGhosts.set(g.id, tMs);

@@ -9,13 +9,19 @@ import type {
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import { meta } from './meta';
-import { defaultOptions, enabledPowers, optionsSchema, validateOptions } from './options';
+import {
+  defaultOptions,
+  enabledPowers,
+  optionsSchema,
+  resolveSize,
+  validateOptions,
+} from './options';
 import type { MazeOptions } from './options';
 import { mazeBot } from './bot';
 import { initShared, settleShared } from './shared';
 import type { Turn } from './sim/chomper';
 import type { Aim, GhostEvent } from './sim/ghosts';
-import { MAZE_LAYOUTS } from './sim/layouts';
+import { MAZE_LAYOUTS, SIZE_DIMS, layoutsOf } from './sim/layouts';
 import type { MazeLayout } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
 import { ATTACK_POWERS, FRUIT, POINTS, POWER_KINDS, powerMs, speeds } from './sim/powers';
@@ -165,7 +171,11 @@ export interface MazeState {
 }
 
 const int = (min: number, max: number) => z.number().int().min(min).max(max);
-const coord = z.number().min(-2).max(30);
+/** A tile coordinate in any maze size, with room for a tunnel mouth past either edge. */
+const coord = z
+  .number()
+  .min(-2)
+  .max(Math.max(SIZE_DIMS.Large.w, SIZE_DIMS.Large.h) + 2);
 const dirSchema = z.enum(['up', 'down', 'left', 'right']);
 const powerSchema = z.enum(POWER_KINDS as [PowerKind, ...PowerKind[]]);
 
@@ -470,8 +480,9 @@ function freshPlayer(): PlayerRec {
   };
 }
 
-function pickLayouts(o: MazeOptions, rng: Rng): number[] {
-  const order = rng.shuffle(MAZE_LAYOUTS.map((_, i) => i));
+function pickLayouts(o: MazeOptions, playerCount: number, rng: Rng): number[] {
+  const size = resolveSize(o, playerCount);
+  const order = rng.shuffle(layoutsOf(size).map((m) => MAZE_LAYOUTS.indexOf(m)));
   const count = o.mode === 'Shared' ? 1 : o.mazes;
   return Array.from({ length: count }, (_, i) => order[i % order.length]!);
 }
@@ -859,7 +870,7 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
       seed: rng.int(2 ** 31),
       round: 1,
       ids: [...playerIds],
-      layouts: pickLayouts(options, rng),
+      layouts: pickLayouts(options, playerIds.length, rng),
       startAt: now + COUNTDOWN_MS,
       endAt:
         now + COUNTDOWN_MS + (options.mode === 'Solo' ? SOLO_BELL_MS : options.minutes * 60_000),

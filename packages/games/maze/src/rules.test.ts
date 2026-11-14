@@ -100,6 +100,30 @@ describe('setup', () => {
     expect(setup([WREN, ROOK], { mode: 'Shared' }).shared).not.toBeNull();
     expect(setup([WREN, ROOK], { mode: 'Race' }).shared).toBeNull();
   });
+
+  it('picks layouts only of the resolved size', () => {
+    const sizes = (s: MazeState) => s.layouts.map((_, i) => layoutOf(s, i).size);
+    const six = ['wren', 'rook', 'finch', 'lark', 'robin', 'jay'];
+    for (let seed = 1; seed <= 5; seed++) {
+      expect(sizes(setup(six, { mode: 'Shared' }, seed))).toEqual(['Large']);
+      expect(sizes(setup(six.slice(0, 4), { mode: 'Shared' }, seed))).toEqual(['Medium']);
+      expect(sizes(setup(six, { mode: 'Race', mazes: 3 }, seed))).toEqual(Array(3).fill('Medium'));
+      expect(sizes(setup([WREN], { mazes: 5, size: 'Small' }, seed))).toEqual(
+        Array(5).fill('Small'),
+      );
+      expect(sizes(setup(six, { mode: 'Shared', size: 'Small' }, seed))).toEqual(['Small']);
+    }
+  });
+
+  it('a Shared 6-player game starts everyone on distinct tiles of a Large maze', () => {
+    const six = ['wren', 'rook', 'finch', 'lark', 'robin', 'jay'];
+    const s = setup(six, { mode: 'Shared' });
+    const m = layoutOf(s, 0);
+    expect(m.size).toBe('Large');
+    expect([m.w, m.h]).toEqual([33, 30]);
+    expect(new Set(six.map((id) => s.players[id]!.pos.slice(0, 2).join())).size).toBe(6);
+    expect(s.shared!.owner).toHaveLength(pelletIndex(m).size);
+  });
 });
 
 describe('stale and odd ticks (review focus 1)', () => {

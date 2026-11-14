@@ -9,6 +9,7 @@ import {
   eventsFrom,
   SPOT_BACK_MS,
   decodeOwners,
+  encodeOwners,
   ghostCheckpoints,
   ownerOf,
   spotPellets,
@@ -17,8 +18,8 @@ import {
 import { FRUIT_EVERY } from './sim/chomper';
 import { GhostSim } from './sim/ghosts';
 import type { Aim, GhostEvent, GhostInput } from './sim/ghosts';
-import { MAZE_LAYOUTS } from './sim/layouts';
-import { encodeBits, pelletIndex } from './sim/pellets';
+import { MAZE_LAYOUTS, layoutsOf } from './sim/layouts';
+import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
 import { POINTS } from './sim/powers';
 import type { PowerKind } from './sim/powers';
 
@@ -82,6 +83,42 @@ const ownedCount = (s: MazeState) => {
   const spots = spotSet(s);
   return [...decodeOwners(s.shared!.owner, size(s))].filter((k, i) => k && !spots.has(i)).length;
 };
+
+describe('a Large Shared maze', () => {
+  const EIGHT = ['wren', 'rook', 'finch', 'lark', 'robin', 'jay', 'heron', 'swift'];
+
+  it('round-trips pellet bitsets and owners at 33×30', () => {
+    const rng = createRng(5);
+    for (const m of layoutsOf('Large')) {
+      expect([m.w, m.h]).toEqual([33, 30]);
+      const n = pelletIndex(m).size;
+      for (let k = 0; k < 10; k++) {
+        const owners = new Uint8Array(n).map(() => (rng.next() < 0.5 ? 0 : 1 + rng.int(8)));
+        expect(decodeOwners(encodeOwners(owners), n)).toEqual(owners);
+        const bits = owners.map((o) => (o ? 1 : 0));
+        expect(decodeBits(encodeBits(bits), n)).toEqual(bits);
+      }
+    }
+  });
+
+  it('settles claims from eight players by seat', () => {
+    let s = setup(EIGHT);
+    expect(layoutOf(s, 0).size).toBe('Large');
+    const free = plain(s);
+    EIGHT.forEach((id, k) => {
+      s = act(
+        s,
+        id,
+        tick(s, id, { eaten: bitsOf(s, [free[k * 40]!, free[free.length - 1 - k]!]) }),
+      );
+    });
+    EIGHT.forEach((id, k) => {
+      expect(ownerOf(s.shared!, s.ids, free[k * 40]!)).toBe(id);
+      expect(ownerOf(s.shared!, s.ids, free[free.length - 1 - k]!)).toBe(id);
+    });
+    expect(ownedCount(s)).toBe(16);
+  });
+});
 
 describe('Shared pellets (review focus 2)', () => {
   it('the first claim to arrive owns a contested pellet; nothing double counts', () => {

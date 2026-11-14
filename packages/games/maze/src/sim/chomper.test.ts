@@ -17,6 +17,9 @@ function layout(rows: string[], fruit: [number, number] = [10, 1]): MazeLayout {
   while (all.length < 24) all.push(WALL);
   return {
     id: 'test',
+    size: 'Medium',
+    w: 27,
+    h: 24,
     rows: all,
     starts: [[1, 1, 'right']],
     house: [13, 12],

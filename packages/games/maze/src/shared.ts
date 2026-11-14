@@ -15,7 +15,7 @@ import {
 import type { MazeFacts, MazeState, MazeTick, PlayerRec, PowerSpot, SharedRec } from './rules';
 import { FRUIT_EVERY, FRUIT_MS } from './sim/chomper';
 import type { Aim, GhostCheckpoint, GhostEvent, GhostInput, GhostSim } from './sim/ghosts';
-import { MAZE_W } from './sim/layouts';
+import { wrapX } from './sim/layouts';
 import type { MazeLayout } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
 import { ATTACK_POWERS, FRUIT, POWER_MS } from './sim/powers';
@@ -95,14 +95,15 @@ export function eventsFrom(aims: Aim[]): number {
 /** Whether a spot holds a power-up at round ms `t`. */
 export const spotUp = (sp: PowerSpot, t: number): boolean => sp.kind !== null && t >= sp.backAt;
 
-const tileOf = (pos: readonly [number, number, unknown]): Vec => [
-  ((Math.round(pos[0]) % MAZE_W) + MAZE_W) % MAZE_W,
+const tileOf = (m: MazeLayout, pos: readonly [number, number, unknown]): Vec => [
+  wrapX(m, Math.round(pos[0])),
   Math.round(pos[1]),
 ];
 
 function aimNow(s: MazeState, atMs: number): Aim {
+  const m = layoutOf(s, 0);
   const tiles: Record<string, Vec> = {};
-  for (const id of s.ids) tiles[id] = tileOf(s.players[id]!.pos);
+  for (const id of s.ids) tiles[id] = tileOf(m, s.players[id]!.pos);
   return { atMs, tiles };
 }
 

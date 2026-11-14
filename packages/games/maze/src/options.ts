@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ATTACK_POWERS, POWER_KINDS } from './sim/powers';
+import type { MazeSize } from './sim/layouts';
 import type { PowerKind } from './sim/powers';
 
 export const optionsSchema = z.object({
@@ -16,6 +17,7 @@ export const optionsSchema = z.object({
   steal: z.boolean().describe('Steal'),
   fog: z.boolean().describe('Fog'),
   look: z.enum(['Printed', 'Neon', 'Classic', 'Cabinet']).describe('Look'),
+  size: z.enum(['Auto', 'Small', 'Medium', 'Large']).describe('Maze size'),
 });
 export type MazeOptions = z.infer<typeof optionsSchema>;
 
@@ -34,7 +36,17 @@ export function defaultOptions(playerCount: number): MazeOptions {
     steal: true,
     fog: true,
     look: 'Printed',
+    size: 'Auto',
   };
+}
+
+/**
+ * The maze size to play. Auto is Medium, except a Shared maze with 5 or more players, which gets
+ * the Large mazes so everyone has room.
+ */
+export function resolveSize(o: MazeOptions, playerCount: number): MazeSize {
+  if (o.size !== 'Auto') return o.size;
+  return o.mode === 'Shared' && playerCount >= 5 ? 'Large' : 'Medium';
 }
 
 /** The power-ups this game can hand out. Classic is Hunt only; Solo has no one to attack. */

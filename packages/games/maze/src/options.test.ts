@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { defaultOptions, enabledPowers, optionsSchema, validateOptions } from './options';
+import {
+  defaultOptions,
+  enabledPowers,
+  optionsSchema,
+  resolveSize,
+  validateOptions,
+} from './options';
 import type { MazeOptions } from './options';
 
 const base = (over: Partial<MazeOptions> = {}): MazeOptions => ({
@@ -93,5 +99,36 @@ describe('options', () => {
     ]);
     expect(enabledPowers(base({ mode: 'Solo' }))).toEqual(['hunt', 'dash', 'phase', 'magnet']);
     expect(enabledPowers(base({ mode: 'Solo', hunt: false }))).toEqual(['dash', 'phase', 'magnet']);
+  });
+
+  it('defaults the maze size to Auto', () => {
+    expect(defaultOptions(1).size).toBe('Auto');
+    expect(optionsSchema.safeParse({ ...base(), size: 'Huge' }).success).toBe(false);
+  });
+
+  it('Auto picks Medium, and Large for a Shared maze of 5 or more', () => {
+    const table: [MazeOptions['mode'], number, string][] = [
+      ['Solo', 1, 'Medium'],
+      ...[2, 3, 4, 5, 6, 7, 8].map((n): [MazeOptions['mode'], number, string] => [
+        'Race',
+        n,
+        'Medium',
+      ]),
+      ['Shared', 2, 'Medium'],
+      ['Shared', 3, 'Medium'],
+      ['Shared', 4, 'Medium'],
+      ['Shared', 5, 'Large'],
+      ['Shared', 6, 'Large'],
+      ['Shared', 7, 'Large'],
+      ['Shared', 8, 'Large'],
+    ];
+    for (const [mode, n, want] of table)
+      expect(resolveSize(base({ mode, size: 'Auto' }), n), `${mode} ${n}`).toBe(want);
+  });
+
+  it('a chosen size wins over Auto in every mode and count', () => {
+    for (const size of ['Small', 'Medium', 'Large'] as const)
+      for (const mode of ['Solo', 'Shared', 'Race'] as const)
+        for (let n = 1; n <= 8; n++) expect(resolveSize(base({ mode, size }), n)).toBe(size);
   });
 });

@@ -525,7 +525,7 @@ describe('views', () => {
     expect(t.phase).toBe('play');
     expect(t.players.map((p) => p.id)).toEqual([WREN, ROOK]);
     expect('inbox' in t.players[0]!).toBe(false);
-    expect(game.getPlayerView(s, WREN)).toEqual({ me: WREN, inbox: [] });
+    expect(game.getPlayerView(s, WREN)).toMatchObject({ me: WREN, inbox: [] });
     expect(game.waitingOn!(s)).toEqual([]);
   });
 });

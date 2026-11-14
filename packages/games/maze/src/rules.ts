@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { meta } from './meta';
 import { defaultOptions, enabledPowers, optionsSchema, validateOptions } from './options';
 import type { MazeOptions } from './options';
+import { mazeBot } from './bot';
 import { initShared, settleShared } from './shared';
 import type { Turn } from './sim/chomper';
 import type { Aim, GhostEvent } from './sim/ghosts';
@@ -222,6 +223,13 @@ export interface MazeTableView {
 export interface MazePlayerView {
   me: string;
   inbox: Attack[];
+  /** The player's own record, for their phone and bot (the table view leaves these out). */
+  seq: number;
+  lastT: number;
+  eaten: string;
+  caught: number;
+  lives: number;
+  facts: MazeFacts;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -832,7 +840,17 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
 
   getPlayerView(s, playerId) {
     const p = s.players[playerId];
-    return { me: playerId, inbox: p ? p.inbox : [] };
+    const own = p ?? freshPlayer();
+    return {
+      me: playerId,
+      inbox: own.inbox,
+      seq: own.seq,
+      lastT: own.lastT,
+      eaten: own.eaten,
+      caught: own.caught,
+      lives: own.lives,
+      facts: own.facts,
+    };
   },
 
   getTableView: table,
@@ -898,5 +916,6 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
     return s;
   },
 
+  bot: mazeBot,
   botDelayMs: (s) => (s.phase === 'play' ? 900 : 2_000),
 };

@@ -45,6 +45,8 @@ export interface ChomperParams {
   taken?: Uint8Array;
   /** Local bonus fruit (Solo and Race). Off in the Shared maze, where the server owns fruit. */
   fruit?: boolean;
+  /** Called at every tile center to pick the next turn (the server's bots); null keeps going. */
+  steer?: (tile: [number, number], dir: Dir | null) => Dir | null;
   /** This player's id, so a jinx ghost only touches the chomper it was sent after. */
   id?: string;
 }
@@ -78,6 +80,7 @@ export class ChomperSim {
   private readonly ghostSim: Pick<GhostSim, 'ghosts'>;
   private readonly id: string | undefined;
   private readonly fruitOn: boolean;
+  private readonly steer: ChomperParams['steer'];
   private readonly at = new Map<string, number>();
   private readonly pos: [number, number][] = [];
   private readonly kinds: (PowerKind | null)[] = [];
@@ -104,6 +107,7 @@ export class ChomperSim {
     this.level = p.level;
     this.ghostSim = p.ghosts;
     this.id = p.id;
+    this.steer = p.steer;
     this.fruitOn = p.fruit ?? true;
     let spot = 0;
     for (const [k, i] of pelletIndex(p.m)) {
@@ -143,6 +147,37 @@ export class ChomperSim {
   /** The power-up a pellet index holds, or null for a plain pellet. */
   powerAt(i: number): PowerKind | null {
     return this.kinds[i] ?? null;
+  }
+
+  /**
+   * Carries on from a report (the server's bots rebuild a chomper this way each call): where it
+   * stands, what it was doing and how many pellets it has eaten so far.
+   */
+  resume(o: {
+    walker: Walker;
+    power?: ChomperState['power'];
+    dyingUntil?: number;
+    ate?: number;
+    fruitN?: number;
+  }): void {
+    const w = o.walker;
+    this.w = { tile: [w.tile[0], w.tile[1]], dir: w.dir, next: null, prog: w.prog };
+    this.power = o.power ? { ...o.power } : null;
+    this.dyingUntil = o.dyingUntil ?? 0;
+    this.ateCount = o.ate ?? 0;
+    this.fruitN = o.fruitN ?? 0;
+    this.lastDir = w.dir;
+  }
+
+  /** The tile and heading while sitting exactly on a tile center (where turns are decided). */
+  center(): { tile: [number, number]; dir: Dir | null } | null {
+    return this.w.prog === 0 ? { tile: [this.w.tile[0], this.w.tile[1]], dir: this.w.dir } : null;
+  }
+
+  /** Where it is now, in tile units, and its heading. */
+  position(): [number, number, Dir | null] {
+    const [x, y] = posOf(this.w);
+    return [x, y, this.w.dir];
   }
 
   /** Slowed by another player's Freeze until `untilMs`. */
@@ -188,6 +223,8 @@ export class ChomperSim {
       ghost: false,
       decide: (v) => {
         center = [v.tile[0], v.tile[1]];
+        const d = this.steer?.([v.tile[0], v.tile[1]], v.dir);
+        if (d) v.next = d;
       },
       arrive: (v) => {
         if (v.dir !== this.lastDir) this.turn(tMs, center[0], center[1], v.dir!);

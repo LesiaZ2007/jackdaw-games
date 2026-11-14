@@ -243,9 +243,9 @@ export class GhostSim {
 
   private tick(k: number, aim: AimNow | null): void {
     if (k >= this.frightUntil) for (const g of this.gs) g.scared = false;
-    this.gs = this.gs.filter((g) => !g.jinx || k < g.jinx.untilStep);
+    if (this.gs.length > 4) this.gs = this.gs.filter((g) => !g.jinx || k < g.jinx.untilStep);
     const sp = speeds(this.level);
-    const gone = new Set<number>();
+    let gone: Set<number> | null = null;
     for (const g of this.gs) {
       if (g.wait > 0) {
         g.wait--;
@@ -264,14 +264,14 @@ export class GhostSim {
           if (g.eyes && g.tile[0] === this.m.house[0] && g.tile[1] === this.m.house[1]) {
             g.eyes = false;
             g.wait = EATEN_WAIT;
-            if (g.jinx) gone.add(g.id);
+            if (g.jinx) (gone ??= new Set()).add(g.id);
             return;
           }
           this.decide(g, k, aim);
         },
       });
     }
-    if (gone.size) this.gs = this.gs.filter((g) => !gone.has(g.id));
+    if (gone) this.gs = this.gs.filter((g) => !gone!.has(g.id));
   }
 
   private inHouse(g: Walker): boolean {

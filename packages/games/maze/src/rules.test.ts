@@ -94,7 +94,8 @@ describe('setup', () => {
     expect(setup([WREN], { mazes: 5 }).layouts).toHaveLength(5);
     expect(new Set(setup([WREN], { mazes: 4 }).layouts).size).toBe(4);
     expect(setup([WREN, ROOK], { mode: 'Shared' }).layouts).toHaveLength(1);
-    expect(setup([WREN, ROOK], { mode: 'Shared' }).shared).toBeNull();
+    expect(setup([WREN, ROOK], { mode: 'Shared' }).shared).not.toBeNull();
+    expect(setup([WREN, ROOK], { mode: 'Race' }).shared).toBeNull();
   });
 });
 
@@ -393,13 +394,12 @@ describe('Race', () => {
 });
 
 describe('Shared maze', () => {
-  it('records position and turns, and leaves settling to the Shared hook', () => {
+  it('records position and turns', () => {
     let s = setup([WREN, ROOK], { mode: 'Shared' });
     s = act(s, WREN, tick(s, WREN, { pos: [3, 1, 'left'], turns: [[800, 3, 1, 'left']] }));
     expect(s.players[WREN]!.pos).toEqual([3, 1, 'left']);
     expect(s.players[WREN]!.turns).toEqual([[800, 3, 1, 'left']]);
     expect(s.players[WREN]!.seq).toBe(1);
-    expect(s.shared).toBeNull();
   });
 });
 

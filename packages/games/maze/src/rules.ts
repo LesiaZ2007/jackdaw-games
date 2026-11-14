@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { meta } from './meta';
 import { defaultOptions, enabledPowers, optionsSchema, validateOptions } from './options';
 import type { MazeOptions } from './options';
-import { settleShared } from './shared';
+import { initShared, settleShared } from './shared';
 import type { Turn } from './sim/chomper';
 import type { Aim, GhostEvent } from './sim/ghosts';
 import { MAZE_LAYOUTS } from './sim/layouts';
@@ -113,7 +113,9 @@ export interface PlayerRec {
 
 export interface PowerSpot {
   spot: number;
+  /** What it holds (or will hold once back); null when it's gone for good (Classic). */
   kind: PowerKind | null;
+  /** Round ms when it's up again; 0 at the start. */
   backAt: number;
 }
 
@@ -125,6 +127,14 @@ export interface SharedRec {
   /** Events at or after the oldest kept aim. */
   events: GhostEvent[];
   spots: PowerSpot[];
+  /** The bonus fruit on the board (FRUIT index), from `atMs` until `untilMs` (round ms). */
+  fruit: { fruit: number; atMs: number; untilMs: number } | null;
+  /** Fruit handed out so far this round. */
+  fruitN: number;
+  /** How long each phone's fruit list was in its last tick (a longer one is a new claim). */
+  fruitSeen: Record<string, number>;
+  /** Power spot pickups so far (picks the kind a spot comes back as). */
+  pickups: number;
 }
 
 export interface MazeState {
@@ -276,6 +286,15 @@ export function ghostPoints(facts: MazeFacts): number {
   return pts;
 }
 
+/** Points from power-ups, ghosts and fruit. */
+export function factPoints(facts: MazeFacts): number {
+  return (
+    facts.powers.length * POINTS.power +
+    ghostPoints(facts) +
+    facts.fruit.reduce((a, f) => a + (FRUIT[f]?.pts ?? 0), 0)
+  );
+}
+
 /** Points from the current maze's facts. */
 export function mazePoints(m: MazeLayout, eaten: string, facts: MazeFacts): number {
   const n = pelletIndex(m).size;
@@ -283,21 +302,19 @@ export function mazePoints(m: MazeLayout, eaten: string, facts: MazeFacts): numb
   const spots = powerIndexes(m);
   let pellets = 0;
   for (let i = 0; i < n; i++) if (bits[i] && !spots.has(i)) pellets++;
-  return (
-    pellets * POINTS.pellet +
-    facts.powers.length * POINTS.power +
-    ghostPoints(facts) +
-    facts.fruit.reduce((a, f) => a + (FRUIT[f]?.pts ?? 0), 0)
-  );
+  return pellets * POINTS.pellet + factPoints(facts);
 }
 
-/** A player's score from their facts. Never below 0. */
+/**
+ * A player's score from their facts. Never below 0. In the Shared maze only owned pellets score
+ * (`pellets`, settled in shared.ts), not every pellet the phone claimed.
+ */
 export function scoreOf(s: MazeState, p: PlayerRec): number {
-  const m = layoutOf(s, p.maze);
-  return Math.max(
-    0,
-    p.banked + mazePoints(m, p.eaten, p.facts) + p.caught * POINTS.caught + p.adjust,
-  );
+  const here =
+    s.options.mode === 'Shared'
+      ? p.pellets * POINTS.pellet + factPoints(p.facts)
+      : mazePoints(layoutOf(s, p.maze), p.eaten, p.facts);
+  return Math.max(0, p.banked + here + p.caught * POINTS.caught + p.adjust);
 }
 
 const rescore = (s: MazeState, id: string): MazeState => {
@@ -448,7 +465,8 @@ export function orderOf(s: MazeState): string[] {
   });
 }
 
-function endRound(s: MazeState, now: number): MazeState {
+/** Ends the round: the Race finish bonus, the winner line, then the results after SHOW_MS. */
+export function endRound(s: MazeState, now: number): MazeState {
   if (s.phase !== 'play' && s.phase !== 'countdown') return s;
   let out = s;
   if (s.options.mode === 'Race') {
@@ -582,7 +600,7 @@ function mergeFacts(s: MazeState, p: PlayerRec, a: MazeTick): MazeFacts {
 }
 
 /** The power running at round ms `t`, from the latest non-attack pickup. */
-function powerAt(facts: MazeFacts, level: number, t: number): PlayerRec['power'] {
+export function powerAt(facts: MazeFacts, level: number, t: number): PlayerRec['power'] {
   let last: [number, number, PowerKind] | null = null;
   for (const x of facts.powers)
     if (!ATTACK_POWERS.includes(x[2]) && (!last || x[0] >= last[0])) last = x;
@@ -780,7 +798,8 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
     };
     const players: Record<string, PlayerRec> = {};
     for (const id of playerIds) players[id] = { ...freshPlayer(), pos: placeAt(base, id, 0) };
-    return { ...base, players };
+    const out = { ...base, players };
+    return options.mode === 'Shared' ? { ...out, shared: initShared(out) } : out;
   },
 
   getPlayerView(s, playerId) {

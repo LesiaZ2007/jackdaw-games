@@ -5,3 +5,4 @@ export * from './sim/walker';
 export * from './sim/pellets';
 export * from './sim/powers';
 export * from './sim/ghosts';
+export * from './sim/chomper';

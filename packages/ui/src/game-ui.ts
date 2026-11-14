@@ -129,6 +129,16 @@ export interface GameUi {
    * in a flex column); it is a size container named `game` for container queries.
    */
   fit?: boolean;
+  /**
+   * A real-time game polls this often while it runs, in ms, instead of the usual 1.5s, so everyone's
+   * progress on a watching phone or the TV keeps up. Keep it at 600 or more: polls are rate limited.
+   */
+  livePollMs?: number;
+  /**
+   * Per-moment override of `livePollMs`, called with the public table view on every snapshot while
+   * in game. Return the poll interval in ms for this moment, or null for the usual pace.
+   */
+  livePoll?(tableView: unknown): number | null;
 }
 
 export interface LobbySeatsProps {

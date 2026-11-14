@@ -194,6 +194,26 @@ describe('ChomperSim', () => {
     ]);
   });
 
+  it('starts the combo again once the fright is over, and after a respawn', () => {
+    const { sim, g, step, now } = setup({ start: [1, 4, 'down'] });
+    g.list = [0, 1, 2, 3].map((id) => ghost(id, [1, 4], 'fright'));
+    const eats = step().filter((e) => e.kind === 'ghost');
+    expect(eats.map((e) => POINTS.ghost[(e as { combo: number }).combo])).toEqual([
+      200, 400, 800, 1600,
+    ]);
+    // The fright ends; a later one starts at 200 again.
+    g.list = [];
+    step();
+    g.list = [ghost(4, [1, 4], 'fright')];
+    expect(step()).toEqual([{ kind: 'ghost', ghost: 4, combo: 0 }]);
+    g.list = [ghost(4, [1, 4], 'fright'), ghost(5, [1, 4], 'fright')];
+    expect(step()).toEqual([{ kind: 'ghost', ghost: 5, combo: 1 }]);
+    // A respawn starts it again too, even with the fright still on.
+    sim.respawn(now());
+    g.list = [ghost(4, [1, 4], 'fright'), ghost(5, [1, 4], 'fright'), ghost(6, [1, 4], 'fright')];
+    expect(step().filter((e) => e.kind === 'ghost')[0]).toMatchObject({ combo: 0 });
+  });
+
   it('pulls in pellets within 2.8 tiles with Magnet, but not power spots', () => {
     const { sim, step, until, at } = setup({ start: [17, 1, 'left'], powers: ['magnet'] });
     sim.input('right');

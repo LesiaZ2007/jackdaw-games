@@ -161,6 +161,7 @@ export class ChomperSim {
     this.w = { tile: [x, y], dir: d, next: null, prog: 0 };
     this.power = null;
     this.dyingUntil = 0;
+    this.combo = 0;
     this.ateGhosts.clear();
     this.turns.push([tMs, x, y, d]);
     this.lastDir = d;
@@ -266,7 +267,10 @@ export class ChomperSim {
   private contact(tMs: number, ev: ChomperEvent[]): void {
     const [px, py] = posOf(this.w);
     const hunting = this.power?.kind === 'hunt';
-    for (const g of this.ghostSim.ghosts()) {
+    const ghosts = this.ghostSim.ghosts();
+    // Once the Hunt and every fright are over, the next one starts again at 200.
+    if (!hunting && !ghosts.some((g) => g.mode === 'fright')) this.combo = 0;
+    for (const g of ghosts) {
       const ate = this.ateGhosts.get(g.id);
       if (ate !== undefined) {
         if (g.mode === 'eyes' || g.mode === 'house' || tMs - ate >= EATEN_GRACE_MS)

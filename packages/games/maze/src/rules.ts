@@ -200,7 +200,27 @@ export const actionSchema = z.discriminatedUnion('type', [tickSchema]);
 export type MazeTick = z.infer<typeof tickSchema>;
 export type MazeAction = z.infer<typeof actionSchema>;
 
-export type MazePublicPlayer = Omit<PlayerRec, 'inbox'> & { id: string };
+/** What everyone may see of a player; the facts and bookkeeping stay on the server. */
+export type MazePublicPlayer = Pick<
+  PlayerRec,
+  | 'maze'
+  | 'mazeAt'
+  | 'eaten'
+  | 'score'
+  | 'lives'
+  | 'pos'
+  | 'turns'
+  | 'ghostsEaten'
+  | 'caught'
+  | 'pellets'
+  | 'cleared'
+  | 'finishMs'
+  | 'power'
+  | 'done'
+> & { id: string };
+
+/** Turns the table view carries per player (a phone draws others over about the last second). */
+export const TABLE_TURNS = 8;
 
 export interface MazeTableView {
   mode: Mode;
@@ -766,8 +786,25 @@ function table(s: MazeState): MazeTableView {
     endAt: s.endAt,
     showBy: s.showBy,
     players: s.ids.map((id) => {
-      const { inbox: _inbox, ...rest } = s.players[id]!;
-      return { id, ...rest };
+      const p = s.players[id]!;
+      return {
+        id,
+        maze: p.maze,
+        mazeAt: p.mazeAt,
+        // Only Race's TV draws other players' mazes from their pellets.
+        eaten: s.options.mode === 'Race' ? p.eaten : '',
+        score: p.score,
+        lives: p.lives,
+        pos: p.pos,
+        turns: p.turns.slice(-TABLE_TURNS),
+        ghostsEaten: p.ghostsEaten,
+        caught: p.caught,
+        pellets: p.pellets,
+        cleared: p.cleared,
+        finishMs: p.finishMs,
+        power: p.power,
+        done: p.done,
+      };
     }),
     shared: s.shared,
     log: s.log,

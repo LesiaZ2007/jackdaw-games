@@ -528,4 +528,40 @@ describe('views', () => {
     expect(game.getPlayerView(s, WREN)).toMatchObject({ me: WREN, inbox: [] });
     expect(game.waitingOn!(s)).toEqual([]);
   });
+
+  it('the table view of eight players in the Shared maze stays small and public', () => {
+    const ids = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    let s = setup(ids, { mode: 'Shared' });
+    const turns: [number, number, number, 'left'][] = Array.from({ length: 40 }, (_, i) => [
+      1000 + i * 300,
+      3.5,
+      7,
+      'left',
+    ]);
+    s = {
+      ...s,
+      players: Object.fromEntries(
+        ids.map((id) => [
+          id,
+          {
+            ...s.players[id]!,
+            turns,
+            facts: {
+              ghosts: Array.from({ length: 30 }, (_, i) => [i * 100, i % 4] as [number, number]),
+              fruit: [],
+              powers: [],
+              caughtAt: [],
+            },
+          },
+        ]),
+      ),
+    };
+    const t = game.getTableView(s);
+    for (const p of t.players) {
+      expect('facts' in p).toBe(false);
+      expect('banked' in p).toBe(false);
+      expect('seq' in p).toBe(false);
+    }
+    expect(JSON.stringify(t).length).toBeLessThan(6000);
+  });
 });

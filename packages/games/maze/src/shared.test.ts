@@ -6,6 +6,7 @@ import { BELL_GRACE_MS, layoutOf, maze as game } from './rules';
 import type { MazeState, MazeTick } from './rules';
 import {
   AIMS_KEPT,
+  eventsFrom,
   SPOT_BACK_MS,
   decodeOwners,
   ghostCheckpoints,
@@ -293,15 +294,15 @@ describe('ghosts, aims and fruit', () => {
     expect(s.shared!.events.filter((e) => e.kind === 'eaten')).toHaveLength(1);
   });
 
-  it('aims beat every 2 s, keep the last 3, and old events go with them', () => {
+  it('aims beat every 2 s, keep the last 4, and old events go with them', () => {
     let s = setup([WREN, ROOK], only('hunt'));
     s = act(s, WREN, tick(s, WREN, { t: 1000, powers: [[900, 0, 'hunt']], ghosts: [[1000, 0]] }));
     for (let t = 1500; t <= 12_000; t += 500)
       s = act(s, ROOK, tick(s, ROOK, { t, pos: [t / 1000, 1, 'right'] }));
     const aims = s.shared!.aims;
-    expect(aims).toHaveLength(3);
-    expect(aims.map((a) => a.atMs)).toEqual([8000, 10_000, 12_000]);
-    expect(aims[2]!.tiles[ROOK]).toEqual([12, 1]);
+    expect(aims).toHaveLength(AIMS_KEPT);
+    expect(aims.map((a) => a.atMs)).toEqual([6000, 8000, 10_000, 12_000]);
+    expect(aims[3]!.tiles[ROOK]).toEqual([12, 1]);
     expect(s.shared!.events).toEqual([]);
   });
 
@@ -328,6 +329,48 @@ describe('ghosts, aims and fruit', () => {
     expect(t.shared!.spots).toHaveLength(layoutOf(s, 0).powers.length);
     expect(t.shared!.aims[0]!.atMs).toBe(0);
     expect(decodeOwners(t.shared!.owner, size(s)).every((k) => k === 0)).toBe(true);
+  });
+});
+
+describe('ghost history the server keeps', () => {
+  /** Ticks for Wren every 900 ms up to `until`. */
+  function run(s0: MazeState, until: number): MazeState {
+    let s = s0;
+    for (let t = 900; t <= until; t += 900)
+      s = act(s, WREN, tick(s, WREN, { t, pos: [1, 1, 'right'] }));
+    return s;
+  }
+
+  it('keeps a running jinx while older events and aims drop away', () => {
+    let s = setup([WREN, ROOK]);
+    s = {
+      ...s,
+      shared: {
+        ...s.shared!,
+        events: [
+          { atMs: 500, kind: 'jinx', target: ROOK, untilMs: 12_000 },
+          { atMs: 600, kind: 'eaten', ghost: 1 },
+        ],
+      },
+    };
+    s = run(s, 11_000);
+    const sh = s.shared!;
+    expect(sh.aims).toHaveLength(AIMS_KEPT);
+    expect(sh.aims[0]!.atMs).toBeGreaterThan(1500);
+    expect(sh.events.some((e) => e.kind === 'jinx')).toBe(true);
+    expect(sh.events.some((e) => e.kind === 'eaten')).toBe(false);
+  });
+
+  it('a ghost eaten before the kept history does not score', () => {
+    let s = setup([WREN, ROOK]);
+    s = run(s, 12_000);
+    const from = eventsFrom(s.shared!.aims);
+    expect(from).toBeGreaterThan(0);
+    s = act(s, WREN, tick(s, WREN, { t: 12_900, ghosts: [[from - 100, 2]] }));
+    expect(s.players[WREN]!.ghostsEaten).toBe(0);
+    expect(s.shared!.events.some((e) => e.kind === 'eaten')).toBe(false);
+    s = act(s, WREN, tick(s, WREN, { t: 13_800, ghosts: [[13_000, 2]] }));
+    expect(s.players[WREN]!.ghostsEaten).toBe(1);
   });
 });
 
@@ -369,5 +412,33 @@ describe('syncGhosts', () => {
     sim.stepTo(6500, { aims, events: [] });
     sim.stepTo(10_000, { aims, events: late });
     expect(sim.ghosts()).not.toEqual(ref.ghosts());
+  });
+
+  it('matches the reference when fed only what the server keeps', () => {
+    const beats: Aim[] = [];
+    for (let t = 0; t <= 14_000; t += 2000)
+      beats.push({ atMs: t, tiles: { wren: [13 - (t / 2000) * 1, 18], rook: [1 + t / 2000, 1] } });
+    const events: GhostEvent[] = [
+      { atMs: 3100, kind: 'jinx', target: 'rook', untilMs: 11_100 },
+      { atMs: 4200, kind: 'eaten', ghost: 0 },
+      { atMs: 8300, kind: 'eaten', ghost: 1 },
+    ];
+    const ref = new GhostSim(m, 7, 1);
+    ref.stepTo(14_000, { aims: beats, events });
+
+    const sim = new GhostSim(m, 7, 1);
+    const cps = ghostCheckpoints(sim);
+    for (let t = 100; t <= 14_000; t += 100) {
+      // What the server holds at t (aims 700 ms late; the 8.3 s event arrives at 9.9 s).
+      const aims = beats.filter((a) => a.atMs <= t - 700).slice(-AIMS_KEPT);
+      const from = eventsFrom(aims);
+      const held = events.filter(
+        (e) =>
+          (e.atMs >= from || (e.kind === 'jinx' && e.untilMs > aims[0]!.atMs)) &&
+          (e.atMs < 8000 || t >= 9900),
+      );
+      syncGhosts(sim, cps, { aims: aims.length ? aims : [beats[0]!], events: held }, t);
+    }
+    expect(sim.ghosts()).toEqual(ref.ghosts());
   });
 });

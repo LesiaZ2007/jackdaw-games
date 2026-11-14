@@ -41,7 +41,8 @@ import type { Vec } from './sim/walker';
  */
 
 export const AIM_MS = 2_000;
-export const AIMS_KEPT = 3;
+/** Aims kept: the ones ghosts steer by, plus one older, so a restore a little back still has one. */
+export const AIMS_KEPT = 4;
 export const SPOT_BACK_MS = 12_000;
 /** A pickup reported this much before a spot is back still counts (clocks differ a little). */
 export const SPOT_SLACK_MS = 1_000;
@@ -80,6 +81,15 @@ export function ownerOf(shared: Pick<SharedRec, 'owner'>, ids: string[], i: numb
 export function spotPellets(m: MazeLayout): number[] {
   const idx = pelletIndex(m);
   return m.powers.map(([x, y]) => idx.get(`${x},${y}`) ?? -1);
+}
+
+/**
+ * The earliest event time the server still keeps. Once old aims have been dropped, a phone that
+ * restores a checkpoint (up to CHECKPOINT_MS before a late event) must still find an aim at or
+ * before the restore point, so events within CHECKPOINT_MS of the oldest kept aim go too.
+ */
+export function eventsFrom(aims: Aim[]): number {
+  return aims.length < AIMS_KEPT ? -Infinity : (aims[0]?.atMs ?? 0) + CHECKPOINT_MS;
 }
 
 /** Whether a spot holds a power-up at round ms `t`. */
@@ -181,10 +191,17 @@ export function settleShared(
   // Ghosts eaten: each new one is an event every phone applies; a ghost two players ate at
   // once counts for the first report only.
   let events = [...sh0.events];
+  // A ghost eaten before the history the server still keeps can't be replayed on every phone,
+  // so it doesn't count (the phone's report of it is simply never taken in).
+  // Aims: a beat every AIM_MS, on whichever tick comes along.
+  let aims = sh0.aims;
+  const last = aims[aims.length - 1];
+  if (!last || nowMs - last.atMs >= AIM_MS) aims = [...aims, aimNow(s, nowMs)].slice(-AIMS_KEPT);
+  const keptFrom = eventsFrom(aims);
   const seen = new Set(prev.facts.ghosts.map(([t, g]) => `${t}:${g}`));
   for (const [t, g] of [...tick.ghosts].sort((a, b) => a[0] - b[0] || a[1] - b[1])) {
     const k = `${t}:${g}`;
-    if (seen.has(k) || facts.ghosts.length >= 64) continue;
+    if (seen.has(k) || facts.ghosts.length >= 64 || t < keptFrom) continue;
     seen.add(k);
     const dup = events.some(
       (e) => e.kind === 'eaten' && e.ghost === g && Math.abs(e.atMs - t) < GHOST_SAME_MS,
@@ -242,12 +259,9 @@ export function settleShared(
     } else out = attackOnPickup(out, playerId, kind, now);
   }
 
-  // Aims: a beat every AIM_MS, on whichever tick comes along.
-  let aims = sh0.aims;
-  const last = aims[aims.length - 1];
-  if (!last || nowMs - last.atMs >= AIM_MS) aims = [...aims, aimNow(out, nowMs)].slice(-AIMS_KEPT);
   const oldest = aims[0]?.atMs ?? 0;
-  events = events.filter((e) => e.atMs >= oldest);
+  const from = eventsFrom(aims);
+  events = events.filter((e) => e.atMs >= from || (e.kind === 'jinx' && e.untilMs > oldest));
 
   out = {
     ...out,

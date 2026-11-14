@@ -6,3 +6,4 @@ export * from './sim/pellets';
 export * from './sim/powers';
 export * from './sim/ghosts';
 export * from './sim/chomper';
+export * from './rules';

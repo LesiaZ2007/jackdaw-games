@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import {
   Plaque,
+  prefersReducedMotion,
   useCountdown,
   useMoment,
   VerdictMoment,
@@ -14,10 +15,13 @@ import { COLOURS, COLOUR_NAME, cardName, isWild, points, type Colour } from '../
 import {
   lastRoundPlayed,
   playable,
+  type Move,
   type UnoAction,
   type UnoPlayerView,
   type UnoTableView,
 } from '../rules';
+import { buzz, flyFrom } from './fly';
+import { handSlots, perRowFor } from './hand-layout';
 import { GameCard, Swatch } from './pieces';
 import { UnoTable } from './table';
 import './uno.css';
@@ -83,7 +87,18 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   const [pick, setPick] = useState<number | null>(null);
   const [armed, setArmed] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Where the card you just played was, so it flies from your hand to the pile.
+  const launched = useRef<{ card: number; rect: DOMRect } | null>(null);
   const mine = v.phase === 'play' && v.toAct === v.me;
+  const hit = takenBy(v.moves, v.me);
+  const wasMine = useRef(mine);
+  useEffect(() => {
+    if (mine && !wasMine.current) buzz(30);
+    wasMine.current = mine;
+  }, [mine]);
+  useEffect(() => {
+    if (hit !== null) buzz([50, 40, 50]);
+  }, [hit]);
   const can = new Set(playable(v));
   const meP = byId.get(v.me);
   // The turn ended under you (the timer, say): put the color picker and the UNO call away.
@@ -106,8 +121,9 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     setArmed(false);
     void send({ type: 'play', card, colour, call });
   };
-  const tap = (card: number) => {
+  const tap = (card: number, from: DOMRect | null) => {
     if (busy || !can.has(card)) return;
+    launched.current = from ? { card, rect: from } : null;
     if (isWild(card)) setPick(card);
     else playCard(card);
   };
@@ -133,13 +149,14 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           me={v.me}
           reactions={reactions}
           onDraw={canDraw ? () => void send({ type: 'draw' }) : undefined}
+          launchedFrom={(card) => (launched.current?.card === card ? launched.current.rect : null)}
         />
       </div>
 
-      <Hand v={v} can={can} mine={mine && pick === null} onTap={tap} picking={pick} />
+      <Hand v={v} can={can} mine={mine && pick === null} onTap={tap} picking={pick} hit={hit} />
 
       {v.phase !== 'play' ? (
-        <NextRound key={v.round} t={v} send={send} now={now} />
+        <NextRound key={`next-${v.round}`} t={v} send={send} now={now} />
       ) : pick !== null ? (
         <ColourPicker card={pick} onPick={(c) => playCard(pick, c)} onBack={() => setPick(null)} />
       ) : (
@@ -157,7 +174,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 
       {moment && (
         <VerdictMoment
-          key={v.last?.round}
+          key={`moment-${v.last?.round}`}
           outcome={moment.outcome}
           title={moment.title}
           detail={moment.detail}
@@ -170,8 +187,32 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
 };
 
 /**
- * Your cards, fanned so the whole hand always fits the width: they overlap more as it grows. On
- * your turn the ones that go are lifted and the rest are dimmed.
+ * The newest move, when it made you take cards (a Draw Two or Four, being caught, a lost
+ * challenge): its number, so the hand shakes once. Null otherwise.
+ */
+export function takenBy(moves: Move[], me: string): number | null {
+  const m = moves[moves.length - 1];
+  if (!m || !m.count) return null;
+  const who =
+    m.kind === 'take'
+      ? m.player
+      : m.kind === 'catch'
+        ? m.target
+        : m.kind === 'challenge'
+          ? m.ok
+            ? m.target
+            : m.player
+          : null;
+  return who === me ? m.seq : null;
+}
+
+/** Past this many rows the hand scrolls rather than pushing the table off the screen. */
+const MAX_ROWS = 3;
+
+/**
+ * Your cards, fanned across the width. A long hand breaks into overlapping rows (each card
+ * always shows at least a thumb's width), the cards slide over when one leaves, and cards you
+ * draw fly in from the deck. On your turn the ones that go are lifted and the rest are dimmed.
  */
 function Hand({
   v,
@@ -179,40 +220,100 @@ function Hand({
   mine,
   onTap,
   picking,
+  hit,
 }: {
   v: UnoPlayerView;
   can: Set<number>;
   mine: boolean;
-  onTap: (card: number) => void;
+  onTap: (card: number, from: DOMRect | null) => void;
   picking: number | null;
+  /** The move that just made you take cards, to shake the hand once. */
+  hit: number | null;
 }) {
-  if (v.hand.length === 0) {
+  const box = useRef<HTMLDivElement>(null);
+  const [perRow, setPerRow] = useState(7);
+  const seen = useRef<Set<number> | null>(null);
+  const n = v.hand.length;
+  const hasCards = n > 0;
+
+  // How many fit across, from the real width and card size; again whenever they change.
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => {
+      const card = el.firstElementChild as HTMLElement | null;
+      setPerRow(perRowFor(el.clientWidth, card?.offsetWidth ?? 0));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hasCards]);
+
+  // New cards fly in from the deck, one after another (the whole hand, on a deal).
+  useLayoutEffect(() => {
+    const el = box.current;
+    const before = seen.current;
+    seen.current = new Set(v.hand);
+    if (!el || !before) return;
+    const deck = el.closest('.uno')?.querySelector('.uno-deck .uno-card:last-of-type');
+    if (!deck) return;
+    const from = deck.getBoundingClientRect();
+    let k = 0;
+    v.hand.forEach((id, i) => {
+      if (before.has(id)) return;
+      flyFrom(el.children[i], from, { delay: Math.min(k++, 9) * 70, duration: 460, spin: -12 });
+    });
+  }, [v.hand]);
+
+  useEffect(() => {
+    const el = box.current;
+    if (hit === null || !el || prefersReducedMotion() || typeof el.animate !== 'function') return;
+    el.animate(
+      [
+        { translate: '0 0' },
+        { translate: '-7px 0' },
+        { translate: '6px 0' },
+        { translate: '-4px 0' },
+        { translate: '2px 0' },
+        { translate: '0 0' },
+      ],
+      { duration: 460, delay: 120, easing: 'ease-out' },
+    );
+  }, [hit]);
+
+  if (n === 0) {
     return <p className="uno-hand uno-hand--empty">{v.phase === 'play' ? 'No cards.' : ''}</p>;
   }
+  const { rows, slots } = handSlots(n, perRow);
   return (
     <section
-      className="uno-hand"
-      aria-label={`Your ${v.hand.length} cards`}
-      style={{ '--n': v.hand.length } as CSSProperties}
+      className={rows > MAX_ROWS ? 'uno-hand uno-hand--scroll' : 'uno-hand'}
+      aria-label={`Your ${n} cards`}
     >
-      {v.hand.map((id, i) => (
-        <GameCard
-          key={id}
-          id={id}
-          className={[
-            'uno-hand__card',
-            v.drawn === id && 'uno-hand__card--drawn',
-            picking === id && 'uno-hand__card--picked',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          style={{ '--i': i } as CSSProperties}
-          can={mine && can.has(id)}
-          dim={mine && !can.has(id)}
-          onClick={() => onTap(id)}
-          label={`${cardName(id)}${mine && can.has(id) ? ', play it' : ''}`}
-        />
-      ))}
+      <div className="uno-hand__cards" ref={box} style={{ '--rows': rows } as CSSProperties}>
+        {v.hand.map((id, i) => {
+          const s = slots[i]!;
+          return (
+            <GameCard
+              key={id}
+              id={id}
+              className={[
+                'uno-hand__card',
+                v.drawn === id && 'uno-hand__card--drawn',
+                picking === id && 'uno-hand__card--picked',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              style={{ '--r': s.r, '--c': s.c, '--rn': s.rn } as CSSProperties}
+              can={mine && can.has(id)}
+              dim={mine && !can.has(id)}
+              onClick={() => onTap(id, box.current?.children[i]?.getBoundingClientRect() ?? null)}
+              label={`${cardName(id)}${mine && can.has(id) ? ', play it' : ''}`}
+            />
+          );
+        })}
+      </div>
     </section>
   );
 }

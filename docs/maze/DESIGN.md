@@ -149,6 +149,28 @@ These came out of a builder review and are proposals, open to change after the d
   host's phone, which reports for it; if the host drops, the bots pause and resume at the host's
   rejoin.
 
+## Keep requests low
+
+Every request is a Vercel call and Redis commands on free plans that all games share
+(2026-11-14: "minimize this as much as possible for ANY game, especially pacman and later
+tetra"). Build for the fewest requests that still feel right:
+
+- **Fast polling only in Shared-maze rounds.** Solo needs no server mid-round at all: it reports
+  once per maze cleared and at the end. Race uses the normal pace (attacks can arrive a beat
+  late), plus a report when something worth routing happens. The lobby, countdown and results
+  use the normal pace.
+- **Reports ride on polls.** A phone's report is a send whose reply is the fresh snapshot (the
+  transport already treats that reply as the next poll), so a report never costs a second
+  request. Report only when something changed (a turn, a pellet batch, a power-up, a catch), not
+  on a timer; a phone going straight down a corridor has nothing to say.
+- **Small, cheap requests.** One or two Redis commands each; "unchanged" replies stay tiny, as
+  the transport already supports. Ghost aim beats ride on whatever reply goes out next, never as
+  their own request.
+- **Back off when hidden** (the transport already slows hidden tabs) and stop live polling the
+  moment a round ends.
+- **Count it.** The builder measures requests per player per minute for each mode in the
+  end-to-end run and notes the numbers in this doc.
+
 ## Reference
 
 - `docs/maze/looks.html`: the approved mockup of the three looks, the power-up colors and the

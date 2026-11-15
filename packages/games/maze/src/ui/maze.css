@@ -900,23 +900,23 @@ button.mz-row__btn:focus-visible {
     flex: 1 1 0;
     height: auto;
     min-width: 0;
+    align-self: flex-start;
+    aspect-ratio: 21 / 20;
   }
   .mz-lobby__side {
-    width: 360px;
+    flex: 0 0 400px;
+    width: 400px;
     overflow-y: auto;
   }
 }
 @media (min-width: 1240px) {
   .mz-lobby {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-columns: minmax(0, 1fr) 340px;
     gap: 24px;
   }
   .mz-lobby__main {
-    max-width: 840px;
-  }
-  .mz-lobby__side {
-    width: 320px;
+    max-width: 920px;
   }
 }
 

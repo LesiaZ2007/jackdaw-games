@@ -15,6 +15,7 @@ import {
   spotPellets,
   syncGhosts,
   syncSharedGhosts,
+  FRUIT_SLACK_MS,
 } from './shared';
 import { FRUIT_EVERY } from './sim/chomper';
 import { GhostSim, ghostSeed } from './sim/ghosts';
@@ -361,6 +362,16 @@ describe('ghosts, aims and fruit', () => {
     // Repeating the same list is not a new claim.
     s = act(s, WREN, tick(s, WREN, { t: 13_000, fruit: [0] }));
     expect(s.players[WREN]!.fruit).toBe(0);
+  });
+
+  it('a fruit claim reported a moment after the fruit went still counts', () => {
+    let s = setup([WREN, ROOK]);
+    s = pellets(s, WREN, 0, FRUIT_EVERY, 10_000);
+    expect(s.shared!.fruit!.untilMs).toBe(20_000);
+    const late = act(s, ROOK, tick(s, ROOK, { t: 20_000 + FRUIT_SLACK_MS - 100, fruit: [0] }));
+    expect(late.players[ROOK]!.fruit).toBe(1);
+    const tooLate = act(s, ROOK, tick(s, ROOK, { t: 20_000 + FRUIT_SLACK_MS, fruit: [0] }));
+    expect(tooLate.players[ROOK]!.fruit).toBe(0);
   });
 
   it('the table view carries the Shared record', () => {

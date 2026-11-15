@@ -11,6 +11,7 @@ import { decodeBits, encodeBits, pelletIndex } from '../sim/pellets';
 import { POINTS } from '../sim/powers';
 import { canEnter } from '../sim/walker';
 import type { Dir } from '../sim/walker';
+import { SPAWN_SHIELD_MS } from '../sim/chomper';
 import type { FrameModel } from './frame';
 import { OTHERS_DELAY_MS, Runner, SEND_GAP_MS, SEND_TIMEOUT_MS, samplePath } from './runner';
 import type { Track } from './runner';
@@ -240,6 +241,20 @@ describe('samplePath', () => {
     const at = samplePath(m, tr, 2000);
     expect(at).toMatchObject({ x: m.starts[1]![0], y: m.starts[1]![1] });
     expect(Math.hypot(before.x - at.x, before.y - at.y)).toBeGreaterThan(2);
+  });
+
+  it('carries a player on along their corridor past the last report, holding at a wall', () => {
+    const [sx, sy, d] = m.starts[0]!;
+    const n = ahead(m, m.starts[0]!).length;
+    const tr: Track = { turns: [[0, sx, sy, d]], lastT: 0, pos: [sx, sy, d] };
+    // Half a second on: about 3.9 tiles along (or at the wall, if that's nearer).
+    const half = samplePath(m, tr, 500);
+    const along = Math.abs(half.x - sx) + Math.abs(half.y - sy);
+    expect(along).toBeCloseTo(Math.min(n, 3.9), 5);
+    // Long after: held at the wall, never through it.
+    const late = samplePath(m, tr, 5000);
+    expect(Math.abs(late.x - sx) + Math.abs(late.y - sy)).toBeCloseTo(Math.min(n, 7.8 * 1.5), 5);
+    expect(OTHERS_DELAY_MS).toBeLessThanOrEqual(500);
   });
 });
 
@@ -489,6 +504,62 @@ describe('Runner attacks and pellets', () => {
     expect(after).toBe(before - POINTS.pellet);
     expect(encodeOwners(decodeOwners(server.s.shared!.owner, n))).toBe(server.s.shared!.owner);
   });
+
+  it('Shared: two phones agree on every score once caught up (a lost power spot too)', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared', minutes: 1 }, 3);
+    let stolen = 0;
+    const wren = phone(server, WREN, { steer: autopilot });
+    const rook = phone(server, ROOK, { steer: autopilot });
+    // Wren's new power spot pickups reach the server just after Rook's claim of the same spot.
+    const send = (wren.runner as unknown as { sendFn: (a: MazeAction) => Promise<boolean> }).sendFn;
+    (wren.runner as unknown as { sendFn: (a: MazeAction) => Promise<boolean> }).sendFn = (a) => {
+      const known = server.s.players[WREN]!.facts.powers.length;
+      for (const [t, spot, kind] of (a as MazeTick).powers.slice(known)) {
+        const r = server.s.players[ROOK]!;
+        server.apply(ROOK, {
+          type: 'tick',
+          round: 1,
+          seq: r.seq + 1,
+          t: Math.max(r.lastT, t - 1),
+          maze: 0,
+          pos: r.pos,
+          turns: [],
+          eaten: r.eaten,
+          ghosts: r.facts.ghosts,
+          caught: r.caught,
+          fruit: r.facts.fruit,
+          powers: [...r.facts.powers, [t - 1, spot, kind]],
+          lives: 3,
+        });
+        stolen++;
+      }
+      return send(a);
+    };
+    let poll = server.clock;
+    const end = server.s.endAt! + 2_000;
+    while (server.clock < end) {
+      server.clock += 20;
+      server.timers();
+      if (server.clock - poll >= 800) {
+        poll = server.clock;
+        for (const [p, id] of [
+          [wren, WREN],
+          [rook, ROOK],
+        ] as const)
+          p.runner.update(server.table(), server.view(id));
+      }
+      wren.last = wren.runner.frame(20);
+      rook.last = rook.runner.frame(20);
+      await flush();
+    }
+    expect(stolen).toBeGreaterThan(0);
+    wren.runner.update(server.table(), server.view(WREN));
+    rook.runner.update(server.table(), server.view(ROOK));
+    const a = wren.runner.frame(20).scores.map((s) => s.score);
+    const b = rook.runner.frame(20).scores.map((s) => s.score);
+    expect(a).toEqual(b);
+    expect(a).toEqual([server.s.players[WREN]!.score, server.s.players[ROOK]!.score]);
+  }, 60_000);
 });
 
 describe('Runner others and the TV', () => {
@@ -674,4 +745,151 @@ describe('Runner robustness', () => {
     expect(jumps.length).toBeGreaterThan(30);
     expect(Math.max(...jumps)).toBeLessThanOrEqual(0.5);
   });
+});
+
+describe('Runner fruit', () => {
+  /** Steers to the fruit tile and back and forth over it. */
+  const toFruit =
+    (get: () => FrameModel | null) =>
+    (tile: [number, number], dir: Dir | null): Dir | null => {
+      const b = get()?.board;
+      if (!b) return null;
+      const m = b.layout;
+      const dist = bfs(m, [[m.fruit[0], m.fruit[1]]]);
+      let best: Dir | null = null;
+      let score = Infinity;
+      for (const d of DIR_ORDER) {
+        if (!canEnter(m, tile, d, false)) continue;
+        const k = (tile[1] + DIRS[d][1]) * m.w + wrapX(m, tile[0] + DIRS[d][0]);
+        const s = (dist[k]! < 0 ? 99 : dist[k]!) + (dir && d === dir ? 0 : 0.5);
+        if (s < score) {
+          score = s;
+          best = d;
+        }
+      }
+      return best;
+    };
+
+  it('Shared: reaching the server’s fruit claims it, and the server awards it', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared', powerUps: 'Classic' }, 3);
+    server.goTo(0);
+    server.s = {
+      ...server.s,
+      shared: { ...server.s.shared!, fruit: { fruit: 1, atMs: 0, untilMs: 60_000 } },
+    };
+    const p = phone(server, WREN, { steer: toFruit });
+    let eaten = 0;
+    for (let i = 0; i < 40 && server.s.players[WREN]!.fruit === 0; i++)
+      await p.run(500, (f) => {
+        eaten += f.effects.filter((e) => e.kind === 'fruitEaten').length;
+      });
+    expect(server.s.players[WREN]!.fruit).toBe(1);
+    expect(eaten).toBe(1);
+    expect(server.s.shared!.fruit).toBeNull();
+    await p.run(1000);
+    expect(p.last!.board!.fruit).toBeNull();
+    expect(p.last!.scores.find((s) => s.isYou)!.score).toBe(server.s.players[WREN]!.score);
+  });
+
+  it('Solo: the fruit is drawn on the tile where it is picked up', async () => {
+    const server = new Server([WREN], { mode: 'Solo', powerUps: 'Classic' }, 3);
+    const p = phone(server, WREN, { steer: autopilot });
+    let shown: [number, number] | null = null;
+    let got = false;
+    for (let i = 0; i < 120 && !got; i++)
+      await p.run(500, (f) => {
+        const fr = f.board?.fruit;
+        if (fr) shown = [fr.x, fr.y];
+        if (f.effects.some((e) => e.kind === 'fruitEaten')) {
+          got = true;
+          const e = f.effects.find((x) => x.kind === 'fruitEaten') as { x: number; y: number };
+          const me = f.board!.chompers.find((c) => c.isYou)!;
+          // Picked up within 0.6 tiles of where it was drawn.
+          expect(Math.hypot(me.x - e.x, me.y - e.y)).toBeLessThan(0.6 + 0.2);
+        }
+      });
+    const m = layoutOf(server.s, 0);
+    expect(got).toBe(true);
+    expect(shown).toEqual([m.fruit[0], m.fruit[1]]);
+  }, 60_000);
+});
+
+describe('Runner spawn protection', () => {
+  it.each(['Solo', 'Shared'] as const)(
+    '%s: shielded for 2 s from the start, and again after a respawn',
+    async (mode) => {
+      const ids = mode === 'Solo' ? [WREN] : [WREN, ROOK];
+      const server = new Server(ids, { mode }, 3);
+      const p = phone(server, WREN);
+      const mine = () => p.last!.board!.chompers.find((c) => c.isYou)!;
+      await p.run(3000 + 100);
+      expect(mine().shieldMs).toBeGreaterThan(1700);
+      expect(mine().shieldMs).toBeLessThanOrEqual(SPAWN_SHIELD_MS);
+      if (mode === 'Shared') {
+        const rook = p.last!.board!.chompers.find((c) => !c.isYou)!;
+        expect(rook.shieldMs).toBeGreaterThan(0);
+      }
+      await p.run(2000);
+      expect(mine().shieldMs).toBe(0);
+      // Caught: shielded again once it's back.
+      let respawned = false;
+      for (let i = 0; i < 120 && !respawned; i++)
+        await p.run(500, (f) => {
+          if (f.effects.some((e) => e.kind === 'respawn' && e.mine)) respawned = true;
+        });
+      expect(respawned).toBe(true);
+      expect(mine().shieldMs).toBeGreaterThan(SPAWN_SHIELD_MS - 600);
+    },
+    60_000,
+  );
+});
+
+describe('Runner latency', () => {
+  it('your own chomper takes input on the very next frame', async () => {
+    const server = new Server([WREN], { mode: 'Solo' }, 3);
+    const p = phone(server, WREN);
+    await p.run(3000 + 150);
+    const me = () => p.last!.board!.chompers.find((c) => c.isYou)!;
+    const before = me();
+    const back = ({ up: 'down', down: 'up', left: 'right', right: 'left' } as const)[before.dir];
+    p.runner.input(back);
+    server.clock += 17;
+    p.last = p.runner.frame(17);
+    expect(me().dir).toBe(back);
+  });
+
+  it('Shared: a turn is reported as soon as the 450 ms gap allows, never two at once', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared' }, 3);
+    let inFlight = 0;
+    let most = 0;
+    const p = phone(server, WREN, { steer: autopilot });
+    const turnsAt = new Map<number, number>();
+    const send = (p.runner as unknown as { sendFn: (a: MazeAction) => Promise<boolean> }).sendFn;
+    (p.runner as unknown as { sendFn: (a: MazeAction) => Promise<boolean> }).sendFn = async (a) => {
+      inFlight++;
+      most = Math.max(most, inFlight);
+      await flush();
+      const ok = await send(a);
+      inFlight--;
+      return ok;
+    };
+    await p.run(20_000, () => {
+      const ch = (p.runner as unknown as { chomper: { state(): { turns: [number][] } } }).chomper;
+      for (const [t] of ch.state().turns) if (!turnsAt.has(t)) turnsAt.set(t, server.clock);
+    });
+    expect(most).toBe(1);
+    const sends = p.sent.map((s) => s.at);
+    for (let i = 1; i < sends.length; i++)
+      expect(sends[i]! - sends[i - 1]!).toBeGreaterThanOrEqual(SEND_GAP_MS);
+    let checked = 0;
+    for (const [t, seenAt] of turnsAt) {
+      // (Turns in the last moment of the run may not be out yet.)
+      if (t <= 0 || server.clock - seenAt < SEND_GAP_MS + 40) continue;
+      const first = p.sent.find((s) => s.a.turns.some((x) => x[0] === Math.round(t)));
+      expect(first, `turn at ${t}`).toBeDefined();
+      expect(first!.at - seenAt).toBeLessThanOrEqual(SEND_GAP_MS + 40);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(10);
+  }, 60_000);
 });

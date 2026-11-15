@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { ChomperSim, DYING_MS, FRUIT_EVERY, FRUIT_MS } from './chomper';
+import {
+  ChomperSim,
+  DYING_MS,
+  FRUIT_EVERY,
+  FRUIT_MS,
+  FRUIT_REACH,
+  SPAWN_SHIELD_MS,
+  spawnShield,
+} from './chomper';
 import type { ChomperEvent } from './chomper';
 import type { GhostView } from './ghosts';
 import type { MazeLayout } from './layouts';
@@ -341,6 +349,71 @@ describe('ChomperSim', () => {
     expect(off.sim.state().fruit).toBeNull();
     off.until(off.at(20, 5));
     expect(off.events.some((e) => e.kind === 'fruit')).toBe(false);
+  });
+
+  it('claims the server’s fruit (Shared) within 0.6 tiles of the fruit tile', () => {
+    // The corridor's fruit tile is (10, 1).
+    const s = setup({ start: [7, 1, 'right'], fruit: false });
+    s.sim.offerFruit({ fruit: 2, untilMs: 60_000 });
+    let x = 0;
+    while (!s.events.some((e) => e.kind === 'fruit') && s.now() < 2000) {
+      s.step();
+      x = s.sim.position()[0];
+    }
+    expect(s.events.filter((e) => e.kind === 'fruit')).toEqual([{ kind: 'fruit', fruit: 2 }]);
+    // Picked up as it came within reach, not only on the tile center.
+    expect(x).toBeGreaterThan(10 - FRUIT_REACH);
+    expect(x).toBeLessThan(10);
+    expect(s.sim.state().fruit).toBeNull();
+    // Withdrawn by the caller (someone else got it): nothing to pick up.
+    const t = setup({ start: [7, 1, 'right'], fruit: false });
+    t.sim.offerFruit({ fruit: 0, untilMs: 60_000 });
+    t.sim.offerFruit(null);
+    for (let i = 0; i < 60; i++) t.step();
+    expect(t.events.some((e) => e.kind === 'fruit')).toBe(false);
+    // A chomper with its own fruit ignores offers.
+    const own = setup({ start: [7, 1, 'right'] });
+    own.sim.offerFruit({ fruit: 0, untilMs: 60_000 });
+    expect(own.sim.state().fruit).toBeNull();
+  });
+
+  it('picks up fruit when it turns back just short of the fruit tile', () => {
+    const s = setup({ start: [7, 1, 'right'], fruit: false });
+    s.sim.offerFruit({ fruit: 1, untilMs: 60_000 });
+    s.until(() => s.sim.position()[0] >= 9.5);
+    // Reached within reach even if it reverses before the center.
+    expect(s.events).toContainEqual({ kind: 'fruit', fruit: 1 });
+  });
+
+  it('is shielded from ghosts for 2 s after a spawn or respawn', () => {
+    const { sim, g, step, now, events } = setup({ start: [1, 4, 'down'] });
+    sim.respawn(0);
+    g.list = [ghost(0, [1, 4])];
+    while (now() < SPAWN_SHIELD_MS - 20) step();
+    expect(events.some((e) => e.kind === 'caught')).toBe(false);
+    expect(sim.state().shieldUntil).toBe(SPAWN_SHIELD_MS);
+    // It can still eat a frightened ghost meanwhile.
+    g.list = [ghost(1, [1, 4], 'fright')];
+    expect(step()).toContainEqual({ kind: 'ghost', ghost: 1, combo: 0 });
+    g.list = [ghost(0, [1, 4])];
+    while (now() < SPAWN_SHIELD_MS + 20) step();
+    expect(events.filter((e) => e.kind === 'caught')).toEqual([{ kind: 'caught', ghost: 0 }]);
+    // Respawning shields it again, from then.
+    sim.respawn(now());
+    expect(step()).toEqual([]);
+    expect(sim.state().shieldUntil).toBe(now() - 16 + SPAWN_SHIELD_MS);
+  });
+
+  it('a resumed chomper keeps the shield of its last spawn', () => {
+    expect(spawnShield(0, [])).toBe(SPAWN_SHIELD_MS);
+    expect(spawnShield(33_000, [])).toBe(33_000 + SPAWN_SHIELD_MS);
+    expect(spawnShield(0, [5_000, 9_000])).toBe(9_000 + DYING_MS + SPAWN_SHIELD_MS);
+    // A catch on an earlier maze doesn't count.
+    expect(spawnShield(33_000, [30_000])).toBe(33_000 + SPAWN_SHIELD_MS);
+    const { sim, g, step } = setup({ start: [1, 4, 'down'] });
+    sim.resume({ walker: sim.state().walker, shieldUntil: 1_000 });
+    g.list = [ghost(0, [1, 4])];
+    expect(step().some((e) => e.kind === 'caught')).toBe(false);
   });
 
   it('is deterministic for the same inputs and steps', () => {

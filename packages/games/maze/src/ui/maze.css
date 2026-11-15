@@ -39,6 +39,13 @@
   align-items: stretch;
   gap: 6px;
 }
+.mz-cards__top,
+.mz-cards__row {
+  display: contents;
+}
+.mz-card__you {
+  display: none;
+}
 .mz-chip {
   display: flex;
   align-items: center;
@@ -445,15 +452,64 @@
   .mz {
     padding: 6px 8px 8px;
   }
+  /* Phones: the clock and sound on one line, then every score in a single row of dot and number. */
+  .mz-cards {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 5px;
+  }
+  .mz-cards__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .mz-cards__row {
+    display: flex;
+    gap: 4px;
+  }
   .mz-card {
-    flex-basis: 72px;
-    padding: 3px 6px 5px 5px;
+    flex: 1 1 0;
+    max-width: none;
+    grid-template-columns: auto auto;
+    grid-template-areas: 'dot score' 'power power';
+    justify-content: center;
+    column-gap: 4px;
+    padding: 3px 3px 5px;
+  }
+  .mz-card.is-you {
+    flex: 2.2 1 0;
+    grid-template-columns: auto auto auto;
+    grid-template-areas: 'dot you score' 'power power power';
+    padding-inline: 6px;
+  }
+  .mz-card__dot {
+    width: 12px;
+    height: 12px;
+  }
+  .mz-card__name {
+    display: none;
+  }
+  .mz-card__you {
+    grid-area: you;
+    display: inline;
+    font: 800 14px/1 var(--font-plaque);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
   .mz-card__score {
     font-size: 20px;
   }
-  .mz-card__name {
-    font-size: 12px;
+  .mz-card__power {
+    font-size: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .mz-sound {
+    flex: none;
   }
   .mz-lid {
     padding: 20px 18px 18px;

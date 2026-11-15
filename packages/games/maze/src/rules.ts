@@ -120,6 +120,11 @@ export interface PlayerRec {
   banked: number;
   /** Server-side points: the Race finish bonus, steals given and taken. */
   adjust: number;
+  /**
+   * Shared and Race: points lost to catches. Each catch costs up to 200, but never more than
+   * the player had when it was reported, so earlier catches can't eat later points.
+   */
+  lost?: number;
 }
 
 export interface PowerSpot {
@@ -367,14 +372,30 @@ export function mazePoints(m: MazeLayout, eaten: string, facts: MazeFacts): numb
 
 /**
  * A player's score from their facts. Never below 0. In the Shared maze only owned pellets score
- * (`pellets`, settled in shared.ts), not every pellet the phone claimed.
+ * (`pellets`, settled in shared.ts), not every pellet the phone claimed. In Solo a catch costs a
+ * life, not points; elsewhere what catches took (`lost`, see chargeCatches).
  */
 export function scoreOf(s: MazeState, p: PlayerRec): number {
   const here =
     s.options.mode === 'Shared'
       ? p.pellets * POINTS.pellet + factPoints(p.facts)
       : mazePoints(layoutOf(s, p.maze), p.eaten, p.facts);
-  return Math.max(0, p.banked + here + p.caught * POINTS.caught + p.adjust);
+  return Math.max(0, p.banked + here - (p.lost ?? 0) + p.adjust);
+}
+
+/**
+ * What `catches` new catches cost a player who has `score` points before them: 200 each in the
+ * Shared maze and Race, but never more than the player has (nothing in Solo).
+ */
+export function catchCost(mode: Mode, score: number, catches: number): number {
+  if (mode === 'Solo' || catches <= 0) return 0;
+  return Math.min(-POINTS.caught * catches, Math.max(0, score));
+}
+
+/** `next` with the catches it reported since `prev` charged to `lost`. */
+export function chargeCatches(s: MazeState, prev: PlayerRec, next: PlayerRec): PlayerRec {
+  const cost = catchCost(s.options.mode, scoreOf(s, next), next.caught - prev.caught);
+  return cost ? { ...next, lost: (next.lost ?? 0) + cost } : next;
 }
 
 const rescore = (s: MazeState, id: string): MazeState => {
@@ -490,6 +511,7 @@ function freshPlayer(): PlayerRec {
     facts: { ghosts: [], fruit: [], powers: [], caughtAt: [] },
     banked: 0,
     adjust: 0,
+    lost: 0,
   };
 }
 
@@ -710,6 +732,7 @@ function settleOwn(
     pellets: prev.pellets + pelletsNow - pelletsBefore,
     power: powerAt(facts, levelOf(prev.maze), a.t),
   };
+  p = chargeCatches(s, prev, p);
   let out: MazeState = rescore({ ...s, players: { ...s.players, [id]: p } }, id);
 
   if (!solo) {
@@ -982,4 +1005,5 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
 
   bot: (ctx) => mazeBot(ctx),
   botDelayMs: (s) => (s.phase === 'play' ? 900 : 2_000),
+  realTime: true,
 };

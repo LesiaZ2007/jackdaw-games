@@ -293,7 +293,8 @@ describe('Solo', () => {
     s = act(s, WREN, a);
     const p = s.players[WREN]!;
     expect(p.facts.powers).toEqual([[4_000, 0, 'hunt']]);
-    expect(p.score).toBe(50 + 200 + 400 + 800 + 1600 + 100 + 300 - 200);
+    // In Solo a catch costs a life, not points.
+    expect(p.score).toBe(50 + 200 + 400 + 800 + 1600 + 100 + 300);
     expect(p.ghostsEaten).toBe(4);
     expect(p.lives).toBe(2);
     // A second Hunt starts the combo again.
@@ -383,7 +384,7 @@ describe('Solo backstop and combos', () => {
       }),
     );
     const g = POINTS.ghost;
-    expect(s.players[WREN]!.score).toBe(POINTS.power + g[0] + g[1] + g[0] + POINTS.caught);
+    expect(s.players[WREN]!.score).toBe(POINTS.power + g[0] + g[1] + g[0]);
     // Repeating (or dropping) the catch list changes nothing.
     s = act(s, WREN, tick(s, WREN, { t: 10_000, caughtAt: [] }));
     expect(s.players[WREN]!.facts.caughtAt).toEqual([5_500]);
@@ -587,5 +588,60 @@ describe('views', () => {
       expect('seq' in p).toBe(false);
     }
     expect(JSON.stringify(t).length).toBeLessThan(6000);
+  });
+});
+
+describe('final scores', () => {
+  /** The first `k` plain pellets (power spots aside) as bits. */
+  const plainBits = (s: MazeState, k: number): string => {
+    const spots = powerIndexes(layoutOf(s, 0));
+    const b = new Uint8Array(size(s, 0));
+    let n = 0;
+    for (let i = 0; i < b.length && n < k; i++)
+      if (!spots.has(i)) {
+        b[i] = 1;
+        n++;
+      }
+    return encodeBits(b);
+  };
+  const finish = (s: MazeState): MazeState => {
+    let out = s.phase === 'play' ? game.onTimer!(s, 'bell', createRng(1), s.endAt! + 2_000) : s;
+    out = game.onTimer!(out, 'show', createRng(1), out.showBy!);
+    expect(out.phase).toBe('over');
+    return out;
+  };
+  const resultScore = (s: MazeState, id: string): number =>
+    (game.getResult(s)!.reveal as { scores: Record<string, number> }).scores[id]!;
+
+  it('Solo: losing every life keeps the points (a catch costs a life)', () => {
+    let s = setup([WREN], { powerUps: 'Classic' });
+    s = act(s, WREN, tick(s, WREN, { t: 20_000, eaten: plainBits(s, 48), caught: 3, lives: 0 }));
+    s = finish(s);
+    expect(resultScore(s, WREN)).toBe(480);
+    expect(game.getResult(s)!.stats!.rows[0]!.values[0]).toBe(480);
+  });
+
+  it('Race: a catch takes at most what you have, so later pellets still count', () => {
+    let s = setup([WREN, ROOK], { mode: 'Race', powerUps: 'Classic' });
+    s = act(s, WREN, tick(s, WREN, { t: 10_000, eaten: plainBits(s, 30) }));
+    s = act(s, WREN, tick(s, WREN, { t: 12_000, caught: 1 }));
+    expect(s.players[WREN]!.score).toBe(100);
+    s = act(s, WREN, tick(s, WREN, { t: 14_000, caught: 3 }));
+    expect(s.players[WREN]!.score).toBe(0);
+    s = act(s, WREN, tick(s, WREN, { t: 30_000, eaten: plainBits(s, 50) }));
+    expect(s.players[WREN]!.score).toBe(200);
+    s = finish(s);
+    expect(resultScore(s, WREN)).toBe(200);
+  });
+
+  it('Shared: the same, with owned pellets', () => {
+    let s = setup([WREN, ROOK], { mode: 'Shared', powerUps: 'Classic' });
+    s = act(s, WREN, tick(s, WREN, { t: 10_000, eaten: plainBits(s, 30) }));
+    s = act(s, WREN, tick(s, WREN, { t: 12_000, caught: 4 }));
+    expect(s.players[WREN]!.score).toBe(0);
+    s = act(s, WREN, tick(s, WREN, { t: 30_000, eaten: plainBits(s, 45) }));
+    expect(s.players[WREN]!.score).toBe(150);
+    s = finish(s);
+    expect(resultScore(s, WREN)).toBe(150);
   });
 });

@@ -1,8 +1,8 @@
 import { botSlips } from '@jackdaw/engine';
 import type { BotContext, BotLevel } from '@jackdaw/engine';
 import type { MazeAction, MazePlayerView, MazeTableView } from './rules';
-import { AIM_MS, spotPellets, takenBits } from './shared';
-import { ChomperSim, DYING_MS } from './sim/chomper';
+import { AIM_MS, claimList, sharedFruitAt, spotPellets, takenBits } from './shared';
+import { ChomperSim, DYING_MS, spawnShield } from './sim/chomper';
 import type { Turn } from './sim/chomper';
 import { GhostSim, ghostSeed } from './sim/ghosts';
 import type { GhostCheckpoint, GhostEvent, GhostInput, GhostView } from './sim/ghosts';
@@ -228,6 +228,7 @@ export function mazeBot(
     walker: walkerAt(m, rec.pos),
     power: rec.power && rec.power.untilMs > from ? rec.power : null,
     dyingUntil: lastDead !== undefined ? lastDead + DYING_MS : 0,
+    shieldUntil: spawnShield(rec.mazeAt, facts.caughtAt),
     ate: had.reduce((a, b) => a + b, 0),
     fruitN: facts.fruit.length,
   });
@@ -351,13 +352,18 @@ export function mazeBot(
       chomper.respawn(t);
       deadUntil = 0;
     }
+    if (shared)
+      chomper.offerFruit(!claimedFruit && sharedFruitAt(tv.shared, me, t, -1) ? sharedFruit : null);
     for (const e of chomper.step(dt, t)) {
       if (e.kind === 'power') {
         const spot = spotAt.indexOf(e.i);
         if (spot >= 0 && powersOut.length < 32) powersOut.push([t, spot, e.power]);
         if (e.power === 'hunt' && !shared) input.events.push(fright(t));
       } else if (e.kind === 'fruit') {
-        if (fruitOut.length < 16) fruitOut.push(e.fruit);
+        if (sharedFruit) {
+          claimedFruit = true;
+          fruitOut = claimList(facts.fruit, fruitSeen, sharedFruit.fruit);
+        } else if (fruitOut.length < 16) fruitOut.push(e.fruit);
       } else if (e.kind === 'ghost') {
         if (ghostsOut.length < 64) ghostsOut.push([t, e.ghost]);
         trace?.eat?.(
@@ -373,22 +379,6 @@ export function mazeBot(
         if (solo) lives--;
         deadUntil = t + DYING_MS;
       } else if (e.kind === 'cleared' && !shared) finishMs = t;
-    }
-    if (sharedFruit && !claimedFruit && deadUntil === 0) {
-      const c = chomper.center();
-      if (
-        c &&
-        c.tile[0] === m.fruit[0] &&
-        c.tile[1] === m.fruit[1] &&
-        t >= sharedFruit.atMs &&
-        t < sharedFruit.untilMs &&
-        fruitSeen < 16
-      ) {
-        claimedFruit = true;
-        fruitOut = [...facts.fruit];
-        while (fruitOut.length < fruitSeen) fruitOut.push(0);
-        fruitOut.push(sharedFruit.fruit);
-      }
     }
     if (lives <= 0 || finishMs !== undefined) break;
   }

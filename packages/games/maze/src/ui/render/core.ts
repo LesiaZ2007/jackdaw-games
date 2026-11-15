@@ -177,6 +177,10 @@ function drawGhost(
   ctx.restore();
 }
 
+/** A shielded chomper's blink: dim for 120 ms of every 240 ms while the shield lasts. */
+export const shieldBlink = (shieldMs: number): boolean =>
+  shieldMs > 0 && Math.floor(shieldMs / 120) % 2 === 1;
+
 function drawChomper(
   ctx: CanvasRenderingContext2D,
   st: LookStyle,
@@ -232,6 +236,8 @@ function drawChomper(
   const col = p && !blink ? st.power[p.kind] : base;
   ctx.globalAlpha = c.alpha;
   if (p?.kind === 'phase') ctx.globalAlpha = c.alpha * (0.45 + 0.25 * Math.sin(ts * 30));
+  // Just spawned: blink while the ghosts can't catch it.
+  if (shieldBlink(c.shieldMs)) ctx.globalAlpha *= 0.25;
   orient(ctx, c.dir);
   const m = 0.06 + 0.6 * Math.abs(Math.sin(c.mouth));
   const sc = p?.kind === 'hunt' ? 1.12 + 0.04 * Math.sin(ts * 14) : 1;
@@ -259,20 +265,31 @@ function drawChomper(
   }
 
   if (shared) {
+    const tag = tagPaint(st, c.colorIndex);
     ctx.save();
     ctx.shadowBlur = 0;
-    ctx.font = `800 ${Math.max(12, T * 0.75)}px ${FONT}`;
+    ctx.font = `800 ${Math.max(12, T * (c.isYou ? 0.95 : 0.85))}px ${FONT}`;
     ctx.textAlign = 'center';
-    ctx.globalAlpha = c.isYou ? 1 : 0.75 * Math.max(c.alpha, 0.7);
-    ctx.lineWidth = 4;
+    ctx.globalAlpha = c.isYou ? 1 : 0.9;
+    ctx.lineWidth = Math.max(3, T * 0.32);
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = st.textStroke;
+    ctx.strokeStyle = tag.stroke;
     const label = c.isYou ? 'YOU' : c.name.toUpperCase();
     ctx.strokeText(label, cx, cy - R - 5);
-    ctx.fillStyle = st.glow || !c.isYou ? base : st.ink;
+    ctx.fillStyle = tag.fill;
     ctx.fillText(label, cx, cy - R - 5);
     ctx.restore();
   }
+}
+
+/**
+ * A name tag's colors (the YOU tag too), readable on every look (2026-11-14: "can't see a black
+ * 'you' label"): ink with a thick paper outline on Printed; the player's own bright color with
+ * a dark outline on the dark looks.
+ */
+export function tagPaint(st: LookStyle, colorIndex: number): { fill: string; stroke: string } {
+  if (st.id === 'Printed') return { fill: st.ink, stroke: st.bg };
+  return { fill: colorOf(st.players, colorIndex), stroke: st.textStroke };
 }
 
 function drawBanner(

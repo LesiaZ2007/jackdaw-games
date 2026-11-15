@@ -54,6 +54,8 @@ export interface Session {
   rngState: RngState;
   /** When the game last moved (an action, a timer or a bot), so bots wait a moment after it. */
   movedAt?: number;
+  /** Real-time games (GameModule.realTime): when each bot last moved, by id. */
+  botAt?: Record<string, number>;
   /** Bots whose move the game refused at this seq: they sit it out until the game moves on. */
   botFailed?: { seq: number; ids: string[] };
   /** The game's timer threw at this seq: it isn't tried again until the game moves on. */
@@ -905,7 +907,12 @@ function botDelay(game: AnyGameModule, session: Session): number {
  * from that bot's own view at `now`. `rng` is where the decision left the session's rng, so the
  * move is applied with the same draws. Null when no bot has anything to do.
  */
-function botMove(lobby: Lobby, ctx: Ctx): { id: string; action: unknown; rng: Rng } | null {
+function botMove(
+  lobby: Lobby,
+  ctx: Ctx,
+  /** Only ask this bot (a real-time game's bot whose moment has come). */
+  only?: string,
+): { id: string; action: unknown; rng: Rng } | null {
   const session = lobby.session;
   if (lobby.status !== 'in_game' || !session) return null;
   const game = ctx.games[session.gameId];
@@ -914,7 +921,7 @@ function botMove(lobby: Lobby, ctx: Ctx): { id: string; action: unknown; rng: Rn
   const level = lobby.botLevel ?? DEFAULT_BOT_LEVEL;
   const failed = session.botFailed?.seq === session.seq ? session.botFailed.ids : [];
   const tableView = game.getTableView(session.state);
-  for (const id of session.playerIds) {
+  for (const id of only !== undefined ? [only] : session.playerIds) {
     if (!bots.has(id) || failed.includes(id)) continue;
     const rng = createRng(session.rngState);
     const action = game.bot({
@@ -961,7 +968,8 @@ function nextBotAt(lobby: Lobby, ctx: Pick<Ctx, 'games'> & { now?: number }): nu
   const session = lobby.session;
   if (lobby.status !== 'in_game' || !session) return null;
   const game = ctx.games[session.gameId];
-  if (!game?.bot || !lobby.players.some((p) => p.bot)) return null;
+  // A real-time game's bots move on whatever read comes along (see runRealTimeBots).
+  if (!game?.bot || game.realTime || !lobby.players.some((p) => p.bot)) return null;
   const at = (session.movedAt ?? session.startedAt) + botDelay(game, session);
   return botHasMoveAt(lobby, ctx, Math.max(at, ctx.now ?? 0)) ? at : null;
 }
@@ -986,7 +994,8 @@ export function nextTimerAt(
 }
 
 /**
- * Fires every game timer that is due, then lets one bot move if its moment has come (there are no
+ * Fires every game timer that is due, then lets one bot move if its moment has come (in a
+ * real-time game, every bot whose own moment has come; see GameModule.realTime) (there are no
  * alarms on Vercel, so the runtime calls this on reads and writes). Each counts as a move: the seq
  * goes up, the game may announce it, and the game can end. Returns the same lobby when nothing was
  * due.
@@ -1024,17 +1033,76 @@ export function markTimerFailed(lobby: Lobby): Lobby {
  * until the game moves on, so it can't stall the lobby by trying again on every read.
  */
 function runBot(lobby: Lobby, ctx: Ctx): Lobby {
+  const session = lobby.session;
+  if (lobby.status === 'in_game' && session && ctx.games[session.gameId]?.realTime)
+    return runRealTimeBots(lobby, ctx);
   const at = nextBotAt(lobby, ctx);
   if (at === null || at > ctx.now) return lobby;
   const move = botMove(lobby, ctx);
   if (!move) return lobby;
+  return playBot(lobby, move, ctx);
+}
+
+/** At most this many real-time bot moves in one go (each bot moves at most once per go). */
+const BOT_BURST = 8;
+
+/**
+ * A real-time game's bot's wait after its own last move: the game's pace times 0.8 to 1.8,
+ * drawn from the session's rng state, the bot's seat and that last move, so other players'
+ * moves don't redraw it and every read agrees on when the bot moves.
+ */
+function ownBotDelay(game: AnyGameModule, session: Session, id: string, since: number): number {
+  const pace = game.botDelayMs;
+  const base = typeof pace === 'function' ? pace(session.state) : (pace ?? BOT_DELAY_MS);
+  const seat = session.playerIds.indexOf(id) + 1;
+  const u = createRng(mixSeed(session.rngState, Math.imul(seat, 1_000_003) + since)).next();
+  return Math.round(base * (0.8 + u));
+}
+
+/**
+ * Real-time games: every bot whose own moment has come moves now, the one that has waited
+ * longest first (then seat order), each from the game as the bots before it left it. A bot with
+ * nothing to do, or whose move is refused, is passed over.
+ */
+function runRealTimeBots(lobby: Lobby, ctx: Ctx): Lobby {
+  const start = lobby.session!;
+  const game = gameFor(ctx, start.gameId);
+  if (!game.bot) return lobby;
+  const bots = new Set(lobby.players.filter((p) => p.bot).map((p) => p.id));
+  const due = start.playerIds
+    .filter((id) => bots.has(id))
+    .map((id) => {
+      const since = start.botAt?.[id] ?? start.startedAt;
+      return { id, at: since + ownBotDelay(game, start, id, since) };
+    })
+    .filter((b) => b.at <= ctx.now)
+    .sort((a, b) => a.at - b.at)
+    .slice(0, BOT_BURST);
+  let out = lobby;
+  for (const { id } of due) {
+    const session = out.session;
+    if (out.status !== 'in_game' || !session || session.id !== start.id) break;
+    const move = botMove(out, ctx, id);
+    if (!move) continue;
+    out = playBot(out, move, ctx);
+  }
+  return out;
+}
+
+/** Plays a bot's move; a refused one benches that bot until the game moves on. */
+function playBot(lobby: Lobby, move: { id: string; action: unknown; rng: Rng }, ctx: Ctx): Lobby {
   const session = lobby.session!;
   const game = gameFor(ctx, session.gameId);
   try {
     const action = game.actionSchema.parse(move.action);
     const state = game.applyAction(session.state, move.id, action, move.rng, ctx.now);
     if (state === session.state) throw new Error('nothing changed');
-    return finishIfOver(moved(lobby, game, state, move.rng.state, ctx), ctx);
+    let next = moved(lobby, game, state, move.rng.state, ctx);
+    if (game.realTime) {
+      const s = next.session!;
+      next = { ...next, session: { ...s, botAt: { ...s.botAt, [move.id]: ctx.now } } };
+    }
+    return finishIfOver(next, ctx);
   } catch {
     const ids = session.botFailed?.seq === session.seq ? session.botFailed.ids : [];
     return touch(

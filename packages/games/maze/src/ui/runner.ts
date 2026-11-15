@@ -1,6 +1,6 @@
 import { walkerAt } from '../bot';
 import type { MazeOptions } from '../options';
-import { LIVES, factPoints, mazePoints } from '../rules';
+import { LIVES, catchCost, factPoints, mazePoints } from '../rules';
 import type {
   MazeAction,
   MazeFacts,
@@ -12,6 +12,8 @@ import type {
 } from '../rules';
 import {
   AIM_MS,
+  claimList,
+  sharedFruitAt,
   decodeOwners,
   ghostCheckpoints,
   spotPellets,
@@ -20,7 +22,7 @@ import {
   syncSharedGhosts,
 } from '../shared';
 import type { GhostCheckpoints } from '../shared';
-import { ChomperSim, DYING_MS, MAGNET_RANGE } from '../sim/chomper';
+import { ChomperSim, DYING_MS, MAGNET_RANGE, SPAWN_SHIELD_MS, spawnShield } from '../sim/chomper';
 import type { ChomperEvent, ChomperParams, Turn } from '../sim/chomper';
 import { GhostSim, ghostSeed } from '../sim/ghosts';
 import type { GhostEvent, GhostInput } from '../sim/ghosts';
@@ -74,10 +76,15 @@ export const SEND_GAP_MS = 450;
 export const RACE_PACE_MS = 1_500;
 /** A maze clear the server hasn't shown yet is sent again after this long. */
 export const CLEAR_RESEND_MS = 1_500;
-/** The Shared maze's live poll. */
-export const LIVE_POLL_MS = 800;
-/** Others are drawn this far behind real time. */
-export const OTHERS_DELAY_MS = 1.25 * LIVE_POLL_MS;
+/** The Shared maze's live poll (the platform's floor). */
+export const LIVE_POLL_MS = 600;
+/** Solo's poll while a maze is being played: slow, as nothing is needed from the server. */
+export const SOLO_POLL_MS = 7_500;
+/**
+ * Others are drawn this far behind real time (2026-11-14 playtest: about a second felt laggy).
+ * Past their last report they are carried on along their corridor (`samplePath`).
+ */
+export const OTHERS_DELAY_MS = 450;
 /** A pellet someone else took goes after this long even if their chomper isn't seen at it. */
 export const HIDE_MAX_MS = 2_500;
 /** Banners stay up this long. */
@@ -93,9 +100,13 @@ const DT = 50 / 3;
 /** After a stall (a hidden tab), at most this much is simulated; the rest is skipped. */
 const MAX_CATCHUP_MS = 2_000;
 /** A reported path is carried on past its last point for at most this long. */
-const EXTRAPOLATE_MS = 250;
+const EXTRAPOLATE_MS = 1_500;
 /** A correction to where another player is drawn fades out over this long. */
 const EASE_MS = 200;
+/** A correction fades out at most this fast, in tiles per ms (0.3 tile per 60 Hz frame). */
+const EASE_MAX_PER_MS = 0.018;
+/** A move bigger than this between frames (a respawn, a tunnel) is drawn at once, not eased. */
+const SNAP_TILES = 4;
 /** Mouth phase per tile moved (the demo's 16 per second at 7.8 tiles per second). */
 const MOUTH_PER_TILE = 16 / 7.8;
 const TRAIL_LEN = 7;
@@ -225,6 +236,14 @@ const copyFacts = (f: MazeFacts): MazeFacts => ({
 const layoutFor = (tv: MazeTableView, maze: number): MazeLayout =>
   MAZE_LAYOUTS[tv.layouts[maze] ?? tv.layouts[0] ?? 0]!;
 
+/** What a phone had done on its maze at some moment (for its own score card). */
+interface Snap {
+  eaten: Uint8Array;
+  facts: MazeFacts;
+  caught: number;
+  cleared: boolean;
+}
+
 interface Other {
   maze: number;
   track: Track;
@@ -241,6 +260,8 @@ interface Other {
   raw: [number, number] | null;
   ease: [number, number];
   easeAt: number;
+  /** Server ms until which they are drawn shielded after being seen caught. */
+  shieldUntil?: number;
 }
 
 type Effect = FrameEffect extends infer E ? (E extends unknown ? Omit<E, 'key'> : never) : never;
@@ -320,6 +341,19 @@ export class Runner {
   private lastFailed = false;
   private sentAny = false;
 
+  /**
+   * One score for everyone: your own card shows the server's score plus only what your reports
+   * it hasn't taken in yet add (`acked` is what you had done when you sent the last report the
+   * server's view covers; `sentSnaps` the reports still out, by seq).
+   */
+  private acked: Snap = {
+    eaten: new Uint8Array(0),
+    facts: emptyFacts(),
+    caught: 0,
+    cleared: false,
+  };
+  private sentSnaps = new Map<number, Snap>();
+
   private seenAttacks = new Set<number>();
   private effects: FrameEffect[] = [];
   private effectKey = 0;
@@ -362,6 +396,7 @@ export class Runner {
         if (view.seq > 0 && !this.sentAny) this.startMaze(rec.maze, false);
       }
     }
+    if (view && rec && rec.maze === this.maze) this.ackUpTo(view.seq);
     if (table.mode === 'Shared') this.syncOwners(now);
     this.syncOthers(now);
     if (view) this.applyInbox(view);
@@ -520,6 +555,7 @@ export class Runner {
         walker: walkerAt(m, rec.pos),
         power: rec.power && rec.power.untilMs > rec.lastT ? rec.power : null,
         dyingUntil,
+        shieldUntil: spawnShield(this.mazeAt, this.facts.caughtAt),
         ate: this.myEaten.reduce((a, b) => a + b, 0),
         fruitN: this.facts.fruit.length,
       });
@@ -530,6 +566,9 @@ export class Runner {
       ch.respawn(this.mazeAt);
     }
     if (this.queued) ch.input(this.queued);
+    // The server's score covers everything up to here (a fresh maze, or the resumed report).
+    this.sentSnaps.clear();
+    this.acked = this.snap();
   }
 
   /** Solo and Race after a refresh: the ghost inputs again, from the facts and turns. */
@@ -606,8 +645,8 @@ export class Runner {
           this.fx({ kind: 'respawn', by: this.me, mine: true });
         } else break;
       }
+      if (shared) this.offerFruit(t);
       for (const e of ch.step(dt, t)) this.onEvent(e, t, g, now);
-      if (shared) this.claimFruit(t, tMs);
       if (this.cleared) break;
     }
     const fruit = ch.state().fruit;
@@ -674,7 +713,12 @@ export class Runner {
         break;
       }
       case 'fruit': {
-        if (this.facts.fruit.length < 16) this.facts.fruit.push(e.fruit);
+        if (shared) {
+          const sh = this.table.shared;
+          if (!sh?.fruit) break;
+          this.fruitClaimed = sh.fruit.atMs;
+          this.facts.fruit = claimList(this.facts.fruit, sh.fruitSeen[me] ?? 0, e.fruit);
+        } else if (this.facts.fruit.length < 16) this.facts.fruit.push(e.fruit);
         this.fx({
           kind: 'fruitEaten',
           x: this.m.fruit[0],
@@ -723,30 +767,14 @@ export class Runner {
     }
   }
 
-  /** Shared: claims the server's fruit when the chomper stands on it while it's up. */
-  private claimFruit(t: number, tMs: number): void {
+  /**
+   * Shared: puts the server's fruit in front of the chomper while it's up and not yet claimed
+   * here, so reaching it (within FRUIT_REACH) is a claim; the server gives it to the first.
+   */
+  private offerFruit(t: number): void {
     const sh = this.table.shared;
-    const f = sh?.fruit;
-    const ch = this.chomper;
-    if (!sh || !f || !ch || this.fruitClaimed === f.atMs || this.deadUntil > 0) return;
-    if (t < f.atMs || t >= f.untilMs || tMs >= f.untilMs) return;
-    const c = ch.center();
-    if (!c || c.tile[0] !== this.m.fruit[0] || c.tile[1] !== this.m.fruit[1]) return;
-    const seen = sh.fruitSeen[this.me!] ?? 0;
-    if (seen >= 16) return;
-    this.fruitClaimed = f.atMs;
-    const list = [...this.facts.fruit];
-    while (list.length < seen) list.push(0);
-    list.push(f.fruit);
-    this.facts.fruit = list.slice(0, 16);
-    this.fx({
-      kind: 'fruitEaten',
-      x: this.m.fruit[0],
-      y: this.m.fruit[1],
-      fruit: f.fruit,
-      points: FRUIT[f.fruit]?.pts ?? 0,
-      by: this.me!,
-    });
+    const f = sharedFruitAt(sh, this.me!, t, this.fruitClaimed);
+    this.chomper?.offerFruit(f ? { fruit: f.fruit, untilMs: f.untilMs } : null);
   }
 
   /** Shared: power spots follow the server (they come back as whatever it picked). */
@@ -820,6 +848,7 @@ export class Runner {
       };
       if (p.caught > o.caught) {
         o.dyingAt = now;
+        o.shieldUntil = now + DYING_MS + SPAWN_SHIELD_MS;
         if (this.table.mode === 'Shared')
           this.fx({ kind: 'caught', x: o.at[0], y: o.at[1], by: p.id, mine: false });
       }
@@ -841,13 +870,18 @@ export class Runner {
       o.easeAt = now;
       if (o.raw) {
         const jump = Math.hypot(s.x - o.raw[0], s.y - o.raw[1]);
-        if (jump > 0.4 && jump < 3.2 && o.dyingAt === null) {
+        if (jump > 0.4 && jump < SNAP_TILES && o.dyingAt === null) {
           o.ease = [o.ease[0] + o.raw[0] - s.x, o.ease[1] + o.raw[1] - s.y];
         }
       }
       o.raw = [s.x, s.y];
-      const k = Math.max(0, 1 - dtE / EASE_MS);
-      o.ease = [o.ease[0] * k, o.ease[1] * k];
+      // Fade the correction out, but never faster than EASE_MAX_PER_MS (no visible jumps).
+      const size = Math.hypot(o.ease[0], o.ease[1]);
+      if (size > 0) {
+        const fade = size * Math.min(1, dtE / EASE_MS);
+        const k = (size - Math.min(fade, EASE_MAX_PER_MS * dtE)) / size;
+        o.ease = [o.ease[0] * k, o.ease[1] * k];
+      }
       if (Math.abs(o.ease[0]) + Math.abs(o.ease[1]) < 1e-3) o.ease = [0, 0];
       const dx = s.x + o.ease[0];
       const dy = s.y + o.ease[1];
@@ -1006,7 +1040,10 @@ export class Runner {
     };
     let p: Promise<boolean>;
     try {
-      p = this.sendFn(this.buildTick(tMs));
+      const tick = this.buildTick(tMs);
+      this.sentSnaps.set(tick.seq, this.snap());
+      if (this.sentSnaps.size > 64) this.sentSnaps.delete(this.sentSnaps.keys().next().value!);
+      p = this.sendFn(tick);
     } catch {
       p = Promise.resolve(false);
     }
@@ -1056,26 +1093,46 @@ export class Runner {
 
   /** Your score as the server will count it once it has your latest report. */
   private predicted(rec: MazePublicPlayer): number {
-    const v = this.view;
-    if (!v || rec.maze !== this.maze) return rec.score;
-    let diff: number;
-    if (this.table.mode === 'Shared') {
-      const sh = this.table.shared;
-      const ids = this.table.players.map((p) => p.id);
-      const mySeat = ids.indexOf(rec.id) + 1;
-      const owners = sh ? decodeOwners(sh.owner, this.n) : new Uint8Array(this.n);
-      let mine = 0;
-      for (let i = 0; i < this.n; i++)
-        if (this.myEaten[i] && !this.isSpot.has(i) && (!owners[i] || owners[i] === mySeat)) mine++;
-      diff = (mine - rec.pellets) * POINTS.pellet + factPoints(this.facts) - factPoints(v.facts);
-    } else {
-      diff =
-        mazePoints(this.m, encodeBits(this.myEaten), this.facts) -
-        mazePoints(this.m, v.eaten, v.facts) +
-        (this.cleared ? POINTS.mazeClear : 0);
-    }
-    diff += (this.caught - v.caught) * POINTS.caught;
-    return Math.max(0, rec.score + diff);
+    if (rec.maze !== this.maze || !this.chomper) return rec.score;
+    const now = this.snap();
+    const gain = this.localPoints(now, rec.id) - this.localPoints(this.acked, rec.id);
+    const score = Math.max(0, rec.score + gain);
+    return score - catchCost(this.table.mode, score, now.caught - this.acked.caught);
+  }
+
+  /** What this phone has done on this maze so far (what a report would carry). */
+  private snap(): Snap {
+    return {
+      eaten: this.myEaten.slice(),
+      facts: copyFacts(this.facts),
+      caught: this.caught,
+      cleared: !!this.cleared,
+    };
+  }
+
+  /**
+   * Points a snapshot is worth on this maze, as the server counts them (Shared: pellets someone
+   * else owns don't count). Only differences between two snapshots are used.
+   */
+  private localPoints(s: Snap, me: string): number {
+    if (this.table.mode !== 'Shared')
+      return mazePoints(this.m, encodeBits(s.eaten), s.facts) + (s.cleared ? POINTS.mazeClear : 0);
+    const sh = this.table.shared;
+    const mySeat = this.table.players.findIndex((p) => p.id === me) + 1;
+    const owners = sh ? decodeOwners(sh.owner, this.n) : new Uint8Array(this.n);
+    let mine = 0;
+    for (let i = 0; i < this.n; i++)
+      if (s.eaten[i] && !this.isSpot.has(i) && (!owners[i] || owners[i] === mySeat)) mine++;
+    return mine * POINTS.pellet + factPoints(s.facts);
+  }
+
+  /** The server has taken in every report up to `seq`: its score now covers them. */
+  private ackUpTo(seq: number): void {
+    let best = -1;
+    for (const k of this.sentSnaps.keys()) if (k <= seq && k > best) best = k;
+    if (best < 0) return;
+    this.acked = this.sentSnaps.get(best)!;
+    for (const k of [...this.sentSnaps.keys()]) if (k <= best) this.sentSnaps.delete(k);
   }
 
   private powerOf(p: { kind: PowerKind; untilMs: number } | null, tMs: number, maze: number) {
@@ -1278,6 +1335,7 @@ export class Runner {
           frozenMs,
           foggedMs,
           dying: st.dyingUntil > this.simT ? 1 - (st.dyingUntil - this.simT) / DYING_MS : null,
+          shieldMs: st.dyingUntil > this.simT ? 0 : Math.max(0, st.shieldUntil - this.simT),
           trail: [...this.trail],
         });
         continue;
@@ -1299,6 +1357,11 @@ export class Runner {
         frozenMs: 0,
         foggedMs: 0,
         dying: o.dyingAt !== null ? Math.min(1, (this.now() - o.dyingAt) / DYING_MS) : null,
+        shieldMs: Math.max(
+          0,
+          (o.shieldUntil ?? 0) - this.now(),
+          tMs >= 0 ? SPAWN_SHIELD_MS - Math.max(0, tMs - OTHERS_DELAY_MS) : 0,
+        ),
         trail: [...o.trail],
       });
     }

@@ -1,7 +1,7 @@
 import type { Dir } from '../sim/walker';
 
-/** Room kept around the maze for its frame, in CSS pixels per side. */
-export const FRAME_PAD = 14;
+/** Room kept around the maze for its frame (padding, border and the printed rule), per side. */
+export const FRAME_PAD = 18;
 
 /**
  * The largest whole tile size at which a `cols × rows` maze fits in a `w × h` space with its
@@ -10,6 +10,23 @@ export const FRAME_PAD = 14;
 export function fitTile(w: number, h: number, cols: number, rows: number, pad = FRAME_PAD): number {
   if (cols <= 0 || rows <= 0) return 4;
   return Math.max(4, Math.floor(Math.min((w - 2 * pad) / cols, (h - 2 * pad) / rows)));
+}
+
+/**
+ * Where the maze sits in a `w × h` stage: the biggest whole tile that fits, the canvas size, and
+ * the offsets that center the framed maze both ways. The frame always stays inside the stage.
+ */
+export function mazeBox(w: number, h: number, cols: number, rows: number, pad = FRAME_PAD) {
+  const tile = fitTile(w, h, cols, rows, pad);
+  const width = cols * tile;
+  const height = rows * tile;
+  return {
+    tile,
+    width,
+    height,
+    left: Math.round((w - width) / 2),
+    top: Math.round((h - height) / 2),
+  };
 }
 
 /** A swipe's direction once it has moved at least `min` pixels, or null. */

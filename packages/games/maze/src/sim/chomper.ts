@@ -20,6 +20,8 @@ export interface ChomperState {
   fogUntil: number;
   /** Caught and playing the dying animation until then; the caller respawns it. */
   dyingUntil: number;
+  /** Just spawned: ghosts can't catch it until then (SPAWN_SHIELD_MS). */
+  shieldUntil: number;
   /** The bonus fruit on the board (an index into FRUIT), when fruit is on. */
   fruit: { fruit: number; untilMs: number } | null;
   turns: Turn[];
@@ -51,8 +53,20 @@ export interface ChomperParams {
   id?: string;
 }
 
+/** After a spawn or respawn, ghosts can't catch a chomper for this long (2026-11-14 playtest). */
+export const SPAWN_SHIELD_MS = 2000;
 /** How long a caught chomper is out before the caller respawns it. */
 export const DYING_MS = 1300;
+
+/**
+ * Until when a chomper resumed from a report is shielded: its last spawn was the maze start
+ * (round ms `mazeAt`) or the respawn after its last catch.
+ */
+export function spawnShield(mazeAt: number, caughtAt: readonly number[]): number {
+  const last = caughtAt[caughtAt.length - 1];
+  const spawned = last !== undefined && last + DYING_MS > mazeAt ? last + DYING_MS : mazeAt;
+  return spawned + SPAWN_SHIELD_MS;
+}
 /** Fruit pops up after every this many pellets this chomper eats. */
 export const FRUIT_EVERY = 60;
 export const FRUIT_MS = 10_000;
@@ -62,6 +76,8 @@ export const MAGNET_RANGE = 2.8;
 export const FROZEN_SPEED = 0.3;
 /** Touch distance between a chomper and a ghost, in tiles, on each axis. */
 const HIT = 0.6;
+/** The fruit is picked up within this many tiles of its tile's center (forgiving on purpose). */
+export const FRUIT_REACH = 0.6;
 /** An eaten ghost is ignored until it shows up as eyes, or this long at most. */
 const EATEN_GRACE_MS = 2000;
 
@@ -93,6 +109,7 @@ export class ChomperSim {
   private frozenUntil = 0;
   private fogUntil = 0;
   private dyingUntil = 0;
+  private shieldUntil = 0;
   private fruit: ChomperState['fruit'] = null;
   private fruitN = 0;
   private ateCount = 0;
@@ -151,6 +168,16 @@ export class ChomperSim {
     this.left++;
   }
 
+  /**
+   * The Shared maze's fruit, which the server owns: what is on the board right now (null when
+   * none, or once this chomper has claimed it). Reaching it gives a `fruit` event, the claim.
+   * Only for a chomper made with `fruit: false`.
+   */
+  offerFruit(f: { fruit: number; untilMs: number } | null): void {
+    if (this.fruitOn) return;
+    this.fruit = f ? { ...f } : null;
+  }
+
   /** Whether pellet `i` is still on the board. */
   has(i: number): boolean {
     return this.gone[i] === 0;
@@ -169,6 +196,8 @@ export class ChomperSim {
     walker: Walker;
     power?: ChomperState['power'];
     dyingUntil?: number;
+    /** Still shielded from its last spawn until then (see spawnShield). */
+    shieldUntil?: number;
     ate?: number;
     fruitN?: number;
   }): void {
@@ -176,6 +205,7 @@ export class ChomperSim {
     this.w = { tile: [w.tile[0], w.tile[1]], dir: w.dir, next: null, prog: w.prog };
     this.power = o.power ? { ...o.power } : null;
     this.dyingUntil = o.dyingUntil ?? 0;
+    this.shieldUntil = o.shieldUntil ?? 0;
     this.ateCount = o.ate ?? 0;
     this.fruitN = o.fruitN ?? 0;
     this.lastDir = w.dir;
@@ -208,6 +238,7 @@ export class ChomperSim {
     this.w = { tile: [x, y], dir: d, next: null, prog: 0 };
     this.power = null;
     this.dyingUntil = 0;
+    this.shieldUntil = tMs + SPAWN_SHIELD_MS;
     this.combo = 0;
     this.ateGhosts.clear();
     this.turns.push([tMs, x, y, d]);
@@ -254,6 +285,7 @@ export class ChomperSim {
         if (Math.hypot(Math.min(dx, this.m.w - dx), y - py) < MAGNET_RANGE) this.eat(i, tMs, ev);
       }
     }
+    this.reachFruit(ev);
     this.contact(tMs, ev);
     if (this.left === 0 && !this.cleared) {
       this.cleared = true;
@@ -271,6 +303,7 @@ export class ChomperSim {
       frozenUntil: this.frozenUntil,
       fogUntil: this.fogUntil,
       dyingUntil: this.dyingUntil,
+      shieldUntil: this.shieldUntil,
       fruit: this.fruit ? { ...this.fruit } : null,
       turns: this.turns.map((t) => [...t] as Turn),
     };
@@ -284,11 +317,17 @@ export class ChomperSim {
   private arrive(tile: [number, number], tMs: number, ev: ChomperEvent[]): void {
     const i = this.at.get(`${tile[0]},${tile[1]}`);
     if (i !== undefined && !this.gone[i]) this.eat(i, tMs, ev);
+  }
+
+  /** Picks up the fruit when the chomper is within FRUIT_REACH of its tile. */
+  private reachFruit(ev: ChomperEvent[]): void {
     const f = this.fruit;
-    if (f && tile[0] === this.m.fruit[0] && tile[1] === this.m.fruit[1]) {
-      this.fruit = null;
-      ev.push({ kind: 'fruit', fruit: f.fruit });
-    }
+    if (!f) return;
+    const [px, py] = posOf(this.w);
+    const dx = Math.abs(px - this.m.fruit[0]);
+    if (Math.hypot(Math.min(dx, this.m.w - dx), py - this.m.fruit[1]) >= FRUIT_REACH) return;
+    this.fruit = null;
+    ev.push({ kind: 'fruit', fruit: f.fruit });
   }
 
   private consume(i: number): void {
@@ -333,7 +372,7 @@ export class ChomperSim {
       if (hunting || g.mode === 'fright') {
         ev.push({ kind: 'ghost', ghost: g.id, combo: Math.min(this.combo++, 3) });
         this.ateGhosts.set(g.id, tMs);
-      } else if (this.power?.kind !== 'phase') {
+      } else if (this.power?.kind !== 'phase' && tMs >= this.shieldUntil) {
         this.dyingUntil = tMs + DYING_MS;
         ev.push({ kind: 'caught', ghost: g.id });
         return;

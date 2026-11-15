@@ -6,7 +6,16 @@ import { maze as game } from '../../rules';
 import type { MazeState } from '../../rules';
 import type { FrameEffect, FrameModel } from '../frame';
 import { Runner } from '../runner';
-import { draw, drawMini, effectsOf, wallCache, type Layer } from './core';
+import {
+  LOOKS as STYLES,
+  draw,
+  drawMini,
+  effectsOf,
+  shieldBlink,
+  tagPaint,
+  wallCache,
+  type Layer,
+} from './core';
 import { makeConfetti, stepConfetti } from './effects';
 import { createSound, soundFor } from './sound';
 
@@ -176,6 +185,75 @@ describe('draw', () => {
       for (const mini of rf.minis) drawMini(ctx, mini, { look, tile: 6, dpr: 2, makeLayer: make });
       drawMini(ctx, { ...rf.minis[0]!, done: true }, { look, tile: 6, dpr: 2, t: 50 });
     }
+  });
+
+  it('draws YOU and name tags readable on every look', () => {
+    const lum = (hex: string) => {
+      const v = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+      const [r, g, b] = v.map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+    };
+    const contrast = (a: string, b: string) => {
+      const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+      return (hi! + 0.05) / (lo! + 0.05);
+    };
+    const f = frames({ mode: 'Shared' }, [WREN, ROOK], WREN);
+    const m = f.step(6000);
+    for (const look of LOOKS) {
+      const st = STYLES[look];
+      for (let seat = 0; seat < 8; seat++) {
+        const tag = tagPaint(st, seat);
+        expect(tag.fill.toLowerCase()).not.toBe(st.bg.toLowerCase());
+        expect(contrast(tag.fill, st.bg), `${look} seat ${seat}`).toBeGreaterThanOrEqual(3);
+        expect(contrast(tag.fill, tag.stroke), `${look} seat ${seat}`).toBeGreaterThanOrEqual(3);
+      }
+      // What draw actually fills the tags with.
+      const { ctx } = fakeCtx();
+      const fills: Record<string, unknown> = {};
+      const rec = new Proxy(ctx, {
+        get(t, name: string) {
+          if (name === 'fillText')
+            return (text: string) => {
+              fills[text] = (t as unknown as Record<string, unknown>).fillStyle;
+            };
+          return (t as unknown as Record<string, unknown>)[name];
+        },
+      });
+      draw(rec, { ...m, effects: [] }, { look, tile: 16, dpr: 1, t: 0 });
+      expect(fills.YOU).toBe(tagPaint(st, 0).fill);
+      expect(fills.ROOK).toBe(tagPaint(st, 1).fill);
+      expect(fills.YOU).not.toBe(st.bg);
+    }
+  });
+
+  it('blinks a shielded chomper, and only while shielded', () => {
+    expect(shieldBlink(0)).toBe(false);
+    const on = [...Array(16).keys()].map((i) => shieldBlink(2000 - i * 120));
+    expect(on.filter(Boolean)).toHaveLength(8);
+    // The chomper is drawn dimmer on a blink frame.
+    const f = frames({ mode: 'Solo' }, [WREN], WREN);
+    const m = f.step(3100);
+    const me = m.board!.chompers[0]!;
+    expect(me.shieldMs).toBeGreaterThan(0);
+    const alphaAt = (shieldMs: number) => {
+      const { ctx } = fakeCtx();
+      let seen = 1;
+      const st = STYLES.Printed;
+      const was = st.chomper;
+      st.chomper = (c) => {
+        seen = c.globalAlpha;
+      };
+      try {
+        const board = { ...m.board!, chompers: [{ ...me, shieldMs }] };
+        draw(ctx, { ...m, effects: [], board }, { look: 'Printed', tile: 14, dpr: 1, t: 0 });
+      } finally {
+        st.chomper = was;
+      }
+      return seen;
+    };
+    expect(alphaAt(1900)).toBeLessThan(0.5);
+    expect(alphaAt(1700)).toBe(1);
+    expect(alphaAt(0)).toBe(1);
   });
 
   it('draws walls directly when no layer can be made', () => {

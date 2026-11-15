@@ -11,6 +11,7 @@ import { decodeBits, encodeBits, pelletIndex } from '../sim/pellets';
 import { POINTS } from '../sim/powers';
 import { canEnter } from '../sim/walker';
 import type { Dir } from '../sim/walker';
+import { SPAWN_SHIELD_MS } from '../sim/chomper';
 import type { FrameModel } from './frame';
 import { OTHERS_DELAY_MS, Runner, SEND_GAP_MS, SEND_TIMEOUT_MS, samplePath } from './runner';
 import type { Track } from './runner';
@@ -730,4 +731,34 @@ describe('Runner robustness', () => {
     expect(jumps.length).toBeGreaterThan(30);
     expect(Math.max(...jumps)).toBeLessThanOrEqual(0.5);
   });
+});
+
+describe('Runner spawn protection', () => {
+  it.each(['Solo', 'Shared'] as const)(
+    '%s: shielded for 2 s from the start, and again after a respawn',
+    async (mode) => {
+      const ids = mode === 'Solo' ? [WREN] : [WREN, ROOK];
+      const server = new Server(ids, { mode }, 3);
+      const p = phone(server, WREN);
+      const mine = () => p.last!.board!.chompers.find((c) => c.isYou)!;
+      await p.run(3000 + 100);
+      expect(mine().shieldMs).toBeGreaterThan(1700);
+      expect(mine().shieldMs).toBeLessThanOrEqual(SPAWN_SHIELD_MS);
+      if (mode === 'Shared') {
+        const rook = p.last!.board!.chompers.find((c) => !c.isYou)!;
+        expect(rook.shieldMs).toBeGreaterThan(0);
+      }
+      await p.run(2000);
+      expect(mine().shieldMs).toBe(0);
+      // Caught: shielded again once it's back.
+      let respawned = false;
+      for (let i = 0; i < 120 && !respawned; i++)
+        await p.run(500, (f) => {
+          if (f.effects.some((e) => e.kind === 'respawn' && e.mine)) respawned = true;
+        });
+      expect(respawned).toBe(true);
+      expect(mine().shieldMs).toBeGreaterThan(SPAWN_SHIELD_MS - 600);
+    },
+    60_000,
+  );
 });

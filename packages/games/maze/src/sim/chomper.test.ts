@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { ChomperSim, DYING_MS, FRUIT_EVERY, FRUIT_MS } from './chomper';
+import {
+  ChomperSim,
+  DYING_MS,
+  FRUIT_EVERY,
+  FRUIT_MS,
+  SPAWN_SHIELD_MS,
+  spawnShield,
+} from './chomper';
 import type { ChomperEvent } from './chomper';
 import type { GhostView } from './ghosts';
 import type { MazeLayout } from './layouts';
@@ -341,6 +348,37 @@ describe('ChomperSim', () => {
     expect(off.sim.state().fruit).toBeNull();
     off.until(off.at(20, 5));
     expect(off.events.some((e) => e.kind === 'fruit')).toBe(false);
+  });
+
+  it('is shielded from ghosts for 2 s after a spawn or respawn', () => {
+    const { sim, g, step, now, events } = setup({ start: [1, 4, 'down'] });
+    sim.respawn(0);
+    g.list = [ghost(0, [1, 4])];
+    while (now() < SPAWN_SHIELD_MS - 20) step();
+    expect(events.some((e) => e.kind === 'caught')).toBe(false);
+    expect(sim.state().shieldUntil).toBe(SPAWN_SHIELD_MS);
+    // It can still eat a frightened ghost meanwhile.
+    g.list = [ghost(1, [1, 4], 'fright')];
+    expect(step()).toContainEqual({ kind: 'ghost', ghost: 1, combo: 0 });
+    g.list = [ghost(0, [1, 4])];
+    while (now() < SPAWN_SHIELD_MS + 20) step();
+    expect(events.filter((e) => e.kind === 'caught')).toEqual([{ kind: 'caught', ghost: 0 }]);
+    // Respawning shields it again, from then.
+    sim.respawn(now());
+    expect(step()).toEqual([]);
+    expect(sim.state().shieldUntil).toBe(now() - 16 + SPAWN_SHIELD_MS);
+  });
+
+  it('a resumed chomper keeps the shield of its last spawn', () => {
+    expect(spawnShield(0, [])).toBe(SPAWN_SHIELD_MS);
+    expect(spawnShield(33_000, [])).toBe(33_000 + SPAWN_SHIELD_MS);
+    expect(spawnShield(0, [5_000, 9_000])).toBe(9_000 + DYING_MS + SPAWN_SHIELD_MS);
+    // A catch on an earlier maze doesn't count.
+    expect(spawnShield(33_000, [30_000])).toBe(33_000 + SPAWN_SHIELD_MS);
+    const { sim, g, step } = setup({ start: [1, 4, 'down'] });
+    sim.resume({ walker: sim.state().walker, shieldUntil: 1_000 });
+    g.list = [ghost(0, [1, 4])];
+    expect(step().some((e) => e.kind === 'caught')).toBe(false);
   });
 
   it('is deterministic for the same inputs and steps', () => {

@@ -6,7 +6,15 @@ import { maze as game } from '../../rules';
 import type { MazeState } from '../../rules';
 import type { FrameEffect, FrameModel } from '../frame';
 import { Runner } from '../runner';
-import { draw, drawMini, effectsOf, wallCache, type Layer } from './core';
+import {
+  LOOKS as STYLES,
+  draw,
+  drawMini,
+  effectsOf,
+  shieldBlink,
+  wallCache,
+  type Layer,
+} from './core';
 import { makeConfetti, stepConfetti } from './effects';
 import { createSound, soundFor } from './sound';
 
@@ -176,6 +184,36 @@ describe('draw', () => {
       for (const mini of rf.minis) drawMini(ctx, mini, { look, tile: 6, dpr: 2, makeLayer: make });
       drawMini(ctx, { ...rf.minis[0]!, done: true }, { look, tile: 6, dpr: 2, t: 50 });
     }
+  });
+
+  it('blinks a shielded chomper, and only while shielded', () => {
+    expect(shieldBlink(0)).toBe(false);
+    const on = [...Array(16).keys()].map((i) => shieldBlink(2000 - i * 120));
+    expect(on.filter(Boolean)).toHaveLength(8);
+    // The chomper is drawn dimmer on a blink frame.
+    const f = frames({ mode: 'Solo' }, [WREN], WREN);
+    const m = f.step(3100);
+    const me = m.board!.chompers[0]!;
+    expect(me.shieldMs).toBeGreaterThan(0);
+    const alphaAt = (shieldMs: number) => {
+      const { ctx } = fakeCtx();
+      let seen = 1;
+      const st = STYLES.Printed;
+      const was = st.chomper;
+      st.chomper = (c) => {
+        seen = c.globalAlpha;
+      };
+      try {
+        const board = { ...m.board!, chompers: [{ ...me, shieldMs }] };
+        draw(ctx, { ...m, effects: [], board }, { look: 'Printed', tile: 14, dpr: 1, t: 0 });
+      } finally {
+        st.chomper = was;
+      }
+      return seen;
+    };
+    expect(alphaAt(1900)).toBeLessThan(0.5);
+    expect(alphaAt(1700)).toBe(1);
+    expect(alphaAt(0)).toBe(1);
   });
 
   it('draws walls directly when no layer can be made', () => {

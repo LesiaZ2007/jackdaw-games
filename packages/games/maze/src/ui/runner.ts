@@ -20,7 +20,7 @@ import {
   syncSharedGhosts,
 } from '../shared';
 import type { GhostCheckpoints } from '../shared';
-import { ChomperSim, DYING_MS, MAGNET_RANGE } from '../sim/chomper';
+import { ChomperSim, DYING_MS, MAGNET_RANGE, SPAWN_SHIELD_MS, spawnShield } from '../sim/chomper';
 import type { ChomperEvent, ChomperParams, Turn } from '../sim/chomper';
 import { GhostSim, ghostSeed } from '../sim/ghosts';
 import type { GhostEvent, GhostInput } from '../sim/ghosts';
@@ -249,6 +249,8 @@ interface Other {
   raw: [number, number] | null;
   ease: [number, number];
   easeAt: number;
+  /** Server ms until which they are drawn shielded after being seen caught. */
+  shieldUntil?: number;
 }
 
 type Effect = FrameEffect extends infer E ? (E extends unknown ? Omit<E, 'key'> : never) : never;
@@ -542,6 +544,7 @@ export class Runner {
         walker: walkerAt(m, rec.pos),
         power: rec.power && rec.power.untilMs > rec.lastT ? rec.power : null,
         dyingUntil,
+        shieldUntil: spawnShield(this.mazeAt, this.facts.caughtAt),
         ate: this.myEaten.reduce((a, b) => a + b, 0),
         fruitN: this.facts.fruit.length,
       });
@@ -845,6 +848,7 @@ export class Runner {
       };
       if (p.caught > o.caught) {
         o.dyingAt = now;
+        o.shieldUntil = now + DYING_MS + SPAWN_SHIELD_MS;
         if (this.table.mode === 'Shared')
           this.fx({ kind: 'caught', x: o.at[0], y: o.at[1], by: p.id, mine: false });
       }
@@ -1326,6 +1330,7 @@ export class Runner {
           frozenMs,
           foggedMs,
           dying: st.dyingUntil > this.simT ? 1 - (st.dyingUntil - this.simT) / DYING_MS : null,
+          shieldMs: st.dyingUntil > this.simT ? 0 : Math.max(0, st.shieldUntil - this.simT),
           trail: [...this.trail],
         });
         continue;
@@ -1347,6 +1352,11 @@ export class Runner {
         frozenMs: 0,
         foggedMs: 0,
         dying: o.dyingAt !== null ? Math.min(1, (this.now() - o.dyingAt) / DYING_MS) : null,
+        shieldMs: Math.max(
+          0,
+          (o.shieldUntil ?? 0) - this.now(),
+          tMs >= 0 ? SPAWN_SHIELD_MS - Math.max(0, tMs - OTHERS_DELAY_MS) : 0,
+        ),
         trail: [...o.trail],
       });
     }

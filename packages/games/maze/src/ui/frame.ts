@@ -53,6 +53,11 @@ export interface FrameChomper {
   foggedMs: number;
   /** Caught: 0 → 1 over the dying animation, null otherwise. */
   dying: number | null;
+  /**
+   * Just spawned (round start, maze start, respawn): ghosts can't catch it for this many more
+   * ms (0 when not shielded). The renderer blinks the chomper meanwhile.
+   */
+  shieldMs: number;
   /** Recent positions, newest first, while Dash runs (the afterimage trail). */
   trail: [number, number][];
 }

@@ -2,7 +2,7 @@ import { botSlips } from '@jackdaw/engine';
 import type { BotContext, BotLevel } from '@jackdaw/engine';
 import type { MazeAction, MazePlayerView, MazeTableView } from './rules';
 import { AIM_MS, spotPellets, takenBits } from './shared';
-import { ChomperSim, DYING_MS } from './sim/chomper';
+import { ChomperSim, DYING_MS, spawnShield } from './sim/chomper';
 import type { Turn } from './sim/chomper';
 import { GhostSim, ghostSeed } from './sim/ghosts';
 import type { GhostCheckpoint, GhostEvent, GhostInput, GhostView } from './sim/ghosts';
@@ -228,6 +228,7 @@ export function mazeBot(
     walker: walkerAt(m, rec.pos),
     power: rec.power && rec.power.untilMs > from ? rec.power : null,
     dyingUntil: lastDead !== undefined ? lastDead + DYING_MS : 0,
+    shieldUntil: spawnShield(rec.mazeAt, facts.caughtAt),
     ate: had.reduce((a, b) => a + b, 0),
     fruitN: facts.fruit.length,
   });

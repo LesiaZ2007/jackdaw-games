@@ -20,6 +20,8 @@ export interface ChomperState {
   fogUntil: number;
   /** Caught and playing the dying animation until then; the caller respawns it. */
   dyingUntil: number;
+  /** Just spawned: ghosts can't catch it until then (SPAWN_SHIELD_MS). */
+  shieldUntil: number;
   /** The bonus fruit on the board (an index into FRUIT), when fruit is on. */
   fruit: { fruit: number; untilMs: number } | null;
   turns: Turn[];
@@ -51,8 +53,20 @@ export interface ChomperParams {
   id?: string;
 }
 
+/** After a spawn or respawn, ghosts can't catch a chomper for this long (2026-11-14 playtest). */
+export const SPAWN_SHIELD_MS = 2000;
 /** How long a caught chomper is out before the caller respawns it. */
 export const DYING_MS = 1300;
+
+/**
+ * Until when a chomper resumed from a report is shielded: its last spawn was the maze start
+ * (round ms `mazeAt`) or the respawn after its last catch.
+ */
+export function spawnShield(mazeAt: number, caughtAt: readonly number[]): number {
+  const last = caughtAt[caughtAt.length - 1];
+  const spawned = last !== undefined && last + DYING_MS > mazeAt ? last + DYING_MS : mazeAt;
+  return spawned + SPAWN_SHIELD_MS;
+}
 /** Fruit pops up after every this many pellets this chomper eats. */
 export const FRUIT_EVERY = 60;
 export const FRUIT_MS = 10_000;
@@ -93,6 +107,7 @@ export class ChomperSim {
   private frozenUntil = 0;
   private fogUntil = 0;
   private dyingUntil = 0;
+  private shieldUntil = 0;
   private fruit: ChomperState['fruit'] = null;
   private fruitN = 0;
   private ateCount = 0;
@@ -169,6 +184,8 @@ export class ChomperSim {
     walker: Walker;
     power?: ChomperState['power'];
     dyingUntil?: number;
+    /** Still shielded from its last spawn until then (see spawnShield). */
+    shieldUntil?: number;
     ate?: number;
     fruitN?: number;
   }): void {
@@ -176,6 +193,7 @@ export class ChomperSim {
     this.w = { tile: [w.tile[0], w.tile[1]], dir: w.dir, next: null, prog: w.prog };
     this.power = o.power ? { ...o.power } : null;
     this.dyingUntil = o.dyingUntil ?? 0;
+    this.shieldUntil = o.shieldUntil ?? 0;
     this.ateCount = o.ate ?? 0;
     this.fruitN = o.fruitN ?? 0;
     this.lastDir = w.dir;
@@ -208,6 +226,7 @@ export class ChomperSim {
     this.w = { tile: [x, y], dir: d, next: null, prog: 0 };
     this.power = null;
     this.dyingUntil = 0;
+    this.shieldUntil = tMs + SPAWN_SHIELD_MS;
     this.combo = 0;
     this.ateGhosts.clear();
     this.turns.push([tMs, x, y, d]);
@@ -271,6 +290,7 @@ export class ChomperSim {
       frozenUntil: this.frozenUntil,
       fogUntil: this.fogUntil,
       dyingUntil: this.dyingUntil,
+      shieldUntil: this.shieldUntil,
       fruit: this.fruit ? { ...this.fruit } : null,
       turns: this.turns.map((t) => [...t] as Turn),
     };
@@ -333,7 +353,7 @@ export class ChomperSim {
       if (hunting || g.mode === 'fright') {
         ev.push({ kind: 'ghost', ghost: g.id, combo: Math.min(this.combo++, 3) });
         this.ateGhosts.set(g.id, tMs);
-      } else if (this.power?.kind !== 'phase') {
+      } else if (this.power?.kind !== 'phase' && tMs >= this.shieldUntil) {
         this.dyingUntil = tMs + DYING_MS;
         ev.push({ kind: 'caught', ghost: g.id });
         return;

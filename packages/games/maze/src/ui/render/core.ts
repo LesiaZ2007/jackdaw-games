@@ -177,6 +177,10 @@ function drawGhost(
   ctx.restore();
 }
 
+/** A shielded chomper's blink: dim for 120 ms of every 240 ms while the shield lasts. */
+export const shieldBlink = (shieldMs: number): boolean =>
+  shieldMs > 0 && Math.floor(shieldMs / 120) % 2 === 1;
+
 function drawChomper(
   ctx: CanvasRenderingContext2D,
   st: LookStyle,
@@ -232,6 +236,8 @@ function drawChomper(
   const col = p && !blink ? st.power[p.kind] : base;
   ctx.globalAlpha = c.alpha;
   if (p?.kind === 'phase') ctx.globalAlpha = c.alpha * (0.45 + 0.25 * Math.sin(ts * 30));
+  // Just spawned: blink while the ghosts can't catch it.
+  if (shieldBlink(c.shieldMs)) ctx.globalAlpha *= 0.25;
   orient(ctx, c.dir);
   const m = 0.06 + 0.6 * Math.abs(Math.sin(c.mouth));
   const sc = p?.kind === 'hunt' ? 1.12 + 0.04 * Math.sin(ts * 14) : 1;

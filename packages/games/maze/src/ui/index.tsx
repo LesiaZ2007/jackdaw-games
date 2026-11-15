@@ -17,7 +17,7 @@ const power = (k: keyof typeof POWER_INFO) => ({
   false: 'Never appears.',
 });
 
-/** Maze: chomp the maze, dodge the ghosts, jinx your friends. Its lobby is an arcade attract screen. */
+/** Pac Man: chomp the maze, dodge the ghosts, jinx your friends. Its lobby is an arcade attract screen. */
 export const mazeUi: GameUi = {
   art: { band: 'tenne', field: 'checky', glyph: 'chomper' },
   about: {
@@ -32,16 +32,16 @@ export const mazeUi: GameUi = {
     pictures: [
       {
         src: '/games/maze/game-phone.png',
-        alt: 'Maze on a phone: lives and the maze number, your score card across the top, and a printed maze with pellets, four ghosts and a red chomper.',
+        alt: 'Pac Man on a phone: lives and the maze number, your score card across the top, and a printed maze with pellets, four ghosts and a red chomper.',
       },
       {
         src: '/games/maze/desktop.png',
-        alt: 'Maze on a laptop: one score card per player above a big shared maze, with computer chompers named after birds eating pellets while ghosts roam.',
+        alt: 'Pac Man on a laptop: one score card per player above a big shared maze, with computer chompers named after birds eating pellets while ghosts roam.',
         desktop: true,
       },
       {
         src: '/games/maze/tv.png',
-        alt: 'Maze on a TV: a score card for each of four players and the clock above one shared maze, each chomper labeled with its name.',
+        alt: 'Pac Man on a TV: a score card for each of four players and the clock above one shared maze, each chomper labeled with its name.',
         desktop: true,
       },
     ],

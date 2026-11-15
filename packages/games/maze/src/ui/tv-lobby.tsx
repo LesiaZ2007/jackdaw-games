@@ -26,7 +26,7 @@ export function MazeTvLobby({
     <div className="mz-tvlobby" data-look={look}>
       <AttractStage look={look} players={players} seed={code} className="mz-tvlobby__stage" />
       <aside className="mz-tvlobby__side">
-        <h2 className="mz-lobby__title">Maze</h2>
+        <h2 className="mz-lobby__title">Pac Man</h2>
         <div className="mz-tvlobby__join">{join}</div>
         <p className="mz-tvlobby__status">{status}</p>
         <Lineup players={players} me={null} hostId={hostId} look={look} reactions={reactions} tv />

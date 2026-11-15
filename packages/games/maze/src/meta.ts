@@ -2,7 +2,7 @@ import type { GameMeta } from '@jackdaw/engine';
 
 export const meta: GameMeta = {
   id: 'maze',
-  name: 'Maze',
+  name: 'Pac Man',
   tagline: 'Chomp the maze, dodge the ghosts, jinx your friends.',
   minPlayers: 1,
   maxPlayers: 8,

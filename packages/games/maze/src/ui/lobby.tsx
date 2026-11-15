@@ -253,7 +253,7 @@ export function LobbyActions({
           <span className="mz-ready" aria-hidden={busy ? undefined : 'true'}>
             {busy ? 'GO!' : 'READY?'}
           </span>
-          <span>{busy ? 'Starting' : 'Start Maze'}</span>
+          <span>{busy ? 'Starting' : 'Start Pac Man'}</span>
         </Plaque>
       ) : (
         <p className="mz-waiting" role="status">
@@ -427,7 +427,7 @@ export function MazeLobby({
     <div className="mz-lobby" data-look={look}>
       <div className="mz-lobby__main">
         <header className="mz-lobby__head">
-          <h2 className="mz-lobby__title">Maze</h2>
+          <h2 className="mz-lobby__title">Pac Man</h2>
           <p className="mz-lobby__sub">
             {players.length} chomper{players.length === 1 ? '' : 's'} in lobby {code}
           </p>

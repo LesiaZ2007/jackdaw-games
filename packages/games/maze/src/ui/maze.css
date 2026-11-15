@@ -531,7 +531,8 @@
   height: 100%;
   min-height: 0;
   max-height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding: 8px 12px 10px;
@@ -566,10 +567,23 @@
   text-transform: uppercase;
   color: var(--ink-2);
 }
+.mz-lobby__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mz-lobby__side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .mz-lobby__screen {
   position: relative;
-  flex: 1 1 0;
-  min-height: 120px;
+  flex: none;
+  height: clamp(150px, 30dvh, 260px);
   border: 3px solid var(--ink);
   background: #000;
   display: grid;
@@ -671,10 +685,8 @@
   margin: 0;
   padding: 6px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px 8px;
-  max-height: 168px;
-  overflow-y: auto;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
   border: 3px solid var(--ink);
   background: var(--mz-bg);
   color: var(--mz-fg);
@@ -687,16 +699,16 @@
 .mz-row__btn {
   appearance: none;
   width: 100%;
-  min-height: 36px;
+  min-height: 46px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 2px 6px;
+  gap: 10px;
+  padding: 3px 8px;
   border: 0;
   background: transparent;
   color: inherit;
-  font: 800 17px/1 var(--font-plaque);
+  font: 800 22px/1 var(--font-plaque);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   text-align: left;
@@ -709,14 +721,15 @@ button.mz-row__btn:focus-visible {
   outline: 2px solid var(--mz-gold);
   outline-offset: -2px;
 }
-.mz-row.is-away {
-  opacity: 0.5;
+.mz-row.is-away .mz-row__name {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
 }
 .mz-row__rank {
   flex: none;
-  min-width: 2.2em;
-  color: var(--mz-gold);
-  font-size: 14px;
+  min-width: 1.9em;
+  color: inherit;
+  font-size: 15px;
 }
 .mz-row__chomp {
   position: relative;
@@ -740,15 +753,15 @@ button.mz-row__btn:focus-visible {
   flex: none;
   padding: 2px 5px;
   border: 1.5px solid currentColor;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--mz-gold);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: inherit;
 }
+.mz-tag--host,
 .mz-tag--you {
-  color: var(--mz-fg);
-}
-.mz-row--open {
-  opacity: 0.8;
+  background: var(--mz-fg);
+  color: var(--mz-bg);
+  border-color: var(--mz-fg);
 }
 .mz-addseat {
   position: relative;
@@ -874,8 +887,23 @@ button.mz-row__btn:focus-visible {
   .mz-opt__grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
-  .mz-lineup {
-    max-height: 200px;
+}
+@media (min-width: 760px) {
+  .mz-lobby__main {
+    max-width: 980px;
+  }
+  .mz-lobby__body {
+    flex-direction: row;
+    gap: 16px;
+  }
+  .mz-lobby__screen {
+    flex: 1 1 0;
+    height: auto;
+    min-width: 0;
+  }
+  .mz-lobby__side {
+    width: 360px;
+    overflow-y: auto;
   }
 }
 @media (min-width: 1240px) {
@@ -885,7 +913,10 @@ button.mz-row__btn:focus-visible {
     gap: 24px;
   }
   .mz-lobby__main {
-    max-width: 900px;
+    max-width: 840px;
+  }
+  .mz-lobby__side {
+    width: 320px;
   }
 }
 

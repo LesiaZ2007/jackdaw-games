@@ -225,6 +225,14 @@ const copyFacts = (f: MazeFacts): MazeFacts => ({
 const layoutFor = (tv: MazeTableView, maze: number): MazeLayout =>
   MAZE_LAYOUTS[tv.layouts[maze] ?? tv.layouts[0] ?? 0]!;
 
+/** What a phone had done on its maze at some moment (for its own score card). */
+interface Snap {
+  eaten: Uint8Array;
+  facts: MazeFacts;
+  caught: number;
+  cleared: boolean;
+}
+
 interface Other {
   maze: number;
   track: Track;
@@ -320,6 +328,19 @@ export class Runner {
   private lastFailed = false;
   private sentAny = false;
 
+  /**
+   * One score for everyone: your own card shows the server's score plus only what your reports
+   * it hasn't taken in yet add (`acked` is what you had done when you sent the last report the
+   * server's view covers; `sentSnaps` the reports still out, by seq).
+   */
+  private acked: Snap = {
+    eaten: new Uint8Array(0),
+    facts: emptyFacts(),
+    caught: 0,
+    cleared: false,
+  };
+  private sentSnaps = new Map<number, Snap>();
+
   private seenAttacks = new Set<number>();
   private effects: FrameEffect[] = [];
   private effectKey = 0;
@@ -362,6 +383,7 @@ export class Runner {
         if (view.seq > 0 && !this.sentAny) this.startMaze(rec.maze, false);
       }
     }
+    if (view && rec && rec.maze === this.maze) this.ackUpTo(view.seq);
     if (table.mode === 'Shared') this.syncOwners(now);
     this.syncOthers(now);
     if (view) this.applyInbox(view);
@@ -530,6 +552,9 @@ export class Runner {
       ch.respawn(this.mazeAt);
     }
     if (this.queued) ch.input(this.queued);
+    // The server's score covers everything up to here (a fresh maze, or the resumed report).
+    this.sentSnaps.clear();
+    this.acked = this.snap();
   }
 
   /** Solo and Race after a refresh: the ghost inputs again, from the facts and turns. */
@@ -1006,7 +1031,10 @@ export class Runner {
     };
     let p: Promise<boolean>;
     try {
-      p = this.sendFn(this.buildTick(tMs));
+      const tick = this.buildTick(tMs);
+      this.sentSnaps.set(tick.seq, this.snap());
+      if (this.sentSnaps.size > 64) this.sentSnaps.delete(this.sentSnaps.keys().next().value!);
+      p = this.sendFn(tick);
     } catch {
       p = Promise.resolve(false);
     }
@@ -1056,26 +1084,46 @@ export class Runner {
 
   /** Your score as the server will count it once it has your latest report. */
   private predicted(rec: MazePublicPlayer): number {
-    const v = this.view;
-    if (!v || rec.maze !== this.maze) return rec.score;
-    let diff: number;
-    if (this.table.mode === 'Shared') {
-      const sh = this.table.shared;
-      const ids = this.table.players.map((p) => p.id);
-      const mySeat = ids.indexOf(rec.id) + 1;
-      const owners = sh ? decodeOwners(sh.owner, this.n) : new Uint8Array(this.n);
-      let mine = 0;
-      for (let i = 0; i < this.n; i++)
-        if (this.myEaten[i] && !this.isSpot.has(i) && (!owners[i] || owners[i] === mySeat)) mine++;
-      diff = (mine - rec.pellets) * POINTS.pellet + factPoints(this.facts) - factPoints(v.facts);
-    } else {
-      diff =
-        mazePoints(this.m, encodeBits(this.myEaten), this.facts) -
-        mazePoints(this.m, v.eaten, v.facts) +
-        (this.cleared ? POINTS.mazeClear : 0);
-    }
-    const score = Math.max(0, rec.score + diff);
-    return score - catchCost(this.table.mode, score, this.caught - v.caught);
+    if (rec.maze !== this.maze || !this.chomper) return rec.score;
+    const now = this.snap();
+    const gain = this.localPoints(now, rec.id) - this.localPoints(this.acked, rec.id);
+    const score = Math.max(0, rec.score + gain);
+    return score - catchCost(this.table.mode, score, now.caught - this.acked.caught);
+  }
+
+  /** What this phone has done on this maze so far (what a report would carry). */
+  private snap(): Snap {
+    return {
+      eaten: this.myEaten.slice(),
+      facts: copyFacts(this.facts),
+      caught: this.caught,
+      cleared: !!this.cleared,
+    };
+  }
+
+  /**
+   * Points a snapshot is worth on this maze, as the server counts them (Shared: pellets someone
+   * else owns don't count). Only differences between two snapshots are used.
+   */
+  private localPoints(s: Snap, me: string): number {
+    if (this.table.mode !== 'Shared')
+      return mazePoints(this.m, encodeBits(s.eaten), s.facts) + (s.cleared ? POINTS.mazeClear : 0);
+    const sh = this.table.shared;
+    const mySeat = this.table.players.findIndex((p) => p.id === me) + 1;
+    const owners = sh ? decodeOwners(sh.owner, this.n) : new Uint8Array(this.n);
+    let mine = 0;
+    for (let i = 0; i < this.n; i++)
+      if (s.eaten[i] && !this.isSpot.has(i) && (!owners[i] || owners[i] === mySeat)) mine++;
+    return mine * POINTS.pellet + factPoints(s.facts);
+  }
+
+  /** The server has taken in every report up to `seq`: its score now covers them. */
+  private ackUpTo(seq: number): void {
+    let best = -1;
+    for (const k of this.sentSnaps.keys()) if (k <= seq && k > best) best = k;
+    if (best < 0) return;
+    this.acked = this.sentSnaps.get(best)!;
+    for (const k of [...this.sentSnaps.keys()]) if (k <= best) this.sentSnaps.delete(k);
   }
 
   private powerOf(p: { kind: PowerKind; untilMs: number } | null, tMs: number, maze: number) {

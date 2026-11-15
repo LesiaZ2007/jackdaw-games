@@ -489,6 +489,62 @@ describe('Runner attacks and pellets', () => {
     expect(after).toBe(before - POINTS.pellet);
     expect(encodeOwners(decodeOwners(server.s.shared!.owner, n))).toBe(server.s.shared!.owner);
   });
+
+  it('Shared: two phones agree on every score once caught up (a lost power spot too)', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared', minutes: 1 }, 3);
+    let stolen = 0;
+    const wren = phone(server, WREN, { steer: autopilot });
+    const rook = phone(server, ROOK, { steer: autopilot });
+    // Wren's new power spot pickups reach the server just after Rook's claim of the same spot.
+    const send = (wren.runner as unknown as { sendFn: (a: MazeAction) => Promise<boolean> }).sendFn;
+    (wren.runner as unknown as { sendFn: (a: MazeAction) => Promise<boolean> }).sendFn = (a) => {
+      const known = server.s.players[WREN]!.facts.powers.length;
+      for (const [t, spot, kind] of (a as MazeTick).powers.slice(known)) {
+        const r = server.s.players[ROOK]!;
+        server.apply(ROOK, {
+          type: 'tick',
+          round: 1,
+          seq: r.seq + 1,
+          t: Math.max(r.lastT, t - 1),
+          maze: 0,
+          pos: r.pos,
+          turns: [],
+          eaten: r.eaten,
+          ghosts: r.facts.ghosts,
+          caught: r.caught,
+          fruit: r.facts.fruit,
+          powers: [...r.facts.powers, [t - 1, spot, kind]],
+          lives: 3,
+        });
+        stolen++;
+      }
+      return send(a);
+    };
+    let poll = server.clock;
+    const end = server.s.endAt! + 2_000;
+    while (server.clock < end) {
+      server.clock += 20;
+      server.timers();
+      if (server.clock - poll >= 800) {
+        poll = server.clock;
+        for (const [p, id] of [
+          [wren, WREN],
+          [rook, ROOK],
+        ] as const)
+          p.runner.update(server.table(), server.view(id));
+      }
+      wren.last = wren.runner.frame(20);
+      rook.last = rook.runner.frame(20);
+      await flush();
+    }
+    expect(stolen).toBeGreaterThan(0);
+    wren.runner.update(server.table(), server.view(WREN));
+    rook.runner.update(server.table(), server.view(ROOK));
+    const a = wren.runner.frame(20).scores.map((s) => s.score);
+    const b = rook.runner.frame(20).scores.map((s) => s.score);
+    expect(a).toEqual(b);
+    expect(a).toEqual([server.s.players[WREN]!.score, server.s.players[ROOK]!.score]);
+  }, 60_000);
 });
 
 describe('Runner others and the TV', () => {

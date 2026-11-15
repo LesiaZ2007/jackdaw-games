@@ -60,7 +60,9 @@ size has at least two original mazes. The maze always fits the screen whatever i
 Your own chomper is full strength, a little larger, with a pulsing ring and a **YOU** tag.
 Everyone else is drawn at half opacity with their name above them. Other chompers are shown a
 moment behind real time along their **exact reported path** (each report carries the turns since
-the last one), so they glide smoothly and never jump. Pellets someone else took disappear when
+the last one), so they glide smoothly and never jump. After the 2026-11-14 playtest (others looked
+about a second behind) the moment is about 0.45 s, and past their last report they carry on along
+their corridor (holding at a wall), with corrections eased in. Pellets someone else took disappear when
 their chomper is seen reaching them; if you reach one first that was already taken, it vanishes
 quietly and scores nothing.
 
@@ -144,7 +146,8 @@ Every request is a Vercel call and Redis commands on free plans that all games s
 (2026-11-14: "minimize this as much as possible for ANY game, especially this game and later
 tetra").
 
-- **Live polling only in Shared-maze rounds**, at the existing floor or slower (about 800 ms).
+- **Live polling only in Shared-maze rounds**, at the 600 ms floor (800 ms until the 2026-11-14
+  playtest).
   Solo needs no server mid-round: it reports once per maze cleared and at the end. Race uses the
   normal pace plus a report when an attack needs routing. Lobby, countdown and results use the
   normal pace.
@@ -194,7 +197,7 @@ The end-to-end test (`apps/web/e2e/maze.spec.ts`) prints the same counts for eac
   (with its path, so it glides like a person). To keep server writes low, bots report about every
   900 ms in play.
 - **Rate limits.** The server allows 30 sends and 40 polls per 10 s per phone, so a phone reports
-  at most every 450 ms and live-polls no faster than 800 ms.
+  at most every 450 ms and live-polls no faster than 600 ms.
 
 ## Later
 

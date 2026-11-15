@@ -76,10 +76,13 @@ export const SEND_GAP_MS = 450;
 export const RACE_PACE_MS = 1_500;
 /** A maze clear the server hasn't shown yet is sent again after this long. */
 export const CLEAR_RESEND_MS = 1_500;
-/** The Shared maze's live poll. */
-export const LIVE_POLL_MS = 800;
-/** Others are drawn this far behind real time. */
-export const OTHERS_DELAY_MS = 1.25 * LIVE_POLL_MS;
+/** The Shared maze's live poll (the platform's floor). */
+export const LIVE_POLL_MS = 600;
+/**
+ * Others are drawn this far behind real time (2026-11-14 playtest: about a second felt laggy).
+ * Past their last report they are carried on along their corridor (`samplePath`).
+ */
+export const OTHERS_DELAY_MS = 450;
 /** A pellet someone else took goes after this long even if their chomper isn't seen at it. */
 export const HIDE_MAX_MS = 2_500;
 /** Banners stay up this long. */
@@ -95,9 +98,13 @@ const DT = 50 / 3;
 /** After a stall (a hidden tab), at most this much is simulated; the rest is skipped. */
 const MAX_CATCHUP_MS = 2_000;
 /** A reported path is carried on past its last point for at most this long. */
-const EXTRAPOLATE_MS = 250;
+const EXTRAPOLATE_MS = 1_500;
 /** A correction to where another player is drawn fades out over this long. */
 const EASE_MS = 200;
+/** A correction fades out at most this fast, in tiles per ms (0.3 tile per 60 Hz frame). */
+const EASE_MAX_PER_MS = 0.018;
+/** A move bigger than this between frames (a respawn, a tunnel) is drawn at once, not eased. */
+const SNAP_TILES = 4;
 /** Mouth phase per tile moved (the demo's 16 per second at 7.8 tiles per second). */
 const MOUTH_PER_TILE = 16 / 7.8;
 const TRAIL_LEN = 7;
@@ -861,13 +868,18 @@ export class Runner {
       o.easeAt = now;
       if (o.raw) {
         const jump = Math.hypot(s.x - o.raw[0], s.y - o.raw[1]);
-        if (jump > 0.4 && jump < 3.2 && o.dyingAt === null) {
+        if (jump > 0.4 && jump < SNAP_TILES && o.dyingAt === null) {
           o.ease = [o.ease[0] + o.raw[0] - s.x, o.ease[1] + o.raw[1] - s.y];
         }
       }
       o.raw = [s.x, s.y];
-      const k = Math.max(0, 1 - dtE / EASE_MS);
-      o.ease = [o.ease[0] * k, o.ease[1] * k];
+      // Fade the correction out, but never faster than EASE_MAX_PER_MS (no visible jumps).
+      const size = Math.hypot(o.ease[0], o.ease[1]);
+      if (size > 0) {
+        const fade = size * Math.min(1, dtE / EASE_MS);
+        const k = (size - Math.min(fade, EASE_MAX_PER_MS * dtE)) / size;
+        o.ease = [o.ease[0] * k, o.ease[1] * k];
+      }
       if (Math.abs(o.ease[0]) + Math.abs(o.ease[1]) < 1e-3) o.ease = [0, 0];
       const dx = s.x + o.ease[0];
       const dy = s.y + o.ease[1];

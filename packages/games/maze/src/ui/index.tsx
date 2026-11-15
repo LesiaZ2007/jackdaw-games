@@ -5,6 +5,7 @@ import type { MazeTableView } from '../rules';
 import { POWER_INFO } from './info';
 import { PlayerScreen } from './player';
 import { Results } from './results';
+import { LIVE_POLL_MS } from './runner';
 import { TvScreen } from './tv';
 
 /** A power-up's switch: what it does when on, and that it never appears when off. */
@@ -79,7 +80,7 @@ export const mazeUi: GameUi = {
   fullBleed: true,
   livePoll: (t) => {
     const v = t as MazeTableView;
-    return v.mode === 'Shared' && v.phase === 'play' ? 800 : null;
+    return v.mode === 'Shared' && v.phase === 'play' ? LIVE_POLL_MS : null;
   },
   PlayerScreen,
   TvScreen,

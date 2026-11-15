@@ -242,6 +242,20 @@ describe('samplePath', () => {
     expect(at).toMatchObject({ x: m.starts[1]![0], y: m.starts[1]![1] });
     expect(Math.hypot(before.x - at.x, before.y - at.y)).toBeGreaterThan(2);
   });
+
+  it('carries a player on along their corridor past the last report, holding at a wall', () => {
+    const [sx, sy, d] = m.starts[0]!;
+    const n = ahead(m, m.starts[0]!).length;
+    const tr: Track = { turns: [[0, sx, sy, d]], lastT: 0, pos: [sx, sy, d] };
+    // Half a second on: about 3.9 tiles along (or at the wall, if that's nearer).
+    const half = samplePath(m, tr, 500);
+    const along = Math.abs(half.x - sx) + Math.abs(half.y - sy);
+    expect(along).toBeCloseTo(Math.min(n, 3.9), 5);
+    // Long after: held at the wall, never through it.
+    const late = samplePath(m, tr, 5000);
+    expect(Math.abs(late.x - sx) + Math.abs(late.y - sy)).toBeCloseTo(Math.min(n, 7.8 * 1.5), 5);
+    expect(OTHERS_DELAY_MS).toBeLessThanOrEqual(500);
+  });
 });
 
 describe('Runner reports', () => {
@@ -828,4 +842,54 @@ describe('Runner spawn protection', () => {
     },
     60_000,
   );
+});
+
+describe('Runner latency', () => {
+  it('your own chomper takes input on the very next frame', async () => {
+    const server = new Server([WREN], { mode: 'Solo' }, 3);
+    const p = phone(server, WREN);
+    await p.run(3000 + 150);
+    const me = () => p.last!.board!.chompers.find((c) => c.isYou)!;
+    const before = me();
+    const back = ({ up: 'down', down: 'up', left: 'right', right: 'left' } as const)[before.dir];
+    p.runner.input(back);
+    server.clock += 17;
+    p.last = p.runner.frame(17);
+    expect(me().dir).toBe(back);
+  });
+
+  it('Shared: a turn is reported as soon as the 450 ms gap allows, never two at once', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared' }, 3);
+    let inFlight = 0;
+    let most = 0;
+    const p = phone(server, WREN, { steer: autopilot });
+    const turnsAt = new Map<number, number>();
+    const send = (p.runner as unknown as { sendFn: (a: MazeAction) => Promise<boolean> }).sendFn;
+    (p.runner as unknown as { sendFn: (a: MazeAction) => Promise<boolean> }).sendFn = async (a) => {
+      inFlight++;
+      most = Math.max(most, inFlight);
+      await flush();
+      const ok = await send(a);
+      inFlight--;
+      return ok;
+    };
+    await p.run(20_000, () => {
+      const ch = (p.runner as unknown as { chomper: { state(): { turns: [number][] } } }).chomper;
+      for (const [t] of ch.state().turns) if (!turnsAt.has(t)) turnsAt.set(t, server.clock);
+    });
+    expect(most).toBe(1);
+    const sends = p.sent.map((s) => s.at);
+    for (let i = 1; i < sends.length; i++)
+      expect(sends[i]! - sends[i - 1]!).toBeGreaterThanOrEqual(SEND_GAP_MS);
+    let checked = 0;
+    for (const [t, seenAt] of turnsAt) {
+      // (Turns in the last moment of the run may not be out yet.)
+      if (t <= 0 || server.clock - seenAt < SEND_GAP_MS + 40) continue;
+      const first = p.sent.find((s) => s.a.turns.some((x) => x[0] === Math.round(t)));
+      expect(first, `turn at ${t}`).toBeDefined();
+      expect(first!.at - seenAt).toBeLessThanOrEqual(SEND_GAP_MS + 40);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(10);
+  }, 60_000);
 });

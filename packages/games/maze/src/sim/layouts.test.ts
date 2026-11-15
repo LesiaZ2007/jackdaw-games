@@ -35,10 +35,10 @@ function reach(m: MazeLayout, from: readonly [number, number], ghost: boolean): 
 const SIZES: MazeSize[] = ['Small', 'Medium', 'Large'];
 
 describe('maze layouts', () => {
-  it('has distinct layouts: at least four Medium and two each of Small and Large', () => {
-    expect(layoutsOf('Medium').length).toBeGreaterThanOrEqual(4);
-    expect(layoutsOf('Small').length).toBeGreaterThanOrEqual(2);
-    expect(layoutsOf('Large').length).toBeGreaterThanOrEqual(2);
+  it('has distinct layouts: at least six Medium and four each of Small and Large', () => {
+    expect(layoutsOf('Medium').length).toBeGreaterThanOrEqual(6);
+    expect(layoutsOf('Small').length).toBeGreaterThanOrEqual(4);
+    expect(layoutsOf('Large').length).toBeGreaterThanOrEqual(4);
     expect(SIZES.flatMap(layoutsOf)).toHaveLength(MAZE_LAYOUTS.length);
     expect(new Set(MAZE_LAYOUTS.map((m) => m.id)).size).toBe(MAZE_LAYOUTS.length);
     expect(new Set(MAZE_LAYOUTS.map((m) => m.rows.join('\n'))).size).toBe(MAZE_LAYOUTS.length);
@@ -140,6 +140,19 @@ describe('maze layouts', () => {
       });
     });
   }
+
+  it('keeps the indexes saved games already use', () => {
+    expect(MAZE_LAYOUTS.slice(0, 8).map((m) => m.id)).toEqual([
+      'grove',
+      'lattice',
+      'twist',
+      'hive',
+      'sprout',
+      'steps',
+      'orchard',
+      'terrace',
+    ]);
+  });
 
   it('keeps the signed-off maze first', () => {
     const m = MAZE_LAYOUTS[0]!;

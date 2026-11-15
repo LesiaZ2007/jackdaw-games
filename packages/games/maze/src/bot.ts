@@ -6,7 +6,8 @@ import { ChomperSim, DYING_MS, spawnShield } from './sim/chomper';
 import type { Turn } from './sim/chomper';
 import { GhostSim, ghostSeed } from './sim/ghosts';
 import type { GhostCheckpoint, GhostEvent, GhostInput, GhostView } from './sim/ghosts';
-import { DIRS, DIR_ORDER, MAZE_LAYOUTS, opposite, wrapX } from './sim/layouts';
+import { layoutAt } from './sim/generate';
+import { DIRS, DIR_ORDER, opposite, wrapX } from './sim/layouts';
 import type { MazeLayout } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
 import { powerMs } from './sim/powers';
@@ -164,7 +165,7 @@ export function mazeBot(
   if (!rec || rec.done) return null;
   const shared = tv.mode === 'Shared';
   const solo = tv.mode === 'Solo';
-  const m = MAZE_LAYOUTS[tv.layouts[rec.maze] ?? tv.layouts[0] ?? 0]!;
+  const m = layoutAt(tv, rec.maze);
   const lvl = rec.maze + 1;
   const idx = pelletIndex(m);
   const n = idx.size;
@@ -257,8 +258,7 @@ export function mazeBot(
     for (const b of bases) if (b.atMs <= from) base = b;
     if (base) ghosts.restore(base.c);
     ghosts.stepTo(from, input);
-  } else
-    catchUp(ghosts, `${tv.seed}:${rec.maze}:${tv.layouts[rec.maze] ?? 0}:${me}`, input, from - off);
+  } else catchUp(ghosts, `${tv.seed}:${rec.maze}:${m.id}:${me}`, input, from - off);
   trace?.start?.(from, ghosts.ghosts());
 
   const fruitSeen = tv.shared?.fruitSeen[me] ?? 0;

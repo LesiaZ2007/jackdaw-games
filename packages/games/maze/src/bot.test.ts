@@ -27,7 +27,8 @@ const IDS = ['wren', 'rook', 'finch', 'lark'];
 function start(ids: string[], options: Partial<MazeOptions>, seed: number): MazeState {
   const s = game.setup({
     playerIds: ids,
-    options: { ...defaultOptions(ids.length), ...options },
+    // Handmade unless a test asks: the counts below are pinned to those mazes.
+    options: { ...defaultOptions(ids.length), mazeSet: 'Handmade', ...options },
     rng: createRng(seed),
     now: T0,
   });
@@ -100,6 +101,26 @@ describe('mazeBot', () => {
       const race = start(IDS.slice(0, 2), { mode: 'Race', mazes: 1, size }, 4);
       expect(layoutOf(race, 0).size).toBe(size);
       const r = play(race, IDS.slice(0, 2), 'hard', 6, 8 * 60_000);
+      expect(r.invalid).toBe(0);
+      expect(r.walled).toBe(0);
+      expect(r.s.phase).not.toBe('play');
+      expect(r.s.players.wren!.score).toBeGreaterThan(500);
+    }, 60_000);
+  }
+
+  for (const size of ['Small', 'Medium', 'Large'] as const) {
+    it(`plays generated ${size} mazes: a Shared maze and a two-maze Race to the finish`, () => {
+      const ids = size === 'Large' ? [...IDS, 'robin', 'jay'] : IDS;
+      const shared = start(ids, { mode: 'Shared', minutes: 2, size, mazeSet: 'Random' }, 7);
+      expect(shared.layouts[0]).toMatchObject({ size });
+      const run = play(shared, ids.slice(1), 'normal', 5, 2 * 60_000 + 5000);
+      expect(run.invalid).toBe(0);
+      expect(run.walled).toBe(0);
+      expect(run.s.phase).not.toBe('play');
+      for (const id of ids.slice(1)) expect(run.s.players[id]!.score).toBeGreaterThan(0);
+
+      const race = start(IDS.slice(0, 2), { mode: 'Race', mazes: 2, size, mazeSet: 'Mix' }, 8);
+      const r = play(race, IDS.slice(0, 2), 'hard', 6, 10 * 60_000);
       expect(r.invalid).toBe(0);
       expect(r.walled).toBe(0);
       expect(r.s.phase).not.toBe('play');

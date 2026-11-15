@@ -55,6 +55,21 @@ it". A host option, **Auto** (default), Small (21×20), Medium (27×24) or Large
 Medium for Solo and Race, and for the Shared maze Medium with 2–4 players and Large with 5–8. Each
 size has at least two original mazes. The maze always fits the screen whatever its size.
 
+### Random mazes
+
+2026-11-14: "More puzzle maps? Perhaps there's a way to randomize them?" A host option, **Mazes**:
+**Mix** (default) alternates a handmade maze and a generated one through the run (starting with
+either), Handmade uses only the drawn mazes, Random only generated ones. The state stores each maze
+of the run as a handmade index or `{ gen: seed, size }`; every reader resolves it with one
+function, `layoutAt`, which caches generated mazes by seed and size. The generator
+(`sim/generate.ts`) starts from a lattice of one-tile corridors with random spacing, the house and
+a ring round it in the middle, and an optional side tunnel, then fills mirrored corridor pieces at
+random to merge blocks into varied shapes, keeping a piece open whenever filling it would leave a
+dead end, split the maze or grow a block too big. It uses only `createRng(seed)` and integer
+steps, so every device builds the same maze, and every result passes the same checks as the
+handmade mazes (`sim/validate.ts`). Generated mazes get a name from their seed, like "Bramble Run
+4821".
+
 ### Telling who's who (Shared maze)
 
 Your own chomper is full strength, a little larger, with a pulsing ring and a **YOU** tag.

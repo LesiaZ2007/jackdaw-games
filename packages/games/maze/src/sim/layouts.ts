@@ -16,6 +16,8 @@ export const SIZE_DIMS: Record<MazeSize, { w: number; h: number }> = {
  */
 export interface MazeLayout {
   id: string;
+  /** A generated maze's name; a handmade maze goes by its id. */
+  name?: string;
   size: MazeSize;
   w: number;
   h: number;

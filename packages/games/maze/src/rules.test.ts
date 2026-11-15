@@ -17,6 +17,7 @@ import {
   tick as rawTick,
 } from './rules';
 import type { MazeState, MazeTick } from './rules';
+import { generateLayout, layoutAt } from './sim/generate';
 import { decodeBits as decodeBitsOf, encodeBits, pelletIndex } from './sim/pellets';
 import { POINTS } from './sim/powers';
 
@@ -99,6 +100,37 @@ describe('setup', () => {
     expect(setup([WREN, ROOK], { mode: 'Shared' }).layouts).toHaveLength(1);
     expect(setup([WREN, ROOK], { mode: 'Shared' }).shared).not.toBeNull();
     expect(setup([WREN, ROOK], { mode: 'Race' }).shared).toBeNull();
+  });
+
+  it('picks handmade, generated or alternating mazes by the Mazes option', () => {
+    const gen = (s: MazeState) => s.layouts.map((r) => typeof r === 'object');
+    for (let seed = 1; seed <= 5; seed++) {
+      expect(gen(setup([WREN], { mazes: 4, mazeSet: 'Handmade' }, seed))).toEqual(
+        Array(4).fill(false),
+      );
+      expect(gen(setup([WREN], { mazes: 4, mazeSet: 'Random' }, seed))).toEqual(
+        Array(4).fill(true),
+      );
+      const mix = gen(setup([WREN], { mazes: 5, mazeSet: 'Mix' }, seed));
+      for (let i = 1; i < mix.length; i++) expect(mix[i]).toBe(!mix[i - 1]);
+    }
+    // Mix gives a Shared game either kind.
+    const kinds = new Set(
+      [1, 2, 3, 4, 5, 6, 7, 8].map((seed) => gen(setup([WREN, ROOK], { mode: 'Shared' }, seed))[0]),
+    );
+    expect(kinds).toEqual(new Set([true, false]));
+    // A generated maze is the generator's, and the table view carries the same refs.
+    const s = setup([WREN], { mazes: 2, mazeSet: 'Random' }, 3);
+    const ref = s.layouts[0] as { gen: number; size: string };
+    expect(layoutOf(s, 0)).toBe(layoutAt(s, 0));
+    expect(layoutOf(s, 0).rows).toEqual(generateLayout(ref.gen, 'Medium').rows);
+    expect(game.getTableView(s).layouts).toEqual(s.layouts);
+  });
+
+  it('plays a whole Solo run on generated mazes', () => {
+    const s = setup([WREN], { mazes: 2, mazeSet: 'Random', size: 'Small' }, 9);
+    expect(layoutOf(s, 0).size).toBe('Small');
+    expect(s.players[WREN]!.pos.slice(0, 2)).toEqual(layoutOf(s, 0).starts[0]!.slice(0, 2));
   });
 
   it('picks layouts only of the resolved size', () => {

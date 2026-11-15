@@ -432,8 +432,9 @@ export class Attract {
     };
     return {
       look,
-      // Shared draws each chomper's name above it.
-      mode: 'Shared',
+      // Not Shared: that mode draws each chomper's name above it, and in a small attract maze the
+      // names overlap. The lineup beside it names everyone.
+      mode: 'Race',
       phase: 'play',
       tMs: this.clock,
       me: null,

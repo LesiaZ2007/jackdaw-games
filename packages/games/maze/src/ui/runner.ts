@@ -1,4 +1,3 @@
-import { walkerAt } from '../bot';
 import type { MazeOptions } from '../options';
 import { LIVES, catchCost, factPoints, mazePoints } from '../rules';
 import type {
@@ -11,7 +10,8 @@ import type {
   Mode,
 } from '../rules';
 import {
-  AIM_MS,
+  LOCAL_AIM_MS,
+  aimsFromTurns,
   claimList,
   sharedFruitAt,
   decodeOwners,
@@ -22,19 +22,21 @@ import {
   spotUp,
   syncGhosts,
   syncSharedGhosts,
+  trimAims,
 } from '../shared';
 import type { GhostCheckpoints } from '../shared';
 import { ChomperSim, DYING_MS, MAGNET_RANGE, SPAWN_SHIELD_MS, spawnShield } from '../sim/chomper';
 import type { ChomperEvent, ChomperParams, Turn } from '../sim/chomper';
-import { GhostSim, ghostSeed } from '../sim/ghosts';
+import { GhostSim, aimTile, ghostSeed } from '../sim/ghosts';
 import type { GhostEvent, GhostInput } from '../sim/ghosts';
 import { layoutAt } from '../sim/generate';
-import { DIRS, DIR_ORDER, opposite, wrapX } from '../sim/layouts';
+import { DIRS, wrapX } from '../sim/layouts';
 import type { MazeLayout } from '../sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from '../sim/pellets';
 import { ATTACK_POWERS, FRUIT, POINTS, POWER_MS, powerMs, speeds } from '../sim/powers';
 import type { PowerKind } from '../sim/powers';
-import { advance, canEnter, posOf } from '../sim/walker';
+import { normX, predictAlong, walkerAt } from '../sim/predict';
+import type { Predicted } from '../sim/predict';
 import type { Dir } from '../sim/walker';
 import type {
   FrameBanner,
@@ -49,6 +51,9 @@ import type {
   FrameSpot,
   MiniBoard,
 } from './frame';
+
+export { predictAlong };
+export type { Predicted };
 
 /**
  * The client loop for one phone (or the TV): input, the local chomper and ghosts, when to
@@ -160,59 +165,11 @@ export interface Track {
   pos: [number, number, Dir | null];
 }
 
-/** Where a prediction got to: its heading, and whether it is holding (a wall, a fork). */
-export interface Predicted {
-  x: number;
-  y: number;
-  dir: Dir | null;
-  held: boolean;
-}
-
-/** x brought into [-0.5, w - 0.5). */
-const normX = (m: MazeLayout, x: number): number => {
-  const w = m.w;
-  return ((((x + 0.5) % w) + w) % w) - 0.5;
-};
-
 /** The shortest x difference a - b, through a tunnel if that is shorter. */
 const wrapDx = (m: MazeLayout, a: number, b: number): number => {
   const d = a - b;
   return d - m.w * Math.round(d / m.w);
 };
-
-/**
- * Where a chomper that was at `pos` probably is `dist` tiles later. It keeps its heading through
- * corridors; at a tile where straight on is blocked it takes the only other way that isn't back
- * (a corner), and where there are two or more (a fork) it holds at the center: a left or right
- * guess would be wrong half the time. It also holds at walls, as a chomper does.
- */
-export function predictAlong(
-  m: MazeLayout,
-  pos: [number, number, Dir | null],
-  dist: number,
-): Predicted {
-  const [x0, y0, d0] = pos;
-  if (!d0 || dist <= 0) return { x: normX(m, x0), y: y0, dir: d0, held: !d0 };
-  const w = walkerAt(m, [normX(m, x0), y0, d0]);
-  let held = false;
-  for (let left = dist; left > 1e-9;) {
-    // At a tile center: straight on if it's open (at a fork too: the likeliest single way).
-    if (w.prog === 0 && w.dir && !canEnter(m, w.tile, w.dir, false)) {
-      const back = opposite(w.dir);
-      const ways = DIR_ORDER.filter((d) => d !== back && canEnter(m, w.tile, d, false));
-      if (ways.length !== 1) {
-        held = true;
-        break;
-      }
-      w.dir = ways[0]!;
-    }
-    const step = Math.min(left, 1 - w.prog);
-    advance(w, step, m, { ghost: false });
-    left -= step;
-  }
-  const [x, y] = posOf(w);
-  return { x: normX(m, x), y, dir: w.dir, held };
-}
 
 /** Turns merged so they only grow, newest kept. */
 function mergeTurns(prev: Turn[], add: Turn[], keep = 40): Turn[] {
@@ -614,16 +571,10 @@ export class Runner {
         });
     for (const [t, g] of this.facts.ghosts)
       input.events.push({ atMs: t - off, kind: 'eaten', ghost: g });
-    const tileAt = (t: number): [number, number] => {
-      let tile: [number, number] = [st[0], st[1]];
-      for (const [tt, x, y] of turns) if (tt <= t) tile = [wrapX(m, Math.round(x)), Math.round(y)];
-      return tile;
-    };
-    for (let b = 0; b <= this.simT - off; b += AIM_MS) {
-      input.aims.push({ atMs: b, tiles: { [this.me!]: tileAt(b + off) } });
-      this.lastBeat = b;
-    }
+    input.aims.push(...aimsFromTurns(m, this.me!, turns, st, off, this.simT - off, level));
+    this.lastBeat = input.aims[input.aims.length - 1]?.atMs ?? this.lastBeat;
     syncGhosts(this.ghosts!, this.cps!, input, this.simT - off);
+    trimAims(input.aims, this.cps!);
   }
 
   // -------------------------------------------------------------------------------------------
@@ -657,13 +608,13 @@ export class Runner {
       const dt = t - this.simT;
       this.simT = t;
       const g = t - off;
-      if (!shared && g - this.lastBeat >= AIM_MS) {
-        const [px, py] = ch.position();
+      if (!shared && g - this.lastBeat >= LOCAL_AIM_MS) {
         this.localInput.aims.push({
           atMs: g,
-          tiles: { [this.me]: [wrapX(this.m, Math.round(px)), Math.round(py)] },
+          tiles: { [this.me]: aimTile(this.m, ch.position()) },
         });
         this.lastBeat = g;
+        if (this.cps) trimAims(this.localInput.aims, this.cps);
       }
       this.stepGhosts(g);
       if (this.deadUntil > 0 && t >= this.deadUntil) {

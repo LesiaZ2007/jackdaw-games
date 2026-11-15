@@ -6,10 +6,23 @@ import { speeds } from './powers';
 import { advance, canEnter, posOf } from './walker';
 import type { Dir, Vec, Walker } from './walker';
 
-/** At `atMs` the server noted each chomper's tile; ghosts steer by the latest aim. */
+/**
+ * A chomper's tile in an aim, plus its heading as an index into DIR_ORDER when it has one
+ * (kept as a number so the Shared table view stays small).
+ */
+export type AimTile = readonly [number, number] | readonly [number, number, number];
+
+/** At `atMs` each chomper was on these tiles; ghosts steer by the latest aim. */
 export interface Aim {
   atMs: number;
-  tiles: Record<string, Vec>;
+  tiles: Record<string, AimTile>;
+}
+
+/** A chomper's position (x, y, heading) as an aim tile. */
+export function aimTile(m: MazeLayout, pos: readonly [number, number, Dir | null]): AimTile {
+  const x = wrapX(m, Math.round(pos[0]));
+  const y = Math.round(pos[1]);
+  return pos[2] ? [x, y, DIR_ORDER.indexOf(pos[2])] : [x, y];
 }
 
 export type GhostEvent =
@@ -57,8 +70,15 @@ export interface GhostCheckpoint {
 
 /** The simulation runs in fixed steps of 1/60 s, so results never depend on frame timing. */
 const STEPS_PER_SEC = 60;
-const SCATTER_STEPS = 6 * STEPS_PER_SEC;
-const CYCLE_STEPS = 27 * STEPS_PER_SEC;
+/** Each cycle: a short scatter to the corners, then a long chase. */
+export const SCATTER_MS = 5_000;
+export const CYCLE_MS = 25_000;
+const SCATTER_STEPS = (SCATTER_MS / 1000) * STEPS_PER_SEC;
+const CYCLE_STEPS = (CYCLE_MS / 1000) * STEPS_PER_SEC;
+/** How far ahead of its chomper (along the chomper's heading) the ahead ghost aims. */
+export const AHEAD_TILES = 4;
+/** The shy ghost backs off to its corner inside this many tiles of its chomper. */
+const SHY_TILES = 8;
 /** Steps each ghost waits in the house at the start, then after being eaten, then a jinx. */
 const START_WAIT = [60, 192, 324, 456];
 const EATEN_WAIT = 48;
@@ -75,6 +95,7 @@ export const ghostSeed = (seed: number, maze: number): number =>
   (seed + Math.imul(maze, 0x9e3779b1)) >>> 0;
 
 const key = (x: number, y: number) => `${x},${y}`;
+
 const copyGhost = (g: GhostState): GhostState => ({
   ...g,
   tile: [g.tile[0], g.tile[1]],
@@ -82,8 +103,24 @@ const copyGhost = (g: GhostState): GhostState => ({
 });
 
 interface AimNow {
-  /** Players in a fixed order, with their tile and roughly which way they're heading. */
+  /** Players in a fixed order, with their tile and which way they're heading ([0, 0] if not). */
   players: { id: string; tile: Vec; dir: Vec }[];
+}
+
+const NO_DIR: Vec = [0, 0];
+
+function aimOf(a: Aim | undefined, only: string | undefined): AimNow | null {
+  if (!a) return null;
+  const ids = Object.keys(a.tiles)
+    .filter((id) => only === undefined || id === only)
+    .sort();
+  return {
+    players: ids.map((id) => {
+      const [x, y, h] = a.tiles[id]!;
+      const d = h === undefined ? undefined : DIR_ORDER[h];
+      return { id, tile: [x, y], dir: d ? DIRS[d] : NO_DIR };
+    }),
+  };
 }
 
 /**
@@ -144,20 +181,24 @@ export class GhostSim {
       if (list) list.push(e);
       else byStep.set(s, [e]);
     }
-    const aims = input.aims
-      .map((a, i) => ({ a, i, s: stepAt(a.atMs) }))
-      .sort((x, y) => x.a.atMs - y.a.atMs || x.i - y.i);
-    let ai = -1;
-    while (ai + 1 < aims.length && aims[ai + 1]!.s <= this.step) ai++;
-    let aimNow = this.aimAt(aims, ai, input.frightFor);
+    // The aim in effect now (the latest by time, then by order), and the ones due before target.
+    let cur: Aim | undefined;
+    const due: { a: Aim; i: number; s: number }[] = [];
+    for (let i = 0; i < input.aims.length; i++) {
+      const a = input.aims[i]!;
+      const s = stepAt(a.atMs);
+      if (s <= this.step) {
+        if (!cur || a.atMs >= cur.atMs) cur = a;
+      } else if (s < target) due.push({ a, i, s });
+    }
+    due.sort((x, y) => x.a.atMs - y.a.atMs || x.i - y.i);
+    let di = 0;
+    let aimNow = aimOf(cur, input.frightFor);
     while (this.step < target) {
       const k = this.step;
-      let moved = false;
-      while (ai + 1 < aims.length && aims[ai + 1]!.s <= k) {
-        ai++;
-        moved = true;
-      }
-      if (moved) aimNow = this.aimAt(aims, ai, input.frightFor);
+      let next: Aim | null = null;
+      while (di < due.length && due[di]!.s <= k) next = due[di++]!.a;
+      if (next) aimNow = aimOf(next, input.frightFor);
       for (const e of byStep.get(k) ?? []) this.apply(e, input);
       this.tick(k, aimNow);
       this.step = k + 1;
@@ -195,29 +236,6 @@ export class GhostSim {
     this.frightUntil = c.frightUntil;
     this.jinxCount = c.jinxCount;
     this.gs = c.ghosts.map(copyGhost);
-  }
-
-  private aimAt(aims: { a: Aim; s: number }[], i: number, only: string | undefined): AimNow | null {
-    const cur = aims[i]?.a;
-    if (!cur) return null;
-    const prev = aims[i - 1]?.a;
-    const ids = Object.keys(cur.tiles)
-      .filter((id) => only === undefined || id === only)
-      .sort();
-    return {
-      players: ids.map((id) => {
-        const tile = cur.tiles[id]!;
-        const before = prev?.tiles[id];
-        let dir: Vec = [0, 0];
-        if (before) {
-          const dx = tile[0] - before[0];
-          const dy = tile[1] - before[1];
-          if (dx !== 0 && Math.abs(dx) >= Math.abs(dy)) dir = [Math.sign(dx), 0];
-          else if (dy !== 0) dir = [0, Math.sign(dy)];
-        }
-        return { id, tile, dir };
-      }),
-    };
   }
 
   private apply(e: GhostEvent, input: GhostInput): void {
@@ -303,7 +321,20 @@ export class GhostSim {
     return best;
   }
 
-  private targetOf(g: GhostState, k: number, aim: AimNow | null): Vec {
+  /**
+   * Where ghost `id` is steering at the current step, given these inputs (the wandering ghost's
+   * random offset left out). For tests and debugging; it changes nothing.
+   */
+  target(id: number, input: GhostInput): Vec | null {
+    const g = this.gs.find((x) => x.id === id);
+    if (!g) return null;
+    let cur: Aim | undefined;
+    for (const a of input.aims)
+      if (stepAt(a.atMs) <= this.step && (!cur || a.atMs >= cur.atMs)) cur = a;
+    return this.targetOf(g, this.step, aimOf(cur, input.frightFor), false);
+  }
+
+  private targetOf(g: GhostState, k: number, aim: AimNow | null, wander = true): Vec {
     const m = this.m;
     if (g.eyes) return m.house;
     if (this.inHouse(g)) return m.exit;
@@ -329,14 +360,22 @@ export class GhostSim {
     if (!c) return m.exit;
     const [px, py] = c.tile;
     switch (g.id) {
-      case 1: // heads for where its chomper is going
-        return [px + c.dir[0] * 4, py + c.dir[1] * 4];
+      case 1: {
+        // heads for where its chomper is going: up to AHEAD_TILES on along its heading
+        const t: [number, number] = [px, py];
+        const d = DIR_ORDER.find((x) => DIRS[x][0] === c.dir[0] && DIRS[x][1] === c.dir[1]);
+        for (let i = 0; d && i < AHEAD_TILES && canEnter(m, t, d, false); i++) {
+          t[0] = wrapX(m, t[0] + c.dir[0]);
+          t[1] += c.dir[1];
+        }
+        return t;
+      }
       case 2: // wanders around its chomper
-        return [px + this.rng.int(8) - 4, py + this.rng.int(8) - 4];
+        return wander ? [px + this.rng.int(8) - 4, py + this.rng.int(8) - 4] : c.tile;
       case 3: {
-        // shy: backs off to its corner when close
+        // shy: chases from afar, backs off to its corner when close
         const d = (px - g.tile[0]) ** 2 + (py - g.tile[1]) ** 2;
-        return d < 64 ? [1, m.h - 2] : c.tile;
+        return d < SHY_TILES ** 2 ? [1, m.h - 2] : c.tile;
       }
       default: // direct
         return c.tile;

@@ -9,7 +9,9 @@ import {
   Lineup,
   attractPlayers,
   chomperColor,
+  modeFor,
   optionShown,
+  shownName,
 } from './lobby';
 import { defaultOptions } from '../options';
 import { LOOKS } from './render/core';
@@ -91,6 +93,26 @@ describe('lineup', () => {
   it('colors the chompers in the look, in seat order', () => {
     expect(chomperColor('Neon', 1)).toBe(LOOKS.Neon.players[1]);
     expect(chomperColor('Printed', 0)).not.toBe(chomperColor('Neon', 0));
+  });
+});
+
+describe('names and mode', () => {
+  it('drops the Bot prefix from computer names, and only theirs', () => {
+    expect(shownName({ name: 'Bot Rook', bot: true })).toBe('Rook');
+    expect(shownName({ name: 'Bot', bot: true })).toBe('Bot');
+    expect(shownName({ name: 'Bot Rook', bot: false })).toBe('Bot Rook');
+  });
+
+  it('follows the player count: Solo for one, Shared for more', () => {
+    expect(modeFor(1)).toBe('Solo');
+    expect(modeFor(2)).toBe('Shared');
+    expect(modeFor(4)).toBe('Shared');
+  });
+
+  it('draws the attract maze without in-maze name labels', () => {
+    const a = new Attract('LBL');
+    a.setRoster(attractPlayers([player('a', 'Wren')]));
+    expect(a.model('Printed').mode).not.toBe('Shared');
   });
 });
 

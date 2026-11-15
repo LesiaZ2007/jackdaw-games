@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { BOT_LEVELS, BOT_LEVEL_NAMES, type BotLevel, type Reaction } from '@jackdaw/engine';
 import {
   AddSeat,
@@ -84,6 +84,16 @@ export function ChomperIcon({ color, size }: { color: string; size?: number }) {
   );
 }
 
+/** A player's name as the lineup shows it: a computer's "Bot " prefix is left to its CPU tag. */
+export function shownName(p: { name: string; bot?: boolean }): string {
+  return p.bot ? p.name.replace(/^bot\s+/i, '') || p.name : p.name;
+}
+
+/** The mode that suits a table: Solo for one player, Shared for more. */
+export function modeFor(count: number): 'Solo' | 'Shared' {
+  return count <= 1 ? 'Solo' : 'Shared';
+}
+
 /**
  * The players, lined up like a high-score table: each is a chomper in their color, in seat order,
  * with their name. Computer players are tagged CPU. A newcomer chomps in from the side.
@@ -129,7 +139,7 @@ export function Lineup({
               <PlayerReaction reactions={reactions} playerId={p.id} name={p.name} size={28} />
             </span>
             <span className="mz-row__name" title={p.name}>
-              {p.name}
+              {shownName(p)}
             </span>
             {p.bot && <span className="mz-tag">CPU</span>}
             {p.id === hostId && !p.bot && <span className="mz-tag mz-tag--host">Host</span>}
@@ -414,6 +424,18 @@ export function MazeLobby({
   const [sheet, setSheet] = useState(false);
   const host = players.find((p) => p.id === hostId);
 
+  // The mode follows the head count until the host picks one (Solo for one, Shared for more), so
+  // a table that grew past the host alone is not stuck on Solo. Only the host's client does it.
+  const chosen = useRef(false);
+  const want = modeFor(players.length);
+  const mode = opts.mode;
+  useEffect(() => {
+    if (!isHost || chosen.current) return;
+    if ((mode === 'Solo' && want === 'Shared') || (mode === 'Shared' && want === 'Solo')) {
+      setOptions({ ...raw, mode: want });
+    }
+  }, [isHost, mode, want, setOptions, raw]);
+
   async function begin() {
     setBusy(true);
     try {
@@ -432,45 +454,56 @@ export function MazeLobby({
             {players.length} chomper{players.length === 1 ? '' : 's'} in lobby {code}
           </p>
         </header>
-        <div className="mz-lobby__screen" data-look={look}>
-          <AttractStage look={look} players={players} seed={code} />
-          {sheet && (
-            <div className="mz-sheet" role="dialog" aria-label={isHost ? 'Settings' : 'Rules'}>
-              <OptionsSheet
-                options={opts}
-                editable={isHost}
-                onChange={setOptions}
-                help={help}
-                groups={groups}
-              />
-              <Plaque small onClick={() => setSheet(false)}>
-                Done
-              </Plaque>
-            </div>
-          )}
+        <div className="mz-lobby__body">
+          <div className="mz-lobby__screen" data-look={look}>
+            <AttractStage look={look} players={players} seed={code} />
+            {sheet && (
+              <div className="mz-sheet" role="dialog" aria-label={isHost ? 'Settings' : 'Rules'}>
+                <OptionsSheet
+                  options={opts}
+                  editable={isHost}
+                  onChange={(next) => {
+                    if (next.mode !== opts.mode) chosen.current = true;
+                    setOptions(next);
+                  }}
+                  help={help}
+                  groups={groups}
+                />
+                <Plaque small onClick={() => setSheet(false)}>
+                  Done
+                </Plaque>
+              </div>
+            )}
+          </div>
+          <div className="mz-lobby__side">
+            <Lineup
+              players={players}
+              me={me}
+              hostId={hostId}
+              look={look}
+              reactions={reactions}
+              canTap={(id) => id === me || isHost}
+              onSeat={onSeat}
+              onAddBot={isHost ? onAddBot : undefined}
+            />
+            <BotsRow
+              players={players}
+              level={botLevel}
+              onChange={isHost ? setBotLevel : undefined}
+            />
+            {me && <ReactionBar className="mz-react" onReact={react} />}
+            <LobbyActions
+              isHost={isHost}
+              hostName={host?.name ?? 'the host'}
+              busy={busy}
+              blocker={blocker}
+              onStart={begin}
+              onSettings={() => setSheet((s) => !s)}
+              settingsOpen={sheet}
+              changeGame={changeGame}
+            />
+          </div>
         </div>
-        <Lineup
-          players={players}
-          me={me}
-          hostId={hostId}
-          look={look}
-          reactions={reactions}
-          canTap={(id) => id === me || isHost}
-          onSeat={onSeat}
-          onAddBot={isHost ? onAddBot : undefined}
-        />
-        <BotsRow players={players} level={botLevel} onChange={isHost ? setBotLevel : undefined} />
-        {me && <ReactionBar className="mz-react" onReact={react} />}
-        <LobbyActions
-          isHost={isHost}
-          hostName={host?.name ?? 'the host'}
-          busy={busy}
-          blocker={blocker}
-          onStart={begin}
-          onSettings={() => setSheet((s) => !s)}
-          settingsOpen={sheet}
-          changeGame={changeGame}
-        />
       </div>
       <LobbyChatPanel chat={chat} players={players} className="mz-chat" />
     </div>

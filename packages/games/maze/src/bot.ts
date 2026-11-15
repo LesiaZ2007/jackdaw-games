@@ -1,10 +1,17 @@
 import { botSlips } from '@jackdaw/engine';
 import type { BotContext, BotLevel } from '@jackdaw/engine';
 import type { MazeAction, MazePlayerView, MazeTableView } from './rules';
-import { AIM_MS, claimList, sharedFruitAt, spotPellets, takenBits } from './shared';
+import {
+  LOCAL_AIM_MS,
+  aimsFromTurns,
+  claimList,
+  sharedFruitAt,
+  spotPellets,
+  takenBits,
+} from './shared';
 import { ChomperSim, DYING_MS, spawnShield } from './sim/chomper';
 import type { Turn } from './sim/chomper';
-import { GhostSim, ghostSeed } from './sim/ghosts';
+import { GhostSim, aimTile, ghostSeed } from './sim/ghosts';
 import type { GhostCheckpoint, GhostEvent, GhostInput, GhostView } from './sim/ghosts';
 import { layoutAt } from './sim/generate';
 import { DIRS, DIR_ORDER, opposite, wrapX } from './sim/layouts';
@@ -12,8 +19,9 @@ import type { MazeLayout } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
 import { powerMs } from './sim/powers';
 import type { PowerKind } from './sim/powers';
+import { walkerAt } from './sim/predict';
 import { canEnter } from './sim/walker';
-import type { Dir, Vec, Walker } from './sim/walker';
+import type { Dir, Vec } from './sim/walker';
 
 /**
  * The server's computer player. Each call rebuilds the bot's chomper from its last report
@@ -26,7 +34,7 @@ import type { Dir, Vec, Walker } from './sim/walker';
  * phone does, so its ghosts are the phones' (later aims and other players' unreported eats can't
  * be known yet, by the bot or by a phone). In Solo and Race the ghosts chase the bot's own
  * chomper and nobody else runs them: they are rebuilt from the maze start each call, with
- * earlier aims taken from the last 40 turns it reported (the last turn point before each beat),
+ * earlier aims taken from the last 40 turns it reported (aimsFromTurns, as a phone after a refresh),
  * so a long maze's early aims are only approximate. A small cache (`ghostCache`) saves replaying
  * the whole maze each call; it never changes the result.
  */
@@ -35,12 +43,15 @@ import type { Dir, Vec, Walker } from './sim/walker';
 const DT = 50 / 3;
 /** Longest stretch one call simulates, in round ms (a bot that has been idle catches up). */
 const MAX_SPAN_MS = 20_000;
-/** How close (in steps) a ghost must be before a bot of each level steers away from it. */
-const DANGER: Record<BotLevel, number> = { easy: 2, normal: 3, hard: 4 };
+/**
+ * How close (in steps) a ghost must be before a bot of each level steers away from it. Ghosts
+ * chase where you are, so the better bots look well ahead.
+ */
+const DANGER: Record<BotLevel, number> = { easy: 2, normal: 4, hard: 6 };
 const FREEZE_MS = 2500;
 const JINX_MS = 8000;
 
-export { ghostSeed };
+export { ghostSeed, walkerAt };
 
 const key = (m: MazeLayout, x: number, y: number) => y * m.w + x;
 
@@ -101,22 +112,6 @@ function safeRoom(
     }
   }
   return count;
-}
-
-/** A reported position as a walker: on a tile, or part way along its heading. */
-export function walkerAt(m: MazeLayout, pos: [number, number, Dir | null]): Walker {
-  const [x, y, d] = pos;
-  const near = (v: number) => Math.abs(v - Math.round(v)) < 1e-6;
-  if (!d || (near(x) && near(y))) {
-    return { tile: [wrapX(m, Math.round(x)), Math.round(y)], dir: d, next: null, prog: 0 };
-  }
-  const [dx, dy] = DIRS[d];
-  const tile: [number, number] =
-    dx > 0 || dy > 0
-      ? [wrapX(m, Math.floor(x + 1e-9)), Math.floor(y + 1e-9)]
-      : [wrapX(m, Math.ceil(x - 1e-9)), Math.ceil(y - 1e-9)];
-  const prog = dx ? Math.abs(x - tile[0]) : Math.abs(y - tile[1]);
-  return { tile, dir: d, next: null, prog: Math.min(Math.max(prog, 0), 0.999) };
 }
 
 /**
@@ -237,19 +232,11 @@ export function mazeBot(
   for (const a of view.inbox)
     if (a.kind === 'freeze' && a.atMs + FREEZE_MS > from) chomper.freeze(a.atMs + FREEZE_MS);
 
-  // Solo and Race aims: the bot's own tile at each beat, from its turns for the past.
-  const tileAt = (t: number): Vec => {
-    let tile: Vec = [st[0], st[1]];
-    for (const [tt, x, y] of view.turns)
-      if (tt <= t) tile = [wrapX(m, Math.round(x)), Math.round(y)];
-    return tile;
-  };
+  // Solo and Race aims: rebuilt from its turns for the past, as a phone does after a refresh.
   let lastBeat = -Infinity;
   if (!shared) {
-    for (let b = 0; b <= from - off; b += AIM_MS) {
-      input.aims.push({ atMs: b, tiles: { [me]: tileAt(b + off) } });
-      lastBeat = b;
-    }
+    input.aims.push(...aimsFromTurns(m, me, view.turns, st, off, from - off, lvl));
+    lastBeat = input.aims[input.aims.length - 1]?.atMs ?? lastBeat;
   }
   if (shared) {
     // The newest server base at or before the last report (the oldest one if none is).
@@ -342,9 +329,8 @@ export function mazeBot(
     const dt = t - tEnd;
     tEnd = t;
     const g = t - off;
-    if (!shared && g - lastBeat >= AIM_MS) {
-      const [px, py] = chomper.position();
-      input.aims.push({ atMs: g, tiles: { [me]: [wrapX(m, Math.round(px)), Math.round(py)] } });
+    if (!shared && g - lastBeat >= LOCAL_AIM_MS) {
+      input.aims.push({ atMs: g, tiles: { [me]: aimTile(m, chomper.position()) } });
       lastBeat = g;
     }
     ghosts.stepTo(g, input);

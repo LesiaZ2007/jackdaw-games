@@ -5,7 +5,13 @@ import type { MazeOptions } from './options';
 import { BELL_GRACE_MS, COUNTDOWN_MS, layoutOf, maze as game } from './rules';
 import type { MazeState, MazeTick } from './rules';
 import {
+  AIM_MS,
   BASES_KEPT,
+  BASE_MS,
+  LOCAL_AIM_MS,
+  SHARED_PREDICT_MS,
+  aimsFrom,
+  aimsFromTurns,
   eventsFrom,
   SPOT_BACK_MS,
   decodeOwners,
@@ -18,11 +24,12 @@ import {
   FRUIT_SLACK_MS,
 } from './shared';
 import { FRUIT_EVERY } from './sim/chomper';
-import { GhostSim, ghostSeed } from './sim/ghosts';
+import { GhostSim, aimTile, ghostSeed, stepsIn } from './sim/ghosts';
 import type { Aim, GhostEvent, GhostInput } from './sim/ghosts';
 import { MAZE_LAYOUTS, layoutsOf } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
 import { POINTS } from './sim/powers';
+import { predictAlong } from './sim/predict';
 import type { PowerKind } from './sim/powers';
 
 const WREN = 'wren';
@@ -224,12 +231,15 @@ describe('a silent player (review focus 3)', () => {
     }
     expect(s.players[FINCH]!.score).toBe(finch);
     expect(s.shared!.bases).toHaveLength(BASES_KEPT);
-    expect(s.shared!.aims.length).toBeLessThanOrEqual(BASES_KEPT + 2);
-    for (const a of s.shared!.aims) expect(a.tiles[FINCH]).toEqual([5, 7]);
-    // The aims keep beating every 2 s.
+    expect(s.shared!.aims.length).toBeLessThanOrEqual((BASES_KEPT * BASE_MS) / AIM_MS + 2);
+    // Finch is carried on from (5, 7) for SHARED_PREDICT_MS at most, then stays put.
+    const p = predictAlong(layoutOf(s, 0), [5, 7, 'up'], (7.8 * SHARED_PREDICT_MS) / 1000);
+    const finchAt = aimTile(layoutOf(s, 0), [p.x, p.y, p.dir]);
+    for (const a of s.shared!.aims) expect(a.tiles[FINCH]).toEqual(finchAt);
+    // The aims keep beating, at least AIM_MS apart.
     const times = s.shared!.aims.map((a) => a.atMs);
     for (let i = 1; i < times.length; i++)
-      expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(2000);
+      expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(AIM_MS);
     const timer = game.nextTimer!(s)!;
     expect(timer).toEqual({ id: 'bell', at: s.endAt! + BELL_GRACE_MS });
     s = game.onTimer!(s, 'bell', createRng(3), timer.at);
@@ -370,17 +380,47 @@ describe('ghosts, aims and fruit', () => {
     expect(s.shared!.events.filter((e) => e.kind === 'eaten')).toHaveLength(1);
   });
 
-  it('aims beat every 2 s, each with a ghost base; old aims and events go', () => {
+  it('aims beat every 500 ms with headings, a ghost base every 2 s; old aims and events go', () => {
     let s = setup([WREN, ROOK], only('hunt'));
     s = act(s, WREN, tick(s, WREN, { t: 1000, powers: [[900, 0, 'hunt']], ghosts: [[1000, 0]] }));
     for (let t = 1500; t <= 12_000; t += 500)
       s = act(s, ROOK, tick(s, ROOK, { t, pos: [t / 1000, 1, 'right'] }));
     const aims = s.shared!.aims;
     expect(s.shared!.bases.map((b) => b.atMs)).toEqual([8000, 10_000, 12_000]);
-    // A sim restored from the 8 s base steers by the 6 s aim and reads its heading from 4 s.
-    expect(aims.map((a) => a.atMs)).toEqual([4000, 6000, 8000, 10_000, 12_000]);
-    expect(aims[4]!.tiles[ROOK]).toEqual([12, 1]);
+    // A sim restored from the 8 s base steers by the 8 s aim (it carries its own headings).
+    expect(aims.map((a) => a.atMs)).toEqual([
+      8000, 8500, 9000, 9500, 10_000, 10_500, 11_000, 11_500, 12_000,
+    ]);
+    // Rook just reported (12, 1) heading right (DIR_ORDER index 3).
+    expect(aims[8]!.tiles[ROOK]).toEqual([12, 1, 3]);
     expect(s.shared!.events).toEqual([]);
+  });
+
+  it('an aim carries a player on from their last report along their heading', () => {
+    let s = setup([WREN, ROOK]);
+    // A straight run of at least 11 open tiles somewhere in the maze.
+    const m = layoutOf(s, 0);
+    let run: [number, number] | null = null;
+    for (let y = 1; y < m.h - 1 && !run; y++)
+      for (let x = 1; x + 10 < m.w - 1 && !run; x++)
+        if (
+          m.rows[y]!.slice(x, x + 11)
+            .split('')
+            .every((c) => c === '.' || c === 'o' || c === ' ')
+        )
+          run = [x, y];
+    const [x0, y0] = run!;
+    // Rook reports at 3 s heading right along it; Wren's ticks bring the beats.
+    s = act(s, ROOK, tick(s, ROOK, { t: 3000, pos: [x0, y0, 'right'] }));
+    const at3 = s.shared!.aims[s.shared!.aims.length - 1]!;
+    expect(at3.atMs).toBe(3000);
+    expect(at3.tiles[ROOK]).toEqual([x0, y0, 3]);
+    s = act(s, WREN, tick(s, WREN, { t: 3500 }));
+    // 500 ms at 7.8 tiles/s: about 3.9 tiles further right.
+    expect(s.shared!.aims[s.shared!.aims.length - 1]!.tiles[ROOK]).toEqual([x0 + 4, y0, 3]);
+    s = act(s, WREN, tick(s, WREN, { t: 3000 + SHARED_PREDICT_MS + 2000 }));
+    // Never more than SHARED_PREDICT_MS on: about 9.4 tiles.
+    expect(s.shared!.aims[s.shared!.aims.length - 1]!.tiles[ROOK]).toEqual([x0 + 9, y0, 3]);
   });
 
   it('fruit shows up after every 60 owned pellets; the first claim wins', () => {
@@ -620,5 +660,38 @@ describe('syncGhosts', () => {
     sim.stepTo(6500, { aims, events: [] });
     sim.stepTo(10_000, { aims, events: late });
     expect(sim.ghosts()).not.toEqual(ref.ghosts());
+  });
+});
+
+describe('aimsFromTurns', () => {
+  it('rebuilds a chomper’s own aims every 150 ms from its turns, with headings', () => {
+    const m = MAZE_LAYOUTS[0]!;
+    // Grove: from (13, 18) heading left along row 18, then up column 6 from (6, 18) at 1 s.
+    const turns: [number, number, number, 'left' | 'up'][] = [
+      [5000, 13, 18, 'left'],
+      [5000 + Math.round((7 / 7.8) * 1000), 6, 18, 'up'],
+    ];
+    const aims = aimsFromTurns(m, 'wren', turns, [13, 18, 'left'], 5000, 3000, 1);
+    expect(aims.map((a) => a.atMs)).toEqual(aims.map((_, i) => i * LOCAL_AIM_MS));
+    expect(aims[aims.length - 1]!.atMs).toBeGreaterThan(3000 - LOCAL_AIM_MS);
+    expect(aims[0]!.tiles.wren).toEqual([13, 18, 1]);
+    // 450 ms in: about 3.5 tiles left of the start (13 - 3.51 rounds to 9).
+    expect(aims[3]!.tiles.wren).toEqual([9, 18, 1]);
+    // After the turn up column 6, it stops at the wall above (6, 16) (heading still up).
+    expect(aims[aims.length - 1]!.tiles.wren).toEqual([6, 16, 0]);
+  });
+});
+
+describe('aimsFrom', () => {
+  it('keeps the aim in effect at a checkpoint’s step, even one dated just after it', () => {
+    const aims: Aim[] = [
+      { atMs: 0, tiles: { wren: [1, 1, 3] } },
+      { atMs: 1010, tiles: { wren: [5, 1, 3] } },
+      { atMs: 2010, tiles: { wren: [9, 1, 3] } },
+    ];
+    // A sim stepped to 2010 ms stops at step 120; the 2010 aim only applies from step 121.
+    expect(aimsFrom(aims, stepsIn(2010)).map((a) => a.atMs)).toEqual([1010, 2010]);
+    expect(aimsFrom(aims, stepsIn(2010) + 1).map((a) => a.atMs)).toEqual([2010]);
+    expect(aimsFrom(aims, 0).map((a) => a.atMs)).toEqual([0, 1010, 2010]);
   });
 });

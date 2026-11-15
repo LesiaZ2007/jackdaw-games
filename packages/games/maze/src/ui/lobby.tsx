@@ -107,7 +107,7 @@ export function Lineup({
   /** Whether tapping this player's row does something (yours, or anyone's for the host). */
   canTap?: (id: string) => boolean;
   onSeat?: (id: string) => void;
-  /** Host only: offer a "+ CPU" slot after the last player. */
+  /** Host only: offer a "+" slot after the last player. */
   onAddBot?: () => void;
   tv?: boolean;
 }) {
@@ -171,7 +171,6 @@ export function Lineup({
             <span className="mz-row__chomp mz-row__chomp--open">
               <AddSeat onAdd={onAddBot} className="mz-addseat" />
             </span>
-            <span className="mz-row__name">Add a CPU</span>
           </span>
         </li>
       )}

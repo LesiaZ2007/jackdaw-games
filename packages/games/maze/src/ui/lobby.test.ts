@@ -78,10 +78,14 @@ describe('lineup', () => {
     expect(inspect(bot).text).toContain('Rook');
   });
 
-  it('offers a CPU slot only when the host can add one', () => {
+  it('offers a bare "+" slot only when the host can add one', () => {
+    const open = (r: ReturnType<typeof lineup>) =>
+      r.el.filter((e) => classOf(e).includes('mz-row--open'));
     const without = inspect(createElement(Lineup, { players, me: 'a', hostId: 'a', look: 'Neon' }));
-    expect(without.text).not.toContain('Add a CPU');
-    expect(lineup().text).toContain('Add a CPU');
+    expect(open(without)).toHaveLength(0);
+    const r = lineup();
+    expect(open(r)).toHaveLength(1);
+    expect(r.text).not.toContain('Add a CPU');
   });
 
   it('colors the chompers in the look, in seat order', () => {

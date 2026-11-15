@@ -68,6 +68,9 @@ importers:
       '@jackdaw/game-mafia':
         specifier: workspace:*
         version: link:../../packages/games/mafia
+      '@jackdaw/game-maze':
+        specifier: workspace:*
+        version: link:../../packages/games/maze
       '@jackdaw/game-monopoly':
         specifier: workspace:*
         version: link:../../packages/games/monopoly
@@ -304,6 +307,25 @@ importers:
         version: 19.3.0
 
   packages/games/mafia:
+    dependencies:
+      '@jackdaw/engine':
+        specifier: workspace:*
+        version: link:../../engine
+      '@jackdaw/ui':
+        specifier: workspace:*
+        version: link:../../ui
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
+    devDependencies:
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+
+  packages/games/maze:
     dependencies:
       '@jackdaw/engine':
         specifier: workspace:*

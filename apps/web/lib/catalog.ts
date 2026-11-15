@@ -18,6 +18,7 @@ import { wordhoardUi } from '@jackdaw/game-wordhoard/ui';
 import { zapUi } from '@jackdaw/game-zap/ui';
 import { fandangoUi } from '@jackdaw/game-fandango/ui';
 import { solitaireUi } from '@jackdaw/game-solitaire/ui';
+import { mazeUi } from '@jackdaw/game-maze/ui';
 import type { GameAbout, GameArt, GameUi } from '@jackdaw/ui';
 import { boxArt, kindOrder } from './games-lite';
 import { games } from './registry';
@@ -61,6 +62,7 @@ export const gameUis: Record<string, GameUi> = {
   zap: zapUi,
   fandango: fandangoUi,
   solitaire: solitaireUi,
+  maze: mazeUi,
 };
 
 export { CATEGORY_LABEL, COMPLEXITY_LABEL, KINDS, unfitReason, type Kind } from './games-lite';

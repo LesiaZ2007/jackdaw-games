@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
+import type { GameUi } from '@jackdaw/ui';
+import { gameUis } from './catalog';
 import { getDeviceToken, getDisplayId } from './identity';
 import { PollingTransport, TransportError } from './transport';
 
@@ -23,6 +25,20 @@ export interface LobbyState {
 }
 
 /**
+ * How often to poll while a game runs: the game's per-moment `livePoll` when it has one, else its
+ * `livePollMs`, else null (the usual pace). Always null outside a game.
+ */
+export function livePollFor(
+  snapshot: LobbySnapshot,
+  uis: Record<string, GameUi | undefined>,
+): number | null {
+  if (snapshot.status !== 'in_game' || !snapshot.session) return null;
+  const game = uis[snapshot.session.gameId];
+  if (!game) return null;
+  return game.livePoll ? game.livePoll(snapshot.tableView) : (game.livePollMs ?? null);
+}
+
+/**
  * One lobby's live state for this device. Players poll with their device token; TV displays
  * poll with a display id and never get a private view.
  */
@@ -40,6 +56,7 @@ export function useLobby(code: string, role: 'player' | 'display'): LobbyState {
     transport.current = t;
     const stop = t.subscribe(
       (s) => {
+        t.setLivePoll(livePollFor(s, gameUis));
         setSnapshot(s);
         setMissing(false);
       },

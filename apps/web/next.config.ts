@@ -62,6 +62,7 @@ const config: NextConfig = {
     '@jackdaw/game-fandango',
     '@jackdaw/game-solitaire',
     '@jackdaw/game-cambio',
+    '@jackdaw/game-maze',
   ],
   // Put metadata in <head> for every client so link previews work.
   htmlLimitedBots: /.*/,

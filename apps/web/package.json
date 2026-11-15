@@ -22,6 +22,7 @@
     "@jackdaw/game-fandango": "workspace:*",
     "@jackdaw/game-kings": "workspace:*",
     "@jackdaw/game-mafia": "workspace:*",
+    "@jackdaw/game-maze": "workspace:*",
     "@jackdaw/game-monopoly": "workspace:*",
     "@jackdaw/game-poker": "workspace:*",
     "@jackdaw/game-risk": "workspace:*",

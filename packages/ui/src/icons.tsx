@@ -249,6 +249,15 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 58h10v-6h14v6h10v-6h14" />
     </g>
   ),
+  /** A round chomper with an eye, mouth open toward a row of pellets (Maze). */
+  chomper: (
+    <g {...stroke(3.4)}>
+      <path d="M40.7 21.7A18 18 0 1 0 40.7 42.3L26 32z" />
+      <circle cx="24" cy="19" r="2.2" />
+      <circle cx="51" cy="32" r="1.8" />
+      <circle cx="59" cy="32" r="1.8" />
+    </g>
+  ),
   /** A sun and a moon side by side over a strip of board squares (Fandango). */
   sunmoon: (
     <g {...stroke(3.4)}>

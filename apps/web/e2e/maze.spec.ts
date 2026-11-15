@@ -1,0 +1,116 @@
+import { expect, test, type Browser, type Page } from '@playwright/test';
+
+const SHOTS = process.env.E2E_SHOTS;
+
+async function lobby(browser: Browser, name: string, size: { width: number; height: number }) {
+  const page = await (await browser.newContext({ viewport: size })).newPage();
+  const api: string[] = [];
+  page.on('request', (r) => {
+    if (new URL(r.url()).pathname.startsWith('/api/')) api.push(r.url());
+  });
+  await page.goto('/');
+  await page.getByLabel('Your name').fill(name);
+  await page.getByRole('button', { name: 'Create a lobby' }).click();
+  await page.waitForURL(/\/r\/[A-Z]{4}$/);
+  await page
+    .getByRole('button', { name: /^(Mini game )?Maze/ })
+    .first()
+    .click();
+  await page.getByRole('button', { name: 'Show options and rules' }).click();
+  return { page, api, code: page.url().split('/').pop()! };
+}
+
+/** The score cards must end above the maze, never overlap it, and the page must not scroll. */
+async function expectFits(page: Page) {
+  const cards = (await page.locator('.mz-cards').first().boundingBox())!;
+  const maze = (await page.locator('.mz-player .mz-canvas').boundingBox())!;
+  expect(cards.y + cards.height).toBeLessThanOrEqual(maze.y + 1);
+  const scrolls = await page.evaluate(
+    () => document.documentElement.scrollHeight > window.innerHeight + 1,
+  );
+  expect(scrolls).toBe(false);
+}
+
+const myScore = async (page: Page) =>
+  Number(await page.locator('.mz-card.is-you .mz-card__score').first().innerText());
+
+async function steer(page: Page, ms: number) {
+  const keys = ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'];
+  const end = Date.now() + ms;
+  for (let i = 0; Date.now() < end; i++) {
+    await page.keyboard.press(keys[i % 4]!);
+    await page.waitForTimeout(350);
+  }
+}
+
+test('solo: start, steer with the arrows, the score moves, and the maze fits', async ({
+  browser,
+}) => {
+  const { page, api } = await lobby(browser, 'Wren', { width: 360, height: 640 });
+  await page.getByRole('radio', { name: 'Solo' }).click();
+  await page.getByRole('button', { name: 'Start Maze' }).click();
+  await expect(page.getByLabel('The maze')).toBeVisible();
+  await expect(page.locator('.mz-card.is-you')).toBeVisible();
+  await page.waitForTimeout(5_000); // the countdown
+  const t0 = Date.now();
+  const n0 = api.length;
+  await expect
+    .poll(async () => {
+      await steer(page, 2_000);
+      return myScore(page);
+    })
+    .toBeGreaterThan(0);
+  await expectFits(page);
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/maze-solo-360.png` });
+  await page.setViewportSize({ width: 1280, height: 680 });
+  await page.waitForTimeout(500);
+  await expectFits(page);
+  await steer(page, Math.max(0, 20_000 - (Date.now() - t0)));
+  const perMin = ((api.length - n0) * 60_000) / (Date.now() - t0);
+  console.log(`maze requests/min/player solo: ${perMin.toFixed(1)}`);
+});
+
+test('shared: three computer players score, the TV shows four chompers', async ({ browser }) => {
+  const { page, api, code } = await lobby(browser, 'Wren', { width: 360, height: 640 });
+  await page.getByRole('radio', { name: 'Shared' }).click();
+  for (let i = 0; i < 3; i++) {
+    await page.getByRole('button', { name: 'Add a computer player' }).first().click();
+  }
+  await page.getByRole('button', { name: 'Start Maze' }).click();
+  await expect(page.getByLabel('The maze')).toBeVisible();
+  await expect(page.locator('.mz-card')).toHaveCount(4);
+  const tv = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
+  await tv.goto(`/tv/${code}`, { waitUntil: 'domcontentloaded' });
+  await expect(tv.locator('.mz-tv .mz-card')).toHaveCount(4);
+  await expect(tv.getByLabel('The maze')).toBeVisible();
+
+  await page.waitForTimeout(5_000);
+  const t0 = Date.now();
+  const n0 = api.length;
+  await steer(page, 10_000);
+  const scores = await page.locator('.mz-card:not(.is-you) .mz-card__score').allInnerTexts();
+  expect(scores).toHaveLength(3);
+  expect(scores.some((s) => Number(s) > 0)).toBe(true);
+  await expectFits(page);
+  await page.setViewportSize({ width: 1280, height: 680 });
+  await page.waitForTimeout(500);
+  await expectFits(page);
+  await steer(page, Math.max(0, 20_000 - (Date.now() - t0)));
+  const perMin = ((api.length - n0) * 60_000) / (Date.now() - t0);
+  console.log(`maze requests/min/player shared: ${perMin.toFixed(1)}`);
+  if (SHOTS) await tv.screenshot({ path: `${SHOTS}/maze-tv.png` });
+});
+
+test('race: two players at the normal pace', async ({ browser }) => {
+  const { page, api } = await lobby(browser, 'Wren', { width: 390, height: 844 });
+  await page.getByRole('radio', { name: 'Race' }).click();
+  await page.getByRole('button', { name: 'Add a computer player' }).first().click();
+  await page.getByRole('button', { name: 'Start Maze' }).click();
+  await expect(page.getByLabel('The maze')).toBeVisible();
+  await page.waitForTimeout(5_000);
+  const t0 = Date.now();
+  const n0 = api.length;
+  await steer(page, 20_000);
+  const perMin = ((api.length - n0) * 60_000) / (Date.now() - t0);
+  console.log(`maze requests/min/player race: ${perMin.toFixed(1)}`);
+});

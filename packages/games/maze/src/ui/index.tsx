@@ -5,7 +5,7 @@ import type { MazeTableView } from '../rules';
 import { POWER_INFO } from './info';
 import { PlayerScreen } from './player';
 import { Results } from './results';
-import { LIVE_POLL_MS } from './runner';
+import { LIVE_POLL_MS, SOLO_POLL_MS } from './runner';
 import { TvScreen } from './tv';
 
 /** A power-up's switch: what it does when on, and that it never appears when off. */
@@ -80,7 +80,11 @@ export const mazeUi: GameUi = {
   fullBleed: true,
   livePoll: (t) => {
     const v = t as MazeTableView;
-    return v.mode === 'Shared' && v.phase === 'play' ? LIVE_POLL_MS : null;
+    if (v.phase !== 'play') return null;
+    // Solo needs nothing from the server mid-maze (its reports bring the replies it needs), so
+    // it polls only for presence and the host's buttons (2026-11-14: 23 requests a minute).
+    if (v.mode === 'Solo') return SOLO_POLL_MS;
+    return v.mode === 'Shared' ? LIVE_POLL_MS : null;
   },
   PlayerScreen,
   TvScreen,

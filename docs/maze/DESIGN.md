@@ -148,7 +148,8 @@ tetra").
 
 - **Live polling only in Shared-maze rounds**, at the 600 ms floor (800 ms until the 2026-11-14
   playtest).
-  Solo needs no server mid-round: it reports once per maze cleared and at the end. Race uses the
+  Solo needs no server mid-round: it reports once per maze cleared and at the end, and polls only
+  every 7.5 s while a maze is played (for presence and the host's buttons). Race uses the
   normal pace plus a report when an attack needs routing. Lobby, countdown and results use the
   normal pace.
 - **Reports ride on polls.** A report is a send whose reply is the fresh snapshot (the

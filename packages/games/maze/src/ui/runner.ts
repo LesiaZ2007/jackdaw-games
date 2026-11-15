@@ -78,6 +78,8 @@ export const RACE_PACE_MS = 1_500;
 export const CLEAR_RESEND_MS = 1_500;
 /** The Shared maze's live poll (the platform's floor). */
 export const LIVE_POLL_MS = 600;
+/** Solo's poll while a maze is being played: slow, as nothing is needed from the server. */
+export const SOLO_POLL_MS = 7_500;
 /**
  * Others are drawn this far behind real time (2026-11-14 playtest: about a second felt laggy).
  * Past their last report they are carried on along their corridor (`samplePath`).

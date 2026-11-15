@@ -1,6 +1,6 @@
 import { walkerAt } from '../bot';
 import type { MazeOptions } from '../options';
-import { LIVES, factPoints, mazePoints } from '../rules';
+import { LIVES, catchCost, factPoints, mazePoints } from '../rules';
 import type {
   MazeAction,
   MazeFacts,
@@ -1074,8 +1074,8 @@ export class Runner {
         mazePoints(this.m, v.eaten, v.facts) +
         (this.cleared ? POINTS.mazeClear : 0);
     }
-    diff += (this.caught - v.caught) * POINTS.caught;
-    return Math.max(0, rec.score + diff);
+    const score = Math.max(0, rec.score + diff);
+    return score - catchCost(this.table.mode, score, this.caught - v.caught);
   }
 
   private powerOf(p: { kind: PowerKind; untilMs: number } | null, tMs: number, maze: number) {

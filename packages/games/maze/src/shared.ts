@@ -2,6 +2,7 @@ import { createRng } from '@jackdaw/engine';
 import { enabledPowers } from './options';
 import {
   attackOnPickup,
+  chargeCatches,
   endRound,
   layoutOf,
   levelOf,
@@ -299,7 +300,7 @@ export function settleShared(
     fruit = { fruit: (fruitN - 1) % FRUIT.length, atMs, untilMs: atMs + FRUIT_MS };
   }
 
-  const p: PlayerRec = {
+  const gained: PlayerRec = {
     ...prev,
     eaten: encodeBits(had),
     facts,
@@ -309,6 +310,7 @@ export function settleShared(
     fruit: prev.fruit + facts.fruit.length - prev.facts.fruit.length,
     power: powerAt(facts, levelOf(prev.maze), tick.t),
   };
+  const p = chargeCatches(s, prev, gained);
   let out: MazeState = { ...s, players: { ...s.players, [playerId]: p } };
   out = rescoreAll(out);
 

@@ -1,0 +1,476 @@
+/*
+ * Maze: score cards across the top, the maze fitted under them, printed panels (the kit's lid
+ * and plaque) for the start and the end. The maze itself is a canvas drawn in the chosen look;
+ * everything else here follows the shell's day and dark tokens.
+ */
+
+.mz {
+  --mz-gap: 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mz-gap);
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px 10px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  overscroll-behavior: none;
+}
+.mz-player {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Score cards ───────────────────────────────────────────────────────── */
+.mz-cards {
+  position: relative;
+  z-index: 3;
+  flex: none;
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 6px;
+}
+.mz-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  font: 800 16px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.mz-chip:empty {
+  display: none;
+}
+.mz-chip__hearts {
+  color: var(--gules);
+  font-size: 20px;
+  letter-spacing: 0.1em;
+}
+.mz-chip__time {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.mz-card {
+  position: relative;
+  flex: 1 1 96px;
+  max-width: 190px;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'dot name score'
+    'power power power';
+  align-items: center;
+  column-gap: 6px;
+  padding: 4px 8px 6px 6px;
+  border: 2px solid var(--rule);
+  background: var(--paper);
+  overflow: hidden;
+}
+.mz-card.is-you {
+  border-color: var(--ink);
+}
+.mz-card.is-done {
+  opacity: 0.7;
+}
+.mz-card__dot {
+  grid-area: dot;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--mz-dot, var(--rule));
+  display: inline-block;
+}
+.mz-card__name {
+  grid-area: name;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 800 14px/1.1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.mz-card.is-you .mz-card__name {
+  color: var(--ink);
+}
+.mz-card__score {
+  grid-area: score;
+  font: 900 24px/1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  transform-origin: right center;
+}
+.mz-card__score.is-bump {
+  animation: mz-bump 0.35s var(--ease-out, ease-out);
+}
+@keyframes mz-bump {
+  0% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.mz-card__power {
+  grid-area: power;
+  font: 800 11px/1 var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding-top: 2px;
+}
+.mz-card__bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  transition: width 0.1s linear;
+}
+.mz-sound {
+  align-self: center;
+}
+
+/* ── The maze ──────────────────────────────────────────────────────────── */
+.mz-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mz-screen {
+  position: relative;
+  padding: 4px;
+  background: #07021a;
+  border: 2px solid var(--ink);
+  box-shadow:
+    0 0 0 4px var(--paper),
+    0 0 0 6px var(--ink);
+  line-height: 0;
+}
+.mz-canvas {
+  display: block;
+}
+
+/* ── Panels ────────────────────────────────────────────────────────────── */
+.mz-over {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: var(--backdrop, rgba(20, 20, 19, 0.55));
+  overflow: hidden auto;
+}
+.mz-over--low {
+  align-items: flex-end;
+  background: transparent;
+  pointer-events: none;
+}
+.mz-lid {
+  width: 100%;
+  max-width: 440px;
+  padding: 26px 28px 24px;
+  text-align: center;
+  box-sizing: border-box;
+  animation: mz-pop 0.5s var(--ease-out, ease-out) both;
+  color: var(--ink);
+}
+.mz-lid--small {
+  max-width: 320px;
+}
+@keyframes mz-pop {
+  0% {
+    transform: scale(0.8) translateY(30px);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.04) translateY(-4px);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+.mz-kicker {
+  font: 700 14px/1.2 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-2);
+}
+.mz-lid__title {
+  margin: 4px 0 6px;
+  font: 800 44px/0.95 var(--font-display);
+  text-wrap: balance;
+}
+.mz-lid__p {
+  margin: 6px 0;
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.mz-lid__p:empty {
+  display: none;
+}
+.mz-big {
+  margin: 8px 0 2px;
+  font: 900 60px/1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+}
+.mz-best {
+  color: var(--or);
+}
+.mz-keys {
+  margin-top: 8px;
+  font: 700 13px/1.2 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-2);
+}
+.mz-legend {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
+  font: 800 14px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mz-legend li::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.mz-btns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+/* ── Ranking and results ───────────────────────────────────────────────── */
+.mz-rank {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  text-align: left;
+}
+.mz-rank li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--rule);
+  font: 800 22px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  opacity: 0;
+  animation: mz-rise 0.4s var(--ease-out, ease-out) forwards;
+}
+.mz-rank li.is-you {
+  color: var(--or);
+}
+.mz-rank__n {
+  width: 26px;
+  color: var(--ink-2);
+}
+.mz-rank__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mz-rank__s {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+@keyframes mz-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.mz-results {
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.mz-stats {
+  width: 100%;
+  margin-top: 14px;
+  border-collapse: collapse;
+  font: 700 15px/1.2 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.mz-stats th,
+.mz-stats td {
+  padding: 4px 3px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.mz-stats th:first-child {
+  text-align: left;
+}
+.mz-stats thead th {
+  color: var(--ink-2);
+  font-size: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.mz-confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* ── The TV ────────────────────────────────────────────────────────────── */
+.mz-tv {
+  --mz-gap: 12px;
+  min-height: 0;
+  height: 100%;
+  padding: 14px 24px 18px;
+}
+.mz-tv .mz-cards {
+  max-width: none;
+}
+.mz-cards.is-tv .mz-card {
+  flex: 1 1 180px;
+  max-width: 280px;
+  padding: 8px 12px 10px 10px;
+}
+.mz-cards.is-tv .mz-card__name {
+  font-size: 22px;
+}
+.mz-cards.is-tv .mz-card__score {
+  font-size: 40px;
+}
+.mz-cards.is-tv .mz-card__dot {
+  width: 22px;
+  height: 22px;
+}
+.mz-cards.is-tv .mz-card__power {
+  font-size: 15px;
+}
+.mz-cards.is-tv .mz-chip {
+  font-size: 22px;
+  padding: 6px 16px;
+}
+.mz-cards.is-tv .mz-chip__time {
+  font-size: 34px;
+}
+.mz-minis {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+  justify-content: center;
+}
+.mz-mini {
+  margin: 0;
+  line-height: 0;
+}
+.mz-mini__cap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  line-height: 1;
+  font: 800 18px/1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mz-mini__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mz-mini__maze {
+  color: var(--ink-2);
+  font-size: 15px;
+}
+.mz-mini__score {
+  margin-left: auto;
+  font: 900 22px/1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+}
+.mz-tvcount {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 900 min(40vh, 40vw) / 1 var(--font-plaque);
+  color: var(--ink);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  .mz {
+    padding: 6px 8px 8px;
+  }
+  .mz-card {
+    flex-basis: 72px;
+    padding: 3px 6px 5px 5px;
+  }
+  .mz-card__score {
+    font-size: 20px;
+  }
+  .mz-card__name {
+    font-size: 12px;
+  }
+  .mz-lid {
+    padding: 20px 18px 18px;
+  }
+  .mz-lid__title {
+    font-size: 36px;
+  }
+  .mz-big {
+    font-size: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-lid,
+  .mz-rank li,
+  .mz-card__score.is-bump {
+    animation: none;
+    opacity: 1;
+  }
+}

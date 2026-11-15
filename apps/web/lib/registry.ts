@@ -18,6 +18,7 @@ import { zap } from '@jackdaw/game-zap';
 import { fandango } from '@jackdaw/game-fandango';
 import { solitaire } from '@jackdaw/game-solitaire';
 import { cambio } from '@jackdaw/game-cambio';
+import { maze } from '@jackdaw/game-maze';
 
 /**
  * The one place games are registered. The room runtime runs these modules, and the catalog
@@ -44,4 +45,5 @@ export const games: GameRegistry = {
   [fandango.meta.id]: fandango,
   [solitaire.meta.id]: solitaire,
   [cambio.meta.id]: cambio,
+  [maze.meta.id]: maze,
 };

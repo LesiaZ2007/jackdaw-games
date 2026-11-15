@@ -68,6 +68,9 @@ importers:
       '@jackdaw/game-mafia':
         specifier: workspace:*
         version: link:../../packages/games/mafia
+      '@jackdaw/game-maze':
+        specifier: workspace:*
+        version: link:../../packages/games/maze
       '@jackdaw/game-monopoly':
         specifier: workspace:*
         version: link:../../packages/games/monopoly

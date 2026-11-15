@@ -8,6 +8,7 @@ import { meta as codenames } from '@jackdaw/game-codenames/meta';
 import { meta as fandango } from '@jackdaw/game-fandango/meta';
 import { meta as kings } from '@jackdaw/game-kings/meta';
 import { meta as mafia } from '@jackdaw/game-mafia/meta';
+import { meta as maze } from '@jackdaw/game-maze/meta';
 import { meta as monopoly } from '@jackdaw/game-monopoly/meta';
 import { meta as poker } from '@jackdaw/game-poker/meta';
 import { meta as risk } from '@jackdaw/game-risk/meta';
@@ -135,6 +136,7 @@ const BOXES: [GameMeta, Field, string][] = [
   [fandango, 'semee', 'sunmoon'],
   [kings, 'checky', 'crown'],
   [mafia, 'fretty', 'fedora'],
+  [maze, 'checky', 'chomper'],
   [monopoly, 'fretty', 'house'],
   [poker, 'lozengy', 'cards'],
   [risk, 'checky', 'banners'],

@@ -6,7 +6,7 @@ export const meta: GameMeta = {
   tagline: 'Chomp the maze, dodge the ghosts, jinx your friends.',
   minPlayers: 1,
   maxPlayers: 8,
-  category: 'mini',
+  category: 'word',
   minutes: [3, 10],
   complexity: 1,
 };

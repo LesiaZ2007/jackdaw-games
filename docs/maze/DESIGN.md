@@ -157,6 +157,18 @@ tetra").
 - **Count it.** The builder measures requests per player per minute for each mode in the
   end-to-end run and notes the numbers here.
 
+Measured on a Vercel preview, one human steering for 60 s of live play (all `/api/` requests from
+that browser, counting the platform's own normal-pace snapshot polling):
+
+- **Solo:** about 23 requests per minute. This is above the 10 per minute target: the platform's
+  normal-pace poll keeps running during a Solo round, and the game adds almost nothing on top.
+- **Shared** (with three computer players): about 115 requests per minute. This is above the 90 per
+  minute target (live polling at about 800 ms plus reports).
+- **Race** (with one computer player): about 80 requests per minute at the normal pace plus
+  reports.
+
+The end-to-end test (`apps/web/e2e/maze.spec.ts`) prints the same counts for each mode on every run.
+
 ## Sync decisions (builder's calls)
 
 - **Ghosts in the Shared maze.** Ghost movement is a pure function of the seed, the round clock

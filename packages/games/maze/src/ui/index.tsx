@@ -25,6 +25,22 @@ export const mazeUi: GameUi = {
       'Eat pellets for points and power spots for a power-up. Ghosts cost you points, or a life when you play alone.',
       'Alone, clear every maze before the lives run out. In a shared maze, the most points when the bell rings wins. In a race, clear the mazes first.',
     ],
+    pictures: [
+      {
+        src: '/games/maze/game-phone.png',
+        alt: 'Maze on a phone: lives and the maze number, your score card across the top, and a printed maze with pellets, four ghosts and a red chomper.',
+      },
+      {
+        src: '/games/maze/desktop.png',
+        alt: 'Maze on a laptop: one score card per player above a big shared maze, with computer chompers named after birds eating pellets while ghosts roam.',
+        desktop: true,
+      },
+      {
+        src: '/games/maze/tv.png',
+        alt: 'Maze on a TV: a score card for each of four players and the clock above one shared maze, each chomper labeled with its name.',
+        desktop: true,
+      },
+    ],
   },
   optionHelp: {
     mode: {

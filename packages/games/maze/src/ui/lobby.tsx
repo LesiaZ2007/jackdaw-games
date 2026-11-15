@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, type CSSProperties } from 'react';
-import type { Reaction } from '@jackdaw/engine';
+import { BOT_LEVELS, BOT_LEVEL_NAMES, type BotLevel, type Reaction } from '@jackdaw/engine';
 import {
   AddSeat,
   LobbyChatPanel,
@@ -177,6 +177,54 @@ export function Lineup({
       )}
     </ol>
   );
+}
+
+/** "Bots play: Easy / Normal / Hard": the host can change it, everyone else just reads it. */
+export function BotLevelPicker({
+  level,
+  onChange,
+}: {
+  level: BotLevel;
+  /** Host only. */
+  onChange?: (level: BotLevel) => void;
+}) {
+  return (
+    <div className="mz-bots">
+      <span className="mz-bots__label">Bots play</span>
+      {onChange ? (
+        <span className="mz-bots__choices" role="radiogroup" aria-label="Bots play">
+          {BOT_LEVELS.map((l) => (
+            <Plaque
+              key={l}
+              small
+              role="radio"
+              aria-checked={level === l}
+              className={level === l ? 'mz-bots__on' : undefined}
+              onClick={() => onChange(l)}
+            >
+              {BOT_LEVEL_NAMES[l]}
+            </Plaque>
+          ))}
+        </span>
+      ) : (
+        <b className="mz-bots__level">{BOT_LEVEL_NAMES[level]}</b>
+      )}
+    </div>
+  );
+}
+
+/** The bot level, but only once a computer player is seated. */
+export function BotsRow({
+  players,
+  level,
+  onChange,
+}: {
+  players: readonly ScreenPlayer[];
+  level?: BotLevel;
+  onChange?: (level: BotLevel) => void;
+}) {
+  if (!level || !players.some((p) => p.bot)) return null;
+  return <BotLevelPicker level={level} onChange={onChange} />;
 }
 
 /** What the lobby's Start area shows: the host's READY? button, or who everyone is waiting for. */
@@ -356,6 +404,8 @@ export function MazeLobby({
   react,
   chat,
   onAddBot,
+  botLevel,
+  setBotLevel,
   help,
   groups,
 }: GameLobbyProps & { help?: Help; groups?: OptionGroup[] }) {
@@ -411,6 +461,7 @@ export function MazeLobby({
           onSeat={onSeat}
           onAddBot={isHost ? onAddBot : undefined}
         />
+        <BotsRow players={players} level={botLevel} onChange={isHost ? setBotLevel : undefined} />
         {me && <ReactionBar className="mz-react" onReact={react} />}
         <LobbyActions
           isHost={isHost}

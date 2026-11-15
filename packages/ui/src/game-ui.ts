@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import type {
   Avatar,
+  BotLevel,
   GameResult,
   PlayerScreenProps,
   Reaction,
@@ -230,6 +231,10 @@ export interface GameLobbyProps {
    * open seat; tapping it seats a computer player. Bot players come with `bot: true`.
    */
   onAddBot?: () => void;
+  /** How well the bots play, one level for every bot; set only while a bot is seated. */
+  botLevel?: BotLevel;
+  /** Host only: change how the bots play. Undefined for everyone else. */
+  setBotLevel?: (level: BotLevel) => void;
 }
 
 /** What a game's own end-of-game screen receives. */

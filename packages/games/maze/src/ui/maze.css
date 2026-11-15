@@ -789,6 +789,33 @@ button.mz-row__btn:focus-visible {
   flex: none;
 }
 
+.mz-bots {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+}
+.mz-bots__label {
+  font: 800 14px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mz-bots__choices {
+  display: flex;
+  gap: 6px;
+}
+.mz-bots__on {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+.mz-bots__level {
+  font: 800 16px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .mz-actions {
   flex: none;
   display: flex;

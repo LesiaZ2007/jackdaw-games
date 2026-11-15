@@ -2,7 +2,14 @@ import { createElement, isValidElement, type ReactElement, type ReactNode } from
 import { describe, expect, it } from 'vitest';
 import type { ScreenPlayer } from '@jackdaw/ui';
 import { Attract, lookOf, runAttractLoop } from './attract';
-import { LobbyActions, Lineup, attractPlayers, chomperColor } from './lobby';
+import {
+  BotLevelPicker,
+  BotsRow,
+  LobbyActions,
+  Lineup,
+  attractPlayers,
+  chomperColor,
+} from './lobby';
 import { LOOKS } from './render/core';
 
 const player = (id: string, name: string, bot = false): ScreenPlayer => ({
@@ -218,5 +225,40 @@ describe('animation loop', () => {
     const left = queue.length;
     frame(6000);
     expect(queue.length).toBeLessThanOrEqual(left);
+  });
+});
+
+describe('bot level picker', () => {
+  const picker = (onChange?: (l: 'easy' | 'normal' | 'hard') => void) =>
+    inspect(createElement(BotLevelPicker, { level: 'normal', onChange }));
+  const role = (e: ReactElement) => (e.props as { role?: string }).role;
+
+  it('lets the host choose, marking the current level', () => {
+    const picked: string[] = [];
+    const r = picker((l) => picked.push(l));
+    expect(r.text).toEqual(expect.arrayContaining(['Easy', 'Normal', 'Hard']));
+    const plaques = r.el.filter((e) => role(e) === 'radio');
+    expect(plaques).toHaveLength(3);
+    expect(plaques.map((e) => (e.props as { 'aria-checked'?: boolean })['aria-checked'])).toEqual([
+      false,
+      true,
+      false,
+    ]);
+    (plaques[2]!.props as { onClick: () => void }).onClick();
+    expect(picked).toEqual(['hard']);
+  });
+
+  it('is read-only for everyone else', () => {
+    const r = picker();
+    expect(r.text).toContain('Normal');
+    expect(r.el.some((e) => role(e) === 'radio')).toBe(false);
+  });
+
+  it('shows in the lobby only when bots are seated', () => {
+    const row = (players: ScreenPlayer[]) =>
+      inspect(createElement(BotsRow, { players, level: 'normal', onChange: () => {} }));
+    const has = (r: ReturnType<typeof inspect>) => r.el.some((e) => classOf(e).includes('mz-bots'));
+    expect(has(row([player('a', 'Wren'), player('b', 'Rook', true)]))).toBe(true);
+    expect(has(row([player('a', 'Wren')]))).toBe(false);
   });
 });

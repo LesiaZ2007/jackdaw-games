@@ -4,7 +4,14 @@ import { defaultOptions } from '../options';
 import type { MazeOptions } from '../options';
 import { actionSchema, layoutOf, maze as game, sendAttack } from '../rules';
 import type { MazeAction, MazeState, MazeTick } from '../rules';
-import { decodeOwners, encodeOwners } from '../shared';
+import {
+  decodeOwners,
+  encodeOwners,
+  ghostCheckpoints,
+  sharedGhosts,
+  spotPellets,
+  syncSharedGhosts,
+} from '../shared';
 import { walkerAt } from '../bot';
 import { DIRS, DIR_ORDER, opposite, wrapX } from '../sim/layouts';
 import type { MazeLayout } from '../sim/layouts';
@@ -701,6 +708,91 @@ describe('Runner others and the TV', () => {
     const q = phone(solo, WREN);
     await q.run(3500);
     expect(q.last!.timerMs).toBeNull();
+  });
+});
+
+describe('Runner: several Shared mazes', () => {
+  it('moves the phone and the TV on to maze 2 together: a fresh board, ghosts and countdown', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared', mazes: 2, size: 'Small' }, 3);
+    const p = phone(server, WREN);
+    const tv = phone(server, null);
+    await p.run(3000);
+    await tv.run(1000);
+    expect(p.last!.board!.maze).toBe(0);
+    expect(tv.last!.sharedMaze).toEqual({ maze: 0, mazes: 2 });
+
+    // Rook owns every plain pellet but one, then reports eating that one.
+    const m0 = layoutOf(server.s, 0);
+    const n0 = pelletIndex(m0).size;
+    const spots0 = new Set(spotPellets(m0));
+    const owners = decodeOwners(server.s.shared!.owner, n0);
+    const free = [...owners.keys()].filter((i) => !owners[i] && !spots0.has(i));
+    for (const i of free.slice(1)) owners[i] = 2;
+    server.s = { ...server.s, shared: { ...server.s.shared!, owner: encodeOwners(owners) } };
+    const last = new Uint8Array(n0);
+    last[free[0]!] = 1;
+    const rook = server.s.players[ROOK]!;
+    server.apply(ROOK, {
+      type: 'tick',
+      round: 1,
+      seq: rook.seq + 1,
+      t: server.t,
+      maze: 0,
+      pos: rook.pos,
+      turns: [],
+      eaten: encodeBits(last),
+      ghosts: [],
+      caught: 0,
+      fruit: [],
+      powers: [],
+      lives: 3,
+    });
+    const sh = server.s.shared!;
+    expect(sh.maze).toBe(1);
+    const mazeAt = sh.mazeAt!;
+    expect(mazeAt).toBe(server.t + 3000);
+
+    p.runner.update(server.table(), server.view(WREN));
+    tv.runner.update(server.table(), null);
+    await p.run(500);
+    await tv.run(20);
+    const m1 = layoutOf(server.s, 1);
+    const plain1 = pelletIndex(m1).size - spotPellets(m1).filter((i) => i >= 0).length;
+    for (const f of [p.last!, tv.last!]) {
+      expect(f.board!.maze).toBe(1);
+      expect(f.board!.level).toBe(2);
+      expect(f.board!.layout).toBe(m1);
+      // Every pellet is back (but the ones under a chomper standing at its corner).
+      expect(f.board!.pellets.length).toBeGreaterThanOrEqual(plain1 - 2);
+      expect(f.phase).toBe('countdown');
+      expect(f.countdown!.n).toBeGreaterThan(0);
+      expect(f.board!.ghosts.every((g) => g.mode === 'house')).toBe(true);
+      expect(f.sharedMaze).toEqual({ maze: 1, mazes: 2 });
+    }
+    // The phone is back at its corner, the other player at theirs.
+    const [sx, sy] = m1.starts[0]!;
+    const me = p.last!.board!.chompers.find((c) => c.isYou)!;
+    expect([me.x, me.y]).toEqual([sx, sy]);
+    const other = tv.last!.board!.chompers.find((c) => c.id === ROOK)!;
+    expect([other.x, other.y]).toEqual(m1.starts[1]!.slice(0, 2));
+
+    // Play starts at mazeAt: the phone moves on and reports on maze 2.
+    const sentBefore = p.sent.length;
+    await p.run(mazeAt - server.t + 1500);
+    expect(p.last!.phase).toBe('play');
+    const after = p.sent.slice(sentBefore);
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.every((x) => x.a.maze === 1)).toBe(true);
+    const moved = p.last!.board!.chompers.find((c) => c.isYou)!;
+    // (Without steering it runs to the first wall and waits there.)
+    expect(Math.hypot(moved.x - sx, moved.y - sy)).toBeGreaterThanOrEqual(1);
+    // Its ghosts are the server's: the ones a sim restored from the new base would show.
+    tv.runner.update(server.table(), null);
+    await tv.run(20);
+    const ref = sharedGhosts(m1, server.s.seed, 1, mazeAt);
+    syncSharedGhosts(ref, ghostCheckpoints(ref, mazeAt), server.s.shared!, tv.last!.tMs);
+    expect(ref.ghosts().length).toBeGreaterThanOrEqual(4);
+    expect(tv.last!.board!.ghosts.map((g) => [g.x, g.y])).toEqual(ref.ghosts().map((g) => g.pos));
   });
 });
 

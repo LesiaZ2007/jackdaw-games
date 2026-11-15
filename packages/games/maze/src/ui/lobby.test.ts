@@ -9,7 +9,9 @@ import {
   Lineup,
   attractPlayers,
   chomperColor,
+  optionShown,
 } from './lobby';
+import { defaultOptions } from '../options';
 import { LOOKS } from './render/core';
 
 const player = (id: string, name: string, bot = false): ScreenPlayer => ({
@@ -260,5 +262,15 @@ describe('bot level picker', () => {
     const has = (r: ReturnType<typeof inspect>) => r.el.some((e) => classOf(e).includes('mz-bots'));
     expect(has(row([player('a', 'Wren'), player('b', 'Rook', true)]))).toBe(true);
     expect(has(row([player('a', 'Wren')]))).toBe(false);
+  });
+});
+
+describe('options shown', () => {
+  it('offers the number of mazes in every mode, and minutes only with a bell', () => {
+    for (const mode of ['Solo', 'Shared', 'Race'] as const) {
+      const o = { ...defaultOptions(2), mode };
+      expect(optionShown('mazes', o)).toBe(true);
+      expect(optionShown('minutes', o)).toBe(mode !== 'Solo');
+    }
   });
 });

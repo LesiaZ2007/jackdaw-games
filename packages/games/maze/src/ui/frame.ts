@@ -224,4 +224,6 @@ export interface FrameModel {
   effects: FrameEffect[];
   /** Your lives (Solo), maze and mazes in the round; null on the TV. */
   you: { lives: number; maze: number; mazes: number } | null;
+  /** The Shared maze: the maze everyone is on, and mazes in the round; null elsewhere. */
+  sharedMaze: { maze: number; mazes: number } | null;
 }

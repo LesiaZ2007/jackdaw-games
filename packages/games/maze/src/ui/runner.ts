@@ -16,6 +16,8 @@ import {
   sharedFruitAt,
   decodeOwners,
   ghostCheckpoints,
+  sharedGhosts,
+  sharedMaze,
   spotPellets,
   spotUp,
   syncGhosts,
@@ -410,6 +412,10 @@ export class Runner {
         this.viewSeen = true;
         if (view.seq > 0 && !this.sentAny) this.startMaze(rec.maze, false);
       }
+    } else if (table.mode === 'Shared') {
+      // The TV (or anyone not playing) follows the Shared maze from one maze to the next.
+      const { maze } = sharedMaze(table.shared);
+      if (maze !== this.maze) this.startMaze(maze, true);
     }
     if (view && rec && rec.maze === this.maze) this.ackUpTo(view.seq);
     if (table.mode === 'Shared') this.syncOwners(now);
@@ -481,7 +487,7 @@ export class Runner {
     this.finishedShown = false;
     this.lastCount = null;
     const rec = this.rec();
-    this.startMaze(rec ? rec.maze : 0, false);
+    this.startMaze(rec ? rec.maze : tv.mode === 'Shared' ? sharedMaze(tv.shared).maze : 0, false);
     const now = this.now();
     if (tv.mode === 'Shared') this.syncOwners(now);
     this.syncOthers(now);
@@ -505,10 +511,14 @@ export class Runner {
     for (const [k, i] of idx) this.pelletXY[i] = k.split(',').map(Number) as [number, number];
     this.spotIdx = spotPellets(m);
     this.isSpot = new Set(this.spotIdx.filter((i) => i >= 0));
-    this.mazeAt = shared ? 0 : (rec?.mazeAt ?? 0);
+    // The Shared maze's play starts for everyone at once; the record says when.
+    const sh = shared ? sharedMaze(tv.shared) : null;
+    this.mazeAt = sh ? (sh.maze === maze ? sh.mazeAt : (rec?.mazeAt ?? 0)) : (rec?.mazeAt ?? 0);
     const level = maze + 1;
-    this.ghosts = new GhostSim(m, ghostSeed(tv.seed, maze), shared ? 1 : level);
-    this.cps = ghostCheckpoints(this.ghosts);
+    this.ghosts = shared
+      ? sharedGhosts(m, tv.seed, maze, this.mazeAt)
+      : new GhostSim(m, ghostSeed(tv.seed, maze), level);
+    this.cps = ghostCheckpoints(this.ghosts, shared ? this.mazeAt : 0);
     this.localInput = { aims: [], events: [], ...(me && !shared ? { frightFor: me } : {}) };
     this.ownEvents = [];
     this.lastBeat = -Infinity;
@@ -543,7 +553,7 @@ export class Runner {
     const seat = tv.players.findIndex((p) => p.id === me);
     const st = m.starts[shared ? Math.max(0, seat) % m.starts.length : 0] ?? m.starts[0]!;
     const taken = new Uint8Array(this.n);
-    if (shared && tv.shared) {
+    if (shared && tv.shared && sharedMaze(tv.shared).maze === maze) {
       const owners = decodeOwners(tv.shared.owner, this.n);
       for (let i = 0; i < this.n; i++) if (owners[i] && !this.isSpot.has(i)) taken[i] = 1;
     }
@@ -556,7 +566,7 @@ export class Runner {
     const ch = new ChomperSim({
       m,
       start: [st[0], st[1], st[2]],
-      level: shared ? 1 : level,
+      level,
       powers: tv.powers,
       ghosts: this.ghosts,
       taken,
@@ -626,7 +636,7 @@ export class Runner {
     const shared = tv.mode === 'Shared';
     const solo = tv.mode === 'Solo';
     if (!this.me) {
-      if (shared && this.ghosts && this.cps && tv.shared && tMs > 0)
+      if (shared && this.ghosts && this.cps && tv.shared && tMs > this.mazeAt)
         syncSharedGhosts(this.ghosts, this.cps, tv.shared, tMs);
       return;
     }
@@ -823,7 +833,7 @@ export class Runner {
   /** Shared: pellets others own go from the chomper at once, and from the board when seen. */
   private syncOwners(now: number): void {
     const sh = this.table.shared;
-    if (!sh || this.maze !== 0) return;
+    if (!sh || sharedMaze(sh).maze !== this.maze) return;
     const ids = this.table.players.map((p) => p.id);
     const mySeat = this.me ? ids.indexOf(this.me) + 1 : 0;
     const owners = decodeOwners(sh.owner, this.n);
@@ -885,7 +895,7 @@ export class Runner {
     let to = tMs;
     if (tv.endAt !== null) to = Math.min(to, tv.endAt - tv.startAt);
     if (p.done || (tv.phase !== 'play' && tv.phase !== 'countdown')) to = base.t;
-    const from = Math.max(base.t, tv.mode === 'Shared' ? 0 : p.mazeAt);
+    const from = Math.max(base.t, p.mazeAt);
     to = Math.min(to, from + PREDICT_MAX_MS);
     const sp = speeds(1);
     const dashed = Math.max(0, Math.min(to, base.dashUntil) - from);
@@ -1250,7 +1260,7 @@ export class Runner {
 
   private powerOf(p: { kind: PowerKind; untilMs: number } | null, tMs: number, maze: number) {
     if (!p || p.untilMs <= tMs) return null;
-    const level = this.table.mode === 'Shared' ? 1 : maze + 1;
+    const level = maze + 1;
     const out: FramePower = {
       kind: p.kind,
       msLeft: p.untilMs - tMs,
@@ -1277,7 +1287,7 @@ export class Runner {
     else if (me && rec && (rec.done || (solo && this.lives <= 0 && this.deadUntil === 0)))
       phase = 'finished';
     else if (me && this.cleared) phase = 'cleared';
-    else if (me && !shared && tMs < this.mazeAt) {
+    else if ((me || shared) && tMs < this.mazeAt) {
       phase = 'countdown';
       cdLeft = this.mazeAt - tMs;
     } else phase = 'play';
@@ -1359,6 +1369,7 @@ export class Runner {
         me && rec
           ? { lives: solo ? this.lives : rec.lives, maze: this.maze, mazes: tv.layouts.length }
           : null,
+      sharedMaze: shared ? { maze: this.maze, mazes: tv.layouts.length } : null,
     };
   }
 
@@ -1506,7 +1517,7 @@ export class Runner {
       w: m.w,
       h: m.h,
       maze: this.maze,
-      level: shared ? 1 : this.maze + 1,
+      level: this.maze + 1,
       pellets: this.pelletsList,
       pelletsRev: this.pelletsRev,
       powerSpots,

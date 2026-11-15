@@ -46,7 +46,9 @@ import type { Dir } from './sim/walker';
  *   leader (or second place, if you lead); clearing a maze fogs everyone else. The first finish
  *   ends the round (with a short grace for close finishes) and the earliest finish time gets the
  *   finish bonus; the bell is the backstop. Highest score wins.
- * - Shared maze: one maze for everyone; ticks are settled in shared.ts.
+ * - Shared maze: one maze at a time for everyone; once it's all eaten everyone moves on to the
+ *   next together. The round ends after the last maze or at the bell; ticks are settled in
+ *   shared.ts.
  */
 
 /** Before the first maze, and between mazes (per player): three, two, one. */
@@ -163,6 +165,9 @@ export interface SharedRec {
   fruitSeen: Record<string, number>;
   /** Power spot pickups so far (picks the kind a spot comes back as). */
   pickups: number;
+  /** The maze everyone is on (0 when left out), and the round ms its play starts. */
+  maze?: number;
+  mazeAt?: number;
 }
 
 export interface MazeState {
@@ -289,7 +294,7 @@ export function layoutOf(s: MazeState, maze: number): MazeLayout {
   return layoutAt(s, maze);
 }
 
-/** Later mazes are harder. The Shared maze is level 1. */
+/** Later mazes are harder. */
 export const levelOf = (maze: number): number => maze + 1;
 
 const powerIdx = new WeakMap<MazeLayout, Set<number>>();
@@ -524,7 +529,7 @@ function freshPlayer(): PlayerRec {
 function pickLayouts(o: MazeOptions, playerCount: number, rng: Rng): MazeRef[] {
   const size = resolveSize(o, playerCount);
   const order = rng.shuffle(layoutsOf(size).map((m) => MAZE_LAYOUTS.indexOf(m)));
-  const count = o.mode === 'Shared' ? 1 : o.mazes;
+  const count = o.mazes;
   const set = o.mazeSet ?? 'Mix';
   const genFirst = set === 'Mix' && rng.int(2) === 1;
   let made = 0;
@@ -534,7 +539,7 @@ function pickLayouts(o: MazeOptions, playerCount: number, rng: Rng): MazeRef[] {
   });
 }
 
-function placeAt(s: MazeState, id: string, maze: number): [number, number, Dir | null] {
+export function placeAt(s: MazeState, id: string, maze: number): [number, number, Dir | null] {
   const m = layoutOf(s, maze);
   // Shared: a corner each. Solo and Race: everyone has their own copy, so the first start.
   const seat = s.options.mode === 'Shared' ? s.ids.indexOf(id) % m.starts.length : 0;
@@ -993,7 +998,9 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
           ? `Solo: ${o.mazes} ${o.mazes === 1 ? 'maze' : 'mazes'}, three lives.`
           : o.mode === 'Race'
             ? `Race: ${o.mazes} ${o.mazes === 1 ? 'maze' : 'mazes'}, first to finish gets a bonus.`
-            : `Shared maze: ${o.minutes} minutes. Chomp fast.`,
+            : o.mazes > 1
+              ? `Shared maze: ${o.mazes} mazes, ${o.minutes} minutes. Chomp fast.`
+              : `Shared maze: ${o.minutes} minutes. Chomp fast.`,
       );
       return lines;
     }

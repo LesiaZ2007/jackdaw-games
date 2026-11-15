@@ -446,6 +446,7 @@ export class Attract {
       banner: null,
       effects: [],
       you: null,
+      sharedMaze: null,
     };
   }
 }

@@ -94,10 +94,11 @@ describe('setup', () => {
     expect(setup([WREN]).phase).toBe('play');
   });
 
-  it('picks a layout per maze, one for the Shared maze', () => {
+  it('picks a layout per maze, in every mode', () => {
     expect(setup([WREN], { mazes: 5 }).layouts).toHaveLength(5);
     expect(new Set(setup([WREN], { mazes: 4 }).layouts).size).toBe(4);
-    expect(setup([WREN, ROOK], { mode: 'Shared' }).layouts).toHaveLength(1);
+    expect(setup([WREN, ROOK], { mode: 'Shared', mazes: 1 }).layouts).toHaveLength(1);
+    expect(setup([WREN, ROOK], { mode: 'Shared', mazes: 3 }).layouts).toHaveLength(3);
     expect(setup([WREN, ROOK], { mode: 'Shared' }).shared).not.toBeNull();
     expect(setup([WREN, ROOK], { mode: 'Race' }).shared).toBeNull();
   });
@@ -137,13 +138,18 @@ describe('setup', () => {
     const sizes = (s: MazeState) => s.layouts.map((_, i) => layoutOf(s, i).size);
     const six = ['wren', 'rook', 'finch', 'lark', 'robin', 'jay'];
     for (let seed = 1; seed <= 5; seed++) {
-      expect(sizes(setup(six, { mode: 'Shared' }, seed))).toEqual(['Large']);
-      expect(sizes(setup(six.slice(0, 4), { mode: 'Shared' }, seed))).toEqual(['Medium']);
+      expect(sizes(setup(six, { mode: 'Shared', mazes: 1 }, seed))).toEqual(['Large']);
+      expect(sizes(setup(six.slice(0, 4), { mode: 'Shared', mazes: 2 }, seed))).toEqual([
+        'Medium',
+        'Medium',
+      ]);
       expect(sizes(setup(six, { mode: 'Race', mazes: 3 }, seed))).toEqual(Array(3).fill('Medium'));
       expect(sizes(setup([WREN], { mazes: 5, size: 'Small' }, seed))).toEqual(
         Array(5).fill('Small'),
       );
-      expect(sizes(setup(six, { mode: 'Shared', size: 'Small' }, seed))).toEqual(['Small']);
+      expect(sizes(setup(six, { mode: 'Shared', mazes: 1, size: 'Small' }, seed))).toEqual([
+        'Small',
+      ]);
     }
   });
 

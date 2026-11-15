@@ -53,7 +53,8 @@ export const mazeUi: GameUi = {
       Shared: 'Everyone chases the same pellets in one maze. The first to a pellet scores it.',
       Race: 'Everyone runs the same mazes on their own. Clearing the last one first earns a bonus.',
     },
-    mazes: 'How many mazes to clear in Solo and Race. Later mazes have faster ghosts.',
+    mazes:
+      'How many mazes to clear. In a Shared maze everyone moves on together once a maze is eaten. Later mazes have faster ghosts.',
     mazeSet: {
       Mix: 'Takes turns: a handmade maze, then a brand new random one.',
       Handmade: 'Only the drawn-by-hand mazes.',

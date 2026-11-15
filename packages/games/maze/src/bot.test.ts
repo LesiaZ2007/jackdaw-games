@@ -12,9 +12,11 @@ import { DYING_MS } from './sim/chomper';
 import { describe, expect, it } from 'vitest';
 import { defaultOptions } from './options';
 import type { MazeOptions } from './options';
-import { actionSchema, layoutOf, maze as game } from './rules';
+import { COUNTDOWN_MS, actionSchema, layoutOf, maze as game, placeAt, scoreOf } from './rules';
 import type { MazeState, MazeTick } from './rules';
+import { decodeOwners, sharedGhosts, spotPellets } from './shared';
 import { isWall } from './sim/layouts';
+import { pelletIndex } from './sim/pellets';
 import { clearGhostCache, ghostSeed, mazeBot } from './bot';
 import { GhostSim } from './sim/ghosts';
 import type { Aim, GhostEvent, GhostView } from './sim/ghosts';
@@ -27,8 +29,14 @@ const IDS = ['wren', 'rook', 'finch', 'lark'];
 function start(ids: string[], options: Partial<MazeOptions>, seed: number): MazeState {
   const s = game.setup({
     playerIds: ids,
-    // Handmade unless a test asks: the counts below are pinned to those mazes.
-    options: { ...defaultOptions(ids.length), mazeSet: 'Handmade', ...options },
+    // Handmade unless a test asks: the counts below are pinned to those mazes. A Shared maze is
+    // one maze unless a test asks for more.
+    options: {
+      ...defaultOptions(ids.length),
+      mazeSet: 'Handmade',
+      ...(options.mode === 'Shared' ? { mazes: 1 } : {}),
+      ...options,
+    },
     rng: createRng(seed),
     now: T0,
   });
@@ -127,6 +135,103 @@ describe('mazeBot', () => {
       expect(r.s.players.wren!.score).toBeGreaterThan(500);
     }, 60_000);
   }
+
+  it('a two-maze Shared game moves everyone on to maze 2 together, then ends after it', () => {
+    let s = start(IDS, { mode: 'Shared', mazes: 2, minutes: 4, size: 'Small' }, 3);
+    expect(s.layouts).toHaveLength(2);
+    const rng = createRng(5);
+    let now = s.startAt;
+    let switched: {
+      before: MazeState;
+      after: MazeState;
+      now: number;
+      late: MazeTick;
+      lateBy: string;
+    } | null = null;
+    while (s.phase === 'play' && now - s.startAt < 4 * 60_000) {
+      now += 900;
+      for (const id of IDS) {
+        const ctx = {
+          playerId: id,
+          playerIds: s.ids,
+          view: game.getPlayerView(s, id),
+          tableView: game.getTableView(s),
+          rng,
+          now,
+          level: 'normal' as const,
+        };
+        const a = game.bot!(ctx);
+        if (!a) continue;
+        const next = game.applyAction(s, id, a, rng, now);
+        if (!switched && next.shared?.maze === 1) {
+          // Another player's tick built on maze 1, before the switch, arriving after it.
+          const other = IDS.find((x) => x !== id)!;
+          const v = game.getPlayerView(s, other);
+          const late: MazeTick = {
+            type: 'tick',
+            round: s.round,
+            seq: v.seq + 1,
+            t: Math.min(now - s.startAt, v.lastT + 900),
+            maze: 0,
+            pos: s.players[other]!.pos,
+            turns: v.turns,
+            eaten: v.eaten,
+            ghosts: v.facts.ghosts,
+            caught: v.caught,
+            fruit: v.facts.fruit,
+            powers: v.facts.powers,
+            lives: v.lives,
+          };
+          switched = { before: s, after: next, now, late, lateBy: other };
+        }
+        s = next;
+      }
+    }
+    expect(switched).not.toBeNull();
+    const { before, after, now: at, late, lateBy } = switched!;
+    const mazeAt = at - after.startAt + COUNTDOWN_MS;
+    // Everyone moves on together, keeping their points.
+    for (const id of IDS) {
+      const p = after.players[id]!;
+      expect(p).toMatchObject({ maze: 1, mazeAt, eaten: '', turns: [], cleared: 1 });
+      expect(p.facts).toEqual({ ghosts: [], fruit: [], powers: [], caughtAt: [] });
+      expect(p.score).toBe(scoreOf(after, p));
+      expect(p.pos.slice(0, 2)).toEqual(placeAt(after, id, 1).slice(0, 2));
+    }
+    const total = (x: MazeState) => IDS.reduce((a, id) => a + x.players[id]!.score, 0);
+    expect(total(after)).toBeGreaterThan(0);
+    for (const id of IDS)
+      expect(after.players[id]!.pellets).toBeGreaterThanOrEqual(before.players[id]!.pellets);
+    // The Shared record starts over: nothing owned, the new maze's ghosts at its start.
+    const sh = after.shared!;
+    expect(sh).toMatchObject({ maze: 1, mazeAt, events: [], fruit: null, fruitN: 0 });
+    expect(decodeOwners(sh.owner, pelletIndex(layoutOf(after, 1)).size).every((k) => k === 0)).toBe(
+      true,
+    );
+    expect(sh.bases).toHaveLength(1);
+    expect(sh.bases[0]!.atMs).toBe(mazeAt);
+    expect(sh.bases[0]!.c).toEqual(
+      sharedGhosts(layoutOf(after, 1), after.seed, 1, mazeAt).checkpoint(),
+    );
+    expect(sh.bases[0]!.c.level).toBe(2);
+    expect(sh.bases[0]!.rev).toBeGreaterThan(Math.max(...before.shared!.bases.map((b) => b.rev)));
+    // A late maze-1 tick changes nothing.
+    expect(late.maze).toBe(0);
+    expect(game.applyAction(after, lateBy, late, rng, at + 100)).toBe(after);
+
+    // Maze 2 is the last: it ends the round once it's all owned, before the bell.
+    expect(s.phase).toBe('between');
+    expect(now).toBeLessThan(s.endAt!);
+    const m2 = layoutOf(s, 1);
+    const spots = new Set(spotPellets(m2));
+    const owners = decodeOwners(s.shared!.owner, pelletIndex(m2).size);
+    expect([...owners].every((k, i) => k > 0 || spots.has(i))).toBe(true);
+    for (const id of IDS) expect(s.players[id]!.cleared).toBe(2);
+    expect(total(s)).toBeGreaterThan(total(after));
+    const best = Math.max(...IDS.map((id) => s.players[id]!.score));
+    const over = game.onTimer!(s, 'show', rng, s.showBy!);
+    expect(game.getResult(over)!.winners.every((id) => s.players[id]!.score === best)).toBe(true);
+  }, 60_000);
 
   it('plays a Race of two bots to a finish', () => {
     const s = start(IDS.slice(0, 2), { mode: 'Race', mazes: 1 }, 4);

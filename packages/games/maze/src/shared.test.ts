@@ -2,7 +2,7 @@ import { createRng } from '@jackdaw/engine';
 import { describe, expect, it } from 'vitest';
 import { defaultOptions, enabledPowers } from './options';
 import type { MazeOptions } from './options';
-import { BELL_GRACE_MS, layoutOf, maze as game } from './rules';
+import { BELL_GRACE_MS, COUNTDOWN_MS, layoutOf, maze as game } from './rules';
 import type { MazeState, MazeTick } from './rules';
 import {
   BASES_KEPT,
@@ -34,7 +34,7 @@ const at = (s: MazeState, t: number) => s.startAt + t;
 function setup(ids: string[], options: Partial<MazeOptions> = {}, seed = 1): MazeState {
   const s = game.setup({
     playerIds: ids,
-    options: { ...defaultOptions(ids.length), mode: 'Shared', ...options },
+    options: { ...defaultOptions(ids.length), mode: 'Shared', mazes: 1, ...options },
     rng: createRng(seed),
     now: T0,
   });
@@ -165,6 +165,42 @@ describe('Shared pellets (review focus 2)', () => {
     expect(s.phase).toBe('play');
     s = act(s, ROOK, tick(s, ROOK, { t: 40_000, eaten: bitsOf(s, all.slice(half)) }));
     expect(s.phase).toBe('between');
+  });
+});
+
+describe('several Shared mazes', () => {
+  it('everyone moves on together once a maze is all owned; scores carry; the bell ends it', () => {
+    let s = setup([WREN, ROOK], { mazes: 3 });
+    expect(s.layouts).toHaveLength(3);
+    const all = plain(s);
+    const half = Math.floor(all.length / 2);
+    s = act(s, WREN, tick(s, WREN, { t: 20_000, eaten: bitsOf(s, all.slice(0, half)) }));
+    const early = tick(s, WREN, { t: 21_000 });
+    s = act(s, ROOK, tick(s, ROOK, { t: 40_000, eaten: bitsOf(s, all.slice(half)) }));
+    expect(s.phase).toBe('play');
+    expect(s.shared).toMatchObject({ maze: 1, mazeAt: 40_000 + COUNTDOWN_MS, events: [] });
+    for (const id of [WREN, ROOK]) expect(s.players[id]).toMatchObject({ maze: 1, cleared: 1 });
+    expect(s.players[WREN]!.score).toBe(half * POINTS.pellet);
+    expect(s.players[ROOK]!.score).toBe((all.length - half) * POINTS.pellet);
+    // A maze-1 tick that arrives late changes nothing.
+    expect(act(s, WREN, early, at(s, 41_000))).toBe(s);
+
+    // On maze 2 the pellets are counted on top.
+    const m1 = layoutOf(s, 1);
+    const spots1 = new Set(spotPellets(m1));
+    const n1 = pelletIndex(m1).size;
+    const plain1 = Array.from({ length: n1 }, (_, i) => i).filter((i) => !spots1.has(i));
+    const bits = new Uint8Array(n1);
+    for (const i of plain1.slice(0, 5)) bits[i] = 1;
+    s = act(s, WREN, tick(s, WREN, { t: 50_000, maze: 1, eaten: encodeBits(bits) }));
+    expect(s.players[WREN]!.score).toBe((half + 5) * POINTS.pellet);
+    expect(s.players[WREN]!.pellets).toBe(half + 5);
+    expect(decodeOwners(s.shared!.owner, n1).filter((k) => k === 1)).toHaveLength(5);
+
+    s = game.onTimer!(s, 'bell', createRng(3), s.endAt! + BELL_GRACE_MS);
+    expect(s.phase).toBe('between');
+    const winner = half + 5 > all.length - half ? WREN : ROOK;
+    expect(s.log[s.log.length - 1]!.actor).toBe(winner);
   });
 });
 

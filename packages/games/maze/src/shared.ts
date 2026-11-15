@@ -1,11 +1,14 @@
 import { createRng } from '@jackdaw/engine';
 import { enabledPowers } from './options';
 import {
+  COUNTDOWN_MS,
   attackOnPickup,
   chargeCatches,
   endRound,
+  factPoints,
   layoutOf,
   levelOf,
+  placeAt,
   powerAt,
   scoreOf,
   sendAttack,
@@ -52,7 +55,10 @@ import type { Vec } from './sim/walker';
  *   with the few aims and events kept after it, so no one needs the round's whole history. A
  *   ghost event dated before the newest base re-steps the later bases from an older one; one
  *   dated before the oldest base can't be replayed everywhere and doesn't count.
- * - The round ends at the bell or when every pellet (power spots aside) is owned.
+ * - Several mazes: once every pellet (power spots aside) is owned, everyone moves on to the next
+ *   maze together after a countdown. The maze starts over (owners, spots, aims, bases, events,
+ *   fruit), with its own ghost seed and the next level; scores carry on.
+ * - The round ends at the bell or when every pellet of the last maze is owned.
  */
 
 export const AIM_MS = 2_000;
@@ -109,8 +115,28 @@ export function eventsFrom(shared: Pick<SharedRec, 'bases'>): number {
 /** Whether an event at `atMs` lands at or after a base (the base hasn't taken it in). */
 const after = (atMs: number, b: GhostBase) => stepAt(atMs) >= b.c.step;
 
-/** A fresh GhostSim for the Shared maze of a game. */
-const sharedSim = (s: MazeState) => new GhostSim(layoutOf(s, 0), ghostSeed(s.seed, 0), 1);
+/** The maze everyone is on in the Shared maze, and the round ms its play starts. */
+export const sharedMaze = (sh: Pick<SharedRec, 'maze' | 'mazeAt'> | null | undefined) => ({
+  maze: sh?.maze ?? 0,
+  mazeAt: sh?.mazeAt ?? 0,
+});
+
+/**
+ * The Shared ghosts of maze `maze` as they stand when its play starts (round ms `atMs`): the
+ * maze's own seed and level, with the step count on the round clock, so the ghosts wait in the
+ * house through the countdown and every device steps them on from the same place.
+ */
+export function sharedGhosts(m: MazeLayout, seed: number, maze: number, atMs: number): GhostSim {
+  const sim = new GhostSim(m, ghostSeed(seed, maze), levelOf(maze));
+  if (atMs > 0) sim.restore({ ...sim.checkpoint(), step: stepAt(atMs) });
+  return sim;
+}
+
+/** A GhostSim for the current Shared maze of a game (a base is restored into it). */
+const sharedSim = (s: MazeState) => {
+  const { maze, mazeAt } = sharedMaze(s.shared);
+  return sharedGhosts(layoutOf(s, maze), s.seed, maze, mazeAt);
+};
 
 /**
  * The bases after a tick: the ones a new event lands before are stepped again from the last base
@@ -186,28 +212,84 @@ const tileOf = (m: MazeLayout, pos: readonly [number, number, unknown]): Vec => 
   Math.round(pos[1]),
 ];
 
-function aimNow(s: MazeState, atMs: number): Aim {
-  const m = layoutOf(s, 0);
+function aimNow(s: MazeState, atMs: number, maze: number): Aim {
+  const m = layoutOf(s, maze);
   const tiles: Record<string, Vec> = {};
   for (const id of s.ids) tiles[id] = tileOf(m, s.players[id]!.pos);
   return { atMs, tiles };
 }
 
-/** The Shared record at the start of a round: nothing owned, every spot up, a first aim at 0. */
-export function initShared(s: MazeState): SharedRec {
-  const m = layoutOf(s, 0);
+/**
+ * The Shared record at the start of a maze (round ms `atMs`; the round's first maze starts at 0):
+ * nothing owned, every spot up, a first aim and base when play starts. `prev` is the record of
+ * the maze before, if any (base revisions and the pickup count carry on from it).
+ */
+export function initShared(s: MazeState, maze = 0, atMs = 0, prev?: SharedRec | null): SharedRec {
+  const m = layoutOf(s, maze);
   const powers = enabledPowers(s.options);
+  const level = levelOf(maze);
+  const rev = prev ? Math.max(0, ...prev.bases.map((b) => b.rev)) + 1 : 0;
   return {
     owner: encodeOwners(new Uint8Array(pelletIndex(m).size)),
-    aims: [aimNow(s, 0)],
+    aims: [aimNow(s, atMs, maze)],
     events: [],
-    bases: [{ atMs: 0, rev: 0, c: sharedSim(s).checkpoint() }],
-    spots: m.powers.map((_, spot) => ({ spot, kind: spotKind(m, powers, spot, 1), backAt: 0 })),
+    bases: [{ atMs, rev, c: sharedGhosts(m, s.seed, maze, atMs).checkpoint() }],
+    spots: m.powers.map((_, spot) => ({
+      spot,
+      kind: spotKind(m, powers, spot, level),
+      backAt: atMs,
+    })),
     fruit: null,
     fruitN: 0,
     fruitSeen: {},
-    pickups: 0,
+    pickups: prev?.pickups ?? 0,
+    maze,
+    mazeAt: atMs,
   };
+}
+
+/**
+ * Every pellet of the Shared maze is owned: everyone moves on to the next maze together, after a
+ * countdown. Points so far are banked (pellets are counted for the round already), each player
+ * goes to their corner of the new maze, and the Shared record starts over for it.
+ */
+function nextSharedMaze(s: MazeState, now: number): MazeState {
+  const maze = sharedMaze(s.shared).maze + 1;
+  const atMs = now - s.startAt + COUNTDOWN_MS;
+  const players = { ...s.players };
+  for (const id of s.ids) {
+    const p = players[id]!;
+    players[id] = {
+      ...p,
+      banked: p.banked + factPoints(p.facts),
+      facts: { ghosts: [], fruit: [], powers: [], caughtAt: [] },
+      eaten: '',
+      maze,
+      mazeAt: atMs,
+      pos: placeAt(s, id, maze),
+      turns: [],
+      power: null,
+      cleared: p.cleared + 1,
+    };
+  }
+  let out: MazeState = { ...s, players };
+  out = rescoreAll(out);
+  out = {
+    ...out,
+    shared: initShared(out, maze, atMs, s.shared),
+    log: [
+      ...out.log,
+      { round: out.round, text: `Maze ${maze} cleared. On to maze ${maze + 1}.`, tone: 'good' },
+    ],
+  };
+  return out;
+}
+
+/** The last Shared maze is all owned: it counts as cleared for everyone, and the round ends. */
+function lastSharedMaze(s: MazeState, now: number): MazeState {
+  const players = { ...s.players };
+  for (const id of s.ids) players[id] = { ...players[id]!, cleared: players[id]!.cleared + 1 };
+  return endRound({ ...s, players }, now);
 }
 
 /** The kind a spot comes back as: a pick from the enabled power-ups, fixed by seed and count. */
@@ -239,6 +321,8 @@ export function settleShared(
 
   // Pellets: claims only grow; a free one goes to this player.
   const owners = decodeOwners(sh0.owner, n);
+  let ownedBefore = 0;
+  for (let i = 0; i < n; i++) if (owners[i] === seat && !isSpot.has(i)) ownedBefore++;
   const had = decodeBits(prev.eaten, n);
   const claim = decodeBits(tick.eaten, n);
   let owned = 0;
@@ -282,7 +366,7 @@ export function settleShared(
   // Aims: a beat every AIM_MS, on whichever tick comes along.
   let aims = sh0.aims;
   const last = aims[aims.length - 1];
-  const beat = !last || nowMs - last.atMs >= AIM_MS ? aimNow(s, nowMs) : null;
+  const beat = !last || nowMs - last.atMs >= AIM_MS ? aimNow(s, nowMs, prev.maze) : null;
   if (beat) aims = [...aims, beat];
   // Everything added to the ghosts' inputs this tick (the bases are stepped again for these).
   const added: GhostEvent[] = [];
@@ -339,7 +423,8 @@ export function settleShared(
     eaten: encodeBits(had),
     facts,
     caught: Math.max(prev.caught, tick.caught),
-    pellets: owned,
+    // Round total: what this tick won on this maze, on top of what came before.
+    pellets: prev.pellets + owned - ownedBefore,
     ghostsEaten: prev.ghostsEaten + facts.ghosts.length - prev.facts.ghosts.length,
     fruit: prev.fruit + facts.fruit.length - prev.facts.fruit.length,
     power: powerAt(facts, levelOf(prev.maze), tick.t),
@@ -380,10 +465,13 @@ export function settleShared(
       fruitN,
       fruitSeen,
       pickups: pickupN,
+      maze: prev.maze,
+      mazeAt: sh0.mazeAt ?? 0,
     },
   };
 
-  return ownedAll >= n - isSpot.size ? endRound(out, now) : out;
+  if (ownedAll < n - isSpot.size) return out;
+  return prev.maze >= s.layouts.length - 1 ? lastSharedMaze(out, now) : nextSharedMaze(out, now);
 }
 
 function rescoreAll(s: MazeState): MazeState {
@@ -409,9 +497,9 @@ export interface GhostCheckpoints {
   baseRev?: number;
 }
 
-/** Starts the checkpoint list for a fresh sim. */
-export function ghostCheckpoints(sim: GhostSim): GhostCheckpoints {
-  return { list: [{ tMs: 0, c: sim.checkpoint() }], seen: new Set() };
+/** Starts the checkpoint list for a fresh sim (one that starts at round ms `tMs`). */
+export function ghostCheckpoints(sim: GhostSim, tMs = 0): GhostCheckpoints {
+  return { list: [{ tMs, c: sim.checkpoint() }], seen: new Set() };
 }
 
 const stepMs = (c: GhostCheckpoint) => (c.step * 50) / 3;

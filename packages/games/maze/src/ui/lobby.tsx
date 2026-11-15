@@ -280,9 +280,8 @@ export function LobbyActions({
 
 type Help = Record<string, string | Record<string, string>>;
 
-/** Mazes and Minutes only matter in some modes. */
-function shown(key: string, o: MazeOptions): boolean {
-  if (key === 'mazes') return o.mode !== 'Shared';
+/** Whether an option shows in the lobby: Minutes only matters with a bell (not in Solo). */
+export function optionShown(key: string, o: MazeOptions): boolean {
   if (key === 'minutes') return o.mode !== 'Solo';
   return true;
 }
@@ -310,7 +309,7 @@ export function OptionsSheet({
   groups?: OptionGroup[];
 }) {
   const shape = optionsSchema.shape as unknown as Record<string, Field>;
-  const keys = Object.keys(shape).filter((k) => shown(k, options));
+  const keys = Object.keys(shape).filter((k) => optionShown(k, options));
   const booleans = new Set(keys.filter((k) => shape[k]!.def.type === 'boolean'));
   const items = arrangeOptions(keys, booleans, groups);
   const rec = options as unknown as Record<string, unknown>;

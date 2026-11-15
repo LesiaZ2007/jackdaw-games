@@ -192,6 +192,15 @@ export interface GameModule<State, Action, View, TableView, Options> {
    * gets the state, for a game that wants longer after some moves (Catan, after a roll).
    */
   botDelayMs?: number | ((state: State) => number);
+  /**
+   * Optional, for real-time games whose bots always have something to do (Maze, 2026-11-14:
+   * "bots 2 and 3 barely move"). Each bot keeps its own clock: it moves `botDelayMs` (times
+   * 0.8 to 1.8) after its own last move, whatever anyone else does, and every bot whose moment
+   * has come moves on the same read, the longest-waiting first. Their moments aren't sent to
+   * screens as the next timer: the game's live poll is what brings reads round. Without it,
+   * one bot moves at a time, a moment after anyone's last move (right for turn-based games).
+   */
+  realTime?: boolean;
 
   /** Played in another app through a `GameLink` registered with the runtime (see GameLink). */
   linked?: boolean;

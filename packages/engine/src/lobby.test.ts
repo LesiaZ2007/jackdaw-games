@@ -29,6 +29,8 @@ import {
   type Ctx,
   type Lobby,
 } from './lobby';
+import { z } from 'zod';
+import { createRng, mixSeed } from './rng';
 import { counterGame } from './testing/counter-game';
 import { systemText, type Avatar } from './protocol';
 
@@ -659,5 +661,108 @@ describe('computer players', () => {
     expect(saved.status).toBe('results');
     expect(saved.history[0]!.summary).toBe('Ended early. 1 counted');
     expect(saved.scores.p1).toEqual({ wins: 1, losses: 0, played: 1 });
+  });
+
+  it('turn-based bots keep their pace: one at a time, a moment after anyone’s last move', () => {
+    // Jay and two bots take turns; reads come every 100 ms.
+    let lobby = addBot(seated(), 'p1', { newPlayerId: 'b2', palette }, bctx());
+    lobby = setOptions(lobby, 'p1', { target: 12 }, bctx());
+    lobby = start(lobby, 'p1', { sessionId: 's1', seed: 7 }, bctx(0));
+    const moves: [string, number][] = [];
+    for (let now = 0; now <= 30_000 && lobby.status === 'in_game'; now += 100) {
+      const session = lobby.session!;
+      const s = session.state as S;
+      if (s.players[s.turn] === 'p1' && now - session.movedAt! >= 500) {
+        lobby = add(lobby, now);
+        continue;
+      }
+      // The delay the platform has always used: the last move, plus 0.8 to 1.8 × 2000 drawn
+      // from the session's rng at the next seq.
+      const u = createRng(mixSeed(session.rngState, session.seq + 1)).next();
+      const due = session.movedAt! + Math.round(BOT_DELAY_MS * (0.8 + u));
+      const human = s.players[s.turn] === 'p1';
+      expect(snapshotFor(lobby, 'p1', {}, bctx(now)).timerAt).toBe(human ? undefined : due);
+      const next = runTimers(lobby, bctx(now));
+      if (next === lobby) {
+        expect(human || now < due).toBe(true);
+        continue;
+      }
+      expect(now).toBe(Math.ceil(due / 100) * 100);
+      const log = (next.session?.state as S | undefined)?.log ?? [];
+      // Exactly one bot moved.
+      if (next.status === 'in_game') expect(next.session!.seq).toBe(session.seq + 1);
+      moves.push([log.at(-1) ?? 'end', now]);
+      lobby = next;
+    }
+    expect(moves.filter(([id]) => id === 'b1').length).toBeGreaterThanOrEqual(3);
+    expect(moves.filter(([id]) => id === 'b2').length).toBeGreaterThanOrEqual(3);
+    expect(lobby.session?.botAt).toBeUndefined();
+  });
+
+  describe('in a real-time game', () => {
+    // Everyone steps whenever they like (like Maze's ticks); bots always have a step to make.
+    type R = { steps: Record<string, number> };
+    const racer = (realTime: boolean) => ({
+      ...counterGame,
+      meta: { ...counterGame.meta, id: 'racer', maxPlayers: 4 },
+      actionSchema: z.object({ type: z.literal('step') }),
+      validateOptions: () => null,
+      setup: ({ playerIds }: { playerIds: string[] }): R => ({
+        steps: Object.fromEntries(playerIds.map((id) => [id, 0])),
+      }),
+      getPlayerView: (s: R, id: string) => ({ mine: s.steps[id] ?? 0 }),
+      getTableView: (s: R) => s,
+      applyAction: (s: R, id: string) => ({
+        steps: { ...s.steps, [id]: (s.steps[id] ?? 0) + 1 },
+      }),
+      announce: () => [],
+      getResult: () => null,
+      bot: () => ({ type: 'step' as const }),
+      botDelayMs: 900,
+      realTime,
+    });
+    const play = (realTime: boolean) => {
+      const g = { racer: racer(realTime) } as unknown as Ctx['games'];
+      const c = (now: number): Ctx => ({ now, games: g });
+      let lobby = setGame(lobbyWith(1), 'p1', 'racer', c(0));
+      for (const id of ['b1', 'b2', 'b3'])
+        lobby = addBot(lobby, 'p1', { newPlayerId: id, palette }, c(0));
+      lobby = start(lobby, 'p1', { sessionId: 's1', seed: 3 }, c(0));
+      const at: Record<string, number[]> = { b1: [], b2: [], b3: [] };
+      // Jay reports every 450 ms for 20 s; each report is also a read that runs the timers.
+      for (let now = 450; now <= 20_000; now += 450) {
+        lobby = applyGameAction(
+          lobby,
+          'p1',
+          { sessionId: 's1', seq: lobby.session!.seq, action: { type: 'step' } },
+          c(now),
+        );
+        const before = (lobby.session!.state as R).steps;
+        lobby = runTimers(lobby, c(now));
+        const after = (lobby.session!.state as R).steps;
+        for (const id of ['b1', 'b2', 'b3']) if (after[id]! > before[id]!) at[id]!.push(now);
+        // Real-time bots don't set the screens' next poll.
+        if (realTime) expect(nextTimerAt(lobby, { games: g, now })).toBeNull();
+      }
+      return { at, lobby };
+    };
+
+    it('every bot keeps its own pace while a person reports every 450 ms', () => {
+      const { at, lobby } = play(true);
+      for (const id of ['b1', 'b2', 'b3']) {
+        const times = at[id]!;
+        // 0.8 to 1.8 × 900 ms after its own last move, rounded up to the next read: 13 or more
+        // in 20 s, and never two closer than 720 ms.
+        expect(times.length).toBeGreaterThanOrEqual(13);
+        for (let i = 1; i < times.length; i++)
+          expect(times[i]! - times[i - 1]!).toBeGreaterThanOrEqual(720);
+        expect(lobby.session!.botAt![id]).toBe(times.at(-1));
+      }
+    });
+
+    it('(without realTime, the bots starve: the person keeps resetting the shared clock)', () => {
+      const { at } = play(false);
+      expect(at.b2!.length + at.b3!.length).toBe(0);
+    });
   });
 });

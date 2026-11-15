@@ -982,4 +982,5 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
 
   bot: (ctx) => mazeBot(ctx),
   botDelayMs: (s) => (s.phase === 'play' ? 900 : 2_000),
+  realTime: true,
 };

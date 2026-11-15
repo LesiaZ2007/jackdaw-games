@@ -12,7 +12,7 @@ import { POINTS } from '../sim/powers';
 import { canEnter } from '../sim/walker';
 import type { Dir } from '../sim/walker';
 import type { FrameModel } from './frame';
-import { OTHERS_DELAY_MS, Runner, SEND_GAP_MS, samplePath } from './runner';
+import { OTHERS_DELAY_MS, Runner, SEND_GAP_MS, SEND_TIMEOUT_MS, samplePath } from './runner';
 import type { Track } from './runner';
 
 const WREN = 'wren';
@@ -568,5 +568,110 @@ describe('Runner others and the TV', () => {
     const q = phone(solo, WREN);
     await q.run(3500);
     expect(q.last!.timerMs).toBeNull();
+  });
+});
+
+describe('Runner robustness', () => {
+  it('gives up on a send that never settles and reports again', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared' }, 3);
+    let calls = 0;
+    const runner = new Runner({
+      me: WREN,
+      table: server.table(),
+      view: server.view(WREN),
+      names: NAMES,
+      now: () => server.clock,
+      send: () => {
+        calls++;
+        return new Promise<boolean>(() => {});
+      },
+    });
+    const run = async (ms: number, input?: Dir[]) => {
+      const end = server.clock + ms;
+      let i = 0;
+      while (server.clock < end) {
+        server.clock += 20;
+        server.timers();
+        if (server.clock % 800 === 0) runner.update(server.table(), server.view(WREN));
+        if (input && server.clock % 400 === 0) runner.input(input[i++ % input.length]!);
+        runner.frame(20);
+        await flush();
+      }
+    };
+    await run(3000);
+    const dirs: Dir[] = ['left', 'up', 'right', 'down'];
+    await run(2000, dirs);
+    expect(calls).toBe(1);
+    await run(SEND_TIMEOUT_MS + 1500, dirs);
+    expect(calls).toBeGreaterThanOrEqual(2);
+  });
+
+  it('draws another player without a jump when a report shows a turn', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared' }, 3);
+    const m = layoutOf(server.s, 0);
+    // A start run with an open side street at some tile k along it.
+    const [sx, sy, d] = m.starts[1]!;
+    let k = 0;
+    let side: Dir | null = null;
+    let x = sx;
+    for (let i = 1; i < 30 && !side && canEnter(m, [x, sy], d, false); i++) {
+      x = wrapX(m, x + DIRS[d][0]);
+      k = i;
+      side = DIR_ORDER.find((e) => DIRS[e][0] === 0 && canEnter(m, [x, sy], e, false)) ?? null;
+    }
+    expect(side).not.toBeNull();
+    // (Only vertical streets off a horizontal run are scripted; the starts run horizontally.)
+    expect(DIRS[d][1]).toBe(0);
+    const p = phone(server, WREN);
+    await p.run(3000);
+    const tk = Math.round((k / 7.8) * 1000);
+    const tick = (
+      seq: number,
+      t: number,
+      turns: [number, number, number, Dir][],
+      pos: [number, number, Dir],
+    ): MazeTick => ({
+      type: 'tick',
+      round: 1,
+      seq,
+      t,
+      maze: 0,
+      pos,
+      turns,
+      eaten: '',
+      ghosts: [],
+      caught: 0,
+      fruit: [],
+      powers: [],
+      lives: 3,
+    });
+    const jumps: number[] = [];
+    let prev: [number, number] | null = null;
+    const watch = (f: FrameModel) => {
+      const c = f.board!.chompers.find((q) => q.id === ROOK)!;
+      if (prev) jumps.push(Math.hypot(c.x - prev[0], c.y - prev[1]));
+      prev = [c.x, c.y];
+    };
+    // Report A: at the side street, still heading along the run, at round ms tk.
+    server.goTo(tk + OTHERS_DELAY_MS - 250);
+    server.apply(ROOK, tick(1, tk, [[0, sx, sy, d]], [x, sy, d]));
+    p.runner.update(server.table(), server.view(WREN));
+    // The delayed drawing runs on past the last point; then the real report shows the turn.
+    await p.run(500, watch);
+    const turned = tick(
+      2,
+      tk + 900,
+      [
+        [0, sx, sy, d],
+        [tk, x, sy, side!],
+      ],
+      [x, sy + DIRS[side!][1] * 6, side!],
+    );
+    server.goTo(server.t + 20);
+    server.apply(ROOK, turned);
+    p.runner.update(server.table(), server.view(WREN));
+    await p.run(1500, watch);
+    expect(jumps.length).toBeGreaterThan(30);
+    expect(Math.max(...jumps)).toBeLessThanOrEqual(0.5);
   });
 });

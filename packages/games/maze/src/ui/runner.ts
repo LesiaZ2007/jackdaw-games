@@ -86,12 +86,16 @@ export const BANNER_MS = 2_200;
 export const GO_MS = 700;
 /** An attack older than this when it first arrives (a refresh) is not applied again. */
 export const STALE_ATTACK_MS = 6_000;
+/** A report that hasn't settled after this long is given up on (and sent again). */
+export const SEND_TIMEOUT_MS = 5_000;
 /** Fixed simulation step (about 60 Hz), like the bots. */
 const DT = 50 / 3;
 /** After a stall (a hidden tab), at most this much is simulated; the rest is skipped. */
 const MAX_CATCHUP_MS = 2_000;
 /** A reported path is carried on past its last point for at most this long. */
-const EXTRAPOLATE_MS = 800;
+const EXTRAPOLATE_MS = 250;
+/** A correction to where another player is drawn fades out over this long. */
+const EASE_MS = 200;
 /** Mouth phase per tile moved (the demo's 16 per second at 7.8 tiles per second). */
 const MOUTH_PER_TILE = 16 / 7.8;
 const TRAIL_LEN = 7;
@@ -233,6 +237,10 @@ interface Other {
   trail: [number, number][];
   /** Where they're drawn this frame. */
   at: [number, number];
+  /** The sampled path position last frame, and the correction still being eased out. */
+  raw: [number, number] | null;
+  ease: [number, number];
+  easeAt: number;
 }
 
 type Effect = FrameEffect extends infer E ? (E extends unknown ? Omit<E, 'key'> : never) : never;
@@ -303,6 +311,9 @@ export class Runner {
   // Reports.
   private seq = 0;
   private inFlight = false;
+  private inFlightAt = 0;
+  /** Which send is in flight, so a stale one finishing late can't clear a newer one. */
+  private sendId = 0;
   private lastSendAt = -Infinity;
   private lastSig = '';
   private lastFast = '';
@@ -796,6 +807,9 @@ export class Runner {
           dir: p.pos[2] ?? 'left',
           trail: [],
           at: [p.pos[0], p.pos[1]],
+          raw: null,
+          ease: [0, 0],
+          easeAt: now,
         };
         this.others.set(p.id, o);
       }
@@ -821,15 +835,31 @@ export class Runner {
       if (!o) continue;
       const m = layoutFor(this.table, p.maze);
       const s = samplePath(m, o.track, tt);
-      o.at = [s.x, s.y];
+      // A new report can bend the path under a delayed player: carry on from where they were
+      // drawn and fade the difference out. Bigger jumps (a respawn, a tunnel) happen at once.
+      const dtE = Math.max(0, now - o.easeAt);
+      o.easeAt = now;
+      if (o.raw) {
+        const jump = Math.hypot(s.x - o.raw[0], s.y - o.raw[1]);
+        if (jump > 0.4 && jump < 3.2 && o.dyingAt === null) {
+          o.ease = [o.ease[0] + o.raw[0] - s.x, o.ease[1] + o.raw[1] - s.y];
+        }
+      }
+      o.raw = [s.x, s.y];
+      const k = Math.max(0, 1 - dtE / EASE_MS);
+      o.ease = [o.ease[0] * k, o.ease[1] * k];
+      if (Math.abs(o.ease[0]) + Math.abs(o.ease[1]) < 1e-3) o.ease = [0, 0];
+      const dx = s.x + o.ease[0];
+      const dy = s.y + o.ease[1];
+      o.at = [dx, dy];
       if (s.dir) o.dir = s.dir;
       if (o.last) {
-        const moved = Math.hypot(s.x - o.last[0], s.y - o.last[1]);
+        const moved = Math.hypot(dx - o.last[0], dy - o.last[1]);
         if (moved < 2) o.mouth += moved * MOUTH_PER_TILE;
       }
-      o.last = [s.x, s.y];
+      o.last = [dx, dy];
       if (p.power?.kind === 'dash' && p.power.untilMs > tt) {
-        o.trail.unshift([s.x, s.y]);
+        o.trail.unshift([dx, dy]);
         o.trail.length = Math.min(o.trail.length, TRAIL_LEN);
       } else o.trail.pop();
       if (o.dyingAt !== null && now - o.dyingAt > DYING_MS) o.dyingAt = null;
@@ -933,7 +963,15 @@ export class Runner {
 
   private maybeSend(now: number, tMs: number): void {
     const tv = this.table;
-    if (!this.me || !this.chomper || this.inFlight || tv.phase !== 'play') return;
+    if (!this.me || !this.chomper || tv.phase !== 'play') return;
+    if (this.inFlight) {
+      // A send that never settles must not stall every report after it.
+      if (now - this.inFlightAt < SEND_TIMEOUT_MS) return;
+      this.inFlight = false;
+      this.lastFailed = true;
+      this.lastSig = '';
+      this.lastFast = '';
+    }
     const rec = this.rec();
     if (!rec || rec.done || rec.maze !== this.maze) return;
     const gap = now - this.lastSendAt;
@@ -954,8 +992,11 @@ export class Runner {
     this.lastFast = sig.fast;
     this.lastFailed = false;
     this.inFlight = true;
+    this.inFlightAt = now;
+    const id = ++this.sendId;
     this.sentAny = true;
     const done = (ok: boolean) => {
+      if (id !== this.sendId) return;
       this.inFlight = false;
       if (!ok) {
         this.lastFailed = true;

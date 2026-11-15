@@ -149,6 +149,35 @@ function aimsFrom(aims: Aim[], fromMs: number): Aim[] {
   return aims.slice(Math.max(0, last - 1));
 }
 
+/** A fruit claim reported this long after the fruit went still counts (reports come in late). */
+export const FRUIT_SLACK_MS = 1_500;
+
+/**
+ * The Shared fruit a phone (or bot) can claim at round ms `t`: up, not already claimed by it
+ * (`claimedAt` is the atMs of the fruit it last claimed), and room left in its fruit list.
+ */
+export function sharedFruitAt(
+  sh: Pick<SharedRec, 'fruit' | 'fruitSeen'> | null | undefined,
+  me: string,
+  t: number,
+  claimedAt: number,
+): SharedRec['fruit'] {
+  const f = sh?.fruit;
+  if (!f || claimedAt === f.atMs || t < f.atMs || t >= f.untilMs) return null;
+  return (sh!.fruitSeen[me] ?? 0) < 16 ? f : null;
+}
+
+/**
+ * The fruit list a claim reports: one longer than the server last saw from this phone (that's
+ * what makes it a claim), ending with the fruit claimed.
+ */
+export function claimList(list: number[], seen: number, fruit: number): number[] {
+  const out = [...list];
+  while (out.length < seen) out.push(0);
+  out.push(fruit);
+  return out.slice(0, 16);
+}
+
 /** Whether a spot holds a power-up at round ms `t`. */
 export const spotUp = (sp: PowerSpot, t: number): boolean => sp.kind !== null && t >= sp.backAt;
 
@@ -282,7 +311,12 @@ export function settleShared(
     tick.fruit.length > lastSeen
       ? { ...sh0.fruitSeen, [playerId]: tick.fruit.length }
       : sh0.fruitSeen;
-  if (tick.fruit.length > lastSeen && fruit && tick.t >= fruit.atMs && tick.t < fruit.untilMs) {
+  if (
+    tick.fruit.length > lastSeen &&
+    fruit &&
+    tick.t >= fruit.atMs &&
+    tick.t < fruit.untilMs + FRUIT_SLACK_MS
+  ) {
     facts.fruit.push(fruit.fruit);
     fruit = null;
   }

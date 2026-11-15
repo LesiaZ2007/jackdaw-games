@@ -12,6 +12,8 @@ import type {
 } from '../rules';
 import {
   AIM_MS,
+  claimList,
+  sharedFruitAt,
   decodeOwners,
   ghostCheckpoints,
   spotPellets,
@@ -634,8 +636,8 @@ export class Runner {
           this.fx({ kind: 'respawn', by: this.me, mine: true });
         } else break;
       }
+      if (shared) this.offerFruit(t);
       for (const e of ch.step(dt, t)) this.onEvent(e, t, g, now);
-      if (shared) this.claimFruit(t, tMs);
       if (this.cleared) break;
     }
     const fruit = ch.state().fruit;
@@ -702,7 +704,12 @@ export class Runner {
         break;
       }
       case 'fruit': {
-        if (this.facts.fruit.length < 16) this.facts.fruit.push(e.fruit);
+        if (shared) {
+          const sh = this.table.shared;
+          if (!sh?.fruit) break;
+          this.fruitClaimed = sh.fruit.atMs;
+          this.facts.fruit = claimList(this.facts.fruit, sh.fruitSeen[me] ?? 0, e.fruit);
+        } else if (this.facts.fruit.length < 16) this.facts.fruit.push(e.fruit);
         this.fx({
           kind: 'fruitEaten',
           x: this.m.fruit[0],
@@ -751,30 +758,14 @@ export class Runner {
     }
   }
 
-  /** Shared: claims the server's fruit when the chomper stands on it while it's up. */
-  private claimFruit(t: number, tMs: number): void {
+  /**
+   * Shared: puts the server's fruit in front of the chomper while it's up and not yet claimed
+   * here, so reaching it (within FRUIT_REACH) is a claim; the server gives it to the first.
+   */
+  private offerFruit(t: number): void {
     const sh = this.table.shared;
-    const f = sh?.fruit;
-    const ch = this.chomper;
-    if (!sh || !f || !ch || this.fruitClaimed === f.atMs || this.deadUntil > 0) return;
-    if (t < f.atMs || t >= f.untilMs || tMs >= f.untilMs) return;
-    const c = ch.center();
-    if (!c || c.tile[0] !== this.m.fruit[0] || c.tile[1] !== this.m.fruit[1]) return;
-    const seen = sh.fruitSeen[this.me!] ?? 0;
-    if (seen >= 16) return;
-    this.fruitClaimed = f.atMs;
-    const list = [...this.facts.fruit];
-    while (list.length < seen) list.push(0);
-    list.push(f.fruit);
-    this.facts.fruit = list.slice(0, 16);
-    this.fx({
-      kind: 'fruitEaten',
-      x: this.m.fruit[0],
-      y: this.m.fruit[1],
-      fruit: f.fruit,
-      points: FRUIT[f.fruit]?.pts ?? 0,
-      by: this.me!,
-    });
+    const f = sharedFruitAt(sh, this.me!, t, this.fruitClaimed);
+    this.chomper?.offerFruit(f ? { fruit: f.fruit, untilMs: f.untilMs } : null);
   }
 
   /** Shared: power spots follow the server (they come back as whatever it picked). */

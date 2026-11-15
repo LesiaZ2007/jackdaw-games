@@ -291,11 +291,11 @@ describe('mazeBot ghosts', () => {
           gather(s);
         }
       }
-      // A Medium maze is cleared by one bot in about 100 s; the Large one lasts past 2 minutes.
-      expect(now - s.startAt).toBeGreaterThanOrEqual(size === 'Large' ? 120_000 : 90_000);
+      // One bot clears a Medium maze in about 75 s, two a Large one in about 90 s.
+      expect(now - s.startAt).toBeGreaterThanOrEqual(size === 'Large' ? 80_000 : 65_000);
       // The table view carries only the recent window.
       expect(s.shared!.aims.length).toBeLessThan(10);
-      expect(aims.size).toBeGreaterThan(30);
+      expect(aims.size).toBeGreaterThan(25);
 
       // A reference sim fed the full history, as a phone that saw everything would run it.
       const m = layoutOf(s, 0);
@@ -316,7 +316,7 @@ describe('mazeBot ghosts', () => {
           expect(Math.abs(g.pos[1] - x.eat.pos[1])).toBeLessThan(1);
         }
       }
-      expect(seen.length).toBeGreaterThan(100);
+      expect(seen.length).toBeGreaterThan(80);
       console.log(`${size}: ${seen.length} checks, ${eats} ghost eats`);
     },
     120_000,

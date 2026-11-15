@@ -733,6 +733,73 @@ describe('Runner robustness', () => {
   });
 });
 
+describe('Runner fruit', () => {
+  /** Steers to the fruit tile and back and forth over it. */
+  const toFruit =
+    (get: () => FrameModel | null) =>
+    (tile: [number, number], dir: Dir | null): Dir | null => {
+      const b = get()?.board;
+      if (!b) return null;
+      const m = b.layout;
+      const dist = bfs(m, [[m.fruit[0], m.fruit[1]]]);
+      let best: Dir | null = null;
+      let score = Infinity;
+      for (const d of DIR_ORDER) {
+        if (!canEnter(m, tile, d, false)) continue;
+        const k = (tile[1] + DIRS[d][1]) * m.w + wrapX(m, tile[0] + DIRS[d][0]);
+        const s = (dist[k]! < 0 ? 99 : dist[k]!) + (dir && d === dir ? 0 : 0.5);
+        if (s < score) {
+          score = s;
+          best = d;
+        }
+      }
+      return best;
+    };
+
+  it('Shared: reaching the server’s fruit claims it, and the server awards it', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared', powerUps: 'Classic' }, 3);
+    server.goTo(0);
+    server.s = {
+      ...server.s,
+      shared: { ...server.s.shared!, fruit: { fruit: 1, atMs: 0, untilMs: 60_000 } },
+    };
+    const p = phone(server, WREN, { steer: toFruit });
+    let eaten = 0;
+    for (let i = 0; i < 40 && server.s.players[WREN]!.fruit === 0; i++)
+      await p.run(500, (f) => {
+        eaten += f.effects.filter((e) => e.kind === 'fruitEaten').length;
+      });
+    expect(server.s.players[WREN]!.fruit).toBe(1);
+    expect(eaten).toBe(1);
+    expect(server.s.shared!.fruit).toBeNull();
+    await p.run(1000);
+    expect(p.last!.board!.fruit).toBeNull();
+    expect(p.last!.scores.find((s) => s.isYou)!.score).toBe(server.s.players[WREN]!.score);
+  });
+
+  it('Solo: the fruit is drawn on the tile where it is picked up', async () => {
+    const server = new Server([WREN], { mode: 'Solo', powerUps: 'Classic' }, 3);
+    const p = phone(server, WREN, { steer: autopilot });
+    let shown: [number, number] | null = null;
+    let got = false;
+    for (let i = 0; i < 120 && !got; i++)
+      await p.run(500, (f) => {
+        const fr = f.board?.fruit;
+        if (fr) shown = [fr.x, fr.y];
+        if (f.effects.some((e) => e.kind === 'fruitEaten')) {
+          got = true;
+          const e = f.effects.find((x) => x.kind === 'fruitEaten') as { x: number; y: number };
+          const me = f.board!.chompers.find((c) => c.isYou)!;
+          // Picked up within 0.6 tiles of where it was drawn.
+          expect(Math.hypot(me.x - e.x, me.y - e.y)).toBeLessThan(0.6 + 0.2);
+        }
+      });
+    const m = layoutOf(server.s, 0);
+    expect(got).toBe(true);
+    expect(shown).toEqual([m.fruit[0], m.fruit[1]]);
+  }, 60_000);
+});
+
 describe('Runner spawn protection', () => {
   it.each(['Solo', 'Shared'] as const)(
     '%s: shielded for 2 s from the start, and again after a respawn',

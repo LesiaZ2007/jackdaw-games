@@ -76,6 +76,8 @@ export const MAGNET_RANGE = 2.8;
 export const FROZEN_SPEED = 0.3;
 /** Touch distance between a chomper and a ghost, in tiles, on each axis. */
 const HIT = 0.6;
+/** The fruit is picked up within this many tiles of its tile's center (forgiving on purpose). */
+export const FRUIT_REACH = 0.6;
 /** An eaten ghost is ignored until it shows up as eyes, or this long at most. */
 const EATEN_GRACE_MS = 2000;
 
@@ -164,6 +166,16 @@ export class ChomperSim {
     if (!this.gone[i]) return;
     this.gone[i] = 0;
     this.left++;
+  }
+
+  /**
+   * The Shared maze's fruit, which the server owns: what is on the board right now (null when
+   * none, or once this chomper has claimed it). Reaching it gives a `fruit` event, the claim.
+   * Only for a chomper made with `fruit: false`.
+   */
+  offerFruit(f: { fruit: number; untilMs: number } | null): void {
+    if (this.fruitOn) return;
+    this.fruit = f ? { ...f } : null;
   }
 
   /** Whether pellet `i` is still on the board. */
@@ -273,6 +285,7 @@ export class ChomperSim {
         if (Math.hypot(Math.min(dx, this.m.w - dx), y - py) < MAGNET_RANGE) this.eat(i, tMs, ev);
       }
     }
+    this.reachFruit(ev);
     this.contact(tMs, ev);
     if (this.left === 0 && !this.cleared) {
       this.cleared = true;
@@ -304,11 +317,17 @@ export class ChomperSim {
   private arrive(tile: [number, number], tMs: number, ev: ChomperEvent[]): void {
     const i = this.at.get(`${tile[0]},${tile[1]}`);
     if (i !== undefined && !this.gone[i]) this.eat(i, tMs, ev);
+  }
+
+  /** Picks up the fruit when the chomper is within FRUIT_REACH of its tile. */
+  private reachFruit(ev: ChomperEvent[]): void {
     const f = this.fruit;
-    if (f && tile[0] === this.m.fruit[0] && tile[1] === this.m.fruit[1]) {
-      this.fruit = null;
-      ev.push({ kind: 'fruit', fruit: f.fruit });
-    }
+    if (!f) return;
+    const [px, py] = posOf(this.w);
+    const dx = Math.abs(px - this.m.fruit[0]);
+    if (Math.hypot(Math.min(dx, this.m.w - dx), py - this.m.fruit[1]) >= FRUIT_REACH) return;
+    this.fruit = null;
+    ev.push({ kind: 'fruit', fruit: f.fruit });
   }
 
   private consume(i: number): void {

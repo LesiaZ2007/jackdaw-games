@@ -4,6 +4,7 @@ import {
   DYING_MS,
   FRUIT_EVERY,
   FRUIT_MS,
+  FRUIT_REACH,
   SPAWN_SHIELD_MS,
   spawnShield,
 } from './chomper';
@@ -348,6 +349,40 @@ describe('ChomperSim', () => {
     expect(off.sim.state().fruit).toBeNull();
     off.until(off.at(20, 5));
     expect(off.events.some((e) => e.kind === 'fruit')).toBe(false);
+  });
+
+  it('claims the server’s fruit (Shared) within 0.6 tiles of the fruit tile', () => {
+    // The corridor's fruit tile is (10, 1).
+    const s = setup({ start: [7, 1, 'right'], fruit: false });
+    s.sim.offerFruit({ fruit: 2, untilMs: 60_000 });
+    let x = 0;
+    while (!s.events.some((e) => e.kind === 'fruit') && s.now() < 2000) {
+      s.step();
+      x = s.sim.position()[0];
+    }
+    expect(s.events.filter((e) => e.kind === 'fruit')).toEqual([{ kind: 'fruit', fruit: 2 }]);
+    // Picked up as it came within reach, not only on the tile center.
+    expect(x).toBeGreaterThan(10 - FRUIT_REACH);
+    expect(x).toBeLessThan(10);
+    expect(s.sim.state().fruit).toBeNull();
+    // Withdrawn by the caller (someone else got it): nothing to pick up.
+    const t = setup({ start: [7, 1, 'right'], fruit: false });
+    t.sim.offerFruit({ fruit: 0, untilMs: 60_000 });
+    t.sim.offerFruit(null);
+    for (let i = 0; i < 60; i++) t.step();
+    expect(t.events.some((e) => e.kind === 'fruit')).toBe(false);
+    // A chomper with its own fruit ignores offers.
+    const own = setup({ start: [7, 1, 'right'] });
+    own.sim.offerFruit({ fruit: 0, untilMs: 60_000 });
+    expect(own.sim.state().fruit).toBeNull();
+  });
+
+  it('picks up fruit when it turns back just short of the fruit tile', () => {
+    const s = setup({ start: [7, 1, 'right'], fruit: false });
+    s.sim.offerFruit({ fruit: 1, untilMs: 60_000 });
+    s.until(() => s.sim.position()[0] >= 9.5);
+    // Reached within reach even if it reverses before the center.
+    expect(s.events).toContainEqual({ kind: 'fruit', fruit: 1 });
   });
 
   it('is shielded from ghosts for 2 s after a spawn or respawn', () => {

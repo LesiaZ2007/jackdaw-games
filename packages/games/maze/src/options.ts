@@ -5,8 +5,8 @@ import type { PowerKind } from './sim/powers';
 
 export const optionsSchema = z.object({
   mode: z.enum(['Solo', 'Shared', 'Race']).describe('Mode'),
-  mazes: z.number().int().min(1).max(5).describe('Mazes'),
-  mazeSet: z.enum(['Mix', 'Handmade', 'Random']).describe('Mazes'),
+  mazes: z.number().int().min(1).max(5).describe('Number of mazes'),
+  mazeSet: z.enum(['Mix', 'Handmade', 'Random']).describe('Maze style'),
   minutes: z.number().int().min(2).max(4).describe('Minutes'),
   powerUps: z.enum(['Classic', 'Mixed']).describe('Power-ups'),
   hunt: z.boolean().describe('Hunt'),

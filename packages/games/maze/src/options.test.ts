@@ -20,6 +20,13 @@ describe('options', () => {
     expect(defaultOptions(8).mode).toBe('Shared');
   });
 
+  it('labels every option differently', () => {
+    const labels = Object.values(optionsSchema.shape).map((f) => f.description);
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(optionsSchema.shape.mazes.description).toBe('Number of mazes');
+    expect(optionsSchema.shape.mazeSet.description).toBe('Maze style');
+  });
+
   it('has the documented defaults and passes its own schema', () => {
     const o = defaultOptions(4);
     expect(o).toMatchObject({

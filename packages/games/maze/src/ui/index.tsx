@@ -54,7 +54,7 @@ export const mazeUi: GameUi = {
       Race: 'Everyone runs the same mazes on their own. Clearing the last one first earns a bonus.',
     },
     mazes:
-      'How many mazes to clear. In a Shared maze everyone moves on together once a maze is eaten. Later mazes have faster ghosts.',
+      'How many mazes in a round. In a Shared maze everyone moves on together once a maze is eaten. Later mazes have faster ghosts.',
     mazeSet: {
       Mix: 'Takes turns: a handmade maze, then a brand new random one.',
       Handmade: 'Only the drawn-by-hand mazes.',

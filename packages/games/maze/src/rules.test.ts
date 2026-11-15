@@ -103,7 +103,7 @@ describe('setup', () => {
     expect(setup([WREN, ROOK], { mode: 'Race' }).shared).toBeNull();
   });
 
-  it('picks handmade, generated or alternating mazes by the Mazes option', () => {
+  it('picks handmade, generated or alternating mazes by the Maze style option', () => {
     const gen = (s: MazeState) => s.layouts.map((r) => typeof r === 'object');
     for (let seed = 1; seed <= 5; seed++) {
       expect(gen(setup([WREN], { mazes: 4, mazeSet: 'Handmade' }, seed))).toEqual(

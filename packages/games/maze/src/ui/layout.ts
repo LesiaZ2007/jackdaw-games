@@ -13,7 +13,7 @@ export function fitTile(w: number, h: number, cols: number, rows: number, pad = 
 }
 
 /**
- * Where the maze sits in a `w × h` stage: the biggest whole tile that fits, the canvas size, and
+ * Where the maze sits in a `w Ã— h` stage: the biggest whole tile that fits, the canvas size, and
  * the offsets that center the framed maze both ways. The frame always stays inside the stage.
  */
 export function mazeBox(w: number, h: number, cols: number, rows: number, pad = FRAME_PAD) {

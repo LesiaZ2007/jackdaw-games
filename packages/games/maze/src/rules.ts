@@ -150,7 +150,7 @@ export interface GhostBase {
 export interface SharedRec {
   /** base64 of one byte per pellet: 0 = free, k = player index + 1. */
   owner: string;
-  /** A beat every 2000 ms: the ones a sim restored from the oldest base still needs. */
+  /** A beat every AIM_MS (500 ms): the ones a sim restored from the oldest base still needs. */
   aims: Aim[];
   /** Events not yet taken into the oldest base. */
   events: GhostEvent[];

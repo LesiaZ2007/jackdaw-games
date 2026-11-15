@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { GhostSim } from './ghosts';
+import { AHEAD_TILES, GhostSim, aimTile } from './ghosts';
 import type { Aim, GhostEvent, GhostInput, GhostView } from './ghosts';
-import { MAZE_LAYOUTS, houseTiles, isWall } from './layouts';
+import { DIRS, DIR_ORDER, MAZE_LAYOUTS, houseTiles, isWall } from './layouts';
+import { speeds } from './powers';
+import type { Dir } from './walker';
 
 const m = MAZE_LAYOUTS[0]!;
 const house = houseTiles(m);
@@ -186,14 +188,16 @@ describe('GhostSim', () => {
     expect(sim.ghosts()).toHaveLength(4);
   });
 
-  it('alternates scatter and chase on a 6 s / 21 s cycle', () => {
+  it('alternates a short scatter and a long chase: 5 s / 20 s', () => {
     const sim = new GhostSim(m, 1, 1);
     const input: GhostInput = { aims, events: [] };
-    sim.stepTo(5000, input);
+    sim.stepTo(4000, input);
     expect(sim.ghosts()[0]!.mode).toBe('scatter');
-    sim.stepTo(7000, input);
+    sim.stepTo(6000, input);
     expect(sim.ghosts()[0]!.mode).toBe('chase');
-    sim.stepTo(27_000 + 1000, input);
+    sim.stepTo(24_000, input);
+    expect(sim.ghosts()[0]!.mode).toBe('chase');
+    sim.stepTo(25_000 + 1000, input);
     expect(sim.ghosts()[0]!.mode).toBe('scatter');
   });
 
@@ -213,5 +217,121 @@ describe('GhostSim', () => {
       // By now every ghost has left the house.
       expect(sim.ghosts().filter((g) => g.mode === 'house')).toHaveLength(0);
     }
+  });
+});
+
+describe('ghosts chase where you are', () => {
+  // A chomper does laps of a loop of corridors in the first maze: it runs for 2 s at full
+  // speed, then stops for 1 s (as a player does at a wall or a fork), and so on.
+  const corners: [number, number][] = [
+    [5, 4],
+    [21, 4],
+    [21, 16],
+    [20, 16],
+    [20, 22],
+    [6, 22],
+    [6, 16],
+    [5, 16],
+  ];
+  const path: { x: number; y: number; d: Dir }[] = [];
+  corners.forEach(([x0, y0], i) => {
+    const [x1, y1] = corners[(i + 1) % corners.length]!;
+    const d: Dir = x1 > x0 ? 'right' : x1 < x0 ? 'left' : y1 > y0 ? 'down' : 'up';
+    for (let x = x0, y = y0; x !== x1 || y !== y1; x += DIRS[d][0], y += DIRS[d][1])
+      path.push({ x, y, d });
+  });
+  const RUN_MS = 2000;
+  const STOP_MS = 1000;
+  const speed = speeds(1).chomper;
+  /** Where the chomper is at round ms `t` (x, y, heading). */
+  const at = (t: number): [number, number, Dir] => {
+    const k = Math.floor(t / (RUN_MS + STOP_MS));
+    const ran = k * RUN_MS + Math.min(RUN_MS, t - k * (RUN_MS + STOP_MS));
+    const s = ((speed * ran) / 1000) % path.length;
+    const a = path[Math.floor(s)]!;
+    const f = s - Math.floor(s);
+    return [a.x + DIRS[a.d][0] * f, a.y + DIRS[a.d][1] * f, a.d];
+  };
+  const END = 150_000;
+
+  /**
+   * Ghost 0 (the direct chaser) on level 1, fed the chomper's aim every `every` ms, with its
+   * heading or without: its average distance to the chomper while chasing, the share of that
+   * time it is within 3 tiles, and how long each chase phase takes to reach the chomper (the
+   * whole phase if it never does). Also checks the ahead ghost's target as it goes.
+   */
+  function chase(every: number, heading: boolean) {
+    const input: GhostInput = { aims: [], events: [], frightFor: 'me' };
+    const sim = new GhostSim(m, 5, 1);
+    let sum = 0;
+    let n = 0;
+    let near = 0;
+    let aheadN = 0;
+    let ahead = 0;
+    const reach: number[] = [];
+    let phaseAt = -1;
+    let reached = false;
+    for (let t = 0; t <= END; t += 50) {
+      if (t % every === 0) {
+        const tile = aimTile(m, at(t));
+        input.aims.push({ atMs: t, tiles: { me: heading ? tile : [tile[0], tile[1]] } });
+      }
+      sim.stepTo(t, input);
+      const [g0, g1] = sim.ghosts();
+      if (g0!.mode !== 'chase') {
+        if (phaseAt >= 0 && !reached) reach.push(t - phaseAt);
+        phaseAt = -1;
+        continue;
+      }
+      if (phaseAt < 0) {
+        phaseAt = t;
+        reached = false;
+      }
+      const [x, y, d] = at(t);
+      const dist = Math.hypot(g0!.pos[0] - x, g0!.pos[1] - y);
+      sum += dist;
+      n++;
+      if (dist < 3) near++;
+      if (dist < 1 && !reached) {
+        reached = true;
+        reach.push(t - phaseAt);
+      }
+      if (heading && g1!.mode === 'chase') {
+        // The ahead ghost aims up to AHEAD_TILES on along the latest aim's heading (a wall
+        // stops it short), so its target is in front of the chomper.
+        const aim = input.aims[input.aims.length - 1]!.tiles.me!;
+        const target = sim.target(1, input)!;
+        const [hx, hy] = DIRS[DIR_ORDER[aim[2]!]!];
+        const along = (target[0] - aim[0]) * hx + (target[1] - aim[1]) * hy;
+        expect(target).toEqual([aim[0] + hx * along, aim[1] + hy * along]);
+        expect(along).toBeLessThanOrEqual(AHEAD_TILES);
+        expect(isWall(m, target[0], target[1])).toBe(false);
+        aheadN++;
+        if ((target[0] - x) * DIRS[d][0] + (target[1] - y) * DIRS[d][1] > 0) ahead++;
+      }
+    }
+    const reachMs = reach.reduce((a, b) => a + b, 0) / reach.length;
+    return { avg: sum / n, near: near / n, reachMs, n, ahead: ahead / Math.max(1, aheadN) };
+  }
+
+  it('the loop is open all the way round', () => {
+    for (const p of path) expect(isWall(m, p.x, p.y)).toBe(false);
+    expect(path.length).toBeGreaterThan(40);
+  });
+
+  it('the direct chaser closes in with fresh aims; with 2-s-old ones it trails', () => {
+    const fresh = chase(150, true);
+    const stale = chase(2000, false);
+    const fmt = (r: typeof fresh) =>
+      `average ${r.avg.toFixed(2)} tiles, within 3 tiles ${(r.near * 100).toFixed(0)}% ` +
+      `of the time, reaches you ${(r.reachMs / 1000).toFixed(1)} s into a chase`;
+    console.log(`direct chaser in chase: fresh aims ${fmt(fresh)}; 2-s-old aims ${fmt(stale)}`);
+    expect(fresh.n).toBeGreaterThan(1000);
+    // It gets to you in well under half the time, and stays close far more of it.
+    expect(fresh.reachMs).toBeLessThan(stale.reachMs / 2);
+    expect(fresh.near).toBeGreaterThan(stale.near * 5);
+    expect(fresh.avg).toBeLessThan(stale.avg * 0.75);
+    // The ahead ghost's target is in front of the chomper (nearly always: a turn can pass it).
+    expect(fresh.ahead).toBeGreaterThan(0.8);
   });
 });

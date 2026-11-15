@@ -5,6 +5,8 @@ import type { MazeOptions } from '../options';
 import { actionSchema, layoutOf, maze as game, sendAttack } from '../rules';
 import type { MazeAction, MazeState, MazeTick } from '../rules';
 import {
+  CHECKPOINT_KEEP_MS,
+  LOCAL_AIM_MS,
   decodeOwners,
   encodeOwners,
   ghostCheckpoints,
@@ -21,6 +23,8 @@ import { advance, canEnter, posOf } from '../sim/walker';
 import type { Dir } from '../sim/walker';
 import { DYING_MS, SPAWN_SHIELD_MS } from '../sim/chomper';
 import type { Turn } from '../sim/chomper';
+import { DIR_ORDER as HEADINGS } from '../sim/layouts';
+import type { GhostInput } from '../sim/ghosts';
 import type { FrameModel } from './frame';
 import { PREDICT_MAX_MS, Runner, SEND_GAP_MS, SEND_TIMEOUT_MS, predictAlong } from './runner';
 import type { Track } from './runner';
@@ -179,17 +183,19 @@ function bfs(m: MazeLayout, sources: [number, number][]): Int16Array {
   return dist;
 }
 
-/** A simple autopilot: the nearest pellet, away from ghosts. */
+/** A simple autopilot: the fruit when it's up, else the nearest pellet, away from ghosts. */
 const autopilot =
   (get: () => FrameModel | null) =>
   (tile: [number, number], dir: Dir | null): Dir | null => {
     const b = get()?.board;
     if (!b) return null;
     const m = b.layout;
-    const targets: [number, number][] = [
-      ...b.pellets,
-      ...b.powerSpots.filter((s) => s.up).map((s) => [s.x, s.y] as [number, number]),
-    ];
+    const targets: [number, number][] = b.fruit
+      ? [[b.fruit.x, b.fruit.y]]
+      : [
+          ...b.pellets,
+          ...b.powerSpots.filter((s) => s.up).map((s) => [s.x, s.y] as [number, number]),
+        ];
     if (!targets.length) return null;
     const dist = bfs(m, targets);
     const danger = b.ghosts
@@ -203,7 +209,7 @@ const autopilot =
       const k = (tile[1] + DIRS[d][1]) * m.w + wrapX(m, tile[0] + DIRS[d][0]);
       let s = dist[k]! < 0 ? 99 : dist[k]!;
       const g = gd?.[k] ?? -1;
-      if (g >= 0 && g < 7) s += (7 - g) * 40;
+      if (g >= 0 && g < 9) s += (9 - g) * 40;
       if (dir && DIRS[d][0] === -DIRS[dir][0] && DIRS[d][1] === -DIRS[dir][1]) s += 1;
       if (s < score) {
         score = s;
@@ -965,6 +971,38 @@ describe('Runner fruit', () => {
     const m = layoutOf(server.s, 0);
     expect(got).toBe(true);
     expect(shown).toEqual([m.fruit[0], m.fruit[1]]);
+  }, 60_000);
+});
+
+describe('Runner: Solo ghosts', () => {
+  it('note where the chomper is (and its heading) every 150 ms, and keep only what they need', async () => {
+    const server = new Server([WREN], { mode: 'Solo', powerUps: 'Classic' }, 3);
+    const p = phone(server, WREN, { steer: autopilot });
+    const input = () => (p.runner as unknown as { localInput: GhostInput }).localInput;
+    await p.run(3000 + 2000);
+    let most = 0;
+    let checks = 0;
+    for (let i = 0; i < 80; i++)
+      await p.run(500, (f) => {
+        const aims = input().aims;
+        most = Math.max(most, aims.length);
+        const last = aims[aims.length - 1]!;
+        const me = f.board?.chompers.find((c) => c.isYou);
+        if (!me || me.dying !== null || me.shieldMs > 0 || f.board!.maze !== 0) return;
+        // The latest aim is where the chomper is, give or take the last 150 ms of running.
+        const [x, y, h] = last.tiles[WREN]!;
+        const dx = Math.abs(x - me.x);
+        expect(Math.min(dx, f.board!.layout.w - dx) + Math.abs(y - me.y)).toBeLessThan(2);
+        if (h !== undefined) expect(HEADINGS[h]).toBeDefined();
+        checks++;
+      });
+    const aims = input().aims;
+    for (let i = 1; i < aims.length; i++)
+      expect(aims[i]!.atMs - aims[i - 1]!.atMs).toBeLessThanOrEqual(LOCAL_AIM_MS + 20);
+    expect(aims.filter((a) => a.tiles[WREN]!.length === 3).length).toBeGreaterThan(aims.length / 2);
+    expect(checks).toBeGreaterThan(1000);
+    // Bounded: about the checkpoints' window, not the whole maze.
+    expect(most).toBeLessThanOrEqual(CHECKPOINT_KEEP_MS / LOCAL_AIM_MS + 10);
   }, 60_000);
 });
 

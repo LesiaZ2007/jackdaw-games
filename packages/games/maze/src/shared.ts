@@ -26,13 +26,14 @@ import type {
   SharedRec,
 } from './rules';
 import { FRUIT_EVERY, FRUIT_MS } from './sim/chomper';
-import { GhostSim, ghostSeed, stepAt } from './sim/ghosts';
-import type { Aim, GhostCheckpoint, GhostEvent, GhostInput } from './sim/ghosts';
-import { wrapX } from './sim/layouts';
+import type { Turn } from './sim/chomper';
+import { GhostSim, aimTile, ghostSeed, stepAt } from './sim/ghosts';
+import type { Aim, AimTile, GhostCheckpoint, GhostEvent, GhostInput } from './sim/ghosts';
 import type { MazeLayout } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
-import { ATTACK_POWERS, FRUIT, POWER_MS } from './sim/powers';
-import type { Vec } from './sim/walker';
+import { ATTACK_POWERS, FRUIT, POWER_MS, speeds } from './sim/powers';
+import { predictAlong, straightOn } from './sim/predict';
+import type { Dir } from './sim/walker';
 
 /**
  * The Shared maze: one maze for everyone. Each phone reports what it ate; the server settles it.
@@ -48,10 +49,13 @@ import type { Vec } from './sim/walker';
  * - A ghost eaten by a Hunt chomper becomes an `eaten` ghost event, so every phone sees it.
  * - Fruit is the server's: after every FRUIT_EVERY owned pellets one appears at the layout's
  *   fruit tile for FRUIT_MS; the first claim wins.
- * - Aims: on any tick, once AIM_MS have passed since the last beat, the server records every
- *   player's last reported tile. Silent players keep their last tile and never hold anyone up.
- * - Ghost bases: at each beat the server steps its own GhostSim to the beat and keeps the result
- *   (`bases`, the last BASES_KEPT). Phones, the TV and bots restore the newest base and step on
+ * - Aims: on any tick, once AIM_MS have passed since the last beat, the server records where
+ *   every player probably is now (their last report carried on along their heading for the time
+ *   since, at most SHARED_PREDICT_MS) and which way they're heading. Beats ride on reports that
+ *   arrive anyway, so they cost no extra requests. Silent players stay put after
+ *   SHARED_PREDICT_MS and never hold anyone up.
+ * - Ghost bases: on the first beat BASE_MS or more after the last base, the server steps its own
+ *   GhostSim to the beat and keeps the result (`bases`, the last BASES_KEPT). Phones, the TV and bots restore the newest base and step on
  *   with the few aims and events kept after it, so no one needs the round's whole history. A
  *   ghost event dated before the newest base re-steps the later bases from an older one; one
  *   dated before the oldest base can't be replayed everywhere and doesn't count.
@@ -61,7 +65,14 @@ import type { Vec } from './sim/walker';
  * - The round ends at the bell or when every pellet of the last maze is owned.
  */
 
-export const AIM_MS = 2_000;
+/** The Shared beat: how often the server notes where everyone is for the ghosts. */
+export const AIM_MS = 500;
+/** How long a Shared aim carries a player on from their last report, at most. */
+export const SHARED_PREDICT_MS = 1_200;
+/** Solo and Race: how often a phone (or bot) notes where its chomper is for its own ghosts. */
+export const LOCAL_AIM_MS = 150;
+/** How often the server keeps a Shared ghost base (on the first beat this long after the last). */
+export const BASE_MS = 2_000;
 /** Ghost bases kept: the newest, plus older ones a late event can re-step from. */
 export const BASES_KEPT = 3;
 export const SPOT_BACK_MS = 12_000;
@@ -166,13 +177,13 @@ function rebase(
 }
 
 /**
- * Aims a sim restored from a base at `fromMs` still needs: the one in effect then and the one
- * before it (ghosts read the heading from the two), and everything later.
+ * Aims a sim restored at step `step` (a checkpoint's) still needs: the one in effect there
+ * (every aim carries its own headings), and everything later. Aims are oldest first.
  */
-function aimsFrom(aims: Aim[], fromMs: number): Aim[] {
-  let last = -1;
-  for (let i = 0; i < aims.length; i++) if (aims[i]!.atMs < fromMs) last = i;
-  return aims.slice(Math.max(0, last - 1));
+export function aimsFrom(aims: Aim[], step: number): Aim[] {
+  let last = 0;
+  for (let i = 0; i < aims.length; i++) if (stepAt(aims[i]!.atMs) <= step) last = i;
+  return last ? aims.slice(last) : aims;
 }
 
 /** A fruit claim reported this long after the fruit went still counts (reports come in late). */
@@ -207,16 +218,65 @@ export function claimList(list: number[], seen: number, fruit: number): number[]
 /** Whether a spot holds a power-up at round ms `t`. */
 export const spotUp = (sp: PowerSpot, t: number): boolean => sp.kind !== null && t >= sp.backAt;
 
-const tileOf = (m: MazeLayout, pos: readonly [number, number, unknown]): Vec => [
-  wrapX(m, Math.round(pos[0])),
-  Math.round(pos[1]),
-];
-
+/**
+ * Every player at round ms `atMs`: where they probably are (their last report carried on along
+ * the maze for the time since, at most SHARED_PREDICT_MS), and their heading. Only report data
+ * and `atMs` go in, so it's the same wherever it's worked out.
+ */
 function aimNow(s: MazeState, atMs: number, maze: number): Aim {
   const m = layoutOf(s, maze);
-  const tiles: Record<string, Vec> = {};
-  for (const id of s.ids) tiles[id] = tileOf(m, s.players[id]!.pos);
+  const from = s.shared?.mazeAt ?? 0;
+  const run = speeds(levelOf(maze)).chomper;
+  const tiles: Record<string, AimTile> = {};
+  for (const id of s.ids) {
+    const p = s.players[id]!;
+    const ms = Math.min(SHARED_PREDICT_MS, atMs - Math.max(p.lastT, from));
+    const at = predictAlong(m, p.pos, ms > 0 ? (run * ms) / 1000 : 0);
+    tiles[id] = aimTile(m, [at.x, at.y, at.dir]);
+  }
   return { atMs, tiles };
+}
+
+/**
+ * Solo and Race: the aims of a chomper's own ghosts, one every LOCAL_AIM_MS on the maze clock
+ * from 0 up to `toMs`, rebuilt from its reported turns (each turn point carried straight on for
+ * the time since). Phones (after a refresh) and bots rebuild them the same way; while playing,
+ * both note the chomper's real position every LOCAL_AIM_MS instead. `off` is the round ms the
+ * maze's clock starts at.
+ */
+export function aimsFromTurns(
+  m: MazeLayout,
+  id: string,
+  turns: readonly Turn[],
+  start: readonly [number, number, Dir],
+  off: number,
+  toMs: number,
+  level: number,
+): Aim[] {
+  const run = speeds(level).chomper;
+  const out: Aim[] = [];
+  let ti = -1;
+  for (let b = 0; b <= toMs; b += LOCAL_AIM_MS) {
+    const t = b + off;
+    while (ti + 1 < turns.length && turns[ti + 1]![0] <= t) ti++;
+    const turn = turns[ti];
+    const pos = turn
+      ? straightOn(m, [turn[1], turn[2], turn[3]], (run * (t - turn[0])) / 1000)
+      : ([start[0], start[1], null] as [number, number, Dir | null]);
+    out.push({ atMs: b, tiles: { [id]: aimTile(m, pos) } });
+  }
+  return out;
+}
+
+/**
+ * Solo and Race: the phone's own aims cut down to what its checkpoints can still need (the aim in
+ * effect at the oldest checkpoint, and everything later), so the list never grows.
+ */
+export function trimAims(aims: Aim[], cps: GhostCheckpoints): void {
+  const step = cps.list[0]?.c.step ?? 0;
+  let drop = 0;
+  while (drop + 1 < aims.length && stepAt(aims[drop + 1]!.atMs) <= step) drop++;
+  if (drop) aims.splice(0, drop);
 }
 
 /**
@@ -363,11 +423,13 @@ export function settleShared(
   // Ghosts eaten: each new one is an event every phone applies; a ghost two players ate at
   // once counts for the first report only.
   let events = [...sh0.events];
-  // Aims: a beat every AIM_MS, on whichever tick comes along.
+  // Aims: a beat every AIM_MS, on whichever tick comes along (this player's report included).
   let aims = sh0.aims;
   const last = aims[aims.length - 1];
   const beat = !last || nowMs - last.atMs >= AIM_MS ? aimNow(s, nowMs, prev.maze) : null;
   if (beat) aims = [...aims, beat];
+  const lastBase = sh0.bases[sh0.bases.length - 1];
+  const baseAt = beat && (!lastBase || beat.atMs - lastBase.atMs >= BASE_MS) ? beat.atMs : null;
   // Everything added to the ghosts' inputs this tick (the bases are stepped again for these).
   const added: GhostEvent[] = [];
   // A ghost eaten before the oldest base can't be replayed on every phone, so it doesn't count
@@ -448,10 +510,10 @@ export function settleShared(
   }
 
   // Ghost bases, then only the aims and events a sim restored from the oldest one still needs.
-  const bases = rebase(s, sh0.bases, { aims, events }, added, beat ? beat.atMs : null);
+  const bases = rebase(s, sh0.bases, { aims, events }, added, baseAt);
   const base0 = bases[0]!;
   events = events.filter((e) => after(e.atMs, base0));
-  aims = aimsFrom(aims, base0.atMs);
+  aims = aimsFrom(aims, base0.c.step);
 
   out = {
     ...out,

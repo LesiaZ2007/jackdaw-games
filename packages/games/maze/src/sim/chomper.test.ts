@@ -274,6 +274,23 @@ describe('ChomperSim', () => {
     expect(sim.has(1)).toBe(false);
   });
 
+  it('picks up a power spot again once it is restored, as the kind it now holds', () => {
+    const { sim, events, until, at, step } = setup({ start: [4, 1, 'right'], powers: ['hunt'] });
+    until(at(6, 1));
+    expect(events).toContainEqual({ kind: 'power', i: 5, power: 'hunt' });
+    expect(sim.has(5)).toBe(false);
+    sim.restoreSpot(5, 'dash');
+    expect(sim.has(5)).toBe(true);
+    expect(sim.powerAt(5)).toBe('dash');
+    sim.input('left');
+    step();
+    until(at(4, 1));
+    sim.input('right');
+    step();
+    until(at(6, 1));
+    expect(events.filter((e) => e.kind === 'power').map((e) => e.power)).toEqual(['hunt', 'dash']);
+  });
+
   it('records exactly one turn per direction change', () => {
     const { sim, step, until, at } = setup({ start: [10, 1, 'right'] });
     step();

@@ -229,6 +229,7 @@ export type MazePublicPlayer = Pick<
   | 'score'
   | 'lives'
   | 'pos'
+  | 'lastT'
   | 'turns'
   | 'ghostsEaten'
   | 'caught'
@@ -819,6 +820,7 @@ function table(s: MazeState): MazeTableView {
         score: p.score,
         lives: p.lives,
         pos: p.pos,
+        lastT: p.lastT,
         turns: p.turns.slice(-TABLE_TURNS),
         ghostsEaten: p.ghostsEaten,
         caught: p.caught,

@@ -139,6 +139,18 @@ export class ChomperSim {
     for (let i = 0; i < this.gone.length; i++) if (taken[i] && !this.gone[i]) this.consume(i);
   }
 
+  /**
+   * Puts power spot `i` back on the board holding `kind` (in the Shared maze a spot comes back
+   * about 12 s after anyone takes it, as whatever the server picked).
+   */
+  restoreSpot(i: number, kind: PowerKind): void {
+    if (i < 0 || i >= this.gone.length) return;
+    this.kinds[i] = kind;
+    if (!this.gone[i]) return;
+    this.gone[i] = 0;
+    this.left++;
+  }
+
   /** Whether pellet `i` is still on the board. */
   has(i: number): boolean {
     return this.gone[i] === 0;

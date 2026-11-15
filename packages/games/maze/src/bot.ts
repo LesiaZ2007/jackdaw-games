@@ -103,7 +103,7 @@ function safeRoom(
 }
 
 /** A reported position as a walker: on a tile, or part way along its heading. */
-function walkerAt(m: MazeLayout, pos: [number, number, Dir | null]): Walker {
+export function walkerAt(m: MazeLayout, pos: [number, number, Dir | null]): Walker {
   const [x, y, d] = pos;
   const near = (v: number) => Math.abs(v - Math.round(v)) < 1e-6;
   if (!d || (near(x) && near(y))) {

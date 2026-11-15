@@ -55,9 +55,10 @@ function Card({ s, model }: { s: FrameScore; model: FrameModel }) {
   );
 }
 
-/** Lives and the maze you are on (Solo), or the bell (Shared and Race). */
+/** Lives (Solo), the maze you are on (the TV: the Shared maze, when there are several), the bell. */
 export function Chip({ model }: { model: FrameModel }) {
   const you = model.you;
+  const on = you ?? (model.sharedMaze && model.sharedMaze.mazes > 1 ? model.sharedMaze : null);
   const hearts =
     model.mode === 'Solo' && you
       ? Array.from({ length: 3 }, (_, i) => (i < you.lives ? '♥' : '♡')).join(' ')
@@ -69,9 +70,9 @@ export function Chip({ model }: { model: FrameModel }) {
           {hearts}
         </span>
       ) : null}
-      {you ? (
+      {on ? (
         <span className="mz-chip__txt">
-          Maze {Math.min(you.maze + 1, you.mazes)}/{you.mazes}
+          Maze {Math.min(on.maze + 1, on.mazes)}/{on.mazes}
         </span>
       ) : null}
       {model.timerMs !== null ? (
@@ -127,7 +128,7 @@ export function StartPanel({ model, options }: { model: FrameModel; options: Maz
     model.mode === 'Solo'
       ? 'Eat every pellet. Dodge the ghosts. Three lives.'
       : model.mode === 'Shared'
-        ? `One maze with ${others} ${others === 1 ? 'other' : 'others'}. The first to a pellet scores it. You pass through each other.`
+        ? `${options.mazes > 1 ? `${options.mazes} mazes, one at a time,` : 'One maze'} with ${others} ${others === 1 ? 'other' : 'others'}. The first to a pellet scores it. You pass through each other.`
         : 'Everyone runs the same mazes alone. Clearing the last one first earns a bonus.';
   const powers = enabledPowers(options);
   const look = LOOKS[model.look];

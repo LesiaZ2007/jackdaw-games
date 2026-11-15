@@ -13,11 +13,29 @@ async function lobby(browser: Browser, name: string, size: { width: number; heig
   await page.getByRole('button', { name: 'Create a lobby' }).click();
   await page.waitForURL(/\/r\/[A-Z]{4}$/);
   await page
-    .getByRole('button', { name: /^(Mini game )?Maze/ })
+    .getByRole('button', { name: /^(Word and party )?Maze/ })
     .first()
     .click();
-  await page.getByRole('button', { name: 'Show options and rules' }).click();
+  await expect(page.getByRole('heading', { name: 'Maze', exact: true })).toBeVisible();
   return { page, api, code: page.url().split('/').pop()! };
+}
+
+/** Open the lobby's Settings, pick the mode, and close it again. */
+async function pickMode(page: Page, mode: 'Solo' | 'Shared' | 'Race') {
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await settings.getByRole('radio', { name: mode, exact: true }).click();
+  await expect(settings.getByRole('radio', { name: mode, exact: true })).toBeChecked();
+  await settings.getByRole('button', { name: 'Done' }).click();
+  await expect(settings).toBeHidden();
+}
+
+/** Seat computer players from the lobby's "+ Add a CPU" slot. */
+async function addCpus(page: Page, n: number) {
+  for (let i = 1; i <= n; i++) {
+    await page.getByRole('button', { name: 'Add a computer player' }).first().click();
+    await expect(page.getByLabel(/, computer player/)).toHaveCount(i);
+  }
 }
 
 /** The score cards must end above the maze, never overlap it, and the page must not scroll. */
@@ -47,7 +65,7 @@ test('solo: start, steer with the arrows, the score moves, and the maze fits', a
   browser,
 }) => {
   const { page, api } = await lobby(browser, 'Wren', { width: 360, height: 640 });
-  await page.getByRole('radio', { name: 'Solo' }).click();
+  await pickMode(page, 'Solo');
   await page.getByRole('button', { name: 'Start Maze' }).click();
   await expect(page.getByLabel('The maze')).toBeVisible();
   await expect(page.locator('.mz-card.is-you')).toBeVisible();
@@ -72,10 +90,8 @@ test('solo: start, steer with the arrows, the score moves, and the maze fits', a
 
 test('shared: three computer players score, the TV shows four chompers', async ({ browser }) => {
   const { page, api, code } = await lobby(browser, 'Wren', { width: 360, height: 640 });
-  await page.getByRole('radio', { name: 'Shared' }).click();
-  for (let i = 0; i < 3; i++) {
-    await page.getByRole('button', { name: 'Add a computer player' }).first().click();
-  }
+  await pickMode(page, 'Shared');
+  await addCpus(page, 3);
   await page.getByRole('button', { name: 'Start Maze' }).click();
   await expect(page.getByLabel('The maze')).toBeVisible();
   await expect(page.locator('.mz-card')).toHaveCount(4);
@@ -103,8 +119,8 @@ test('shared: three computer players score, the TV shows four chompers', async (
 
 test('race: two players at the normal pace', async ({ browser }) => {
   const { page, api } = await lobby(browser, 'Wren', { width: 390, height: 844 });
-  await page.getByRole('radio', { name: 'Race' }).click();
-  await page.getByRole('button', { name: 'Add a computer player' }).first().click();
+  await pickMode(page, 'Race');
+  await addCpus(page, 1);
   await page.getByRole('button', { name: 'Start Maze' }).click();
   await expect(page.getByLabel('The maze')).toBeVisible();
   await page.waitForTimeout(5_000);

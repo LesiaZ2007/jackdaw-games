@@ -21,6 +21,8 @@ import { mazeBot } from './bot';
 import { initShared, settleShared } from './shared';
 import type { Turn } from './sim/chomper';
 import type { Aim, GhostCheckpoint, GhostEvent } from './sim/ghosts';
+import { layoutAt } from './sim/generate';
+import type { MazeRef } from './sim/generate';
 import { MAZE_LAYOUTS, SIZE_DIMS, layoutsOf } from './sim/layouts';
 import type { MazeLayout } from './sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from './sim/pellets';
@@ -44,7 +46,9 @@ import type { Dir } from './sim/walker';
  *   leader (or second place, if you lead); clearing a maze fogs everyone else. The first finish
  *   ends the round (with a short grace for close finishes) and the earliest finish time gets the
  *   finish bonus; the bell is the backstop. Highest score wins.
- * - Shared maze: one maze for everyone; ticks are settled in shared.ts.
+ * - Shared maze: one maze at a time for everyone; once it's all eaten everyone moves on to the
+ *   next together. The round ends after the last maze or at the bell; ticks are settled in
+ *   shared.ts.
  */
 
 /** Before the first maze, and between mazes (per player): three, two, one. */
@@ -161,6 +165,9 @@ export interface SharedRec {
   fruitSeen: Record<string, number>;
   /** Power spot pickups so far (picks the kind a spot comes back as). */
   pickups: number;
+  /** The maze everyone is on (0 when left out), and the round ms its play starts. */
+  maze?: number;
+  mazeAt?: number;
 }
 
 export interface MazeState {
@@ -170,8 +177,8 @@ export interface MazeState {
   round: number;
   /** Seat order. */
   ids: string[];
-  /** Layout index (into MAZE_LAYOUTS) per maze. */
-  layouts: number[];
+  /** Per maze: an index into MAZE_LAYOUTS, or a generated maze's seed and size (see layoutAt). */
+  layouts: MazeRef[];
   /** Server time when the round clock reads 0 (play starts). */
   startAt: number;
   /** The bell (Shared, Race; a backstop in Solo), or when the first Race finish ended it. */
@@ -256,7 +263,7 @@ export interface MazeTableView {
   options: MazeOptions;
   /** The power-ups in play. */
   powers: PowerKind[];
-  layouts: number[];
+  layouts: MazeRef[];
   startAt: number;
   endAt: number | null;
   showBy: number | null;
@@ -284,10 +291,10 @@ export interface MazePlayerView {
 // Layout helpers
 
 export function layoutOf(s: MazeState, maze: number): MazeLayout {
-  return MAZE_LAYOUTS[s.layouts[maze] ?? s.layouts[0] ?? 0]!;
+  return layoutAt(s, maze);
 }
 
-/** Later mazes are harder. The Shared maze is level 1. */
+/** Later mazes are harder. */
 export const levelOf = (maze: number): number => maze + 1;
 
 const powerIdx = new WeakMap<MazeLayout, Set<number>>();
@@ -515,14 +522,24 @@ function freshPlayer(): PlayerRec {
   };
 }
 
-function pickLayouts(o: MazeOptions, playerCount: number, rng: Rng): number[] {
+/**
+ * The mazes of a run: handmade ones in a shuffled order, generated ones (a fresh seed each), or
+ * Mix, which alternates the two and starts with either.
+ */
+function pickLayouts(o: MazeOptions, playerCount: number, rng: Rng): MazeRef[] {
   const size = resolveSize(o, playerCount);
   const order = rng.shuffle(layoutsOf(size).map((m) => MAZE_LAYOUTS.indexOf(m)));
-  const count = o.mode === 'Shared' ? 1 : o.mazes;
-  return Array.from({ length: count }, (_, i) => order[i % order.length]!);
+  const count = o.mazes;
+  const set = o.mazeSet ?? 'Mix';
+  const genFirst = set === 'Mix' && rng.int(2) === 1;
+  let made = 0;
+  return Array.from({ length: count }, (_, i): MazeRef => {
+    const gen = set === 'Random' || (set === 'Mix' && i % 2 === (genFirst ? 0 : 1));
+    return gen ? { gen: rng.int(100_000), size } : order[made++ % order.length]!;
+  });
 }
 
-function placeAt(s: MazeState, id: string, maze: number): [number, number, Dir | null] {
+export function placeAt(s: MazeState, id: string, maze: number): [number, number, Dir | null] {
   const m = layoutOf(s, maze);
   // Shared: a corner each. Solo and Race: everyone has their own copy, so the first start.
   const seat = s.options.mode === 'Shared' ? s.ids.indexOf(id) % m.starts.length : 0;
@@ -981,7 +998,9 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
           ? `Solo: ${o.mazes} ${o.mazes === 1 ? 'maze' : 'mazes'}, three lives.`
           : o.mode === 'Race'
             ? `Race: ${o.mazes} ${o.mazes === 1 ? 'maze' : 'mazes'}, first to finish gets a bonus.`
-            : `Shared maze: ${o.minutes} minutes. Chomp fast.`,
+            : o.mazes > 1
+              ? `Shared maze: ${o.mazes} mazes, ${o.minutes} minutes. Chomp fast.`
+              : `Shared maze: ${o.minutes} minutes. Chomp fast.`,
       );
       return lines;
     }

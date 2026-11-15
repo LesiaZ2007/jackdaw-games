@@ -4,16 +4,25 @@ import { defaultOptions } from '../options';
 import type { MazeOptions } from '../options';
 import { actionSchema, layoutOf, maze as game, sendAttack } from '../rules';
 import type { MazeAction, MazeState, MazeTick } from '../rules';
-import { decodeOwners, encodeOwners } from '../shared';
-import { DIRS, DIR_ORDER, wrapX } from '../sim/layouts';
+import {
+  decodeOwners,
+  encodeOwners,
+  ghostCheckpoints,
+  sharedGhosts,
+  spotPellets,
+  syncSharedGhosts,
+} from '../shared';
+import { walkerAt } from '../bot';
+import { DIRS, DIR_ORDER, opposite, wrapX } from '../sim/layouts';
 import type { MazeLayout } from '../sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from '../sim/pellets';
 import { POINTS } from '../sim/powers';
-import { canEnter } from '../sim/walker';
+import { advance, canEnter, posOf } from '../sim/walker';
 import type { Dir } from '../sim/walker';
-import { SPAWN_SHIELD_MS } from '../sim/chomper';
+import { DYING_MS, SPAWN_SHIELD_MS } from '../sim/chomper';
+import type { Turn } from '../sim/chomper';
 import type { FrameModel } from './frame';
-import { OTHERS_DELAY_MS, Runner, SEND_GAP_MS, SEND_TIMEOUT_MS, samplePath } from './runner';
+import { PREDICT_MAX_MS, Runner, SEND_GAP_MS, SEND_TIMEOUT_MS, predictAlong } from './runner';
 import type { Track } from './runner';
 
 const WREN = 'wren';
@@ -204,57 +213,118 @@ const autopilot =
     return best;
   };
 
-describe('samplePath', () => {
+/**
+ * The way others used to be drawn, kept as the yardstick for the prediction: OLD_DELAY_MS behind
+ * real time, along their reported turns, carried straight on past the last report for a while.
+ */
+const OLD_DELAY_MS = 450;
+function delayedPath(m: MazeLayout, tr: Track, tt: number): { x: number; y: number } {
+  const perMs = 7.8 / 1000;
+  const pts = tr.turns.map(([t, x, y, dir]) => ({ t, x, y, dir: dir as Dir | null }));
+  const last = pts[pts.length - 1];
+  if (!last || tr.lastT > last.t)
+    pts.push({ t: tr.lastT, x: tr.pos[0], y: tr.pos[1], dir: tr.pos[2] ?? last?.dir ?? null });
+  const carry = (p: (typeof pts)[number], dist: number) => {
+    if (!p.dir || dist <= 0) return { x: p.x, y: p.y };
+    const w = walkerAt(m, [p.x, p.y, p.dir]);
+    advance(w, dist, m, { ghost: false });
+    const [x, y] = posOf(w);
+    return { x, y };
+  };
+  const first = pts[0]!;
+  if (tt <= first.t) return { x: first.x, y: first.y };
+  let i = pts.length - 1;
+  while (i > 0 && pts[i]!.t > tt) i--;
+  const a = pts[i]!;
+  const b = pts[i + 1];
+  if (!b) return carry(a, perMs * Math.min(tt - a.t, 1_500));
+  if (!a.dir) return { x: a.x, y: a.y };
+  const [dx, dy] = DIRS[a.dir];
+  let len: number | null = null;
+  if (dx && Math.abs(a.y - b.y) < 1e-6) {
+    len = dx > 0 ? b.x - a.x : a.x - b.x;
+    if (len < -1e-6) len += m.w;
+  } else if (dy && Math.abs(a.x - b.x) < 1e-6) {
+    len = dy > 0 ? b.y - a.y : a.y - b.y;
+    if (len < -1e-6) len = null;
+  }
+  if (len === null) return carry(a, perMs * (tt - a.t));
+  len = Math.max(0, len);
+  const v = Math.max(perMs, len / Math.max(1, b.t - a.t));
+  const d = Math.min(len, v * (tt - a.t));
+  return { x: a.x + dx * d, y: a.y + dy * d };
+}
+
+/** Turns merged so they only grow (as the runner keeps them). */
+const mergeTurns = (prev: Turn[], add: Turn[]): Turn[] => {
+  const last = prev[prev.length - 1]?.[0] ?? -Infinity;
+  return [...prev, ...add.filter((t) => t[0] > last)].slice(-40);
+};
+
+/** Distance between two points, through a tunnel if that is shorter. */
+const gap = (m: MazeLayout, a: { x: number; y: number }, b: { x: number; y: number }) => {
+  const dx = Math.abs(a.x - b.x);
+  return Math.hypot(Math.min(dx, m.w - dx), a.y - b.y);
+};
+
+/** A fork: a tile that straight on (along `d`) is blocked, with two ways on that aren't back. */
+function findFork(m: MazeLayout): { tile: [number, number]; d: Dir; ways: Dir[] } {
+  for (let y = 1; y < m.h - 1; y++)
+    for (let x = 2; x < m.w - 2; x++)
+      for (const d of DIR_ORDER) {
+        const back = opposite(d);
+        const [bx, by] = DIRS[back];
+        const t: [number, number] = [x, y];
+        if (canEnter(m, t, d, false) || !canEnter(m, t, back, false)) continue;
+        if (!canEnter(m, [x + bx, y + by], back, false)) continue;
+        const ways = DIR_ORDER.filter((e) => e !== back && canEnter(m, t, e, false));
+        if (ways.length >= 2) return { tile: t, d, ways };
+      }
+  throw new Error('no fork in this maze');
+}
+
+describe('predictAlong', () => {
   const server = new Server([WREN, ROOK], { mode: 'Shared' });
   const m = layoutOf(server.s, 0);
 
-  it('moves straight between turns and arrives at each turn on time', () => {
-    // A straight run along a row of the maze from one pellet to another.
-    const row = ahead(m, m.starts[0]!);
-    expect(row.length).toBeGreaterThan(2);
-    const [sx, sy, d] = m.starts[0]!;
-    const n = row.length;
-    const end = [sx + DIRS[d][0] * n, sy + DIRS[d][1] * n] as const;
-    const tr: Track = {
-      turns: [[1000, sx, sy, d]],
-      lastT: 1000 + (n / 7.8) * 1000,
-      pos: [end[0], end[1], d],
-    };
-    const mid = samplePath(m, tr, 1000 + (n / 7.8) * 500);
-    expect(mid.x).toBeCloseTo(sx + (DIRS[d][0] * n) / 2, 5);
-    expect(mid.y).toBeCloseTo(sy + (DIRS[d][1] * n) / 2, 5);
-    expect(samplePath(m, tr, tr.lastT)).toMatchObject({ x: end[0], y: end[1] });
-    expect(samplePath(m, tr, 500)).toMatchObject({ x: sx, y: sy });
-  });
-
-  it('jumps at a respawn instead of gliding across walls', () => {
-    const [sx, sy, d] = m.starts[0]!;
-    const tr: Track = {
-      turns: [
-        [0, sx, sy, d],
-        [2000, m.starts[1]![0], m.starts[1]![1], m.starts[1]![2]],
-      ],
-      lastT: 2000,
-      pos: [m.starts[1]![0], m.starts[1]![1], m.starts[1]![2]],
-    };
-    const before = samplePath(m, tr, 1999);
-    const at = samplePath(m, tr, 2000);
-    expect(at).toMatchObject({ x: m.starts[1]![0], y: m.starts[1]![1] });
-    expect(Math.hypot(before.x - at.x, before.y - at.y)).toBeGreaterThan(2);
-  });
-
-  it('carries a player on along their corridor past the last report, holding at a wall', () => {
+  it('keeps its heading down a corridor and holds at a wall', () => {
     const [sx, sy, d] = m.starts[0]!;
     const n = ahead(m, m.starts[0]!).length;
-    const tr: Track = { turns: [[0, sx, sy, d]], lastT: 0, pos: [sx, sy, d] };
-    // Half a second on: about 3.9 tiles along (or at the wall, if that's nearer).
-    const half = samplePath(m, tr, 500);
-    const along = Math.abs(half.x - sx) + Math.abs(half.y - sy);
-    expect(along).toBeCloseTo(Math.min(n, 3.9), 5);
-    // Long after: held at the wall, never through it.
-    const late = samplePath(m, tr, 5000);
-    expect(Math.abs(late.x - sx) + Math.abs(late.y - sy)).toBeCloseTo(Math.min(n, 7.8 * 1.5), 5);
-    expect(OTHERS_DELAY_MS).toBeLessThanOrEqual(500);
+    const half = predictAlong(m, [sx, sy, d], 3.9);
+    expect(Math.abs(half.x - sx) + Math.abs(half.y - sy)).toBeCloseTo(Math.min(n, 3.9), 5);
+    const far = predictAlong(m, [sx, sy, d], 200);
+    expect(far.held).toBe(true);
+    expect(Number.isInteger(far.x) && Number.isInteger(far.y)).toBe(true);
+  });
+
+  it('turns a corner (the only way on) but holds at a fork', () => {
+    const { tile, d, ways } = findFork(m);
+    const [bx, by] = DIRS[opposite(d)];
+    const from: [number, number, Dir] = [tile[0] + bx * 2, tile[1] + by * 2, d];
+    const at = predictAlong(m, from, 6);
+    expect(at).toMatchObject({ x: tile[0], y: tile[1], held: true });
+    expect(ways.length).toBeGreaterThanOrEqual(2);
+    // A corner: find a tile where straight on is blocked and exactly one way isn't back.
+    let corner: { tile: [number, number]; d: Dir; out: Dir } | null = null;
+    for (let y = 1; y < m.h - 1 && !corner; y++)
+      for (let x = 2; x < m.w - 2 && !corner; x++)
+        for (const e of DIR_ORDER) {
+          const t: [number, number] = [x, y];
+          const back = opposite(e);
+          if (canEnter(m, t, e, false) || !canEnter(m, t, back, false)) continue;
+          const outs = DIR_ORDER.filter((f) => f !== back && canEnter(m, t, f, false));
+          if (outs.length === 1) {
+            corner = { tile: t, d: e, out: outs[0]! };
+            break;
+          }
+        }
+    expect(corner).not.toBeNull();
+    const [cx, cy] = DIRS[opposite(corner!.d)];
+    const p = predictAlong(m, [corner!.tile[0] + cx, corner!.tile[1] + cy, corner!.d], 1.5);
+    const [ox, oy] = DIRS[corner!.out];
+    expect(p.x).toBeCloseTo(wrapX(m, corner!.tile[0] + ox * 0.5), 5);
+    expect(p.y).toBeCloseTo(corner!.tile[1] + oy * 0.5, 5);
+    expect(p.dir).toBe(corner!.out);
   });
 });
 
@@ -422,7 +492,7 @@ describe('Runner attacks and pellets', () => {
     expect(p.last!.board!.ghosts.some((g) => g.jinxIsYou)).toBe(true);
   });
 
-  it('Shared: a pellet another player owns goes without points, and stays drawn a moment', async () => {
+  it('Shared: a pellet another player owns goes without points', async () => {
     const server = new Server([WREN, ROOK], { mode: 'Shared' }, 3);
     const m = layoutOf(server.s, 0);
     const path = ahead(m, m.starts[0]!);
@@ -453,12 +523,13 @@ describe('Runner attacks and pellets', () => {
     const xy = [...pelletIndex(m).entries()].filter(([, i]) => theirs.includes(i)).map(([k]) => k);
     const drawn = (f: FrameModel) =>
       f.board!.pellets.filter(([x, y]) => xy.includes(`${x},${y}`)).length;
-    expect(drawn(p.runner.frame(0))).toBe(2);
+    // Rook's drawn chomper is settled on its prediction, which is past what they reported.
+    expect(drawn(p.runner.frame(0))).toBe(0);
     const mine: number[] = [];
     await p.run(2500, (f) => {
       for (const e of f.effects) if (e.kind === 'pellet' && e.mine) mine.push(e.x * 100 + e.y);
     });
-    // Rook's chomper never came by, so they went on the timeout, not to Wren.
+    // They stay gone and went to Rook, not to Wren.
     expect(drawn(p.last!)).toBe(0);
     for (const k of xy) {
       const [x, y] = k.split(',').map(Number) as [number, number];
@@ -563,7 +634,7 @@ describe('Runner attacks and pellets', () => {
 });
 
 describe('Runner others and the TV', () => {
-  it('draws another player along their path, OTHERS_DELAY_MS behind', async () => {
+  it('draws another player where they probably are now, from their last report', async () => {
     const server = new Server([WREN, ROOK], { mode: 'Shared' }, 3);
     const m = layoutOf(server.s, 0);
     const p = phone(server, WREN);
@@ -588,14 +659,12 @@ describe('Runner others and the TV', () => {
       lives: 3,
     });
     p.runner.update(server.table(), server.view(WREN));
-    const f = p.runner.frame(16);
+    await p.run(400);
+    const f = p.last!;
     const rook = f.board!.chompers.find((c) => c.id === ROOK)!;
     const rec = server.table().players.find((x) => x.id === ROOK)!;
-    const want = samplePath(
-      m,
-      { turns: rec.turns, lastT: rec.lastT, pos: rec.pos },
-      server.t - OTHERS_DELAY_MS,
-    );
+    const ms2 = Math.min(server.t - rec.lastT, PREDICT_MAX_MS);
+    const want = predictAlong(m, rec.pos, (7.8 * ms2) / 1000);
     expect(rook.x).toBeCloseTo(want.x, 6);
     expect(rook.y).toBeCloseTo(want.y, 6);
     expect(rook.alpha).toBe(0.5);
@@ -639,6 +708,91 @@ describe('Runner others and the TV', () => {
     const q = phone(solo, WREN);
     await q.run(3500);
     expect(q.last!.timerMs).toBeNull();
+  });
+});
+
+describe('Runner: several Shared mazes', () => {
+  it('moves the phone and the TV on to maze 2 together: a fresh board, ghosts and countdown', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared', mazes: 2, size: 'Small' }, 3);
+    const p = phone(server, WREN);
+    const tv = phone(server, null);
+    await p.run(3000);
+    await tv.run(1000);
+    expect(p.last!.board!.maze).toBe(0);
+    expect(tv.last!.sharedMaze).toEqual({ maze: 0, mazes: 2 });
+
+    // Rook owns every plain pellet but one, then reports eating that one.
+    const m0 = layoutOf(server.s, 0);
+    const n0 = pelletIndex(m0).size;
+    const spots0 = new Set(spotPellets(m0));
+    const owners = decodeOwners(server.s.shared!.owner, n0);
+    const free = [...owners.keys()].filter((i) => !owners[i] && !spots0.has(i));
+    for (const i of free.slice(1)) owners[i] = 2;
+    server.s = { ...server.s, shared: { ...server.s.shared!, owner: encodeOwners(owners) } };
+    const last = new Uint8Array(n0);
+    last[free[0]!] = 1;
+    const rook = server.s.players[ROOK]!;
+    server.apply(ROOK, {
+      type: 'tick',
+      round: 1,
+      seq: rook.seq + 1,
+      t: server.t,
+      maze: 0,
+      pos: rook.pos,
+      turns: [],
+      eaten: encodeBits(last),
+      ghosts: [],
+      caught: 0,
+      fruit: [],
+      powers: [],
+      lives: 3,
+    });
+    const sh = server.s.shared!;
+    expect(sh.maze).toBe(1);
+    const mazeAt = sh.mazeAt!;
+    expect(mazeAt).toBe(server.t + 3000);
+
+    p.runner.update(server.table(), server.view(WREN));
+    tv.runner.update(server.table(), null);
+    await p.run(500);
+    await tv.run(20);
+    const m1 = layoutOf(server.s, 1);
+    const plain1 = pelletIndex(m1).size - spotPellets(m1).filter((i) => i >= 0).length;
+    for (const f of [p.last!, tv.last!]) {
+      expect(f.board!.maze).toBe(1);
+      expect(f.board!.level).toBe(2);
+      expect(f.board!.layout).toBe(m1);
+      // Every pellet is back (but the ones under a chomper standing at its corner).
+      expect(f.board!.pellets.length).toBeGreaterThanOrEqual(plain1 - 2);
+      expect(f.phase).toBe('countdown');
+      expect(f.countdown!.n).toBeGreaterThan(0);
+      expect(f.board!.ghosts.every((g) => g.mode === 'house')).toBe(true);
+      expect(f.sharedMaze).toEqual({ maze: 1, mazes: 2 });
+    }
+    // The phone is back at its corner, the other player at theirs.
+    const [sx, sy] = m1.starts[0]!;
+    const me = p.last!.board!.chompers.find((c) => c.isYou)!;
+    expect([me.x, me.y]).toEqual([sx, sy]);
+    const other = tv.last!.board!.chompers.find((c) => c.id === ROOK)!;
+    expect([other.x, other.y]).toEqual(m1.starts[1]!.slice(0, 2));
+
+    // Play starts at mazeAt: the phone moves on and reports on maze 2.
+    const sentBefore = p.sent.length;
+    await p.run(mazeAt - server.t + 1500);
+    expect(p.last!.phase).toBe('play');
+    const after = p.sent.slice(sentBefore);
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.every((x) => x.a.maze === 1)).toBe(true);
+    const moved = p.last!.board!.chompers.find((c) => c.isYou)!;
+    // (Without steering it runs to the first wall and waits there.)
+    expect(Math.hypot(moved.x - sx, moved.y - sy)).toBeGreaterThanOrEqual(1);
+    // Its ghosts are the server's: the ones a sim restored from the new base would show.
+    tv.runner.update(server.table(), null);
+    await tv.run(20);
+    const ref = sharedGhosts(m1, server.s.seed, 1, mazeAt);
+    syncSharedGhosts(ref, ghostCheckpoints(ref, mazeAt), server.s.shared!, tv.last!.tMs);
+    expect(ref.ghosts().length).toBeGreaterThanOrEqual(4);
+    expect(tv.last!.board!.ghosts.map((g) => [g.x, g.y])).toEqual(ref.ghosts().map((g) => g.pos));
   });
 });
 
@@ -724,19 +878,19 @@ describe('Runner robustness', () => {
       prev = [c.x, c.y];
     };
     // Report A: at the side street, still heading along the run, at round ms tk.
-    server.goTo(tk + OTHERS_DELAY_MS - 250);
+    server.goTo(tk + 100);
     server.apply(ROOK, tick(1, tk, [[0, sx, sy, d]], [x, sy, d]));
     p.runner.update(server.table(), server.view(WREN));
-    // The delayed drawing runs on past the last point; then the real report shows the turn.
-    await p.run(500, watch);
+    // The drawing runs on straight past the side street; then a report shows the turn.
+    await p.run(100, watch);
     const turned = tick(
       2,
-      tk + 900,
+      tk + 180,
       [
         [0, sx, sy, d],
         [tk, x, sy, side!],
       ],
-      [x, sy + DIRS[side!][1] * 6, side!],
+      [x, sy + DIRS[side!][1] * 1.4, side!],
     );
     server.goTo(server.t + 20);
     server.apply(ROOK, turned);
@@ -892,4 +1046,250 @@ describe('Runner latency', () => {
     }
     expect(checked).toBeGreaterThan(10);
   }, 60_000);
+});
+
+describe('Runner others: drawn where they probably are now', () => {
+  const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+
+  /**
+   * Rook steers a route; Wren's phone hears about Rook only on its live poll, every 600 ms give
+   * or take 150 (Rook reports as the real phone does). Records, frame by frame, where Rook really
+   * is, where Wren draws Rook, and where the old delayed path would have drawn Rook.
+   * - 'script': straight on at forks, but every third fork turned (corners are followed).
+   * - 'random': a random way on (never back) at every fork: the worst case for guessing.
+   */
+  async function chase(
+    route: 'script' | 'random',
+    seed: number,
+    ms: number,
+    mazeSet: MazeOptions['mazeSet'] = 'Mix',
+  ) {
+    // The seed picks the maze too (handmade or generated, as the set says).
+    const server = new Server([WREN, ROOK], { mode: 'Shared', mazeSet }, seed);
+    const m = layoutOf(server.s, 0);
+    const rng = createRng(seed);
+    let at = '';
+    let pick: Dir | null = null;
+    let forks = 0;
+    const steer = (tile: [number, number], dir: Dir | null): Dir | null => {
+      const k = tile.join(',');
+      if (k === at) return pick;
+      at = k;
+      const back = dir ? opposite(dir) : null;
+      const ways = DIR_ORDER.filter((d) => d !== back && canEnter(m, tile, d, false));
+      if (!ways.length) pick = back;
+      else if (route === 'random') pick = rng.pick(ways);
+      else {
+        const turn = ways.length > 1 && ++forks % 3 === 0;
+        pick = dir && ways.includes(dir) && !turn ? dir : (ways.find((d) => d !== dir) ?? ways[0]!);
+      }
+      return pick;
+    };
+    const rook = phone(server, ROOK, { steer: () => steer });
+    const wren = phone(server, WREN);
+    const jitter = createRng(seed + 100);
+    let wrenPoll = server.clock;
+    let rookPoll = server.clock;
+    let skipUntil = -Infinity;
+    let track = null as Track | null;
+    const frames: {
+      t: number;
+      /** Around a catch (Rook goes back to the start, drawn at once): left out. */
+      skip: boolean;
+      real: { x: number; y: number };
+      drawn: { x: number; y: number; dir: Dir };
+      old: { x: number; y: number } | null;
+      hid: { x: number; y: number }[];
+    }[] = [];
+    const end = server.clock + 3000 + ms;
+    while (server.clock < end) {
+      server.clock += 16;
+      server.timers();
+      if (server.clock >= rookPoll) {
+        rookPoll = server.clock + 600;
+        rook.runner.update(server.table(), server.view(ROOK));
+      }
+      rook.last = rook.runner.frame(16);
+      await flush();
+      if (server.clock >= wrenPoll) {
+        wrenPoll = server.clock + 600 + (jitter.next() - 0.5) * 300;
+        const tv = server.table();
+        wren.runner.update(tv, server.view(WREN));
+        const r = tv.players.find((x) => x.id === ROOK)!;
+        track = {
+          turns: mergeTurns(track?.turns ?? [], r.turns),
+          lastT: Math.max(track?.lastT ?? 0, r.lastT),
+          pos: r.lastT >= (track?.lastT ?? 0) ? r.pos : track!.pos,
+        };
+      }
+      const f = wren.runner.frame(16);
+      wren.last = f;
+      await flush();
+      if (server.t < 0) continue;
+      const real = rook.last.board!.chompers.find((c) => c.isYou)!;
+      if (real.dying !== null) skipUntil = server.t + DYING_MS + 2_000;
+      const drawn = f.board!.chompers.find((c) => c.id === ROOK)!;
+      frames.push({
+        t: server.t,
+        skip: server.t < skipUntil,
+        real: { x: real.x, y: real.y },
+        drawn: { x: drawn.x, y: drawn.y, dir: drawn.dir },
+        old: track ? delayedPath(m, track, server.t - OLD_DELAY_MS) : null,
+        hid: f.effects.flatMap((e) =>
+          e.kind === 'pellet' && e.by === ROOK && !e.mine ? [{ x: e.x, y: e.y }] : [],
+        ),
+      });
+    }
+    return { server, m, frames, wren };
+  }
+
+  /** Mean error against the real position (new and old), and the biggest step between frames. */
+  async function measure(
+    route: 'script' | 'random',
+    seeds: number[],
+    mazeSet: MazeOptions['mazeSet'] = 'Mix',
+  ) {
+    let newSum = 0;
+    let oldSum = 0;
+    let n = 0;
+    let worstStep = 0;
+    let worstBack = 0;
+    for (const seed of seeds) {
+      const { m, frames } = await chase(route, seed, 9_000, mazeSet);
+      for (const [i, f] of frames.entries()) {
+        if (f.t >= 1_000 && f.old && !f.skip) {
+          newSum += gap(m, f.drawn, f.real);
+          oldSum += gap(m, f.old, f.real);
+          n++;
+        }
+        const prev = frames[i - 1];
+        if (!prev || prev.skip || f.skip) continue;
+        // A tunnel wraps from one edge to the other: not a jump.
+        if (Math.abs(f.drawn.x - prev.drawn.x) > m.w / 2) continue;
+        worstStep = Math.max(worstStep, gap(m, f.drawn, prev.drawn));
+        // Stepping back against the way it faces (with no turn in between).
+        if (f.drawn.dir === prev.drawn.dir) {
+          const [hx, hy] = DIRS[f.drawn.dir];
+          const along = (f.drawn.x - prev.drawn.x) * hx + (f.drawn.y - prev.drawn.y) * hy;
+          worstBack = Math.max(worstBack, -along);
+        }
+      }
+    }
+    const res = { n, meanNew: newSum / n, meanOld: oldSum / n, worstStep, worstBack };
+    console.log(
+      `others drawn vs real (${route} route, ${mazeSet} mazes), mean tiles off: old delayed path ` +
+        `${res.meanOld.toFixed(2)}, predicted ${res.meanNew.toFixed(2)}; ` +
+        `biggest step between frames ${worstStep.toFixed(2)}, back ${worstBack.toFixed(2)}`,
+    );
+    return res;
+  }
+
+  it('is far closer to where they are than the old delayed path, and never jumps or backs up', async () => {
+    const r = await measure('script', range(1, 20));
+    expect(r.n).toBeGreaterThan(1000);
+    expect(r.meanNew).toBeLessThanOrEqual(r.meanOld * 0.5);
+    expect(r.worstStep).toBeLessThanOrEqual(0.5);
+    // Rook never turns round on this route, so the drawing never visibly steps back either.
+    expect(r.worstBack).toBeLessThan(0.05);
+  }, 120_000);
+
+  it('is still closer with a random turn at every fork, and never jumps', async () => {
+    const r = await measure('random', range(21, 30));
+    expect(r.n).toBeGreaterThan(1000);
+    // Wrong guesses are eased out rather than jumped, which costs some of the gain here.
+    expect(r.meanNew).toBeLessThanOrEqual(r.meanOld * 0.75);
+    expect(r.worstStep).toBeLessThanOrEqual(0.5);
+  }, 120_000);
+
+  it('works the same on generated mazes', async () => {
+    const r = await measure('script', range(31, 38), 'Random');
+    expect(r.n).toBeGreaterThan(1000);
+    expect(r.meanNew).toBeLessThanOrEqual(r.meanOld * 0.6);
+    expect(r.worstStep).toBeLessThanOrEqual(0.5);
+    expect(r.worstBack).toBeLessThan(0.05);
+  }, 120_000);
+
+  it('hides pellets Rook eats no more than about a tile ahead of where Rook is drawn', async () => {
+    let checked = 0;
+    for (const route of ['script', 'random'] as const) {
+      const { m, frames, server, wren } = await chase(route, 21, 9_000);
+      // How far along Rook's real route each frame is.
+      const arc: number[] = [0];
+      for (let i = 1; i < frames.length; i++) {
+        const step = gap(m, frames[i]!.real, frames[i - 1]!.real);
+        arc.push(arc[i - 1]! + (step < 2 ? step : 0));
+      }
+      for (const [i, f] of frames.entries())
+        for (const p of f.hid) {
+          checked++;
+          // Gone right under (or next to) the drawn chomper: fine.
+          if (gap(m, f.drawn, p) <= 1.2) continue;
+          // Otherwise Rook really ate it already, and the drawn chomper is past it on the route.
+          let k = -1;
+          for (let j = i; j >= 0 && k < 0; j--) if (gap(m, frames[j]!.real, p) < 0.5) k = j;
+          expect(k).toBeGreaterThanOrEqual(0);
+          let best = Infinity;
+          let drawnArc = arc[i]!;
+          for (let j = k; j <= i; j++) {
+            const d = gap(m, frames[j]!.real, f.drawn);
+            if (d < best) [best, drawnArc] = [d, arc[j]!];
+          }
+          expect(arc[k]! - drawnArc).toBeLessThanOrEqual(1.2);
+        }
+      // A pellet hidden on a guess that no report backs up comes back.
+      await wren.run(3_000);
+      const idx = pelletIndex(m);
+      const owners = decodeOwners(server.s.shared!.owner, idx.size);
+      const shown = new Set(wren.last!.board!.pellets.map(([x, y]) => `${x},${y}`));
+      for (const f of frames)
+        for (const p of f.hid)
+          if (!owners[idx.get(`${p.x},${p.y}`)!]) expect(shown.has(`${p.x},${p.y}`)).toBe(true);
+    }
+    expect(checked).toBeGreaterThan(20);
+  }, 120_000);
+
+  it('holds at a fork until a report says which way they went', async () => {
+    const server = new Server([WREN, ROOK], { mode: 'Shared' }, 3);
+    const m = layoutOf(server.s, 0);
+    const { tile, d, ways } = findFork(m);
+    const [bx, by] = DIRS[opposite(d)];
+    const p = phone(server, WREN);
+    await p.run(3000);
+    const tick = (seq: number, t: number, pos: [number, number, Dir]): MazeTick => ({
+      type: 'tick',
+      round: 1,
+      seq,
+      t,
+      maze: 0,
+      pos,
+      turns: [[t, pos[0], pos[1], pos[2]]],
+      eaten: '',
+      ghosts: [],
+      caught: 0,
+      fruit: [],
+      powers: [],
+      lives: 3,
+    });
+    server.apply(ROOK, tick(1, server.t - 50, [tile[0] + bx * 2, tile[1] + by * 2, d]));
+    p.runner.update(server.table(), server.view(WREN));
+    const drawn = () => p.last!.board!.chompers.find((c) => c.id === ROOK)!;
+    const seen: { x: number; y: number }[] = [];
+    await p.run(1000, () => seen.push({ x: drawn().x, y: drawn().y }));
+    // Two tiles take about 256 ms; from then on it waits at the fork's center.
+    for (const s of seen.slice(-30)) expect(s).toMatchObject({ x: tile[0], y: tile[1] });
+    // Then a report: they took one of the ways.
+    const way = ways[0]!;
+    const [wx, wy] = DIRS[way];
+    server.apply(ROOK, tick(2, server.t - 100, [tile[0] + wx * 0.5, tile[1] + wy * 0.5, way]));
+    p.runner.update(server.table(), server.view(WREN));
+    let prev = { x: drawn().x, y: drawn().y };
+    let worst = 0;
+    await p.run(300, () => {
+      worst = Math.max(worst, gap(m, drawn(), prev));
+      prev = { x: drawn().x, y: drawn().y };
+    });
+    const moved = (drawn().x - tile[0]) * wx + (drawn().y - tile[1]) * wy;
+    expect(moved).toBeGreaterThan(1.5);
+    expect(worst).toBeLessThanOrEqual(0.5);
+  });
 });

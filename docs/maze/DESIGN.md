@@ -38,9 +38,17 @@ The host picks the mode in the lobby options. 1 player for Solo, 2–8 for Share
   they pass through each other** (the demo showed contact can't work over polling: "REALLY awful
   at 0.8s, the chompers teleport all the time... collisions don't do anything"). Players affect
   each other through power-ups instead (below). Ghosts are shared; being caught costs 200 and
-  sends you back to your start corner after a short death animation. The round ends when the
-  last pellet is eaten or the timer runs out (host option, about 2½–3 minutes). Highest score
-  wins; the platform's running tally carries across rounds.
+  sends you back to your start corner after a short death animation. Highest score wins; the
+  platform's running tally carries across rounds.
+  - **Several mazes.** 2026-11-15: "shared should also have a several maze option". The host's
+    **Number of mazes** (1–5, default 3) counts here too. When every pellet of the maze is owned,
+    everyone gets the countdown together and moves on to the next maze, each to their own corner.
+    The maze starts over: pellet owners, power spots, ghost aims, bases and events, and the
+    fruit count; the ghosts get the maze's own seed and the next maze's level, as in Solo. Scores
+    carry on. The round ends after the last maze or when the timer runs out (host option, 2–4
+    minutes), and the highest total wins. Phones and the TV build the new maze afresh (board,
+    ghosts, checkpoints, where others are drawn from), and a late report for the old maze is
+    ignored. The score cards show "Maze 2/3"; the TV shows it once there is more than one.
 - **Race.** Everyone plays their own copy of the same mazes, in the same order, on their own
   phone. The host picks 1–5 mazes (default 3). Clearing a maze gives a bonus and moves you on;
   the first to clear the last maze ends the round and gets a big bonus, but the winner is the
@@ -53,18 +61,42 @@ The host picks the mode in the lobby options. 1 player for Solo, 2–8 for Share
 2026-11-14: "select maze size… auto selects when playing with several people but you can change
 it". A host option, **Auto** (default), Small (21×20), Medium (27×24) or Large (33×30). Auto picks
 Medium for Solo and Race, and for the Shared maze Medium with 2–4 players and Large with 5–8. Each
-size has at least two original mazes. The maze always fits the screen whatever its size.
+size has at least four original mazes. The maze always fits the screen whatever its size.
+
+### Random mazes
+
+2026-11-14: "More puzzle maps? Perhaps there's a way to randomize them?" A host option, **Maze
+style**: **Mix** (default) alternates a handmade maze and a generated one through the run (starting with
+either), Handmade uses only the drawn mazes, Random only generated ones. The state stores each maze
+of the run as a handmade index or `{ gen: seed, size }`; every reader resolves it with one
+function, `layoutAt`, which caches generated mazes by seed and size. The generator
+(`sim/generate.ts`) starts from a lattice of one-tile corridors with random spacing, the house and
+a ring round it in the middle, and an optional side tunnel, then fills mirrored corridor pieces at
+random to merge blocks into varied shapes, keeping a piece open whenever filling it would leave a
+dead end, split the maze or grow a block too big. It uses only `createRng(seed)` and integer
+steps, so every device builds the same maze, and every result passes the same checks as the
+handmade mazes (`sim/validate.ts`). Generated mazes get a name from their seed, like "Bramble Run
+4821".
 
 ### Telling who's who (Shared maze)
 
 Your own chomper is full strength, a little larger, with a pulsing ring and a **YOU** tag.
-Everyone else is drawn at half opacity with their name above them. Other chompers are shown a
-moment behind real time along their **exact reported path** (each report carries the turns since
-the last one), so they glide smoothly and never jump. After the 2026-11-14 playtest (others looked
-about a second behind) the moment is about 0.45 s, and past their last report they carry on along
-their corridor (holding at a wall), with corrections eased in. Pellets someone else took disappear when
-their chomper is seen reaching them; if you reach one first that was already taken, it vanishes
-quietly and scores nothing.
+Everyone else is drawn at half opacity with their name above them.
+
+Others are drawn **where they probably are now**, not where they were (the first build replayed
+their reported path a moment late, and after the 2026-11-14 playtest they still looked behind).
+From their latest report the phone carries them on along the maze, for at most 1.2 s: straight
+through corridors (and on through a junction when straight on is open), round a corner when it
+is the only way, and holding at a fork, where a left or right guess would be wrong half the
+time, and at walls. Chompers never touch, so this needn't be their exact path. When a new report
+disagrees, the drawn chomper glides into the new guess within the speed a chomper can run
+(never stepping back along its heading); only a respawn or a gap of more than 20 tiles is drawn
+at once. The Race minis and the TV use the same prediction.
+
+Pellets follow what is drawn: a pellet goes when someone's drawn chomper passes over it, and
+comes back if no report claims it within 2.5 s. One the server says someone took goes once their
+drawn chomper reaches it or has settled past it, and after 2.5 s at the latest. If you reach one
+first that was already taken, it vanishes quietly and scores nothing.
 
 ## Power-ups and fruit
 
@@ -84,10 +116,28 @@ Power pellets come in colors, and the color is the effect:
 A big banner tells the target what happened ("FOGGED BY ROOK", "WREN STOLE 120!").
 
 Host options, in every mode: **Classic** (Hunt only) or **Mixed**; in Mixed, each power-up can be
-switched on or off (2026-11-14: "make sure you can turn those on/off too"). In Mixed, power
+switched on or off (2026-11-14: "make sure you can turn those on/off too"). The switches are one
+grid of chips, each in its power's color; the grid hides in Classic, and in Solo the attack
+power-ups are greyed out (there is no one to attack). In Mixed, power
 pellets come back about 12 s after they're eaten as a random enabled type. Bonus fruit
 (cherries, a berry, a lemon; drawn fresh) pops up for points. Exact durations and values are the
 builder's call, starting from the demo's.
+
+## Lobby
+
+The lobby is an arcade cabinet's attract mode: a maze in the look the host picked, ghosts chasing
+chompers through it, pellets eaten and a power spot turning the ghosts blue now and then. It is a
+small scripted loop (not the real simulation), the same for a seed, and a still frame when the
+device asks for less motion. Switching the look restyles it at once. Beneath it the players are
+lined up like a high-score table, each a chomper in their seat color with their name; computer
+players are tagged CPU, and a newcomer chomps in from the side. The host starts with a big
+**READY?** button; everyone else sees who they are waiting for. The TV's lobby is the same maze
+filling the screen, with the room code and the lineup beside it.
+
+Options sit below in the shell's sheet: choices as rows of buttons, the power-ups as their grid.
+**Minutes** shows only where there is a bell (not Solo). Once a computer player is seated, the
+host picks how bots play, Easy, Normal or Hard (everyone else just reads it): harder bots steer
+away from ghosts sooner, avoid pockets the ghosts can close, and slip less.
 
 ## Look
 
@@ -196,7 +246,8 @@ The end-to-end test (`apps/web/e2e/maze.spec.ts`) prints the same counts for eac
   run on the server through the game's `bot()`, as Tetra's do: each bot move advances that bot's
   chomper from its last report to `now` with the shared simulation and returns a normal report
   (with its path, so it glides like a person). To keep server writes low, bots report about every
-  900 ms in play.
+  900 ms in play. In the Shared maze a bot restores the server's ghost base just as a phone does,
+  so its ghosts are everyone's.
 - **Rate limits.** The server allows 30 sends and 40 polls per 10 s per phone, so a phone reports
   at most every 450 ms and live-polls no faster than 600 ms.
 

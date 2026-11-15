@@ -1,6 +1,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import type {
   Avatar,
+  BotLevel,
   GameResult,
   PlayerScreenProps,
   Reaction,
@@ -101,6 +102,11 @@ export interface GameUi {
    */
   optionHelp?: Record<string, string | Record<string, string>>;
   /**
+   * Optional: yes/no options drawn together as one compact grid of toggle chips under a single
+   * label, instead of a row each (Maze's power-ups). Options not named here draw as usual.
+   */
+  optionGroups?: OptionGroup[];
+  /**
    * Optional themed waiting room shown in the lobby once this game is chosen (e.g. Avalon's
    * round table). The lobby shows the game's box lid and options when it's absent.
    */
@@ -139,6 +145,22 @@ export interface GameUi {
    * in game. Return the poll interval in ms for this moment, or null for the usual pace.
    */
   livePoll?(tableView: unknown): number | null;
+}
+
+/** Some yes/no options shown together as a grid of toggles (2 columns on phones, 4 on wider screens). */
+export interface OptionGroup {
+  label: string;
+  /** Boolean option keys, in the order to show them. */
+  keys: string[];
+  layout: 'grid';
+  /** A short chip name per key, when the option's own label is too long. */
+  short?: Record<string, string>;
+  /** A color dot on a key's chip (any CSS color). */
+  dots?: Record<string, string>;
+  /** Hide the whole grid for these options. */
+  hidden?: (options: Record<string, unknown>) => boolean;
+  /** Show a key's chip dimmed and untappable for these options. */
+  disabled?: (key: string, options: Record<string, unknown>) => boolean;
 }
 
 export interface LobbySeatsProps {
@@ -209,6 +231,10 @@ export interface GameLobbyProps {
    * open seat; tapping it seats a computer player. Bot players come with `bot: true`.
    */
   onAddBot?: () => void;
+  /** How well the bots play, one level for every bot; set only while a bot is seated. */
+  botLevel?: BotLevel;
+  /** Host only: change how the bots play. Undefined for everyone else. */
+  setBotLevel?: (level: BotLevel) => void;
 }
 
 /** What a game's own end-of-game screen receives. */

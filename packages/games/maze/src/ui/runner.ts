@@ -16,6 +16,8 @@ import {
   sharedFruitAt,
   decodeOwners,
   ghostCheckpoints,
+  sharedGhosts,
+  sharedMaze,
   spotPellets,
   spotUp,
   syncGhosts,
@@ -26,12 +28,13 @@ import { ChomperSim, DYING_MS, MAGNET_RANGE, SPAWN_SHIELD_MS, spawnShield } from
 import type { ChomperEvent, ChomperParams, Turn } from '../sim/chomper';
 import { GhostSim, ghostSeed } from '../sim/ghosts';
 import type { GhostEvent, GhostInput } from '../sim/ghosts';
-import { DIRS, MAZE_LAYOUTS, wrapX } from '../sim/layouts';
+import { layoutAt } from '../sim/generate';
+import { DIRS, DIR_ORDER, opposite, wrapX } from '../sim/layouts';
 import type { MazeLayout } from '../sim/layouts';
 import { decodeBits, encodeBits, pelletIndex } from '../sim/pellets';
 import { ATTACK_POWERS, FRUIT, POINTS, POWER_MS, powerMs, speeds } from '../sim/powers';
 import type { PowerKind } from '../sim/powers';
-import { advance } from '../sim/walker';
+import { advance, canEnter, posOf } from '../sim/walker';
 import type { Dir } from '../sim/walker';
 import type {
   FrameBanner,
@@ -65,9 +68,14 @@ import type {
  * server's ghost base and steps on with its aims and events (syncSharedGhosts), plus your own
  * ghost eats until the server has them.
  *
- * Other players (Shared maze, and the Race minis) are drawn OTHERS_DELAY_MS behind, along their
- * reported turns (`samplePath`), so they glide and never jump. A pellet someone else took stays
- * until their chomper is seen reaching it; one you reach that someone already took just goes.
+ * Other players (Shared maze, and the Race minis; on the TV too) are drawn where they probably
+ * are now: from their latest report on along the maze (`predictAlong`), for at most
+ * PREDICT_MAX_MS. Chompers never touch, so this needn't be their exact path, and it's closer than
+ * replaying the path a moment late. When a new report disagrees, the difference is eased out over
+ * EASE_MS (and never by stepping back along their heading); only a respawn or a gap of more
+ * than SNAP_TILES is drawn at once. Pellets go when the drawn chomper passes over them (and
+ * come back if no report claims them), or when the server says they're taken and the drawn
+ * chomper is past them. One you reach that someone already took just goes.
  */
 
 /** A phone reports at most this often. */
@@ -80,13 +88,13 @@ export const CLEAR_RESEND_MS = 1_500;
 export const LIVE_POLL_MS = 600;
 /** Solo's poll while a maze is being played: slow, as nothing is needed from the server. */
 export const SOLO_POLL_MS = 7_500;
-/**
- * Others are drawn this far behind real time (2026-11-14 playtest: about a second felt laggy).
- * Past their last report they are carried on along their corridor (`samplePath`).
- */
-export const OTHERS_DELAY_MS = 450;
+/** Others are predicted on from their last report for at most this long (then they hold). */
+export const PREDICT_MAX_MS = 1_200;
 /** A pellet someone else took goes after this long even if their chomper isn't seen at it. */
 export const HIDE_MAX_MS = 2_500;
+/** A pellet hidden because someone's drawn chomper passed over it comes back after this long
+ * if no report claims it (the guess about where they went was wrong). */
+export const GUESS_MS = 2_500;
 /** Banners stay up this long. */
 export const BANNER_MS = 2_200;
 /** GO shows this long after a countdown. */
@@ -99,14 +107,24 @@ export const SEND_TIMEOUT_MS = 5_000;
 const DT = 50 / 3;
 /** After a stall (a hidden tab), at most this much is simulated; the rest is skipped. */
 const MAX_CATCHUP_MS = 2_000;
-/** A reported path is carried on past its last point for at most this long. */
-const EXTRAPOLATE_MS = 1_500;
 /** A correction to where another player is drawn fades out over this long. */
-const EASE_MS = 200;
-/** A correction fades out at most this fast, in tiles per ms (0.3 tile per 60 Hz frame). */
-const EASE_MAX_PER_MS = 0.018;
-/** A move bigger than this between frames (a respawn, a tunnel) is drawn at once, not eased. */
-const SNAP_TILES = 4;
+const EASE_MS = 180;
+/**
+ * A drawn chomper moves at most this fast, correction and running together, in tiles per ms
+ * (0.45 tile per 60 Hz frame): a correction fades out with what their own speed leaves of it.
+ */
+const EASE_BUDGET_PER_MS = 0.027;
+/**
+ * A correction bigger than this is drawn at once, not eased: more than two predictions of
+ * PREDICT_MAX_MS can be apart, so something else went wrong. A wrong guess at a fork can be many
+ * tiles off by the time the report comes in; that is still eased (see EASE_BUDGET_PER_MS): a
+ * quick glide reads better than a jump.
+ */
+const SNAP_TILES = 20;
+/** Frames this far apart mean the screen wasn't drawing (a hidden tab): others are just placed. */
+const STALL_MS = 500;
+/** A drawn chomper this close to a pellet's center has passed over it. */
+const PASS_REACH = 0.5;
 /** Mouth phase per tile moved (the demo's 16 per second at 7.8 tiles per second). */
 const MOUTH_PER_TILE = 16 / 7.8;
 const TRAIL_LEN = 7;
@@ -142,11 +160,12 @@ export interface Track {
   pos: [number, number, Dir | null];
 }
 
-interface PathPoint {
-  t: number;
+/** Where a prediction got to: its heading, and whether it is holding (a wall, a fork). */
+export interface Predicted {
   x: number;
   y: number;
   dir: Dir | null;
+  held: boolean;
 }
 
 /** x brought into [-0.5, w - 0.5). */
@@ -155,67 +174,44 @@ const normX = (m: MazeLayout, x: number): number => {
   return ((((x + 0.5) % w) + w) % w) - 0.5;
 };
 
-/** How far B is from A going straight along `dir` (through a tunnel if need be), or null. */
-function straight(m: MazeLayout, a: PathPoint, b: PathPoint, dir: Dir): number | null {
-  const eps = 1e-6;
-  if (dir === 'left' || dir === 'right') {
-    if (Math.abs(a.y - b.y) > eps) return null;
-    let d = dir === 'right' ? b.x - a.x : a.x - b.x;
-    if (d < -eps) d += m.w;
-    return Math.max(0, d);
-  }
-  if (Math.abs(normX(m, a.x) - normX(m, b.x)) > eps) return null;
-  const d = dir === 'down' ? b.y - a.y : a.y - b.y;
-  return d < -eps ? null : Math.max(0, d);
-}
-
-/** Walks from a point along its heading for `dist` tiles, stopping at walls. */
-function carryOn(m: MazeLayout, p: PathPoint, dist: number): [number, number] {
-  if (!p.dir || dist <= 0) return [p.x, p.y];
-  const w = walkerAt(m, [normX(m, p.x), p.y, p.dir]);
-  w.next = null;
-  advance(w, dist, m, { ghost: false });
-  const [dx, dy] = w.dir ? DIRS[w.dir] : [0, 0];
-  return [w.tile[0] + dx * w.prog, w.tile[1] + dy * w.prog];
-}
+/** The shortest x difference a - b, through a tunnel if that is shorter. */
+const wrapDx = (m: MazeLayout, a: number, b: number): number => {
+  const d = a - b;
+  return d - m.w * Math.round(d / m.w);
+};
 
 /**
- * Where a player is at round ms `tt`, from their reported path: between two turns it moves
- * straight along the first turn's heading (a little faster than a chomper if it must, to arrive
- * on time; it waits if it got there early, as at a wall); after the last point it carries on
- * along its heading for a moment, stopping at walls. A jump (a respawn) happens at its time.
+ * Where a chomper that was at `pos` probably is `dist` tiles later. It keeps its heading through
+ * corridors; at a tile where straight on is blocked it takes the only other way that isn't back
+ * (a corner), and where there are two or more (a fork) it holds at the center: a left or right
+ * guess would be wrong half the time. It also holds at walls, as a chomper does.
  */
-export function samplePath(
+export function predictAlong(
   m: MazeLayout,
-  tr: Track,
-  tt: number,
-  speed: number = speeds(1).chomper,
-): { x: number; y: number; dir: Dir | null } {
-  const pts: PathPoint[] = tr.turns.map(([t, x, y, dir]) => ({ t, x, y, dir }));
-  const last = pts[pts.length - 1];
-  if (!last || tr.lastT > last.t) {
-    pts.push({ t: tr.lastT, x: tr.pos[0], y: tr.pos[1], dir: tr.pos[2] ?? last?.dir ?? null });
+  pos: [number, number, Dir | null],
+  dist: number,
+): Predicted {
+  const [x0, y0, d0] = pos;
+  if (!d0 || dist <= 0) return { x: normX(m, x0), y: y0, dir: d0, held: !d0 };
+  const w = walkerAt(m, [normX(m, x0), y0, d0]);
+  let held = false;
+  for (let left = dist; left > 1e-9;) {
+    // At a tile center: straight on if it's open (at a fork too: the likeliest single way).
+    if (w.prog === 0 && w.dir && !canEnter(m, w.tile, w.dir, false)) {
+      const back = opposite(w.dir);
+      const ways = DIR_ORDER.filter((d) => d !== back && canEnter(m, w.tile, d, false));
+      if (ways.length !== 1) {
+        held = true;
+        break;
+      }
+      w.dir = ways[0]!;
+    }
+    const step = Math.min(left, 1 - w.prog);
+    advance(w, step, m, { ghost: false });
+    left -= step;
   }
-  const first = pts[0]!;
-  if (tt <= first.t) return { x: normX(m, first.x), y: first.y, dir: first.dir };
-  let i = pts.length - 1;
-  while (i > 0 && pts[i]!.t > tt) i--;
-  const a = pts[i]!;
-  const b = pts[i + 1];
-  const perMs = speed / 1000;
-  if (!b) {
-    const [x, y] = carryOn(m, a, perMs * Math.min(tt - a.t, EXTRAPOLATE_MS));
-    return { x: normX(m, x), y, dir: a.dir };
-  }
-  const len = a.dir ? straight(m, a, b, a.dir) : null;
-  if (len === null || !a.dir) {
-    const [x, y] = carryOn(m, a, perMs * (tt - a.t));
-    return { x: normX(m, x), y, dir: a.dir };
-  }
-  const v = Math.max(perMs, len / Math.max(1, b.t - a.t));
-  const d = Math.min(len, v * (tt - a.t));
-  const [dx, dy] = DIRS[a.dir];
-  return { x: normX(m, a.x + dx * d), y: a.y + dy * d, dir: a.dir };
+  const [x, y] = posOf(w);
+  return { x: normX(m, x), y, dir: w.dir, held };
 }
 
 /** Turns merged so they only grow, newest kept. */
@@ -233,8 +229,7 @@ const copyFacts = (f: MazeFacts): MazeFacts => ({
   caughtAt: [...(f.caughtAt ?? [])],
 });
 
-const layoutFor = (tv: MazeTableView, maze: number): MazeLayout =>
-  MAZE_LAYOUTS[tv.layouts[maze] ?? tv.layouts[0] ?? 0]!;
+const layoutFor = (tv: MazeTableView, maze: number): MazeLayout => layoutAt(tv, maze);
 
 /** What a phone had done on its maze at some moment (for its own score card). */
 interface Snap {
@@ -256,12 +251,26 @@ interface Other {
   trail: [number, number][];
   /** Where they're drawn this frame. */
   at: [number, number];
-  /** The sampled path position last frame, and the correction still being eased out. */
-  raw: [number, number] | null;
+  /** What the prediction starts from (their last report, or their start after a catch). */
+  base: Base | null;
+  /** The prediction last frame. */
+  pred: [number, number] | null;
+  /** The correction still being eased out (drawn = prediction + ease), and how fast it goes. */
   ease: [number, number];
-  easeAt: number;
+  easeRate: number;
+  frameAt: number;
+  /** Their report time when they were seen caught: reports before the respawn are stale. */
+  caughtT: number | null;
   /** Server ms until which they are drawn shielded after being seen caught. */
   shieldUntil?: number;
+}
+
+interface Base {
+  key: string;
+  pos: [number, number, Dir | null];
+  t: number;
+  /** Round ms their Dash runs until, as known with this report (0 for none). */
+  dashUntil: number;
 }
 
 type Effect = FrameEffect extends infer E ? (E extends unknown ? Omit<E, 'key'> : never) : never;
@@ -313,6 +322,14 @@ export class Runner {
   private pelletsRev = 0;
   private pelletsList: [number, number][] = [];
   private pendingHide = new Map<number, { owner: string; since: number }>();
+  /**
+   * Shared: pellets hidden because someone's drawn chomper passed over them, by when (-1 once a
+   * report backed the guess up, or the pellet came back).
+   */
+  private guessed = new Map<number, number>();
+  /** Shared: the server's pellet owners (seat + 1, 0 for none). */
+  private owners: Uint8Array = new Uint8Array(0);
+  private pelletAt = new Map<string, number>();
   /** Shared: power spots this phone picked up, by spot, at round ms. */
   private localPick = new Map<number, number>();
   /** Shared: the fruit (by its atMs) this phone claimed. */
@@ -395,6 +412,10 @@ export class Runner {
         this.viewSeen = true;
         if (view.seq > 0 && !this.sentAny) this.startMaze(rec.maze, false);
       }
+    } else if (table.mode === 'Shared') {
+      // The TV (or anyone not playing) follows the Shared maze from one maze to the next.
+      const { maze } = sharedMaze(table.shared);
+      if (maze !== this.maze) this.startMaze(maze, true);
     }
     if (view && rec && rec.maze === this.maze) this.ackUpTo(view.seq);
     if (table.mode === 'Shared') this.syncOwners(now);
@@ -466,7 +487,7 @@ export class Runner {
     this.finishedShown = false;
     this.lastCount = null;
     const rec = this.rec();
-    this.startMaze(rec ? rec.maze : 0, false);
+    this.startMaze(rec ? rec.maze : tv.mode === 'Shared' ? sharedMaze(tv.shared).maze : 0, false);
     const now = this.now();
     if (tv.mode === 'Shared') this.syncOwners(now);
     this.syncOthers(now);
@@ -484,14 +505,20 @@ export class Runner {
     this.m = m;
     const idx = pelletIndex(m);
     this.n = idx.size;
+    this.pelletAt = idx;
+    this.owners = new Uint8Array(this.n);
     this.pelletXY = [];
     for (const [k, i] of idx) this.pelletXY[i] = k.split(',').map(Number) as [number, number];
     this.spotIdx = spotPellets(m);
     this.isSpot = new Set(this.spotIdx.filter((i) => i >= 0));
-    this.mazeAt = shared ? 0 : (rec?.mazeAt ?? 0);
+    // The Shared maze's play starts for everyone at once; the record says when.
+    const sh = shared ? sharedMaze(tv.shared) : null;
+    this.mazeAt = sh ? (sh.maze === maze ? sh.mazeAt : (rec?.mazeAt ?? 0)) : (rec?.mazeAt ?? 0);
     const level = maze + 1;
-    this.ghosts = new GhostSim(m, ghostSeed(tv.seed, maze), shared ? 1 : level);
-    this.cps = ghostCheckpoints(this.ghosts);
+    this.ghosts = shared
+      ? sharedGhosts(m, tv.seed, maze, this.mazeAt)
+      : new GhostSim(m, ghostSeed(tv.seed, maze), level);
+    this.cps = ghostCheckpoints(this.ghosts, shared ? this.mazeAt : 0);
     this.localInput = { aims: [], events: [], ...(me && !shared ? { frightFor: me } : {}) };
     this.ownEvents = [];
     this.lastBeat = -Infinity;
@@ -500,6 +527,7 @@ export class Runner {
     this.shown = new Uint8Array(this.n).fill(1);
     this.pelletsDirty = true;
     this.pendingHide.clear();
+    this.guessed.clear();
     this.localPick.clear();
     this.fruitClaimed = -1;
     this.fruitWas = false;
@@ -525,7 +553,7 @@ export class Runner {
     const seat = tv.players.findIndex((p) => p.id === me);
     const st = m.starts[shared ? Math.max(0, seat) % m.starts.length : 0] ?? m.starts[0]!;
     const taken = new Uint8Array(this.n);
-    if (shared && tv.shared) {
+    if (shared && tv.shared && sharedMaze(tv.shared).maze === maze) {
       const owners = decodeOwners(tv.shared.owner, this.n);
       for (let i = 0; i < this.n; i++) if (owners[i] && !this.isSpot.has(i)) taken[i] = 1;
     }
@@ -538,7 +566,7 @@ export class Runner {
     const ch = new ChomperSim({
       m,
       start: [st[0], st[1], st[2]],
-      level: shared ? 1 : level,
+      level,
       powers: tv.powers,
       ghosts: this.ghosts,
       taken,
@@ -608,7 +636,7 @@ export class Runner {
     const shared = tv.mode === 'Shared';
     const solo = tv.mode === 'Solo';
     if (!this.me) {
-      if (shared && this.ghosts && this.cps && tv.shared && tMs > 0)
+      if (shared && this.ghosts && this.cps && tv.shared && tMs > this.mazeAt)
         syncSharedGhosts(this.ghosts, this.cps, tv.shared, tMs);
       return;
     }
@@ -805,10 +833,11 @@ export class Runner {
   /** Shared: pellets others own go from the chomper at once, and from the board when seen. */
   private syncOwners(now: number): void {
     const sh = this.table.shared;
-    if (!sh || this.maze !== 0) return;
+    if (!sh || sharedMaze(sh).maze !== this.maze) return;
     const ids = this.table.players.map((p) => p.id);
     const mySeat = this.me ? ids.indexOf(this.me) + 1 : 0;
     const owners = decodeOwners(sh.owner, this.n);
+    this.owners = owners;
     const taken = new Uint8Array(this.n);
     for (let i = 0; i < this.n; i++) {
       const k = owners[i]!;
@@ -835,9 +864,12 @@ export class Runner {
           dir: p.pos[2] ?? 'left',
           trail: [],
           at: [p.pos[0], p.pos[1]],
-          raw: null,
+          base: null,
+          pred: null,
           ease: [0, 0],
-          easeAt: now,
+          easeRate: 0,
+          frameAt: now,
+          caughtT: null,
         };
         this.others.set(p.id, o);
       }
@@ -848,6 +880,7 @@ export class Runner {
       };
       if (p.caught > o.caught) {
         o.dyingAt = now;
+        o.caughtT = p.lastT;
         o.shieldUntil = now + DYING_MS + SPAWN_SHIELD_MS;
         if (this.table.mode === 'Shared')
           this.fx({ kind: 'caught', x: o.at[0], y: o.at[1], by: p.id, mine: false });
@@ -856,67 +889,157 @@ export class Runner {
     }
   }
 
-  /** Where everyone else is drawn this frame (a moment behind, along their path). */
+  /** Where a player probably is at round ms `tMs`, from a base (see predictAlong). */
+  private predictOther(m: MazeLayout, p: MazePublicPlayer, base: Base, tMs: number): Predicted {
+    const tv = this.table;
+    let to = tMs;
+    if (tv.endAt !== null) to = Math.min(to, tv.endAt - tv.startAt);
+    if (p.done || (tv.phase !== 'play' && tv.phase !== 'countdown')) to = base.t;
+    const from = Math.max(base.t, p.mazeAt);
+    to = Math.min(to, from + PREDICT_MAX_MS);
+    const sp = speeds(1);
+    const dashed = Math.max(0, Math.min(to, base.dashUntil) - from);
+    const dist = (sp.chomper * Math.max(0, to - from) + (sp.dash - sp.chomper) * dashed) / 1000;
+    return predictAlong(m, base.pos, dist);
+  }
+
+  /** Where everyone else is drawn this frame: where they probably are now. */
   private placeOthers(now: number, tMs: number): void {
-    const tt = tMs - OTHERS_DELAY_MS;
-    for (const p of this.table.players) {
+    const shared = this.table.mode === 'Shared';
+    for (const [seat, p] of this.table.players.entries()) {
       const o = this.others.get(p.id);
       if (!o) continue;
       const m = layoutFor(this.table, p.maze);
-      const s = samplePath(m, o.track, tt);
-      // A new report can bend the path under a delayed player: carry on from where they were
-      // drawn and fade the difference out. Bigger jumps (a respawn, a tunnel) happen at once.
-      const dtE = Math.max(0, now - o.easeAt);
-      o.easeAt = now;
-      if (o.raw) {
-        const jump = Math.hypot(s.x - o.raw[0], s.y - o.raw[1]);
-        if (jump > 0.4 && jump < SNAP_TILES && o.dyingAt === null) {
-          o.ease = [o.ease[0] + o.raw[0] - s.x, o.ease[1] + o.raw[1] - s.y];
+      const gapMs = now - o.frameAt;
+      const dt = Math.min(1_000, Math.max(0, gapMs));
+      o.frameAt = now;
+      // Caught: they stay put while dying, then come back at their start.
+      if (o.dyingAt !== null) {
+        if (now - o.dyingAt <= DYING_MS) {
+          o.trail.pop();
+          continue;
         }
+        o.dyingAt = null;
       }
-      o.raw = [s.x, s.y];
-      // Fade the correction out, but never faster than EASE_MAX_PER_MS (no visible jumps).
+      let base: Base;
+      const back = o.caughtT !== null ? o.caughtT + DYING_MS : -Infinity;
+      if (o.track.lastT < back) {
+        const st = m.starts[shared ? seat % m.starts.length : 0] ?? m.starts[0]!;
+        base = { key: `start@${back}`, pos: [st[0], st[1], st[2]], t: back, dashUntil: 0 };
+      } else {
+        const { pos, lastT } = o.track;
+        const dashUntil = p.power?.kind === 'dash' ? p.power.untilMs : 0;
+        base = { key: `${lastT}|${pos.join(',')}|${dashUntil}`, pos, t: lastT, dashUntil };
+      }
+      const pred = this.predictOther(m, p, base, tMs);
+      // Fade the correction out, linearly, at the rate it was given, within the speed budget.
       const size = Math.hypot(o.ease[0], o.ease[1]);
       if (size > 0) {
-        const fade = size * Math.min(1, dtE / EASE_MS);
-        const k = (size - Math.min(fade, EASE_MAX_PER_MS * dtE)) / size;
-        o.ease = [o.ease[0] * k, o.ease[1] * k];
+        const sp = speeds(1);
+        const speed = (tMs < (o.base?.dashUntil ?? 0) ? sp.dash : sp.chomper) / 1000;
+        const rate = Math.min(o.easeRate, Math.max(0, EASE_BUDGET_PER_MS - speed));
+        const k = Math.max(0, size - rate * dt) / size;
+        o.ease = k * size < 1e-3 ? [0, 0] : [o.ease[0] * k, o.ease[1] * k];
       }
-      if (Math.abs(o.ease[0]) + Math.abs(o.ease[1]) < 1e-3) o.ease = [0, 0];
-      const dx = s.x + o.ease[0];
-      const dy = s.y + o.ease[1];
+      let snap = false;
+      // First sight, or the screen wasn't drawing (a hidden tab): nobody saw the way there.
+      if (!o.base || gapMs > STALL_MS) snap = true;
+      else if (base.key !== o.base.key) {
+        // A new report: carry on from where they're drawn and ease into the new prediction.
+        const was = this.predictOther(m, p, o.base, tMs);
+        const ex = wrapDx(m, was.x + o.ease[0], pred.x);
+        const ey = was.y + o.ease[1] - pred.y;
+        const gap = Math.hypot(ex, ey);
+        if (gap > SNAP_TILES || base.key.startsWith('start@')) snap = true;
+        else {
+          o.ease = [ex, ey];
+          o.easeRate = gap / EASE_MS;
+        }
+      }
+      if (snap) o.ease = [0, 0];
+      o.base = base;
+      let dx = pred.x + o.ease[0];
+      let dy = pred.y + o.ease[1];
+      // Never step back along their heading (unless they really turned round): wait instead.
+      const prevPred = o.pred;
+      if (!snap && o.last && prevPred && pred.dir && pred.dir === o.dir) {
+        const predMoved = Math.hypot(wrapDx(m, pred.x, prevPred[0]), pred.y - prevPred[1]) > 1e-6;
+        const [hx, hy] = DIRS[pred.dir];
+        const along = wrapDx(m, dx, o.last[0]) * hx + (dy - o.last[1]) * hy;
+        if (predMoved && along < 0) {
+          dx -= hx * along;
+          dy -= hy * along;
+          o.ease = [wrapDx(m, dx, pred.x), dy - pred.y];
+        }
+      }
+      o.pred = [pred.x, pred.y];
+      dx = normX(m, dx);
       o.at = [dx, dy];
-      if (s.dir) o.dir = s.dir;
+      if (pred.dir) o.dir = pred.dir;
       if (o.last) {
-        const moved = Math.hypot(dx - o.last[0], dy - o.last[1]);
+        const moved = Math.hypot(wrapDx(m, dx, o.last[0]), dy - o.last[1]);
         if (moved < 2) o.mouth += moved * MOUTH_PER_TILE;
       }
       o.last = [dx, dy];
-      if (p.power?.kind === 'dash' && p.power.untilMs > tt) {
+      if (p.power?.kind === 'dash' && p.power.untilMs > tMs) {
         o.trail.unshift([dx, dy]);
         o.trail.length = Math.min(o.trail.length, TRAIL_LEN);
       } else o.trail.pop();
-      if (o.dyingAt !== null && now - o.dyingAt > DYING_MS) o.dyingAt = null;
     }
   }
 
-  /** Shared: a pellet someone else took goes when their chomper is drawn reaching it. */
+  /**
+   * Shared: a pellet goes when someone's drawn chomper passes over it (it comes back if no report
+   * claims it within GUESS_MS), or when the server says someone took it and their drawn chomper is
+   * near it or settled on its prediction (which is past everything they reported eating).
+   */
   private hidePellets(now: number): void {
+    const m = this.m;
+    for (const p of this.table.players) {
+      const o = this.others.get(p.id);
+      if (!o || p.id === this.me || p.maze !== this.maze || o.dyingAt !== null || !o.base) continue;
+      const reach = p.power?.kind === 'magnet' ? MAGNET_RANGE : PASS_REACH;
+      const r = Math.ceil(reach);
+      const cx = Math.round(o.at[0]);
+      const cy = Math.round(o.at[1]);
+      for (let y = cy - r; y <= cy + r; y++)
+        for (let x = cx - r; x <= cx + r; x++) {
+          const i = this.pelletAt.get(`${wrapX(m, x)},${y}`);
+          if (i === undefined || !this.shown[i] || this.isSpot.has(i) || this.guessed.has(i))
+            continue;
+          const [px, py] = this.pelletXY[i]!;
+          if (Math.hypot(wrapDx(m, o.at[0], px), o.at[1] - py) >= reach) continue;
+          this.hide(i);
+          this.pendingHide.delete(i);
+          this.guessed.set(i, this.owners[i] ? -1 : now);
+          this.fx({ kind: 'pellet', x: px, y: py, by: p.id, mine: false });
+        }
+    }
     for (const [i, h] of this.pendingHide) {
       const o = this.others.get(h.owner);
       const [x, y] = this.pelletXY[i]!;
       const p = this.rec(h.owner);
       const reach = p?.power?.kind === 'magnet' ? MAGNET_RANGE : 0.6;
-      let near = false;
-      if (o) {
-        const dx = Math.abs(o.at[0] - x);
-        near = Math.hypot(Math.min(dx, this.m.w - dx), o.at[1] - y) < reach;
+      let wait = false;
+      if (o && o.base && p?.maze === this.maze) {
+        const near = Math.hypot(wrapDx(m, o.at[0], x), o.at[1] - y) < reach;
+        wait = !near && Math.hypot(o.ease[0], o.ease[1]) > 0.5;
       }
-      if (!near && now - h.since < HIDE_MAX_MS) continue;
+      if (wait && now - h.since < HIDE_MAX_MS) continue;
       this.pendingHide.delete(i);
       if (!this.shown[i]) continue;
       this.hide(i);
       this.fx({ kind: 'pellet', x, y, by: h.owner, mine: false });
+    }
+    // A guess no report backed up: the pellet comes back (and isn't guessed at again).
+    for (const [i, at] of this.guessed) {
+      if (at < 0) continue;
+      if (this.owners[i] || this.myEaten[i]) this.guessed.set(i, -1);
+      else if (now - at >= GUESS_MS) {
+        this.guessed.set(i, -1);
+        this.shown[i] = 1;
+        this.pelletsDirty = true;
+      }
     }
   }
 
@@ -1137,7 +1260,7 @@ export class Runner {
 
   private powerOf(p: { kind: PowerKind; untilMs: number } | null, tMs: number, maze: number) {
     if (!p || p.untilMs <= tMs) return null;
-    const level = this.table.mode === 'Shared' ? 1 : maze + 1;
+    const level = maze + 1;
     const out: FramePower = {
       kind: p.kind,
       msLeft: p.untilMs - tMs,
@@ -1164,7 +1287,7 @@ export class Runner {
     else if (me && rec && (rec.done || (solo && this.lives <= 0 && this.deadUntil === 0)))
       phase = 'finished';
     else if (me && this.cleared) phase = 'cleared';
-    else if (me && !shared && tMs < this.mazeAt) {
+    else if ((me || shared) && tMs < this.mazeAt) {
       phase = 'countdown';
       cdLeft = this.mazeAt - tMs;
     } else phase = 'play';
@@ -1246,6 +1369,7 @@ export class Runner {
         me && rec
           ? { lives: solo ? this.lives : rec.lives, maze: this.maze, mazes: tv.layouts.length }
           : null,
+      sharedMaze: shared ? { maze: this.maze, mazes: tv.layouts.length } : null,
     };
   }
 
@@ -1353,14 +1477,14 @@ export class Runner {
         mouth: o.mouth,
         alpha: this.me ? 0.5 : 1,
         isYou: false,
-        power: this.powerOf(p.power, tMs - OTHERS_DELAY_MS, p.maze),
+        power: this.powerOf(p.power, tMs, p.maze),
         frozenMs: 0,
         foggedMs: 0,
         dying: o.dyingAt !== null ? Math.min(1, (this.now() - o.dyingAt) / DYING_MS) : null,
         shieldMs: Math.max(
           0,
           (o.shieldUntil ?? 0) - this.now(),
-          tMs >= 0 ? SPAWN_SHIELD_MS - Math.max(0, tMs - OTHERS_DELAY_MS) : 0,
+          tMs >= 0 ? SPAWN_SHIELD_MS - tMs : 0,
         ),
         trail: [...o.trail],
       });
@@ -1393,7 +1517,7 @@ export class Runner {
       w: m.w,
       h: m.h,
       maze: this.maze,
-      level: shared ? 1 : this.maze + 1,
+      level: this.maze + 1,
       pellets: this.pelletsList,
       pelletsRev: this.pelletsRev,
       powerSpots,

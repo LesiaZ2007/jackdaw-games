@@ -522,6 +522,437 @@
   }
 }
 
+/* ── Lobby: an attract-mode maze with the players lined up as chompers ──────────────────────
+   Jackdaw chrome (plaques, the display face) around an arcade screen. The screen takes its
+   colors from the look the host picked (--mz-bg, --mz-fg, --mz-gold on the element). */
+.mz-lobby {
+  position: relative;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px 10px;
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+.mz-lobby__main {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 760px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.mz-lobby__head {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.mz-lobby__title {
+  margin: 0;
+  font: 400 clamp(30px, 8vw, 44px) / 1 var(--font-display);
+}
+.mz-lobby__sub {
+  margin: 0;
+  font: 700 14px/1.1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.mz-lobby__screen {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 120px;
+  border: 3px solid var(--ink);
+  background: #000;
+  display: grid;
+}
+.mz-attract {
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  background: var(--mz-bg, #000);
+  overflow: hidden;
+}
+.mz-attract__canvas {
+  display: block;
+}
+.mz-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow-y: auto;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 12px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.mz-opts {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.mz-opt {
+  display: grid;
+  gap: 4px;
+}
+.mz-opt dt {
+  font: 800 15px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mz-opt dd {
+  margin: 0;
+}
+.mz-opt__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.mz-opt__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+.mz-opt__choices button,
+.mz-chip-opt {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 16px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.mz-opt__choices button[aria-checked='true'],
+.mz-chip-opt[aria-checked='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.mz-opt__choices button:disabled,
+.mz-chip-opt:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.mz-chip-opt__dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  outline: 2px solid var(--paper);
+  box-shadow: 0 0 0 3px var(--ink);
+}
+.mz-opt__help {
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+
+/* The line-up: one row per player, a chomper in their color and their name. */
+.mz-lineup {
+  flex: none;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 8px;
+  max-height: 168px;
+  overflow-y: auto;
+  border: 3px solid var(--ink);
+  background: var(--mz-bg);
+  color: var(--mz-fg);
+}
+.mz-row {
+  --mz-row: var(--mz-bg);
+  min-width: 0;
+  animation: mz-chomp-in 0.5s calc(var(--mz-i, 0) * 70ms) backwards cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+.mz-row__btn {
+  appearance: none;
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: 800 17px/1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+}
+button.mz-row__btn {
+  cursor: pointer;
+}
+button.mz-row__btn:hover,
+button.mz-row__btn:focus-visible {
+  outline: 2px solid var(--mz-gold);
+  outline-offset: -2px;
+}
+.mz-row.is-away {
+  opacity: 0.5;
+}
+.mz-row__rank {
+  flex: none;
+  min-width: 2.2em;
+  color: var(--mz-gold);
+  font-size: 14px;
+}
+.mz-row__chomp {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+}
+.mz-row__chomp--open {
+  height: 36px;
+}
+.mz-row__name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mz-tag {
+  flex: none;
+  padding: 2px 5px;
+  border: 1.5px solid currentColor;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--mz-gold);
+}
+.mz-tag--you {
+  color: var(--mz-fg);
+}
+.mz-row--open {
+  opacity: 0.8;
+}
+.mz-addseat {
+  position: relative;
+  inset: auto;
+  width: 28px;
+  height: 28px;
+}
+.mz-chomp {
+  --mz-z: 28px;
+  position: relative;
+  display: block;
+  width: var(--mz-z);
+  height: var(--mz-z);
+  border-radius: 50%;
+  background: var(--mz-c);
+  box-shadow: 0 0 0 1.5px var(--mz-fg, #1b1a18);
+}
+.mz-chomp::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: var(--mz-row, var(--mz-bg, #000));
+  clip-path: polygon(50% 50%, 100% 38%, 100% 62%);
+  animation: mz-mouth 0.38s ease-in-out infinite alternate;
+}
+@keyframes mz-mouth {
+  to {
+    clip-path: polygon(50% 50%, 104% 6%, 104% 94%);
+  }
+}
+@keyframes mz-chomp-in {
+  from {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+}
+.mz-react {
+  flex: none;
+}
+
+.mz-bots {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+}
+.mz-bots__label {
+  font: 800 14px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.mz-bots__choices {
+  display: flex;
+  gap: 6px;
+}
+.mz-bots__on {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+.mz-bots__level {
+  font: 800 16px/1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mz-actions {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+}
+.mz-start {
+  flex: 1 1 200px;
+  gap: 12px;
+}
+.mz-ready {
+  letter-spacing: 0.14em;
+  animation: mz-blink 0.9s steps(2, jump-none) infinite;
+}
+@keyframes mz-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+.mz-waiting {
+  flex: 1 1 200px;
+  margin: 0;
+  font: 800 18px/1.1 var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.mz-blocker {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.mz-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.mz-chat {
+  --lc-bg: var(--paper);
+  --lc-ink: var(--ink);
+  --lc-dim: var(--ink-2);
+  --lc-rule: var(--rule);
+  --lc-title-font: var(--font-plaque);
+}
+
+@media (min-width: 640px) {
+  .mz-opt__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .mz-lineup {
+    max-height: 200px;
+  }
+}
+@media (min-width: 1240px) {
+  .mz-lobby {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 24px;
+  }
+  .mz-lobby__main {
+    max-width: 900px;
+  }
+}
+
+/* The TV: the maze fills the screen, the code and the line-up beside it (TV pixels). */
+.mz-tvlobby {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 640px;
+  gap: 56px;
+  align-items: stretch;
+  padding: 48px 72px;
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+.mz-tvlobby__stage {
+  min-height: 0;
+  border: 6px solid var(--ink);
+}
+.mz-tvlobby__side {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+}
+.mz-tvlobby .mz-lobby__title {
+  font-size: 112px;
+}
+.mz-tvlobby__status {
+  margin: 0;
+  font: 800 32px/1.1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mz-lineup--tv {
+  gap: 10px 16px;
+  padding: 16px;
+  max-height: none;
+  border-width: 5px;
+}
+.mz-lineup--tv .mz-row__btn {
+  min-height: 64px;
+  font-size: 32px;
+  gap: 14px;
+}
+.mz-lineup--tv .mz-row__rank {
+  font-size: 24px;
+}
+.mz-lineup--tv .mz-row__chomp {
+  width: 48px;
+  height: 48px;
+}
+.mz-lineup--tv .mz-chomp {
+  --mz-z: 48px;
+}
+.mz-lineup--tv .mz-tag {
+  font-size: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mz-row,
+  .mz-ready,
+  .mz-chomp::after {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mz-lid,
   .mz-rank li,

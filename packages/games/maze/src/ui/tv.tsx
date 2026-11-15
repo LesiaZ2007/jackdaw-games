@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { GameUi } from '@jackdaw/ui';
 import type { MazeTableView } from '../rules';
-import { MAZE_LAYOUTS } from '../sim/layouts';
+import { layoutAt } from '../sim/generate';
 import type { FrameModel } from './frame';
 import { Cards, EndPanel } from './hud';
 import { fitTile, miniGrid } from './layout';
@@ -28,7 +28,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, players, now }) => {
   }, [size]);
   const fx = useConfetti();
   const shared = table.mode === 'Shared';
-  const lay = MAZE_LAYOUTS[table.layouts[0] ?? 0]!;
+  const lay = layoutAt(table, 0);
 
   const onFrame = useCallback((m: FrameModel, t: number) => {
     const { w, h } = sizeRef.current;

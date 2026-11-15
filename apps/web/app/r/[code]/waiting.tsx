@@ -248,6 +248,8 @@ export function Waiting({
             react={(kind) => void send({ type: 'react', kind })}
             chat={chat}
             onAddBot={addBot}
+            botLevel={s.players.some((p) => p.bot) ? s.botLevel : undefined}
+            setBotLevel={isHost ? (level) => void send({ type: 'setBotLevel', level }) : undefined}
           />
         </section>
       )}

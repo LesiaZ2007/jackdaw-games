@@ -3,10 +3,13 @@
 import type { GameUi } from '@jackdaw/ui';
 import type { MazeTableView } from '../rules';
 import { POWER_INFO } from './info';
+import { MazeLobby } from './lobby';
+import { POWER_GROUP } from './option-groups';
 import { PlayerScreen } from './player';
 import { Results } from './results';
 import { LIVE_POLL_MS, SOLO_POLL_MS } from './runner';
 import { TvScreen } from './tv';
+import { MazeTvLobby } from './tv-lobby';
 
 /** A power-up's switch: what it does when on, and that it never appears when off. */
 const power = (k: keyof typeof POWER_INFO) => ({
@@ -14,7 +17,7 @@ const power = (k: keyof typeof POWER_INFO) => ({
   false: 'Never appears.',
 });
 
-/** Maze: chomp the maze, dodge the ghosts, jinx your friends. It uses Jackdaw's lobby. */
+/** Maze: chomp the maze, dodge the ghosts, jinx your friends. Its lobby is an arcade attract screen. */
 export const mazeUi: GameUi = {
   art: { band: 'tenne', field: 'checky', glyph: 'chomper' },
   about: {
@@ -43,13 +46,20 @@ export const mazeUi: GameUi = {
       },
     ],
   },
+  optionGroups: [POWER_GROUP],
   optionHelp: {
     mode: {
       Solo: 'One player, three lives, a row of mazes to clear.',
       Shared: 'Everyone chases the same pellets in one maze. The first to a pellet scores it.',
       Race: 'Everyone runs the same mazes on their own. Clearing the last one first earns a bonus.',
     },
-    mazes: 'How many mazes to clear in Solo and Race. Later mazes have faster ghosts.',
+    mazes:
+      'How many mazes in a round. In a Shared maze everyone moves on together once a maze is eaten. Later mazes have faster ghosts.',
+    mazeSet: {
+      Mix: 'Takes turns: a handmade maze, then a brand new random one.',
+      Handmade: 'Only the drawn-by-hand mazes.',
+      Random: 'A brand new random maze every time. No two games look alike.',
+    },
     minutes: 'How long a Shared maze round lasts, and the time limit in a Race.',
     powerUps: {
       Classic: 'Only Hunt, the one that turns ghosts edible.',
@@ -86,6 +96,8 @@ export const mazeUi: GameUi = {
     if (v.mode === 'Solo') return SOLO_POLL_MS;
     return v.mode === 'Shared' ? LIVE_POLL_MS : null;
   },
+  Lobby: (p) => <MazeLobby {...p} help={mazeUi.optionHelp} groups={mazeUi.optionGroups} />,
+  TvLobby: MazeTvLobby,
   PlayerScreen,
   TvScreen,
   Results,

@@ -20,10 +20,18 @@ describe('options', () => {
     expect(defaultOptions(8).mode).toBe('Shared');
   });
 
+  it('labels every option differently', () => {
+    const labels = Object.values(optionsSchema.shape).map((f) => f.description);
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(optionsSchema.shape.mazes.description).toBe('Number of mazes');
+    expect(optionsSchema.shape.mazeSet.description).toBe('Maze style');
+  });
+
   it('has the documented defaults and passes its own schema', () => {
     const o = defaultOptions(4);
     expect(o).toMatchObject({
       mazes: 3,
+      mazeSet: 'Mix',
       minutes: 3,
       powerUps: 'Mixed',
       look: 'Printed',
@@ -39,6 +47,8 @@ describe('options', () => {
     expect(optionsSchema.parse(o)).toEqual(o);
     expect(optionsSchema.safeParse({ ...o, mazes: 6 }).success).toBe(false);
     expect(optionsSchema.safeParse({ ...o, minutes: 1 }).success).toBe(false);
+    expect(optionsSchema.safeParse({ ...o, mazeSet: 'Random' }).success).toBe(true);
+    expect(optionsSchema.safeParse({ ...o, mazeSet: 'Odd' }).success).toBe(false);
   });
 
   it('accepts the defaults for every player count', () => {

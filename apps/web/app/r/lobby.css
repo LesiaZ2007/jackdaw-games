@@ -487,6 +487,53 @@
   text-transform: uppercase;
 }
 
+/* Yes/no options as a grid of toggle chips (a game's `optionGroups`) */
+.options__row--grid {
+  display: grid;
+  justify-content: stretch;
+  align-items: start;
+}
+.options__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+@media (min-width: 640px) {
+  .options__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.options__chip {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 4px 10px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 16px/1.1 var(--font-plaque);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.options__chip[aria-checked='true'] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.options__chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.options__dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--paper);
+  outline: 1px solid var(--ink);
+}
+
 /* ── Manage players ── */
 /* The host's sheet for one player, opened by tapping their seat */
 .seat-sheet {

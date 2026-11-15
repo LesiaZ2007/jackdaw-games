@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties } from 'react';
 import type { ZodType } from 'zod';
+import { arrangeOptions, toggleKey, type OptionGroup } from '@jackdaw/ui';
 import { useOptionsDraft } from '@/lib/use-options-draft';
 
 interface FieldDef {
@@ -92,12 +93,15 @@ export function OptionsPanel({
   editable,
   onChange,
   help,
+  groups,
 }: {
   schema: ZodType;
   options: Record<string, unknown>;
   editable: boolean;
   /** A line under each option, by key: one for the option, or one per choice. */
   help?: Record<string, string | Record<string, string>>;
+  /** Yes/no options to show together as a grid of toggle chips under one label. */
+  groups?: OptionGroup[];
   /** Sends the new options; may return the save's promise. */
   onChange: (next: Record<string, unknown>) => unknown;
 }) {
@@ -110,9 +114,60 @@ export function OptionsPanel({
     DRAWN.has((f as unknown as { def: { type: string } }).def.type),
   );
 
+  const byKey = new Map(fields);
+  const booleans = new Set(
+    fields
+      .filter(([, f]) => (f as unknown as { def: { type: string } }).def.type === 'boolean')
+      .map(([k]) => k),
+  );
+  const items = arrangeOptions(
+    fields.map(([k]) => k),
+    booleans,
+    groups,
+  );
+
   return (
     <dl className="options">
-      {fields.map(([key, field]) => {
+      {items.map((item) => {
+        if (item.type === 'group') {
+          const g = item.group;
+          if (g.hidden?.(current)) return null;
+          return (
+            <div key={`group:${g.label}`} className="options__row options__row--grid">
+              <dt>{g.label}</dt>
+              <dd className="options__grid" role="group" aria-label={g.label}>
+                {item.keys.map((k) => {
+                  const f = byKey.get(k) as unknown as FieldDef | undefined;
+                  const name = g.short?.[k] ?? f?.description ?? label(k);
+                  const on = Boolean(current[k]);
+                  const off = g.disabled?.(k, current) ?? false;
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      role="switch"
+                      aria-checked={on}
+                      className="options__chip"
+                      disabled={!editable || off}
+                      onClick={() => save(toggleKey(current, k))}
+                    >
+                      {g.dots?.[k] && (
+                        <i
+                          className="options__dot"
+                          style={{ background: g.dots[k] }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      {name}
+                    </button>
+                  );
+                })}
+              </dd>
+            </div>
+          );
+        }
+        const key = item.key;
+        const field = byKey.get(key)!;
         const f = field as unknown as FieldDef & { def: { type: string } };
         const type = f.def.type;
         const value = current[key];

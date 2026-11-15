@@ -13,10 +13,10 @@ async function lobby(browser: Browser, name: string, size: { width: number; heig
   await page.getByRole('button', { name: 'Create a lobby' }).click();
   await page.waitForURL(/\/r\/[A-Z]{4}$/);
   await page
-    .getByRole('button', { name: /^(Word and party )?Maze/ })
+    .getByRole('button', { name: /^(Word and party )?Pac Man/ })
     .first()
     .click();
-  await expect(page.getByRole('heading', { name: 'Maze', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pac Man', exact: true })).toBeVisible();
   return { page, api, code: page.url().split('/').pop()! };
 }
 
@@ -66,7 +66,7 @@ test('solo: start, steer with the arrows, the score moves, and the maze fits', a
 }) => {
   const { page, api } = await lobby(browser, 'Wren', { width: 360, height: 640 });
   await pickMode(page, 'Solo');
-  await page.getByRole('button', { name: 'Start Maze' }).click();
+  await page.getByRole('button', { name: 'Start Pac Man' }).click();
   await expect(page.getByLabel('The maze')).toBeVisible();
   await expect(page.locator('.mz-card.is-you')).toBeVisible();
   await page.waitForTimeout(5_000); // the countdown
@@ -92,7 +92,7 @@ test('shared: three computer players score, the TV shows four chompers', async (
   const { page, api, code } = await lobby(browser, 'Wren', { width: 360, height: 640 });
   await pickMode(page, 'Shared');
   await addCpus(page, 3);
-  await page.getByRole('button', { name: 'Start Maze' }).click();
+  await page.getByRole('button', { name: 'Start Pac Man' }).click();
   await expect(page.getByLabel('The maze')).toBeVisible();
   await expect(page.locator('.mz-card')).toHaveCount(4);
   const tv = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
@@ -121,7 +121,7 @@ test('race: two players at the normal pace', async ({ browser }) => {
   const { page, api } = await lobby(browser, 'Wren', { width: 390, height: 844 });
   await pickMode(page, 'Race');
   await addCpus(page, 1);
-  await page.getByRole('button', { name: 'Start Maze' }).click();
+  await page.getByRole('button', { name: 'Start Pac Man' }).click();
   await expect(page.getByLabel('The maze')).toBeVisible();
   await page.waitForTimeout(5_000);
   const t0 = Date.now();

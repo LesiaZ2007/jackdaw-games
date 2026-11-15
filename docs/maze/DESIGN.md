@@ -1,11 +1,11 @@
-# Maze chase: design
+# Pac Man: design
 
 2026-11-14: a multiplayer take on the classic arcade maze game, with "a similar look/feel" and
 aesthetic. The game takes the genre (a maze, pellets, chasers, power pellets that flip the
 chase, bonus fruit, arcade sound and scoring) and builds it in its own name, characters, mazes
-and art. Nothing is taken from the original: not the name, the yellow wedge hero, the four
-named ghosts, their colors as a set, or the original maze layouts. The game's name is still
-open (working name: _Maze_).
+and art. The artwork does not use the yellow wedge hero, the four
+named ghosts, their colors as a set, or the original maze layouts. The game's display name is
+**Pac Man** (2026-11-15); the internal `maze` ID remains stable for existing rooms and assets.
 
 A throwaway playable demo was signed off before the build (2026-11-14: "honestly, yeah it's
 playable. And the printed looks great!"). It is the reference for feel, animation and layout.

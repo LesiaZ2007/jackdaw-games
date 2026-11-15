@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Maze: chomp the maze, dodge the ghosts, alone or against friends",
+  "description": "Pac Man: chomp the maze, dodge the ghosts, alone or against friends",
   "exports": {
     ".": "./src/index.ts",
     "./meta": "./src/meta.ts",

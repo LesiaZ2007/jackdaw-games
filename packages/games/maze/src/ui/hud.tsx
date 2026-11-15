@@ -32,6 +32,7 @@ function Card({ s, model }: { s: FrameScore; model: FrameModel }) {
     >
       <i className="mz-card__dot" aria-hidden />
       <span className="mz-card__name">{s.name}</span>
+      {s.isYou ? <span className="mz-card__you">You</span> : null}
       <b key={bump} className={`mz-card__score${bump ? ' is-bump' : ''}`}>
         {s.score}
       </b>
@@ -94,11 +95,15 @@ export function Cards({
 }) {
   return (
     <div className={`mz-cards${tv ? ' is-tv' : ''}`} data-count={model.scores.length}>
-      <Chip model={model} />
-      {model.scores.map((s) => (
-        <Card key={s.id} s={s} model={model} />
-      ))}
-      {extra}
+      <div className="mz-cards__top">
+        <Chip model={model} />
+        {extra}
+      </div>
+      <div className="mz-cards__row">
+        {model.scores.map((s) => (
+          <Card key={s.id} s={s} model={model} />
+        ))}
+      </div>
     </div>
   );
 }

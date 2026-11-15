@@ -265,20 +265,31 @@ function drawChomper(
   }
 
   if (shared) {
+    const tag = tagPaint(st, c.colorIndex);
     ctx.save();
     ctx.shadowBlur = 0;
-    ctx.font = `800 ${Math.max(12, T * 0.75)}px ${FONT}`;
+    ctx.font = `800 ${Math.max(12, T * (c.isYou ? 0.95 : 0.85))}px ${FONT}`;
     ctx.textAlign = 'center';
-    ctx.globalAlpha = c.isYou ? 1 : 0.75 * Math.max(c.alpha, 0.7);
-    ctx.lineWidth = 4;
+    ctx.globalAlpha = c.isYou ? 1 : 0.9;
+    ctx.lineWidth = Math.max(3, T * 0.32);
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = st.textStroke;
+    ctx.strokeStyle = tag.stroke;
     const label = c.isYou ? 'YOU' : c.name.toUpperCase();
     ctx.strokeText(label, cx, cy - R - 5);
-    ctx.fillStyle = st.glow || !c.isYou ? base : st.ink;
+    ctx.fillStyle = tag.fill;
     ctx.fillText(label, cx, cy - R - 5);
     ctx.restore();
   }
+}
+
+/**
+ * A name tag's colors (the YOU tag too), readable on every look (2026-11-14: "can't see a black
+ * 'you' label"): ink with a thick paper outline on Printed; the player's own bright color with
+ * a dark outline on the dark looks.
+ */
+export function tagPaint(st: LookStyle, colorIndex: number): { fill: string; stroke: string } {
+  if (st.id === 'Printed') return { fill: st.ink, stroke: st.bg };
+  return { fill: colorOf(st.players, colorIndex), stroke: st.textStroke };
 }
 
 function drawBanner(

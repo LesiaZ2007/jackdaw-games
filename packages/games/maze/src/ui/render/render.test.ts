@@ -12,6 +12,7 @@ import {
   drawMini,
   effectsOf,
   shieldBlink,
+  tagPaint,
   wallCache,
   type Layer,
 } from './core';
@@ -183,6 +184,45 @@ describe('draw', () => {
       const { make } = layerMaker();
       for (const mini of rf.minis) drawMini(ctx, mini, { look, tile: 6, dpr: 2, makeLayer: make });
       drawMini(ctx, { ...rf.minis[0]!, done: true }, { look, tile: 6, dpr: 2, t: 50 });
+    }
+  });
+
+  it('draws YOU and name tags readable on every look', () => {
+    const lum = (hex: string) => {
+      const v = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+      const [r, g, b] = v.map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+    };
+    const contrast = (a: string, b: string) => {
+      const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+      return (hi! + 0.05) / (lo! + 0.05);
+    };
+    const f = frames({ mode: 'Shared' }, [WREN, ROOK], WREN);
+    const m = f.step(6000);
+    for (const look of LOOKS) {
+      const st = STYLES[look];
+      for (let seat = 0; seat < 8; seat++) {
+        const tag = tagPaint(st, seat);
+        expect(tag.fill.toLowerCase()).not.toBe(st.bg.toLowerCase());
+        expect(contrast(tag.fill, st.bg), `${look} seat ${seat}`).toBeGreaterThanOrEqual(3);
+        expect(contrast(tag.fill, tag.stroke), `${look} seat ${seat}`).toBeGreaterThanOrEqual(3);
+      }
+      // What draw actually fills the tags with.
+      const { ctx } = fakeCtx();
+      const fills: Record<string, unknown> = {};
+      const rec = new Proxy(ctx, {
+        get(t, name: string) {
+          if (name === 'fillText')
+            return (text: string) => {
+              fills[text] = (t as unknown as Record<string, unknown>).fillStyle;
+            };
+          return (t as unknown as Record<string, unknown>)[name];
+        },
+      });
+      draw(rec, { ...m, effects: [] }, { look, tile: 16, dpr: 1, t: 0 });
+      expect(fills.YOU).toBe(tagPaint(st, 0).fill);
+      expect(fills.ROOK).toBe(tagPaint(st, 1).fill);
+      expect(fills.YOU).not.toBe(st.bg);
     }
   });
 

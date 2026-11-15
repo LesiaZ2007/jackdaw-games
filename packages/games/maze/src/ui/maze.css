@@ -721,7 +721,7 @@ button.mz-row__btn:focus-visible {
   outline: 2px solid var(--mz-gold);
   outline-offset: -2px;
 }
-.mz-row.is-away .mz-row__name {
+.mz-row.is-away:not([data-bot]) .mz-row__name {
   text-decoration: line-through;
   text-decoration-thickness: 2px;
 }

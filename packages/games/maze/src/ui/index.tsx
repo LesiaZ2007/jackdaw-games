@@ -3,6 +3,7 @@
 import type { GameUi } from '@jackdaw/ui';
 import type { MazeTableView } from '../rules';
 import { POWER_INFO } from './info';
+import { POWER_GROUP } from './option-groups';
 import { PlayerScreen } from './player';
 import { Results } from './results';
 import { LIVE_POLL_MS, SOLO_POLL_MS } from './runner';
@@ -43,6 +44,7 @@ export const mazeUi: GameUi = {
       },
     ],
   },
+  optionGroups: [POWER_GROUP],
   optionHelp: {
     mode: {
       Solo: 'One player, three lives, a row of mazes to clear.',

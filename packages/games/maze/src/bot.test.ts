@@ -1,5 +1,14 @@
-import { createRng } from '@jackdaw/engine';
-import type { BotLevel } from '@jackdaw/engine';
+import {
+  addBot,
+  createLobby,
+  createRng,
+  runTimers,
+  setGame,
+  setOptions,
+  start as startLobby,
+} from '@jackdaw/engine';
+import type { BotLevel, Ctx } from '@jackdaw/engine';
+import { DYING_MS } from './sim/chomper';
 import { describe, expect, it } from 'vitest';
 import { defaultOptions } from './options';
 import type { MazeOptions } from './options';
@@ -162,6 +171,82 @@ describe('mazeBot', () => {
     console.log(`bot call ms (${size}): first ${cold.toFixed(1)}, then ${per.toFixed(1)}`);
     expect(cold).toBeLessThan(150);
     expect(per).toBeLessThan(20);
+  });
+});
+
+describe('bots in a real lobby', () => {
+  const palette = ['a', 'b', 'c', 'd'].map((x) => ({ crest: `crest-${x}`, tint: `tint-${x}` }));
+
+  it.each(['Shared', 'Race'] as const)(
+    '%s: three bots keep moving for 3 minutes and are never benched',
+    (mode) => {
+      const games = { maze: game } as unknown as Ctx['games'];
+      const c = (now: number): Ctx => ({ now, games });
+      let lobby = createLobby(
+        { code: 'MAZE', hostId: 'p1', hostName: 'Jay', hostAvatar: palette[0]!, tokenKey: 't1' },
+        c(0),
+      );
+      lobby = setGame(lobby, 'p1', 'maze', c(0));
+      for (const id of ['b1', 'b2', 'b3'])
+        lobby = addBot(lobby, 'p1', { newPlayerId: id, palette }, c(0));
+      lobby = setOptions(lobby, 'p1', { mode, minutes: 3, mazes: 5 }, c(0));
+      lobby = startLobby(lobby, 'p1', { sessionId: 's1', seed: 11 }, c(0));
+      const bots = ['b1', 'b2', 'b3'];
+      const seen = new Map<string, { key: string; at: number }>();
+      let s = lobby.session!.state as MazeState;
+      // Reads every 600 ms (the live poll); the person doesn't steer.
+      for (let now = 600; now <= s.startAt + 3 * 60_000; now += 600) {
+        lobby = runTimers(lobby, c(now));
+        if (lobby.status !== 'in_game') break;
+        expect(lobby.session!.botFailed).toBeUndefined();
+        s = lobby.session!.state as MazeState;
+        if (s.phase !== 'play') continue;
+        const tMs = now - s.startAt;
+        for (const id of bots) {
+          const p = s.players[id]!;
+          const key = `${p.maze}:${p.pos.join(',')}`;
+          const was = seen.get(id);
+          if (!was || was.key !== key) {
+            seen.set(id, { key, at: tMs });
+            continue;
+          }
+          const lastCaught = p.facts.caughtAt.at(-1) ?? -Infinity;
+          const resting = p.done || tMs < p.mazeAt + 1_000 || tMs < lastCaught + DYING_MS + 1_000;
+          if (resting) {
+            was.at = tMs;
+            continue;
+          }
+          expect(tMs - was.at, `${id} stood still at ${key} (t=${tMs})`).toBeLessThanOrEqual(3_000);
+        }
+      }
+    },
+    120_000,
+  );
+});
+
+describe('bot ticks are always taken', () => {
+  it.each(['Shared', 'Race'] as const)('%s: a bot catching up after a long gap', (mode) => {
+    let s = start(IDS, { mode, minutes: 3 }, 5);
+    const rng = createRng(3);
+    for (const gap of [900, 25_000, 60_000, 900]) {
+      const now = s.startAt + Math.max(...IDS.map((id) => s.players[id]!.lastT)) + gap;
+      for (const id of IDS.slice(1)) {
+        const a = game.bot!({
+          playerId: id,
+          playerIds: s.ids,
+          view: game.getPlayerView(s, id),
+          tableView: game.getTableView(s),
+          rng,
+          now,
+          level: 'hard',
+        });
+        if (!a) continue;
+        const next = game.applyAction(s, id, a, rng, now);
+        expect(next).not.toBe(s);
+        s = next;
+      }
+      if (s.phase !== 'play') break;
+    }
   });
 });
 

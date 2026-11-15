@@ -1,7 +1,7 @@
 # Maze chase: design
 
-2026-11-14: "multiplayer pac-man in jackdaw games", with "a similar look/feel to pac man and
-aesthetic". The game takes the genre (a maze, pellets, chasers, power pellets that flip the
+2026-11-14: a multiplayer take on the classic arcade maze game, with "a similar look/feel" and
+aesthetic. The game takes the genre (a maze, pellets, chasers, power pellets that flip the
 chase, bonus fruit, arcade sound and scoring) and builds it in its own name, characters, mazes
 and art. Nothing is taken from the original: not the name, the yellow wedge hero, the four
 named ghosts, their colors as a set, or the original maze layouts. The game's name is still
@@ -141,7 +141,7 @@ The demo tested approach 1 with contact (unplayable at any poll rate) and withou
 ## Keep requests low
 
 Every request is a Vercel call and Redis commands on free plans that all games share
-(2026-11-14: "minimize this as much as possible for ANY game, especially pacman and later
+(2026-11-14: "minimize this as much as possible for ANY game, especially this game and later
 tetra").
 
 - **Live polling only in Shared-maze rounds**, at the existing floor or slower (about 800 ms).

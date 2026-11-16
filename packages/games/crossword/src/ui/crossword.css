@@ -1,0 +1,521 @@
+/* Inks and paper follow Jackdaw's day/dark tokens. */
+.cw {
+  --cw-selected: color-mix(in srgb, var(--azure) 22%, var(--paper));
+  --cw-word: color-mix(in srgb, var(--azure) 9%, var(--paper));
+  color: var(--ink);
+  font-family: var(--font-body);
+  width: 100%;
+  min-width: 0;
+}
+.cw button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 0;
+}
+.cw button:focus-visible {
+  outline: 3px solid var(--or);
+  outline-offset: 2px;
+  z-index: 2;
+}
+.cw button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.cw-player {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  max-width: 1400px;
+  margin: auto;
+}
+.cw-masthead {
+  border-top: 4px solid var(--ink);
+  border-bottom: 3px double var(--ink);
+  padding: 8px 0;
+}
+.cw-edition,
+.cw-byline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cw-edition {
+  font: 800 15px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+.cw-masthead h1 {
+  font: 700 clamp(28px, 3.3vw, 48px) var(--font-display);
+  line-height: 1.1;
+  margin: 4px 0;
+}
+.cw-byline {
+  font-size: 15px;
+  color: var(--ink-2);
+}
+.cw-solvers {
+  display: flex;
+  gap: 16px;
+  overflow: auto;
+  padding: 2px 0 6px;
+  flex-shrink: 0;
+}
+.cw-solver {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.cw-solver b {
+  font-size: 16px;
+  display: block;
+  text-decoration: underline;
+  text-decoration-color: var(--cw-tint);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 3px;
+}
+.cw-solver small {
+  font-size: 15px;
+  color: var(--ink-2);
+  display: block;
+  margin-top: 2px;
+}
+.cw-workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, 1fr);
+  gap: 32px;
+  flex: 1;
+  min-height: 220px;
+}
+.cw-grid-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 220px;
+  container-type: size;
+}
+.cw-board {
+  display: grid;
+  grid-template-columns: repeat(var(--cw-columns), 1fr);
+  aspect-ratio: 1;
+  width: min(100cqw, 100cqh, 560px);
+  min-width: 220px;
+  border: 3px solid var(--ink);
+  background: var(--ink);
+  gap: 1px;
+}
+.cw-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+  border: 0;
+  padding: 0;
+  min-width: 0;
+  min-height: 44px;
+  aspect-ratio: 1;
+}
+.cw-block {
+  background: var(--ink);
+}
+.cw-cell--word {
+  background: var(--cw-word);
+}
+.cw-cell--selected {
+  background: var(--cw-selected);
+  box-shadow: inset 0 0 0 3px var(--azure);
+}
+.cw-number {
+  position: absolute;
+  left: 7%;
+  top: 1%;
+  font: 700 clamp(13px, 2cqw, 19px) var(--font-plaque);
+  line-height: 1.1;
+}
+.cw-letter {
+  font: 800 clamp(24px, 7cqw, 50px) var(--font-code);
+  line-height: 1;
+  padding-top: 8%;
+}
+.cw-cell--error .cw-letter {
+  color: var(--danger);
+}
+.cw-error {
+  position: absolute;
+  bottom: 0;
+  right: 5%;
+  color: var(--danger);
+  font: 800 20px var(--font-body);
+}
+.cw-cell--revealed .cw-letter {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.cw-clue-panel {
+  overflow: auto;
+  min-height: 0;
+  border-left: 1px solid var(--rule);
+  padding-left: 24px;
+}
+.cw-clues {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.cw-clues h2 {
+  font: 800 23px var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 3px double var(--ink);
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+}
+.cw-clue {
+  display: flex;
+  text-align: left;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 6px;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+  font-size: 18px !important;
+  line-height: 1.25;
+}
+.cw-clue--active {
+  box-shadow: inset 4px 0 var(--azure);
+  background: var(--cw-word);
+}
+.cw-clue b {
+  font-family: var(--font-plaque);
+  min-width: 18px;
+}
+.cw-clue small {
+  color: var(--ink-2);
+}
+.cw-current {
+  display: flex;
+  align-items: stretch;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  min-height: 64px;
+  flex-shrink: 0;
+}
+.cw-current button {
+  border: 0;
+  background: none;
+  min-width: 44px;
+  font-size: 32px;
+}
+.cw-current .cw-current-text {
+  flex: 1;
+  text-align: left;
+  padding: 6px 8px;
+  font-size: 18px;
+  line-height: 1.2;
+}
+.cw-current-text b {
+  font: 800 15px var(--font-plaque);
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 3px;
+}
+
+.cw-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cw-tools button,
+.cw-close {
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 0;
+  border-bottom: 2px solid var(--ink);
+  background: var(--paper);
+  font: 800 16px var(--font-plaque);
+}
+.cw-notice {
+  font-size: 15px;
+  line-height: 1.2;
+  min-height: 18px;
+  margin: 0;
+  text-align: center;
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+.cw-close {
+  display: none;
+}
+.cw-final .cw-workspace {
+  min-height: 400px;
+}
+.cw-final h2 {
+  font: 700 30px var(--font-display);
+}
+.cw-tv {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.cw-tv .cw-masthead {
+  padding: 12px 0;
+}
+.cw-tv .cw-masthead h1 {
+  font-size: 68px;
+}
+.cw-tv .cw-edition,
+.cw-tv .cw-byline {
+  font-size: 26px;
+}
+.cw-tv .cw-workspace {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  min-height: 0;
+}
+.cw-tv .cw-board {
+  width: min(100cqw, 100cqh);
+}
+.cw-tv .cw-clues h2 {
+  font-size: 36px;
+}
+.cw-tv .cw-clue {
+  font-size: 28px !important;
+  padding: 12px;
+}
+.cw-tv .cw-number {
+  font-size: 24px;
+}
+.cw-tv .cw-letter {
+  font-size: clamp(36px, 9cqw, 80px);
+}
+.cw-tv .cw-notice,
+.cw-tv .cw-solver small {
+  font-size: 24px;
+}
+.cw-tv .cw-solver b {
+  font-size: 30px;
+}
+.cw-tv .cw-solvers {
+  flex-wrap: wrap;
+  overflow: visible;
+  gap: 12px 24px;
+}
+.cw-tv .cw-solver .jd-token {
+  width: 48px !important;
+  height: 48px !important;
+}
+.cw-tv.cw-final h2 {
+  font-size: 48px;
+}
+.cw-tv.cw-final .cw-grid-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cw-cell {
+    transition: background-color 120ms ease;
+  }
+}
+
+@media (max-width: 999px) {
+  .cw-player {
+    gap: 4px;
+  }
+  .cw-player .cw-tools {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .cw-player .cw-tools button {
+    font-size: 16px;
+    padding: 4px;
+    line-height: 1.05;
+  }
+}
+
+.cw-tv .cw-clue small {
+  font-size: 24px;
+}
+.cw-tv .cw-error {
+  font-size: 28px;
+}
+
+/* Each cell has its own ink rule; fractional gaps disappear on phone screens. */
+.cw-board {
+  gap: 0;
+  border: 2px solid var(--ink);
+}
+.cw-cell {
+  border: 1px solid var(--ink);
+  box-sizing: border-box;
+}
+.cw-input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  text-align: center;
+  padding: 6px 0 0;
+  outline-offset: -5px;
+  caret-color: var(--azure);
+}
+.cw-cell--error .cw-input {
+  color: var(--danger);
+}
+.cw-number,
+.cw-error {
+  pointer-events: none;
+  z-index: 1;
+}
+.cw-player .cw-grid-wrap {
+  display: block;
+  overflow: auto;
+  overscroll-behavior: contain;
+  min-height: 140px;
+}
+.cw-player .cw-board {
+  margin: auto;
+  width: max(calc(var(--cw-columns) * 44px + 4px), min(100cqw, 100cqh, 800px));
+  min-width: calc(var(--cw-columns) * 44px + 4px);
+  max-width: none;
+}
+.cw-player .cw-workspace {
+  min-height: 140px;
+}
+.cw-tv .cw-cell {
+  min-height: 0;
+}
+@media (max-width: 999px) {
+  .cw-cell {
+    border-width: 2px;
+  }
+  .cw-player:has(.cw-input:focus) .cw-solvers,
+  .cw-player:has(.cw-input:focus) .cw-byline {
+    display: none;
+  }
+  .cw-player:has(.cw-input:focus) .cw-masthead h1 {
+    font-size: 24px;
+  }
+  .cw-player .cw-board {
+    width: calc(var(--cw-columns) * 44px + 4px);
+  }
+}
+
+.cw-letter {
+  font-size: clamp(22px, calc(65cqw / var(--cw-columns)), 50px);
+}
+.cw-tv .cw-letter {
+  align-self: flex-end;
+  padding: 0 0 2px;
+  font-size: clamp(24px, calc(35cqw / var(--cw-columns)), 64px);
+}
+.cw-tv .cw-clues {
+  overflow: hidden;
+}
+.cw-tv .cw-masthead h1 {
+  font-size: 48px;
+}
+.cw-tv .cw-clue {
+  padding: 8px 10px;
+}
+.cw-tv .cw-clues h2 {
+  font-size: 32px;
+}
+
+.cw-input {
+  position: absolute;
+  inset: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+}
+@media (max-width: 999px) {
+  .cw-input {
+    inset: -2px;
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+  }
+}
+
+@media (max-width: 999px) {
+  .cw-player:has(.cw-input:focus) .cw-workspace,
+  .cw-player:has(.cw-input:focus) .cw-grid-wrap {
+    min-height: 48px;
+  }
+}
+
+/* Keep the clue columns in a drawer on phones; the board itself may pan. */
+@media (max-width: 999px) {
+  .cw-player .cw-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .cw-player .cw-clue-panel {
+    display: none;
+  }
+  .cw-player .cw-clue-panel--open {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: var(--paper);
+    z-index: 5;
+    padding: 16px;
+    border: 2px solid var(--ink);
+    overflow: auto;
+  }
+  .cw-close {
+    display: block;
+    margin-bottom: 16px;
+  }
+  .cw-final .cw-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .cw-final .cw-grid-wrap {
+    display: block;
+    overflow: auto;
+    height: 400px;
+    min-height: 220px;
+  }
+  .cw-final .cw-board {
+    width: calc(var(--cw-columns) * 44px + 4px);
+    min-width: calc(var(--cw-columns) * 44px + 4px);
+    margin: auto;
+  }
+}
+.cw-tv .cw-cell:has(.cw-letter:not(:empty)) .cw-number {
+  display: none;
+}
+.cw-tv.cw-final .cw-board {
+  width: min(100cqw, 100cqh);
+  min-width: 0;
+}
+
+.cw-board {
+  container-type: inline-size;
+}
+@media (max-width: 999px) {
+  .cw-player .cw-board {
+    width: max(calc(var(--cw-columns) * 44px + 4px), min(100cqw, 100cqh, 800px));
+  }
+}
+
+.cw-board {
+  grid-template-rows: repeat(var(--cw-columns), 1fr);
+}

@@ -11,7 +11,18 @@ import {
 } from '@jackdaw/ui';
 import { LIE_MAX } from '../constants';
 import type { FictionaryAction, FictionaryPlayerView } from '../rules';
-import { cx, Entry, Head, RevealStage, Roll, TabChoice, useBeat, useBookClass } from './book';
+import {
+  BeatTrack,
+  Card,
+  cx,
+  Head,
+  RevealStage,
+  Roll,
+  Scriptorium,
+  TabChoice,
+  useBeat,
+  useBookClass,
+} from './book';
 import { myMoment, stageLine, stageName, statusLine } from './words';
 import './fictionary.css';
 
@@ -49,33 +60,27 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, now, ..
 
   const p = v.play;
   const cls = useBookClass('fic--phone');
-  const truthFill =
-    card && beat && beat.kind !== 'lie'
-      ? card.answer
-      : v.phase === 'write'
-        ? draft || v.myLie
-        : null;
+  // The blank: your draft in pencil while writing; each lie struck through in red as it's
+  // revealed; the truth inked in green.
+  const [fill, tone] =
+    card && beat
+      ? beat.kind === 'lie'
+        ? [beat.entry.text, 'fib' as const]
+        : [card.answer, 'truth' as const]
+      : v.phase === 'write' && (draft || v.myLie)
+        ? [draft || v.myLie, 'mine' as const]
+        : [null, undefined];
 
   return (
     <div className={cls}>
       <Head t={v} now={now} name={name} />
-      <section className={cx('fic-page', `fic-page--${v.phase}`)}>
+      <section className={cx('fic-page', `fic-page--${v.phase}`, `fic-tab--${p.cat ?? 'blank'}`)}>
         {v.phase === 'choose' ? (
           <Choose v={v} name={name} send={send} busy={busy} />
         ) : (
           <>
             {(card?.q ?? p.q) && (
-              <Entry
-                q={card?.q ?? p.q!}
-                fill={truthFill}
-                tone={
-                  truthFill && card && beat?.kind !== 'lie'
-                    ? 'truth'
-                    : truthFill
-                      ? 'mine'
-                      : undefined
-                }
-              />
+              <Card n={p.n} cat={p.cat} q={card?.q ?? p.q!} fill={fill} tone={tone} />
             )}
             {v.phase === 'write' && (
               <Write
@@ -90,7 +95,8 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, now, ..
             )}
             {v.phase === 'pick' && <Pick v={v} send={send} busy={busy} byId={byId} now={now} />}
             {v.phase === 'reveal' && card && beat && (
-              <>
+              <div className="fic-show">
+                <BeatTrack card={card} beat={beat} />
                 <RevealStage
                   card={card}
                   beat={beat}
@@ -109,7 +115,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, now, ..
                   }
                 />
                 {scored && <Next v={v} now={now} send={send} busy={busy} />}
-              </>
+              </div>
             )}
           </>
         )}
@@ -191,7 +197,13 @@ function Write({
         <p className="fic-done">
           <span className="fic-label">Your lie is in</span>“{v.myLie}”
         </p>
-        <Roll ids={v.players} done={v.play.written} players={byId} size={34} />
+        <Scriptorium
+          ids={v.players}
+          done={v.play.written}
+          players={byId}
+          me={v.me}
+          busyWord="Writing"
+        />
         <div className="fic-row">
           <Plaque small disabled={busy} onClick={() => setEditing(true)}>
             Change it

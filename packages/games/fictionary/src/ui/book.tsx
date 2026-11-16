@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import type { Reaction } from '@jackdaw/engine';
 import {
+  Icon,
   PlayerReaction,
   Tally,
   Token,
@@ -11,7 +12,17 @@ import {
   type ScreenPlayer,
 } from '@jackdaw/ui';
 import type { CardResult, FictionaryTableView } from '../rules';
-import { beatAt, cardLine, catName, names, pts, stageName, statusLine, type Beat } from './words';
+import {
+  beatAt,
+  fooledLies,
+  cardLine,
+  catName,
+  names,
+  pts,
+  stageName,
+  statusLine,
+  type Beat,
+} from './words';
 
 /**
  * Fictionary's printed pieces: "The Dictionary of Fibs". A card is set as a dictionary entry,
@@ -54,8 +65,8 @@ export function Entry({
 }: {
   q: string;
   fill?: string | null;
-  /** 'truth' prints the fill in green; 'mine' in pencil (your own draft). */
-  tone?: 'truth' | 'mine';
+  /** 'truth' prints the fill in green; 'mine' in pencil (your own draft); 'fib' struck through in red. */
+  tone?: 'truth' | 'mine' | 'fib';
   className?: string;
 }) {
   const [before, after] = splitBlank(q);
@@ -67,6 +78,110 @@ export function Entry({
       </span>
       {after}
     </p>
+  );
+}
+
+/**
+ * The card as a page of the dictionary: its number in blackletter, the tab as a running head, the
+ * entry, and a fleuron under it.
+ */
+export function Card({
+  n,
+  cat,
+  q,
+  fill,
+  tone,
+  className,
+}: {
+  n: number;
+  cat: string | null;
+  q: string;
+  fill?: string | null;
+  tone?: 'truth' | 'mine' | 'fib';
+  className?: string;
+}) {
+  return (
+    <div className={cx('fic-card', className)}>
+      <p className="fic-card__head">
+        <span className="fic-card__no">{n}</span>
+        <span className="fic-card__cat">{catName(cat)}</span>
+      </p>
+      <Entry q={q} fill={fill} tone={tone} key={tone === 'mine' ? 'mine' : `${tone}:${fill}`} />
+      <span className="fic-fleuron" aria-hidden="true">
+        <Icon.fleuron />
+      </span>
+    </div>
+  );
+}
+
+/** The reveal so far: a chit per lie that fooled someone, then the truth; the one on show is inked. */
+export function BeatTrack({ card, beat }: { card: CardResult; beat: Beat }) {
+  const lies = fooledLies(card);
+  const at = beat.kind === 'lie' ? beat.i : beat.kind === 'truth' ? lies.length : lies.length + 1;
+  const chit = (i: number, fact: boolean, key: string) => (
+    <li
+      key={key}
+      className={cx(
+        'fic-track__chit',
+        fact && 'fic-track__chit--fact',
+        i < at && 'fic-track__chit--past',
+        i === at && 'fic-track__chit--now',
+      )}
+    >
+      {fact ? 'Fact' : 'Fib'}
+    </li>
+  );
+  return (
+    <ol className="fic-track" aria-label="The reveal">
+      {lies.map((e, i) => chit(i, false, e.id))}
+      {chit(lies.length, true, 'fact')}
+    </ol>
+  );
+}
+
+/** Everyone at their desks: a token, a name, and "writing…" until their work is in. */
+export function Scriptorium({
+  ids,
+  done,
+  players,
+  me,
+  busyWord,
+}: {
+  ids: string[];
+  done: string[];
+  players: Map<string, ScreenPlayer>;
+  me: string | null;
+  busyWord: string;
+}) {
+  return (
+    <ul className={cx('fic-desks', ids.length > 6 && 'fic-desks--many')}>
+      {ids.map((id) => {
+        const p = players.get(id);
+        if (!p) return null;
+        const ok = done.includes(id);
+        return (
+          <li
+            key={id}
+            className={cx('fic-desk', ok && 'fic-desk--done', id === me && 'fic-desk--me')}
+          >
+            <Token avatar={p.avatar} size={30} away={!p.online} />
+            <span className="fic-desk__name">{id === me ? 'You' : p.name}</span>
+            {ok ? (
+              <span className="fic-desk__in">In</span>
+            ) : (
+              <span className="fic-desk__busy">
+                {busyWord}
+                <span className="fic-dots" aria-hidden="true">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -91,12 +206,9 @@ export function Head({
   return (
     <header className="fic-head">
       <span className={cx('fic-tab', `fic-tab--${t.play.cat ?? 'blank'}`)}>
-        {t.play.cat ? catName(t.play.cat) : stageName(t.play.stage)}
+        {stageName(t.play.stage)}
       </span>
-      <span className="fic-head__where">
-        {t.play.cat ? `${stageName(t.play.stage)} · ` : ''}
-        {cardLine(t)}
-      </span>
+      <span className="fic-head__where">{cardLine(t)}</span>
       {left !== null && (
         <span
           className={cx('fic-clock', left <= 10 && 'fic-clock--low')}

@@ -75,6 +75,20 @@ describe('the bank', () => {
     expect(f.src.length).toBeGreaterThan(0);
   });
 
+  it('never gives the answer away in its own sentence', () => {
+    // 2026-11-16: "some of the facts are a bit too obvious, like the morgana one".
+    const roots = (t: string) =>
+      normalize(t)
+        .split(' ')
+        .filter((w) => w.length >= 5)
+        .map((w) => w.slice(0, 5));
+    const bad = all.filter(({ f }) => {
+      const q = roots(f.q.replace('____', ' '));
+      return roots(f.a).some((r) => q.includes(r));
+    });
+    expect(bad.map(({ c, f }) => `${c}: ${f.q} → ${f.a}`)).toEqual([]);
+  });
+
   it('never has the same card twice', () => {
     const seen = new Map<string, string>();
     for (const { c, f } of all) {

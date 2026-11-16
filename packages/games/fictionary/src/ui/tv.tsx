@@ -4,7 +4,8 @@ import { Token, useMoment, VerdictMoment, type GameUi, type ScreenPlayer } from 
 import type { FictionaryTableView } from '../rules';
 import {
   cx,
-  Entry,
+  BeatTrack,
+  Card,
   Head,
   RevealStage,
   Roll,
@@ -55,11 +56,13 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
             </div>
           ) : (
             q && (
-              <Entry
+              <Card
+                n={p.n}
+                cat={p.cat}
                 q={q}
-                fill={card && beat && beat.kind !== 'lie' ? card.answer : null}
-                tone={card && beat && beat.kind !== 'lie' ? 'truth' : undefined}
-                className="fic-entry--tv"
+                fill={card && beat ? (beat.kind === 'lie' ? beat.entry.text : card.answer) : null}
+                tone={card && beat ? (beat.kind === 'lie' ? 'fib' : 'truth') : undefined}
+                className="fic-card--tv"
               />
             )
           )}
@@ -101,7 +104,10 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
             </ol>
           )}
           {t.phase === 'reveal' && card && beat && (
-            <RevealStage card={card} beat={beat} players={byId} name={name} scores={t.scores} />
+            <div className="fic-show">
+              <BeatTrack card={card} beat={beat} />
+              <RevealStage card={card} beat={beat} players={byId} name={name} scores={t.scores} />
+            </div>
           )}
         </section>
       </div>

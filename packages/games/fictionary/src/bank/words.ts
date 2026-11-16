@@ -814,7 +814,8 @@ export const facts: Fact[] = [
   },
   {
     q: 'Something redolent is ____.',
-    a: 'smelling strongly of something',
+    a: 'strongly scented',
+    alt: ['smelling strongly of something', 'fragrant', 'reminiscent'],
     lies: ['red in color', 'about to burst', 'gently angry', 'dipped in wax'],
     note: 'From Latin olere, “to smell.” It often means “reminiscent,” as in “redolent of the sea.”',
     src: 'Wiktionary: redolent',

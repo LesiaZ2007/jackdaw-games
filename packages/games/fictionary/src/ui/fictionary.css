@@ -1283,6 +1283,31 @@
   font-size: 21px;
 }
 
+.fic-tv .fic-desks {
+  gap: 10px 32px;
+}
+.fic-tv .fic-desk {
+  min-height: 64px;
+  gap: 14px;
+  border-bottom-width: 3px;
+}
+.fic-tv .fic-desk__name {
+  font-size: 30px;
+}
+.fic-tv .fic-desk__in {
+  font-size: 24px;
+  padding: 0 10px;
+  border-width: 5px;
+}
+.fic-tv .fic-dots i {
+  width: 9px;
+  height: 9px;
+  margin-left: 5px;
+}
+.fic-tv .fic-slip .fic-roll {
+  gap: 12px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fic *,
   .fic *::before,

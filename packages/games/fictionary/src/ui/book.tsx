@@ -146,7 +146,9 @@ export function Scriptorium({
   players,
   me,
   busyWord,
+  size = 30,
 }: {
+  size?: number;
   ids: string[];
   done: string[];
   players: Map<string, ScreenPlayer>;
@@ -164,7 +166,7 @@ export function Scriptorium({
             key={id}
             className={cx('fic-desk', ok && 'fic-desk--done', id === me && 'fic-desk--me')}
           >
-            <Token avatar={p.avatar} size={30} away={!p.online} />
+            <Token avatar={p.avatar} size={size} away={!p.online} />
             <span className="fic-desk__name">{id === me ? 'You' : p.name}</span>
             {ok ? (
               <span className="fic-desk__in">In</span>
@@ -291,7 +293,10 @@ export function RevealStage({
   me,
   scores,
   likeSlot,
+  tokenSize = 36,
 }: {
+  /** Tokens of who fell for it or found it (bigger on the TV). */
+  tokenSize?: number;
   card: CardResult;
   scores: Record<string, number>;
   beat: Beat;
@@ -327,10 +332,10 @@ export function RevealStage({
       {!truth && (
         <div className="fic-slip__fooled">
           <span className="fic-label">Fell for it</span>
-          <Roll ids={e.pickers} players={players} size={36} />
+          <Roll ids={e.pickers} players={players} size={tokenSize} />
         </div>
       )}
-      {truth && e.pickers.length > 0 && <Roll ids={e.pickers} players={players} size={36} />}
+      {truth && e.pickers.length > 0 && <Roll ids={e.pickers} players={players} size={tokenSize} />}
       {truth ? (
         <p className="fic-slip__note">
           <span className="fic-label">From the margin</span>

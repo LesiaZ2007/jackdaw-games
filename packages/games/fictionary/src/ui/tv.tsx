@@ -8,7 +8,7 @@ import {
   Card,
   Head,
   RevealStage,
-  Roll,
+  Scriptorium,
   ScoreIndex,
   TabChoice,
   useBeat,
@@ -67,7 +67,16 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
             )
           )}
           <p className="fic-status">{statusLine(t, name)}</p>
-          {done && <Roll ids={t.players} done={done} players={byId} size={56} />}
+          {done && (
+            <Scriptorium
+              ids={t.players}
+              done={done}
+              players={byId}
+              me={null}
+              busyWord={t.phase === 'write' ? 'Writing' : 'Picking'}
+              size={52}
+            />
+          )}
         </section>
 
         <section className={cx('fic-leaf', 'fic-leaf--right', `fic-leaf--${t.phase}`)}>
@@ -106,7 +115,14 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView, reactions, now, ...pro
           {t.phase === 'reveal' && card && beat && (
             <div className="fic-show">
               <BeatTrack card={card} beat={beat} />
-              <RevealStage card={card} beat={beat} players={byId} name={name} scores={t.scores} />
+              <RevealStage
+                card={card}
+                beat={beat}
+                players={byId}
+                name={name}
+                scores={t.scores}
+                tokenSize={80}
+              />
             </div>
           )}
         </section>

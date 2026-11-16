@@ -303,7 +303,7 @@ export const facts: Fact[] = [
     alt: ['Charles Darwin'],
     lies: ['Linnaeus', 'Audubon', 'Humboldt', 'Wallace'],
     note: 'Darwin theorized it was a leftover of the pointed ear; it is far more common in some populations than others.',
-    src: 'Darwin’s tubercle',
+    src: "Darwin's tubercle",
   },
   {
     q: 'The word “melancholy” comes from Greek words meaning black ____.',

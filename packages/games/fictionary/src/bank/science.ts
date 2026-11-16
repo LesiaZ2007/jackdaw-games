@@ -85,7 +85,7 @@ export const facts: Fact[] = [
     alt: ['the margin'],
     lies: ['page', 'envelope', 'letter', 'book'],
     note: 'No one found his proof, and the theorem took 358 years to be proved, by Andrew Wiles in 1994.',
-    src: 'Fermat’s Last Theorem',
+    src: "Fermat's Last Theorem",
   },
   {
     q: 'In a room of just ____ people, there is about a 50 percent chance that two of them share a birthday.',
@@ -149,7 +149,7 @@ export const facts: Fact[] = [
     alt: ['eka-aluminum', 'eka aluminium'],
     lies: ['proto-silver', 'eka-lead', 'sub-zinc', 'pseudo-aluminium'],
     note: 'Its discovery in 1875 matched his predicted density and properties closely, which won over doubters of his table.',
-    src: 'Mendeleev’s predicted elements',
+    src: "Mendeleev's predicted elements",
   },
   {
     q: 'The name of the gas argon comes from a Greek word meaning ____.',
@@ -212,7 +212,7 @@ export const facts: Fact[] = [
     alt: ['dust', 'fine powder'],
     lies: ['flames', 'sparks', 'a puff of smoke', 'liquid'],
     note: 'The outside of the glass is locked in strong compression while the inside is under tension, and cutting the tail releases it all.',
-    src: 'Prince Rupert’s drop',
+    src: "Prince Rupert's drop",
   },
   {
     q: 'A drop of water skitters across a very hot pan on a cushion of vapor called the ____ effect.',
@@ -377,7 +377,7 @@ export const facts: Fact[] = [
     alt: ['30%', '30', 'thirty percent', 'a third'],
     lies: ['11 percent', '45 percent', '5 percent', '60 percent'],
     note: 'This is Benford’s law, and tax investigators use it because faked numbers rarely follow the pattern.',
-    src: 'Benford’s law',
+    src: "Benford's law",
   },
   {
     q: 'Any scrambled Rubik’s Cube can be solved in at most ____ face turns, as proved in 2010.',
@@ -385,7 +385,7 @@ export const facts: Fact[] = [
     alt: ['twenty'],
     lies: ['14', '27', '35', '42'],
     note: 'The proof was computer-assisted, and the cube has over 43 quintillion positions.',
-    src: 'Optimal solutions for the Rubik’s Cube',
+    src: "Optimal solutions for the Rubik's Cube",
   },
   {
     q: 'Before inventing Bakelite, Leo Baekeland got rich by selling George Eastman his company, maker of Velox, the first commercially successful ____.',
@@ -445,7 +445,7 @@ export const facts: Fact[] = [
     alt: ['6,174'],
     lies: ['1089', '2178', '4096', '8128'],
     note: 'It is called Kaprekar’s constant, after the Indian mathematician D. R. Kaprekar, and it is reached within seven steps.',
-    src: 'Kaprekar’s routine',
+    src: "Kaprekar's routine",
   },
   {
     q: 'The number 142857, which just shuffles its digits when multiplied by 2 through 6, is the repeating decimal of the fraction ____.',
@@ -475,7 +475,7 @@ export const facts: Fact[] = [
     a: 'anagram',
     lies: ['riddle', 'poem', 'acrostic', 'palindrome'],
     note: 'He scrambled “ut tensio, sic vis” into letters and revealed the solution only in 1678.',
-    src: 'Hooke’s law',
+    src: "Hooke's law",
   },
   {
     q: 'Archimedes reportedly asked for his tombstone to show a sphere inside a ____.',

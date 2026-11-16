@@ -432,7 +432,7 @@ export const facts: Fact[] = [
     a: 'Murrie',
     lies: ['Morrison', 'Marshall', 'Milton', 'Miller'],
     note: 'Forrest Mars teamed with Bruce Murrie, a Hershey executive’s son, to get chocolate during wartime rationing.',
-    src: 'M&M’s',
+    src: "M&M's",
   },
   {
     q: 'Mountain Dew was first created in the 1940s as a mixer for ____.',

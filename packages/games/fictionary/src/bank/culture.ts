@@ -15,7 +15,7 @@ export const facts: Fact[] = [
     alt: ['Gray'],
     lies: ['Brown', 'White', 'Blue', 'Green'],
     note: 'The sitter was Whistler’s mother, Anna; he used the word “arrangement” to stress color and form.',
-    src: 'Whistler’s Mother',
+    src: "Whistler's Mother",
   },
   {
     q: 'Vermeer’s Girl with a Pearl Earring is not a portrait of a real person but a type of Dutch picture called a ____.',
@@ -236,7 +236,7 @@ export const facts: Fact[] = [
     alt: ['15 kHz', 'fifteen'],
     lies: ['8', '12', '20', '30'],
     note: 'It precedes random noises and gibberish pressed into the run-out groove, which loops endlessly.',
-    src: 'Sgt. Pepper’s Lonely Hearts Club Band',
+    src: "Sgt. Pepper's Lonely Hearts Club Band",
   },
   {
     q: 'In a famous Steamboat Bill, Jr. stunt, Buster Keaton stood still as the facade of a two-story building fell around him; the prop weighed ____.',

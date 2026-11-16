@@ -213,7 +213,7 @@ export const facts: Fact[] = [
     alt: ['a month'],
     lies: ['day', 'year', 'week', 'decade'],
     note: 'He scrambled it first and then had to find his way back through trial and error.',
-    src: 'Rubik’s Cube',
+    src: "Rubik's Cube",
   },
   {
     q: 'The first traffic signal, installed outside Parliament in London in 1868, ____ the following year.',

@@ -298,7 +298,7 @@ export const facts: Fact[] = [
     alt: ['Don’t Panic!', 'Dont Panic'],
     lies: ['Keep Calm', 'Houston Ready', 'Hold On Tight', 'Smile Please'],
     note: 'It is a nod to The Hitchhiker’s Guide to the Galaxy, and a mannequin in a spacesuit sat at the wheel.',
-    src: 'Elon Musk’s Tesla Roadster',
+    src: "Elon Musk's Tesla Roadster",
   },
   {
     q: 'Comet 67P, which Rosetta orbited, has two lobes that make it look like a ____.',
@@ -361,7 +361,7 @@ export const facts: Fact[] = [
     alt: ['Poe'],
     lies: ['Walt Whitman', 'Mary Shelley', 'Jules Verne', 'Alfred Tennyson'],
     note: 'Poe guessed that light from the most distant regions simply has not reached us yet.',
-    src: 'Olbers’ paradox',
+    src: "Olbers' paradox",
   },
   {
     q: 'Williamina Fleming first worked for Harvard Observatory director Edward Pickering as a ____ in his home.',

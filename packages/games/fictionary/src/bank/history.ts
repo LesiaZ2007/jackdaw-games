@@ -78,7 +78,7 @@ export const facts: Fact[] = [
     alt: ['116 years', 'one hundred sixteen'],
     lies: ['99', '131', '152', '108'],
     note: 'It ran from 1337 to 1453 as a series of fights between English and French royal houses.',
-    src: 'Hundred Years’ War',
+    src: "Hundred Years' War",
   },
   {
     q: 'In 1969, El Salvador and Honduras fought a brief war that became known as the ____ War.',

@@ -1,0 +1,969 @@
+/*
+ * Fictionary: "The Dictionary of Fibs". A page of an old dictionary: cream paper, charcoal ink,
+ * an oxblood binding down the spine, thumb-index tabs in each category's colour. A card is set as
+ * an entry with its blank as a ruled line; answers are numbered senses; the reveal slams rubber
+ * stamps onto slips (FIB in gules, FACT in vert); scores are the book's index, dot leaders and all.
+ * Dark is the same book by lamplight: brown-black paper, cream ink. Printed flat: no gradients or
+ * glows. The book's colours are set here; everything else comes from @jackdaw/ui tokens.
+ */
+.fic {
+  --fic-paper: #f4efe3;
+  --fic-paper-2: #e9e1cd;
+  --fic-ink: #211e1a;
+  --fic-ink-2: #5b554b;
+  --fic-rule: #b7ab92;
+  --fic-binding: #5a2620;
+  --fic-pencil: #3f5672;
+  --fic-fib: var(--gules);
+  --fic-fact: var(--vert);
+  --fic-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  color: var(--fic-ink);
+}
+.fic--dark {
+  --fic-paper: #2a2421;
+  --fic-paper-2: #352d28;
+  --fic-ink: #efe3c8;
+  --fic-ink-2: #bdae94;
+  --fic-rule: #5e5146;
+  --fic-binding: #1a0c0a;
+  --fic-pencil: #a9bdd6;
+  --fic-fib: #e07a6c;
+  --fic-fact: #79b894;
+}
+
+/* Each tab of the dictionary has its own colour (shared by the tab, its thumb and its letter). */
+.fic-tab--animals {
+  --fic-cat: var(--vert);
+}
+.fic-tab--nature {
+  --fic-cat: var(--tint-moss);
+}
+.fic-tab--food {
+  --fic-cat: var(--tenne);
+}
+.fic-tab--body {
+  --fic-cat: var(--gules);
+}
+.fic-tab--history {
+  --fic-cat: var(--sable);
+}
+.fic-tab--people {
+  --fic-cat: var(--tint-umber);
+}
+.fic-tab--science {
+  --fic-cat: var(--azure);
+}
+.fic-tab--space {
+  --fic-cat: var(--tint-indigo);
+}
+.fic-tab--inventions {
+  --fic-cat: var(--tint-pewter);
+}
+.fic-tab--places {
+  --fic-cat: var(--tint-teal);
+}
+.fic-tab--customs {
+  --fic-cat: var(--tint-plum);
+}
+.fic-tab--names {
+  --fic-cat: var(--tint-ochre);
+}
+.fic-tab--sports {
+  --fic-cat: var(--tint-rust);
+}
+.fic-tab--culture {
+  --fic-cat: var(--tint-orchid);
+}
+.fic-tab--records {
+  --fic-cat: var(--tint-olive);
+}
+.fic-tab--words {
+  --fic-cat: var(--purpure);
+}
+.fic-tab--blank {
+  --fic-cat: var(--fic-binding);
+}
+
+.fic-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.fic-label {
+  display: block;
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fic-ink-2);
+}
+.fic-kicker {
+  margin: 0;
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fic-binding);
+}
+.fic--dark .fic-kicker {
+  color: var(--fic-ink-2);
+}
+.fic-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--step-3);
+  line-height: 1;
+}
+.fic-sub {
+  margin: 0;
+  color: var(--fic-ink-2);
+}
+.fic-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+/* ── The head: the tab, where we are, the clock ───────────────────────── */
+.fic-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.fic-tab {
+  flex: none;
+  padding: 6px 14px 6px 12px;
+  background: var(--fic-cat);
+  color: var(--on-fill);
+  font: 800 15px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%);
+}
+.fic-head__where {
+  flex: 1;
+  min-width: 0;
+  font: 700 15px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fic-clock {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  font: 800 20px var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+}
+.fic-clock--low {
+  background: var(--gules);
+  border-color: var(--gules);
+  color: var(--on-fill);
+}
+
+/* ── Phone: one page that fits under the bar ──────────────────────────── */
+.fic--phone {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.fic-page {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 18px 16px 16px 22px;
+  background: var(--fic-paper);
+  border: 2px solid var(--fic-ink);
+  border-left: 12px solid var(--fic-binding);
+  outline: 1px solid var(--fic-rule);
+  outline-offset: -8px;
+  box-shadow: 0 20px 50px -24px var(--shadow);
+  overflow: hidden;
+}
+
+/* The card as a dictionary entry. */
+.fic-entry {
+  margin: 0;
+  font: 500 var(--step-2) / 1.3 var(--font-body);
+  overflow-wrap: anywhere;
+}
+.fic-blank {
+  display: inline-block;
+  min-width: 5em;
+  padding: 0 0.15em;
+  border-bottom: 3px solid currentColor;
+  line-height: 1.05;
+  text-align: center;
+}
+.fic-blank--filled {
+  min-width: 0;
+  font-family: var(--font-code);
+  font-weight: 800;
+}
+.fic-blank--mine {
+  color: var(--fic-pencil);
+  border-bottom-style: dashed;
+}
+.fic-blank--truth {
+  color: var(--fic-fact);
+  animation: fic-ink 700ms var(--fic-ease) both;
+}
+@keyframes fic-ink {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Choosing a tab. */
+.fic-choose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 0;
+}
+.fic-tabs {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.fic-tabs li {
+  animation: fic-slide 520ms var(--fic-ease) both;
+  animation-delay: calc(var(--i) * 110ms);
+}
+@keyframes fic-slide {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+}
+.fic-thumb {
+  width: 100%;
+  min-height: 64px;
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-3);
+  padding: 0;
+  background: var(--fic-paper-2);
+  color: var(--fic-ink);
+  border: 2px solid var(--fic-ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.fic-thumb:disabled {
+  cursor: default;
+}
+.fic-thumb__letter {
+  flex: none;
+  width: 60px;
+  display: grid;
+  place-items: center;
+  background: var(--fic-cat);
+  color: var(--on-fill);
+  font: 800 36px var(--font-display);
+}
+.fic-thumb__name {
+  align-self: center;
+  font: 800 22px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+@media (hover: hover) and (pointer: fine) {
+  .fic-thumb:not(:disabled):hover {
+    transform: translateX(-6px);
+  }
+}
+.fic-thumb:not(:disabled):active {
+  transform: translateX(-6px);
+}
+
+/* Writing. */
+.fic-dock {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+}
+.fic-field {
+  display: grid;
+  gap: var(--space-1);
+}
+.fic-input {
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 10px;
+  background: transparent;
+  color: var(--fic-pencil);
+  border: 0;
+  border-bottom: 3px solid var(--fic-ink);
+  font: 800 24px var(--font-code);
+}
+.fic-input::placeholder {
+  color: var(--fic-rule);
+}
+.fic-input:focus-visible {
+  outline: 2px solid var(--fic-pencil);
+  outline-offset: 2px;
+}
+.fic-ideas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.fic-idea {
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 12px;
+  background: var(--fic-paper-2);
+  color: var(--fic-ink);
+  border: 2px dashed var(--fic-ink-2);
+  text-align: left;
+  font: 700 18px var(--font-body);
+  cursor: pointer;
+}
+.fic-done {
+  margin: 0;
+  font: 800 var(--step-1) var(--font-code);
+  color: var(--fic-pencil);
+}
+
+/* Picking: numbered senses. */
+.fic-dock--pick {
+  margin-top: 0;
+  flex: 1;
+}
+.fic-answers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.fic-answer {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  animation: fic-slide 420ms var(--fic-ease) both;
+}
+.fic-answer__pick {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--fic-ink);
+  border: 2px solid var(--fic-rule);
+  font: 700 19px/1.15 var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+.fic-answer__id {
+  flex: none;
+  width: 1.2em;
+  font: 800 26px var(--font-code);
+  color: var(--fic-binding);
+}
+.fic--dark .fic-answer__id {
+  color: var(--fic-ink-2);
+}
+.fic-answer__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.fic-answer__tag {
+  flex: none;
+  font: 700 13px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.fic-answer--mine .fic-answer__pick {
+  border-style: dashed;
+  color: var(--fic-ink-2);
+  cursor: default;
+}
+.fic-answer--picked .fic-answer__pick {
+  background: var(--fic-ink);
+  border-color: var(--fic-ink);
+  color: var(--fic-paper);
+}
+.fic-answer--picked .fic-answer__id {
+  color: var(--fic-paper);
+}
+.fic-answers--tight .fic-answer__pick {
+  min-height: 44px;
+  font-size: 17px;
+}
+.fic-answers--tight {
+  gap: 4px;
+}
+.fic-like {
+  flex: none;
+  width: 44px;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  color: var(--fic-ink-2);
+  border: 2px solid var(--fic-rule);
+  cursor: pointer;
+}
+.fic-like svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+.fic-like--on {
+  color: var(--gules);
+  border-color: var(--gules);
+}
+.fic-like--on svg {
+  fill: currentColor;
+  animation: fic-pop 360ms var(--fic-ease);
+}
+@keyframes fic-pop {
+  40% {
+    transform: scale(1.35);
+  }
+}
+.fic-row--wait {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+/* Who's done. */
+.fic-roll {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fic-roll__one {
+  position: relative;
+  transition: opacity 300ms;
+}
+.fic-roll__name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.fic-roll__mark {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--fic-paper);
+  border: 2px solid var(--fic-rule);
+}
+.fic-roll__one--done .fic-roll__mark {
+  background: var(--vert);
+  border-color: var(--fic-paper);
+}
+.fic-roll__one:not(.fic-roll__one--done):has(.fic-roll__mark) {
+  opacity: 0.55;
+}
+
+/* ── The reveal: a slip and its stamp ─────────────────────────────────── */
+.fic-slip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: 18px 16px 14px;
+  background: var(--fic-paper-2);
+  border: 2px solid var(--fic-ink);
+  outline: 1px solid var(--fic-ink);
+  outline-offset: -7px;
+  animation: fic-deal 460ms var(--fic-ease) both;
+}
+@keyframes fic-deal {
+  from {
+    transform: translateY(24px) rotate(-1.5deg);
+    opacity: 0;
+  }
+}
+.fic-slip__text {
+  margin: 0;
+  padding-right: 92px;
+  font: 800 var(--step-3) / 1 var(--font-code);
+  overflow-wrap: anywhere;
+}
+.fic-slip__by {
+  margin: 0;
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.fic-slip--fib .fic-slip__by {
+  color: var(--fic-fib);
+}
+.fic-slip--fact .fic-slip__by {
+  color: var(--fic-fact);
+}
+.fic-slip__fooled {
+  display: grid;
+  gap: 4px;
+}
+.fic-slip__fooled .fic-roll__one,
+.fic-slip .fic-roll__one {
+  animation: fic-drop 520ms var(--fic-ease) both;
+  animation-delay: 900ms;
+}
+.fic-slip .fic-roll__one:nth-child(2) {
+  animation-delay: 1000ms;
+}
+.fic-slip .fic-roll__one:nth-child(3) {
+  animation-delay: 1100ms;
+}
+.fic-slip .fic-roll__one:nth-child(n + 4) {
+  animation-delay: 1200ms;
+}
+@keyframes fic-drop {
+  from {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+}
+.fic-slip__note {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 4px solid var(--fic-fact);
+  font-size: var(--step-0);
+  animation: fic-deal 500ms var(--fic-ease) both 1300ms;
+}
+.fic-slip__gain {
+  margin: 0;
+  font: 800 22px var(--font-plaque);
+  color: var(--fic-fact);
+  animation: fic-pop 420ms var(--fic-ease) both 1400ms;
+}
+.fic-slip .fic-like {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+}
+.fic-stamp {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 2px 10px;
+  border: 4px double currentColor;
+  font: 900 30px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-9deg);
+  animation: fic-stamp 420ms cubic-bezier(0.3, 1.6, 0.5, 1) both 500ms;
+}
+.fic-slip--fib .fic-stamp {
+  color: var(--fic-fib);
+}
+.fic-slip--fact .fic-stamp {
+  color: var(--fic-fact);
+  transform: rotate(6deg);
+}
+@keyframes fic-stamp {
+  from {
+    opacity: 0;
+    scale: 2.6;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+.fic-stamp--small {
+  position: static;
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 6px;
+  border-width: 3px;
+  font-size: 14px;
+  color: var(--fic-fib);
+  animation: none;
+}
+.fic-row--next {
+  margin-top: auto;
+}
+
+/* ── The index: scores with dot leaders ───────────────────────────────── */
+.fic-index {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.fic-index__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  animation: fic-slide 420ms var(--fic-ease) both;
+}
+.fic-index__row:nth-child(2) {
+  animation-delay: 60ms;
+}
+.fic-index__row:nth-child(3) {
+  animation-delay: 120ms;
+}
+.fic-index__row:nth-child(n + 4) {
+  animation-delay: 180ms;
+}
+.fic-index__row--me .fic-index__name {
+  text-decoration: underline 2px;
+  text-underline-offset: 4px;
+}
+.fic-index__rank {
+  width: 1.4em;
+  font: 800 20px var(--font-code);
+  color: var(--fic-ink-2);
+}
+.fic-index__token {
+  position: relative;
+  display: inline-flex;
+}
+.fic-index__name {
+  font: 700 18px var(--font-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+.fic-index__dots {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 3px dotted var(--fic-rule);
+  transform: translateY(5px);
+}
+.fic-index__gain {
+  font: 800 16px var(--font-plaque);
+  color: var(--fic-fact);
+}
+.fic-index__score {
+  font: 800 22px var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── The TV: the open book ────────────────────────────────────────────── */
+.fic-tv {
+  height: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 20px;
+  padding: 26px 48px 28px;
+  overflow: hidden;
+}
+.fic-book {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  background: var(--fic-paper);
+  border: 3px solid var(--fic-ink);
+  border-inline: 22px solid var(--fic-binding);
+  outline: 2px solid var(--fic-rule);
+  outline-offset: -12px;
+  box-shadow: 0 30px 60px -30px var(--shadow);
+}
+.fic-leaf {
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 40px 48px;
+  overflow: hidden;
+}
+.fic-leaf--left {
+  border-right: 8px double var(--fic-rule);
+}
+.fic-tv .fic-head {
+  gap: 20px;
+}
+.fic-tv .fic-tab {
+  font-size: 26px;
+  padding: 8px 26px 8px 18px;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
+}
+.fic-tv .fic-head__where {
+  font-size: 26px;
+  color: var(--fic-ink-2);
+}
+.fic-tv .fic-clock {
+  width: 84px;
+  height: 84px;
+  font-size: 40px;
+  border-width: 3px;
+  border-color: var(--fic-ink);
+}
+.fic-tv .fic-clock--low {
+  border-color: var(--gules);
+}
+.fic-entry--tv {
+  font-size: 58px;
+  line-height: 1.25;
+}
+.fic-tv .fic-blank {
+  border-bottom-width: 5px;
+}
+.fic-status {
+  margin: auto 0 0;
+  font: 800 28px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fic-ink-2);
+}
+.fic-tv .fic-kicker {
+  font-size: 28px;
+}
+.fic-tv .fic-title {
+  font-size: 76px;
+}
+.fic-tv .fic-sub {
+  font-size: 32px;
+}
+.fic-chooser {
+  margin-top: 24px;
+}
+.fic-tv .fic-tabs {
+  margin: auto 0;
+  gap: 24px;
+}
+.fic-tv .fic-thumb {
+  min-height: 120px;
+  border-width: 3px;
+}
+.fic-tv .fic-thumb__letter {
+  width: 120px;
+  font-size: 72px;
+}
+.fic-tv .fic-thumb__name {
+  font-size: 44px;
+}
+.fic-writing {
+  margin: auto;
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.fic-quill {
+  width: 220px;
+  height: 220px;
+  fill: none;
+  stroke: var(--fic-ink);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.fic-quill path:not(.fic-quill__line) {
+  animation: fic-write 1.6s ease-in-out infinite;
+  transform-origin: 14px 50px;
+}
+.fic-quill__line {
+  stroke-dasharray: 40;
+  animation: fic-line 1.6s linear infinite;
+}
+@keyframes fic-write {
+  50% {
+    transform: translate(10px, 1px) rotate(-4deg);
+  }
+}
+@keyframes fic-line {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.fic-answers--tv {
+  gap: 12px;
+  overflow: hidden;
+}
+.fic-answers--tv .fic-answer__pick {
+  min-height: 72px;
+  padding: 8px 18px;
+  border-width: 3px;
+  font-size: 34px;
+  cursor: default;
+}
+.fic-answers--tv .fic-answer__id {
+  font-size: 44px;
+}
+.fic-answers--tv.fic-answers--tight .fic-answer__pick {
+  min-height: 56px;
+  font-size: 28px;
+}
+.fic-tv .fic-slip {
+  margin: auto 0;
+  gap: 20px;
+  padding: 40px 40px 32px;
+  border-width: 3px;
+  outline-offset: -10px;
+}
+.fic-tv .fic-slip__text {
+  font-size: 72px;
+  padding-right: 220px;
+}
+.fic-tv .fic-stamp {
+  top: 28px;
+  right: 28px;
+  font-size: 64px;
+  border-width: 8px;
+  padding: 2px 20px;
+}
+.fic-tv .fic-slip__by {
+  font-size: 32px;
+}
+.fic-tv .fic-label {
+  font-size: 24px;
+}
+.fic-tv .fic-slip__note {
+  font-size: 30px;
+  border-left-width: 8px;
+  padding-left: 18px;
+}
+.fic-tv .fic-slip__gain {
+  font-size: 40px;
+}
+.fic-tv .fic-leaf--right .fic-index {
+  margin: auto 0;
+  gap: 10px;
+}
+.fic-tv .fic-leaf--right .fic-index__row {
+  min-height: 60px;
+}
+.fic-tv .fic-index__rank {
+  font-size: 32px;
+}
+.fic-tv .fic-index__name {
+  font-size: 32px;
+}
+.fic-tv .fic-index__score {
+  font-size: 36px;
+}
+.fic-tv .fic-index__gain {
+  font-size: 28px;
+}
+/* The foot: the same index, laid along the bottom in columns. */
+.fic-foot .fic-index {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 32px;
+  overflow: visible;
+}
+.fic-foot .fic-index__row {
+  min-height: 0;
+  color: var(--ink);
+}
+.fic-foot .fic-index__dots,
+.fic-foot .fic-index__gain {
+  display: none;
+}
+.fic-foot .fic-index__name {
+  font-size: 26px;
+  max-width: 220px;
+}
+.fic-foot .fic-index__rank {
+  display: none;
+}
+.fic-foot .fic-index__score {
+  font-size: 28px;
+}
+
+/* ── The end: a glossary of the night's cards ─────────────────────────── */
+.fic-glossary {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+.fic-gloss {
+  display: grid;
+  gap: var(--space-2);
+  padding: 14px 14px 14px 18px;
+  background: var(--fic-paper);
+  border: 2px solid var(--fic-ink);
+  border-left: 10px solid var(--fic-binding);
+}
+.fic-gloss--final {
+  outline: 1px solid var(--fic-ink);
+  outline-offset: -7px;
+}
+.fic-gloss__head {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font: 700 14px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fic-ink-2);
+}
+.fic-gloss .fic-entry {
+  font-size: var(--step-1);
+}
+.fic-gloss__fib {
+  margin: 0;
+  color: var(--fic-ink-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fic *,
+  .fic *::before,
+  .fic *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -188,6 +188,14 @@ export const GLYPHS: Record<string, ReactNode> = {
       <circle cx="32" cy="46" r="3" />
     </g>
   ),
+  /** A quill pen writing a line, its feather cut in barbs (Fictionary). */
+  quill: (
+    <g {...stroke(3.4)}>
+      <path d="M14 50C18 30 32 14 54 8c-4 20-18 34-36 38" />
+      <path d="M14 50l22-24M30 26l6 1M24 33l6 1M40 19l5 1" />
+      <path d="M10 56h20" />
+    </g>
+  ),
   /** Two cards fanned, the front one with a Reverse's arrows (UNO). */
   uno: (
     <g {...stroke(3.4)}>

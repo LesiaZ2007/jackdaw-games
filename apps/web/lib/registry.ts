@@ -16,6 +16,7 @@ import { wavelength } from '@jackdaw/game-wavelength';
 import { wordhoard } from '@jackdaw/game-wordhoard';
 import { zap } from '@jackdaw/game-zap';
 import { fandango } from '@jackdaw/game-fandango';
+import { fictionary } from '@jackdaw/game-fictionary';
 import { solitaire } from '@jackdaw/game-solitaire';
 import { cambio } from '@jackdaw/game-cambio';
 import { maze } from '@jackdaw/game-maze';
@@ -43,6 +44,7 @@ export const games: GameRegistry = {
   [wordhoard.meta.id]: wordhoard,
   [zap.meta.id]: zap,
   [fandango.meta.id]: fandango,
+  [fictionary.meta.id]: fictionary,
   [solitaire.meta.id]: solitaire,
   [cambio.meta.id]: cambio,
   [maze.meta.id]: maze,

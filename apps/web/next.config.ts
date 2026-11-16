@@ -52,6 +52,7 @@ const config: NextConfig = {
     '@jackdaw/game-monopoly',
     '@jackdaw/game-catan',
     '@jackdaw/game-codenames',
+    '@jackdaw/game-crossword',
     '@jackdaw/game-uno',
     '@jackdaw/game-poker',
     '@jackdaw/game-secret-hitler',

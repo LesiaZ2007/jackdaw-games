@@ -5,6 +5,7 @@ import { meta as battleship } from '@jackdaw/game-battleship/meta';
 import { meta as cambio } from '@jackdaw/game-cambio/meta';
 import { meta as catan } from '@jackdaw/game-catan/meta';
 import { meta as codenames } from '@jackdaw/game-codenames/meta';
+import { meta as crossword } from '@jackdaw/game-crossword/meta';
 import { meta as fandango } from '@jackdaw/game-fandango/meta';
 import { meta as fictionary } from '@jackdaw/game-fictionary/meta';
 import { meta as kings } from '@jackdaw/game-kings/meta';
@@ -134,6 +135,7 @@ const BOXES: [GameMeta, Field, string][] = [
   [cambio, 'wavy', 'peek'],
   [catan, 'semee', 'hexes'],
   [codenames, 'checky', 'grid'],
+  [crossword, 'checky', 'crossword'],
   [fandango, 'semee', 'sunmoon'],
   [fictionary, 'lozengy', 'quill'],
   [kings, 'checky', 'crown'],

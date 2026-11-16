@@ -24,8 +24,10 @@ export function gridClues(rows: string[], across: string[], down: string[]): Clu
   for (let r = 0; r < rows.length; r++)
     for (let c = 0; c < width; c++) {
       if (rows[r]![c] === '#') continue;
-      const startsAcross = c === 0 || rows[r]![c - 1] === '#';
-      const startsDown = r === 0 || rows[r - 1]![c] === '#';
+      const startsAcross =
+        (c === 0 || rows[r]![c - 1] === '#') && c + 1 < width && rows[r]![c + 1] !== '#';
+      const startsDown =
+        (r === 0 || rows[r - 1]![c] === '#') && r + 1 < rows.length && rows[r + 1]![c] !== '#';
       if (startsAcross || startsDown) number++;
       for (const direction of ['across', 'down'] as const) {
         if (!(direction === 'across' ? startsAcross : startsDown)) continue;

@@ -7,7 +7,7 @@ const rng = () => createRng(42);
 const setup = (help = true) =>
   crossword.setup({
     playerIds: ['wren', 'rook'],
-    options: { puzzle: 'ink', help },
+    options: { puzzle: 'ink', help, size: 'mini', mode: 'cooperative' },
     rng: rng(),
     now: 1000,
   });
@@ -139,5 +139,72 @@ describe('cooperative crossword', () => {
       at: 5000,
     });
     expect(crossword.getPlayerView(restored, 'rook')).toEqual(crossword.getPlayerView(s, 'rook'));
+  });
+});
+
+describe('private crossword races', () => {
+  const race = () =>
+    crossword.setup({
+      playerIds: ['wren', 'rook'],
+      options: { puzzle: 'ink', size: 'mini', mode: 'race', help: true },
+      rng: rng(),
+      now: 1000,
+    });
+  it('gives everyone the same clues with independent saved grids and revisions', () => {
+    const initial = race();
+    const a = edit(initial, 0, 'P');
+    expect(crossword.getPlayerView(a, 'wren').letters[0]).toBe('P');
+    expect(crossword.getPlayerView(a, 'rook').letters[0]).toBe('');
+    expect(crossword.getTableView(a).letters.every((l) => !l)).toBe(true);
+    expect(crossword.getTableView(a).progress.wren).toBe(1);
+    expect(crossword.getPlayerView(a, 'rook').revisions[0]).toBe(0);
+    const b = act(a, { type: 'edit', cell: 0, letter: 'X', revision: 0 }, 'rook');
+    expect(crossword.getPlayerView(b, 'wren').letters[0]).toBe('P');
+    expect(crossword.getPlayerView(b, 'rook').letters[0]).toBe('X');
+    expect(crossword.getPlayerView(a, 'wren').clues).toEqual(
+      crossword.getPlayerView(a, 'rook').clues,
+    );
+  });
+  it('never leaks an opponent’s letters or correctness before the finish', () => {
+    const a = edit(race(), 0, 'P');
+    const changed = JSON.parse(JSON.stringify(a)) as CrosswordState;
+    changed.boards.wren!.letters[0] = 'X';
+    expect(crossword.getPlayerView(a, 'rook')).toEqual(crossword.getPlayerView(changed, 'rook'));
+    expect(crossword.getTableView(a)).toEqual(crossword.getTableView(changed));
+  });
+  it('turns off assistance for all racers', () => {
+    const s = race();
+    expect(crossword.getPlayerView(s, 'wren').help).toBe(false);
+    for (const type of ['check', 'reveal'] as const)
+      expect(() => act(s, { type, cell: 0, direction: 'across', scope: 'letter' })).toThrow('off');
+  });
+  it('awards only the first correct finisher and rejects later finishes', () => {
+    let s = race();
+    const solution = s.puzzle.rows.join('');
+    for (let cell = 0; cell < solution.length; cell++)
+      if (solution[cell] !== '#')
+        s = act(s, { type: 'edit', cell, letter: solution[cell]!, revision: 0 }, 'rook');
+    const result = crossword.getResult(s)!;
+    expect(result.winners).toEqual(['rook']);
+    expect(result.standings).toEqual([
+      { playerId: 'wren', outcome: 'loss', team: undefined },
+      { playerId: 'rook', outcome: 'win', team: undefined },
+    ]);
+    expect(crossword.getTableView(s).letters[0]).toBe('P');
+    expect(() => edit(s, 0, 'P')).toThrow('complete');
+  });
+  it('requires two racers and restricts named puzzles to their original size', () => {
+    expect(
+      crossword.validateOptions?.(
+        { puzzle: 'random', size: 'large', mode: 'race', help: false },
+        1,
+      ),
+    ).toContain('two');
+    expect(
+      crossword.validateOptions?.(
+        { puzzle: 'ink', size: 'large', mode: 'cooperative', help: true },
+        2,
+      ),
+    ).toContain('5 × 5');
   });
 });

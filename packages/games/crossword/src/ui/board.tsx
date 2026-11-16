@@ -8,12 +8,14 @@ export function Board({
   selected,
   letters,
   onSelect,
+  onEdit,
 }: {
   view: CrosswordView;
   active?: Clue;
   selected?: number;
   letters?: string[];
   onSelect?: (cell: number) => void;
+  onEdit?: (cell: number, letter: string) => void;
 }) {
   const numbers = new Map(view.clues.map((c) => [c.cells[0], c.number]));
   return (
@@ -27,8 +29,7 @@ export function Board({
         blocked ? (
           <span className="cw-block" key={i} aria-hidden="true" />
         ) : (
-          <button
-            type="button"
+          <div
             key={i}
             className={[
               'cw-cell',
@@ -39,29 +40,53 @@ export function Board({
             ]
               .filter(Boolean)
               .join(' ')}
-            aria-label={
-              'Row ' +
-              (Math.floor(i / view.width) + 1) +
-              ', column ' +
-              ((i % view.width) + 1) +
-              ': ' +
-              ((letters ?? view.letters)[i] || 'empty') +
-              (view.errors.includes(i) ? ', incorrect' : '') +
-              (view.revealed.includes(i) ? ', revealed' : '')
-            }
-            data-cell={i}
-            aria-pressed={onSelect ? selected === i : undefined}
-            onClick={onSelect ? () => onSelect(i) : undefined}
-            tabIndex={onSelect ? 0 : -1}
           >
-            {numbers.has(i) && <span className="cw-number">{numbers.get(i)}</span>}
-            <span className="cw-letter">{(letters ?? view.letters)[i]}</span>
+            {numbers.has(i) && (
+              <span className="cw-number" aria-hidden="true">
+                {numbers.get(i)}
+              </span>
+            )}
+            {onEdit ? (
+              <input
+                className="cw-letter cw-input"
+                data-cell={i}
+                aria-label={
+                  'Row ' +
+                  (Math.floor(i / view.width) + 1) +
+                  ', column ' +
+                  ((i % view.width) + 1) +
+                  ': ' +
+                  ((letters ?? view.letters)[i] || 'empty') +
+                  (view.errors.includes(i) ? ', incorrect' : '') +
+                  (view.revealed.includes(i) ? ', revealed' : '')
+                }
+                inputMode="text"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={1}
+                value={(letters ?? view.letters)[i]}
+                readOnly={view.revealed.includes(i)}
+                onFocus={(event) => {
+                  event.currentTarget.select();
+                  onSelect?.(i);
+                }}
+                onClick={(event) => event.currentTarget.select()}
+                onChange={(event) => {
+                  const value = event.currentTarget.value.toUpperCase();
+                  if (/^[A-Z]?$/.test(value)) onEdit(i, value);
+                }}
+              />
+            ) : (
+              <span className="cw-letter">{(letters ?? view.letters)[i]}</span>
+            )}
             {view.errors.includes(i) && (
               <span className="cw-error" aria-hidden="true">
                 ×
               </span>
             )}
-          </button>
+          </div>
         ),
       )}
     </div>

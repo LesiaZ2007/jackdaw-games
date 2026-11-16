@@ -1,0 +1,32 @@
+{
+  "name": "@jackdaw/game-crossword",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./ui": "./src/ui/index.tsx",
+    "./meta": "./src/meta.ts"
+  },
+  "imports": {
+    "#puzzles": {
+      "browser": "./src/puzzles.none.ts",
+      "default": "./src/puzzles.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jackdaw/engine": "workspace:*",
+    "@jackdaw/ui": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "react": "19.3.0"
+  }
+}

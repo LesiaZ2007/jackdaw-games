@@ -173,6 +173,13 @@ export const GLYPHS: Record<string, ReactNode> = {
       <path d="M8 56h48" />
     </g>
   ),
+  crossword: (
+    <g {...stroke(3.4)}>
+      <path d="M8 8h48v48H8zM8 24h48M8 40h48M24 8v48M40 8v48" />
+      <path d="M40 8h16v16H40zM8 40h16v16H8z" fill="currentColor" />
+      <path d="M12 20l4-8 4 8M13 17h6M29 46h6M32 43v8" strokeWidth={2} />
+    </g>
+  ),
   tiles: (
     <g {...stroke(3.4)}>
       <path d="M8 18h22v22H8zM34 24h22v22H34z" />

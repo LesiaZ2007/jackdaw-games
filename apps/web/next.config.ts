@@ -61,6 +61,7 @@ const config: NextConfig = {
     '@jackdaw/game-wordhoard',
     '@jackdaw/game-zap',
     '@jackdaw/game-fandango',
+    '@jackdaw/game-fictionary',
     '@jackdaw/game-solitaire',
     '@jackdaw/game-cambio',
     '@jackdaw/game-maze',

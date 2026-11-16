@@ -169,8 +169,7 @@ export function Scriptorium({
             {ok ? (
               <span className="fic-desk__in">In</span>
             ) : (
-              <span className="fic-desk__busy">
-                {busyWord}
+              <span className="fic-desk__busy" aria-label={busyWord}>
                 <span className="fic-dots" aria-hidden="true">
                   <i />
                   <i />

@@ -220,6 +220,13 @@ function Write({
         void submit();
       }}
     >
+      <Scriptorium
+        ids={v.players}
+        done={v.play.written}
+        players={byId}
+        me={v.me}
+        busyWord="Writing"
+      />
       <label className="fic-field">
         <span className="fic-label">Write a lie that sounds true</span>
         <input

@@ -1266,6 +1266,23 @@
   justify-content: center;
 }
 
+/* Playtest round (2026-11-16): fill the page, keep names whole. */
+.fic-page--choose .fic-choose {
+  margin-block: auto;
+}
+.fic-dots i {
+  width: 5px;
+  height: 5px;
+  margin-left: 3px;
+}
+.fic--phone .fic-answers:not(.fic-answers--tight) {
+  gap: 10px;
+}
+.fic--phone .fic-answers:not(.fic-answers--tight) .fic-answer__pick {
+  min-height: 62px;
+  font-size: 21px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fic *,
   .fic *::before,

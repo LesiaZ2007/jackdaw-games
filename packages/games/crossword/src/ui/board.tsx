@@ -79,7 +79,22 @@ export function Board({
                 }}
               />
             ) : (
-              <span className="cw-letter">{(letters ?? view.letters)[i]}</span>
+              <>
+                <span className="cw-letter">{(letters ?? view.letters)[i]}</span>
+                {onSelect && (
+                  <button
+                    type="button"
+                    className="cw-overview-hit"
+                    aria-label={
+                      'Select row ' +
+                      (Math.floor(i / view.width) + 1) +
+                      ', column ' +
+                      ((i % view.width) + 1)
+                    }
+                    onClick={() => onSelect(i)}
+                  />
+                )}
+              </>
             )}
             {view.errors.includes(i) && (
               <span className="cw-error" aria-hidden="true">

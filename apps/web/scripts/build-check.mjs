@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const nextEnv = fileURLToPath(new URL('../next-env.d.ts', import.meta.url));
 const original = existsSync(nextEnv) ? readFileSync(nextEnv, 'utf8') : null;
 
-const result = spawnSync('next', ['build'], {
+const result = spawnSync('next', ['build', '--webpack'], {
   stdio: 'inherit',
   shell: true,
   cwd: fileURLToPath(new URL('..', import.meta.url)),

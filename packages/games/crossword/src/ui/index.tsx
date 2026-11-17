@@ -8,7 +8,7 @@ export const crosswordUi: GameUi = {
       'Choose a crossword from 5 × 5 up to a giant 31 × 31. Solve one shared grid together, or race on separate copies of the same puzzle. Fresh interlocking grids are generated from over 500 original answers with direct or harder indirect clues; the three original minis are also available.',
     steps: [
       'Choose a size up to 31 × 31, the puzzle difficulty, and Cooperative or Race. Random generates a fresh interlocking grid; named minis use a fixed 5 × 5 grid.',
-      'Tap a white square to type with your normal phone keyboard. Tap the clue bar to switch across and down. Physical keyboards support arrows, Backspace and Tab. Scroll larger grids to see every square.',
+      'Tap a white square to type with your normal phone keyboard. Tap the clue bar to switch across and down. Physical keyboards support arrows, Backspace and Tab. Larger grids fit on screen; type in the enlarged active-word boxes.',
       'In Cooperative, everyone writes into the same grid. Checks mark errors with ×; revealed letters are underlined. Assistance is optional.',
       'In Race, everyone gets the same puzzle on a private grid. Progress counts are public, but opponents’ letters stay hidden. Checks and reveals are disabled. The first completely correct grid wins.',
       'Finishing a word advances to the next unfinished clue. Rejoining restores your saved grid; Play again generates a fresh puzzle.',
@@ -37,10 +37,10 @@ export const crosswordUi: GameUi = {
     size: {
       mini: '5 × 5 · a short solve.',
       standard: '9 × 9 · more words and crossings.',
-      large: '13 × 13 · a longer solve. Scroll the grid on phones.',
+      large: '13 × 13 · a longer solve. The whole grid fits on screen.',
       extraLarge: '17 × 17 · an extended puzzle.',
       sunday: '21 × 21 · a Sunday-sized crossword.',
-      giant: '31 × 31 · a huge crossword. Pan around the board or navigate by clue.',
+      giant: '31 × 31 · a huge crossword. Use the fitted overview and enlarged active word.',
     },
     mode: {
       cooperative: 'One shared grid. Everyone wins together.',

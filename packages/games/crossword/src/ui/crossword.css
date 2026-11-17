@@ -544,3 +544,125 @@
   width: calc(var(--cw-columns) * 44px + 4px);
   min-width: calc(var(--cw-columns) * 44px + 4px);
 }
+
+/* Fit the complete puzzle; readable native inputs live in the active-word row. */
+.cw-player--fit .cw-grid-wrap {
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+.cw-player--fit .cw-board {
+  width: min(100cqw, 100cqh);
+  min-width: 0;
+  max-width: 100%;
+  margin: auto;
+}
+.cw-player--fit .cw-cell {
+  min-height: 0;
+}
+.cw-player--fit .cw-number {
+  font-size: clamp(5px, calc(22cqw / var(--cw-columns)), 12px);
+}
+.cw-player--fit .cw-letter {
+  font-size: clamp(7px, calc(60cqw / var(--cw-columns)), 32px);
+}
+.cw-player--fit .cw-workspace {
+  min-height: 0;
+  overflow: hidden;
+}
+.cw-overview-hit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: none;
+  padding: 0;
+}
+.cw-entry {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.cw-entry .cw-entry-input {
+  position: static;
+  inset: auto;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 0;
+  font-size: 24px;
+  flex: 0 0 44px;
+}
+.cw-entry .cw-entry-input--selected {
+  background: var(--cw-selected);
+  outline: 2px solid var(--azure);
+  outline-offset: -4px;
+}
+.cw-clue-pages {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.cw-clue-pages button {
+  min-height: 44px;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 4px 8px;
+}
+.cw-player--fit:has(.cw-input:focus) .cw-workspace,
+.cw-player--fit:has(.cw-input:focus) .cw-grid-wrap {
+  min-height: 0;
+}
+
+.cw-player .cw-clue-panel {
+  overflow: hidden;
+}
+
+.cw-player--fit .cw-masthead h1 {
+  font-size: 28px;
+}
+.cw-player--fit .cw-byline {
+  display: none;
+}
+.cw-player .cw-clue-panel {
+  display: flex;
+  flex-direction: column;
+}
+.cw-player .cw-clues {
+  flex: 1;
+  min-height: 0;
+}
+.cw-player .cw-clue-pages {
+  flex-shrink: 0;
+}
+@media (max-width: 999px) {
+  .cw-player .cw-clue-panel {
+    display: none;
+  }
+  .cw-player .cw-clue-panel--open {
+    display: flex;
+  }
+}
+.cw-final--giant .cw-grid-wrap {
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+.cw-final--giant .cw-board {
+  width: min(100cqw, 100cqh);
+  min-width: 0;
+}
+.cw-final--giant .cw-cell {
+  min-height: 0;
+}
+.cw-final--giant .cw-letter {
+  font-size: clamp(7px, calc(60cqw / var(--cw-columns)), 32px);
+}
+.cw-final--giant .cw-number {
+  font-size: clamp(5px, calc(22cqw / var(--cw-columns)), 12px);
+}

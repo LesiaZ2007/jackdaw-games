@@ -56,6 +56,10 @@ test('crossword: two phones share a grid, recover on reload, and finish together
   });
   await wren!.locator('[data-cell="0"]').click();
   await expect(wren!.locator('[data-cell="0"]')).toHaveAttribute('inputmode', 'text');
+  await wren!.keyboard.press('ArrowDown');
+  await expect(wren!.locator('.cw-current b')).toHaveText('1 down');
+  await wren!.keyboard.press('ArrowRight');
+  await expect(wren!.locator('.cw-current b')).toHaveText('1 across');
   await wren!.keyboard.type('p');
   await wren!.keyboard.type('en', { delay: 40 });
   await expect(wren!.locator('[data-cell="5"]')).toBeFocused();
@@ -186,11 +190,7 @@ for (const [size, width] of [
   ['giant', 31],
 ] as const)
   test(
-    'crossword: generated ' +
-      width +
-      ' × ' +
-      width +
-      ' uses the native keyboard and a scrollable phone grid',
+    'crossword: generated ' + width + ' × ' + width + ' uses the native keyboard and a fitted grid',
     async ({ browser, request }, info) => {
       test.setTimeout(180000);
       const key = 'size-' + size + '-' + Date.now() + '-abcdefghijklmnop';
@@ -239,11 +239,33 @@ for (const [size, width] of [
       if (width > 5)
         expect(
           await page.locator('.cw-grid-wrap').evaluate((e) => e.scrollWidth > e.clientWidth),
-        ).toBe(true);
+        ).toBe(false);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollHeight - innerHeight),
+      ).toBeLessThanOrEqual(1);
+      if (width > 5) {
+        await page.getByRole('button', { name: 'All clues', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Next clues', exact: true })).toBeVisible();
+        await page.getByRole('button', { name: 'Next clues', exact: true }).click();
+        await page.getByRole('button', { name: 'Back to grid', exact: true }).click();
+      }
       await page.screenshot({
         path: info.outputPath('generated-' + width + '-phone.png'),
         style: 'nextjs-portal{display:none!important}',
       });
+      await page.setViewportSize({ width: 1280, height: 720 });
+      if (width > 5) {
+        const fit = await page.locator('.cw-grid-wrap').evaluate((e) => ({
+          x: e.scrollWidth - e.clientWidth,
+          y: e.scrollHeight - e.clientHeight,
+        }));
+        expect(fit.x).toBeLessThanOrEqual(1);
+        expect(fit.y).toBeLessThanOrEqual(1);
+        expect(
+          await page.evaluate(() => document.documentElement.scrollHeight - innerHeight),
+        ).toBeLessThanOrEqual(1);
+      }
+      await page.screenshot({ path: info.outputPath('generated-' + width + '-desktop.png') });
       const tv = await context.newPage();
       await tv.setViewportSize({ width: 1920, height: 1080 });
       await tv.goto('/tv/' + code);

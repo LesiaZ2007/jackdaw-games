@@ -742,7 +742,7 @@ describe('computer players', () => {
         const after = (lobby.session!.state as R).steps;
         for (const id of ['b1', 'b2', 'b3']) if (after[id]! > before[id]!) at[id]!.push(now);
         // Real-time bots don't set the screens' next poll.
-        if (realTime) expect(nextTimerAt(lobby, { games: g, now })).toBeNull();
+        if (realTime) expect(nextTimerAt(lobby, { games: g, now })).not.toBeNull();
       }
       return { at, lobby };
     };
@@ -760,6 +760,21 @@ describe('computer players', () => {
       }
     });
 
+    it('nudges all real-time bots from reads with no human writes or game timer', () => {
+      const games = { racer: racer(true) } as unknown as Ctx['games'];
+      const c = (now: number): Ctx => ({ now, games });
+      let lobby = setGame(lobbyWith(1), 'p1', 'racer', c(0));
+      for (const id of ['b1', 'b2', 'b3'])
+        lobby = addBot(lobby, 'p1', { newPlayerId: id, palette }, c(0));
+      lobby = start(lobby, 'p1', { sessionId: 's1', seed: 3 }, c(0));
+      for (let now = 450; now < 20000; now += 450) {
+        const at = nextTimerAt(lobby, { games, now });
+        if (at !== null && at <= now) lobby = runTimers(lobby, c(now));
+      }
+      const steps = (lobby.session!.state as R).steps;
+      expect(steps.p1).toBe(0);
+      for (const id of ['b1', 'b2', 'b3']) expect(steps[id]).toBeGreaterThan(10);
+    });
     it('(without realTime, the bots starve: the person keeps resetting the shared clock)', () => {
       const { at } = play(false);
       expect(at.b2!.length + at.b3!.length).toBe(0);

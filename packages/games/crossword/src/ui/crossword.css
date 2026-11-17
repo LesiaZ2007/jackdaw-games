@@ -568,7 +568,6 @@
 }
 .cw-player--fit .cw-workspace {
   min-height: 0;
-  overflow: hidden;
 }
 .cw-overview-hit {
   position: absolute;

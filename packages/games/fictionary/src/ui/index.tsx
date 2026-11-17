@@ -1,12 +1,14 @@
 'use client';
 
 import type { GameUi } from '@jackdaw/ui';
+import { optionHelp } from './help';
+import { FictionaryLobby } from './lobby';
 import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
 import { TvScreen } from './tv';
 import { TvReveal } from './tv-reveal';
 
-/** Fictionary: catalog art, detail page and screens. It uses Jackdaw's lobby. */
+/** Fictionary: catalog art, detail page, its own lobby (the book's title page) and screens. */
 export const fictionaryUi: GameUi = {
   art: { band: 'purpure', field: 'lozengy', glyph: 'quill' },
   about: {
@@ -22,28 +24,9 @@ export const fictionaryUi: GameUi = {
     credit:
       'Fictionary is the old parlor game, also called the Dictionary game, played here as bluffing trivia. Every fact, word and house lie in the book is Jackdaw’s own.',
   },
-  optionHelp: {
-    deck: {
-      Mixed: 'Strange facts and strange words, shuffled together.',
-      Facts: 'True facts with a blank: animals, history, space and more.',
-      Words: 'The classic: real words nobody knows. Invent what they mean.',
-    },
-    length: {
-      Short: '2 cards in each round, then the Final Fib.',
-      Standard: '3 cards in each round, then the Final Fib.',
-      Long: '4 cards in each round, then the Final Fib.',
-    },
-    timer: {
-      Relaxed: '90 seconds to write a lie, 40 to pick.',
-      Quick: '50 seconds to write a lie, 25 to pick.',
-      Off: 'No clock. Anyone who’s done can give the rest 20 seconds.',
-    },
-    tabs: {
-      'Chooser picks': 'Players take turns choosing the tab for the next card.',
-      Random: 'Every card comes from a random tab.',
-    },
-  },
+  optionHelp,
   fit: true,
+  Lobby: FictionaryLobby,
   PlayerScreen,
   TvScreen,
   Reveal,

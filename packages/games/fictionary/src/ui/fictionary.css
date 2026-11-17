@@ -1399,6 +1399,947 @@
   font-size: 22px;
 }
 
+/* ── The lobby: the book open at its title page (2026-11-16: "an interesting lobby") ──── */
+.fic-lobby {
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 14px 12px 28px;
+}
+.fic-lobby__main {
+  flex: 1;
+  width: 100%;
+  max-width: 1320px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+}
+.fic-tome {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fic-tome__leaf {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 16px 22px 24px;
+  background: var(--fic-paper);
+  border: 2px solid var(--fic-ink);
+  border-left: 12px solid var(--fic-binding);
+  outline: 1px solid var(--fic-rule);
+  outline-offset: -8px;
+  box-shadow: 0 20px 50px -24px var(--shadow);
+}
+.fic-tome__leaf--title {
+  text-align: center;
+}
+.fic-tome__title {
+  margin: 4px 0 0;
+  font: 800 clamp(46px, 12.5vw, 76px) / 1 var(--font-display);
+  letter-spacing: -0.01em;
+  animation: fic-deal 600ms var(--fic-ease) both;
+}
+.fic-tome__line {
+  display: block;
+  white-space: nowrap;
+}
+.fic-tome__small {
+  margin-right: 0.1em;
+  font: 800 clamp(15px, 3.8vw, 20px) / 1 var(--font-plaque);
+  letter-spacing: 0.24em;
+  vertical-align: 0.9em;
+  text-transform: uppercase;
+  color: var(--fic-ink-2);
+}
+.fic-tome__fibs {
+  color: var(--fic-fib);
+}
+.fic-tome__motto {
+  margin: 0;
+  font-size: var(--step-0);
+  color: var(--fic-ink-2);
+}
+.fic-tome__rule {
+  align-self: center;
+  width: min(260px, 70%);
+  height: 7px;
+  border-block: 2px solid var(--fic-rule);
+}
+.fic-tome__leaf--title > .fic-label {
+  text-align: left;
+}
+
+/* The compilers: everyone at the table, each a signed card stamped onto the title page. */
+.fic-compilers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.fic-compiler {
+  min-width: 0;
+  animation: fic-sign 560ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+@keyframes fic-sign {
+  from {
+    opacity: 0;
+    transform: translateY(-18px) scale(1.25) rotate(calc(var(--tilt, 0deg) * -3));
+  }
+}
+.fic-sig {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 16px 10px 12px;
+  background: var(--fic-paper-2);
+  color: var(--fic-ink);
+  border: 2px solid var(--fic-ink);
+  outline: 1px solid var(--fic-rule);
+  outline-offset: -6px;
+  font: inherit;
+  text-align: center;
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 220ms var(--fic-ease);
+  cursor: pointer;
+}
+.fic-sig:disabled {
+  color: var(--fic-ink);
+  cursor: default;
+}
+.fic-sig:focus-visible {
+  outline: 3px solid var(--fic-pencil);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .fic-sig:not(:disabled):hover {
+    transform: rotate(0deg) translateY(-4px);
+  }
+}
+.fic-sig.is-me {
+  border-color: var(--fic-pencil);
+  box-shadow: 4px 4px 0 var(--fic-pencil);
+}
+.fic-sig.is-away {
+  color: var(--fic-ink-2);
+}
+.fic-sig__tok {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 6px;
+  animation: fic-float 4.8s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * -1.3s);
+}
+.fic-sig__tok .jd-token {
+  --z: 60px;
+}
+@keyframes fic-float {
+  50% {
+    transform: translateY(-4px) rotate(-3deg);
+  }
+}
+.fic-sig__name {
+  max-width: 100%;
+  font: 800 24px / 1.05 var(--font-display);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fic-sig__scrawl {
+  width: 72%;
+  height: 10px;
+  fill: none;
+  stroke: var(--fic-pencil);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 140;
+  animation: fic-scrawl 900ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 90ms + 380ms);
+}
+@keyframes fic-scrawl {
+  from {
+    stroke-dashoffset: 140;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.fic-sig__role {
+  font: 800 13px var(--font-plaque);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fic-ink-2);
+}
+.fic-sig--open {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--fic-ink-2);
+  outline: 0;
+  transform: none;
+  cursor: default;
+}
+.fic-sig--open .fic-sig__tok {
+  animation: none;
+}
+.fic-sig--open .fic-sig__name {
+  font-size: 20px;
+  color: var(--fic-ink-2);
+}
+.fic-sig__nib {
+  width: 52px;
+  height: 52px;
+  border: 2px dashed var(--fic-rule);
+  border-radius: 50%;
+}
+/* A full table: smaller cards, three or more to a row. */
+.fic-compilers--many {
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
+}
+.fic-compilers--many .fic-sig {
+  min-height: 116px;
+  padding: 10px 6px 8px;
+}
+.fic-compilers--many .fic-sig__tok {
+  width: 48px;
+  height: 48px;
+}
+.fic-compilers--many .fic-sig__tok .jd-token {
+  --z: 44px;
+}
+.fic-compilers--many .fic-sig__name {
+  font-size: 19px;
+}
+.fic-compilers--many .fic-sig__role {
+  font-size: 11px;
+}
+.fic-lobby__react {
+  justify-content: center;
+  gap: 4px;
+}
+.fic-lobby__react .jd-reactions__btn {
+  width: 44px;
+  height: 44px;
+}
+
+/* The specimen: a card played on a loop to show how it goes. */
+.fic-specimen {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  background: var(--fic-paper-2);
+  border: 2px solid var(--fic-ink);
+}
+.fic-specimen__cap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.fic-specimen__pips {
+  display: flex;
+  gap: 6px;
+}
+.fic-specimen__pips i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--fic-ink-2);
+  transition: background 300ms;
+}
+.fic-specimen__pips i.is-on {
+  background: var(--fic-ink-2);
+}
+.fic-card--specimen .fic-card__head {
+  padding-right: 0;
+}
+.fic-card--specimen .fic-card__no {
+  font-size: 44px;
+}
+.fic-card--specimen .fic-entry {
+  font-size: clamp(21px, 5.6vw, 28px);
+}
+.fic-card--specimen .fic-fleuron {
+  display: none;
+}
+.fic-specimen__slip {
+  min-height: 4.4em;
+  display: flex;
+  align-items: flex-start;
+}
+.fic-specimen__line {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--fic-ink-2);
+  animation: fic-deal 420ms var(--fic-ease) both;
+}
+.fic-specimen__line .fic-stamp {
+  animation: fic-stamp 380ms cubic-bezier(0.3, 1.6, 0.5, 1) both 200ms;
+}
+.fic-stamp--small.fic-stamp--fact {
+  color: var(--fic-fact);
+  transform: rotate(5deg);
+}
+
+/* The edition: each option a row of joined tabs. */
+.fic-edition {
+  display: flex;
+  flex-direction: column;
+}
+.fic-edition > .fic-label {
+  padding-bottom: 6px;
+  border-bottom: 3px double var(--fic-rule);
+}
+.fic-ed {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 12px;
+  padding: 10px 0;
+  border-bottom: 2px dotted var(--fic-rule);
+}
+.fic-ed__label {
+  font: 800 14px var(--font-plaque);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fic-ink-2);
+}
+.fic-ed__choices {
+  display: flex;
+  min-width: 0;
+}
+.fic-ed__choice {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px 8px;
+  background: transparent;
+  color: var(--fic-ink);
+  border: 2px solid var(--fic-ink);
+  font: 800 14px / 1.1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 160ms,
+    color 160ms;
+}
+.fic-ed__choice + .fic-ed__choice {
+  margin-left: -2px;
+}
+.fic-ed__choice:disabled {
+  color: var(--fic-ink-2);
+  cursor: default;
+}
+.fic-ed__choice.is-on {
+  background: var(--fic-ink);
+  color: var(--fic-paper);
+}
+.fic-ed__choice:focus-visible {
+  position: relative;
+  outline: 2px solid var(--fic-pencil);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .fic-ed__choice:not(:disabled):not(.is-on):hover {
+    background: var(--fic-paper-2);
+  }
+}
+.fic-ed__help {
+  grid-column: 2;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--fic-ink-2);
+}
+
+/* Start. */
+.fic-lobby__go {
+  margin-top: auto;
+  display: grid;
+  gap: 10px;
+  justify-items: stretch;
+}
+.fic-lobby__go .jd-plaque {
+  min-height: 56px;
+}
+.fic-lobby__wait {
+  margin: 0;
+  padding: 12px;
+  border: 2px dashed var(--fic-ink-2);
+  font: 800 16px var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--fic-ink-2);
+}
+.fic-lobby__blocker {
+  margin: 0;
+  color: var(--fic-fib);
+  font-weight: 700;
+  text-align: center;
+}
+.fic-lobby__link {
+  justify-self: center;
+  min-height: 44px;
+  padding: 0 8px;
+  background: none;
+  border: 0;
+  color: var(--fic-ink-2);
+  font: 700 16px var(--font-body);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+/* The thumb index: a strip of tabs along the top on phones, down the fore edge on laptops. */
+.fic-thumbs {
+  order: -1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 3px;
+}
+.fic-thumbs__tab {
+  flex: 1;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  background: var(--fic-cat);
+  color: var(--on-fill);
+  font: 800 14px var(--font-plaque);
+  text-transform: uppercase;
+  transition:
+    opacity 300ms,
+    transform 300ms var(--fic-ease);
+}
+.fic-thumbs__tab.is-shut {
+  opacity: 0.22;
+}
+.fic-chat .jd-lchat__title {
+  font-family: var(--font-plaque);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* A wide lobby: both pages side by side, the binding down the middle. */
+@container (min-width: 820px) {
+  .fic-tome {
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1fr);
+    gap: 0;
+    margin-right: 30px;
+    background: var(--fic-paper);
+    border: 3px solid var(--fic-ink);
+    border-inline: 18px solid var(--fic-binding);
+    outline: 2px solid var(--fic-rule);
+    outline-offset: -11px;
+    box-shadow: 0 30px 60px -30px var(--shadow);
+  }
+  .fic-tome__leaf {
+    gap: 12px;
+    padding: 30px 36px 28px;
+    background: none;
+    border: 0;
+    outline: 0;
+    box-shadow: none;
+  }
+  .fic-tome__leaf--title {
+    justify-content: center;
+    border-right: 8px double var(--fic-rule);
+  }
+  .fic-tome__title {
+    font-size: clamp(60px, 7.2cqw, 96px);
+  }
+  .fic-tome__small {
+    font-size: 21px;
+  }
+  .fic-tome__motto {
+    font-size: var(--step-0);
+    text-wrap: balance;
+  }
+  .fic-compilers {
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 10px;
+  }
+  .fic-sig {
+    min-height: 128px;
+    padding: 12px 6px 10px;
+  }
+  .fic-sig__tok {
+    width: 54px;
+    height: 54px;
+  }
+  .fic-sig__tok .jd-token {
+    --z: 50px;
+  }
+  .fic-sig__name {
+    font-size: 21px;
+  }
+  .fic-sig__role {
+    font-size: 11px;
+  }
+  .fic-compilers--many .fic-sig {
+    min-height: 104px;
+  }
+  .fic-compilers--many .fic-sig__tok .jd-token {
+    --z: 40px;
+  }
+  .fic-ed {
+    padding: 7px 0;
+  }
+  .fic-ed__help {
+    font-size: 14px;
+  }
+  .fic-specimen__slip {
+    min-height: 3em;
+  }
+  .fic-card--specimen .fic-entry {
+    font-size: clamp(24px, 2.6cqw, 32px);
+  }
+  .fic-ed {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+  .fic-ed__choice {
+    font-size: 15px;
+  }
+  .fic-lobby__go {
+    justify-items: start;
+  }
+  .fic-lobby__go .jd-plaque {
+    min-width: 260px;
+  }
+  .fic-lobby__blocker {
+    text-align: left;
+  }
+  .fic-lobby__link {
+    justify-self: start;
+    padding: 0;
+  }
+  .fic-thumbs {
+    position: absolute;
+    top: 30px;
+    bottom: 30px;
+    right: -50px;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .fic-thumbs__tab {
+    width: 30px;
+    height: auto;
+    border-radius: 0 6px 6px 0;
+    font-size: 17px;
+  }
+  .fic-thumbs__tab.is-shut {
+    opacity: 1;
+    transform: translateX(-18px);
+    background: var(--fic-paper-2);
+    color: var(--fic-rule);
+  }
+}
+@media (min-width: 768px) {
+  .fic-lobby {
+    padding: 24px 28px 36px;
+  }
+}
+@media (min-width: 1240px) {
+  .fic-lobby {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 24px;
+    align-items: stretch;
+  }
+}
+
+/* Crests at play, sized for the screen (the TV passes its own sizes). */
+.fic-desk .jd-token {
+  --z: 36px;
+}
+.fic-roll .jd-token {
+  --z: 40px;
+}
+.fic-row--wait .fic-roll .jd-token {
+  --z: 34px;
+}
+.fic-slip .fic-roll .jd-token {
+  --z: 44px;
+}
+.fic-index__token .jd-token {
+  --z: 34px;
+}
+.fic-tv .fic-index__token .jd-token {
+  --z: 30px;
+}
+/* Still writing: the crest nods along with the pen. */
+.fic-desk:not(.fic-desk--done) .jd-token {
+  animation: fic-nod 1.4s ease-in-out infinite;
+}
+@keyframes fic-nod {
+  50% {
+    transform: translateY(-3px) rotate(-6deg);
+  }
+}
+
+/* ── Laptops: the page becomes the open book, filling the screen ───────── */
+.fic-side {
+  display: contents;
+}
+.fic-pickers {
+  display: none;
+}
+.fic-margin {
+  display: none;
+}
+@container game (min-width: 760px) and (min-height: 440px) and (orientation: landscape) {
+  .fic--phone {
+    max-width: 1760px;
+    gap: 12px;
+    padding: 6px 0 14px;
+  }
+  .fic--phone .fic-head {
+    gap: 16px;
+  }
+  .fic--phone .fic-tab {
+    font-size: 18px;
+    padding: 8px 20px 8px 14px;
+  }
+  .fic--phone .fic-head__where {
+    font-size: 18px;
+  }
+  .fic--phone .fic-clock {
+    width: 56px;
+    height: 56px;
+    font-size: 24px;
+  }
+  .fic-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+    gap: 0;
+    padding: 0;
+    border: 3px solid var(--fic-ink);
+    border-inline: 18px solid var(--fic-binding);
+    outline: 2px solid var(--fic-rule);
+    outline-offset: -11px;
+  }
+  .fic-page::after {
+    right: 36px;
+    width: 26px;
+    height: 72px;
+  }
+  .fic-side {
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: clamp(26px, 3.2cqh, 44px) clamp(28px, 3cqw, 56px);
+    overflow-y: auto;
+  }
+  .fic-side--l {
+    border-right: 8px double var(--fic-rule);
+  }
+  .fic-margin {
+    margin-top: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 3px double var(--fic-rule);
+  }
+  .fic-margin__stage {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+  }
+  .fic-margin .fic-index {
+    overflow: visible;
+  }
+  .fic-margin .fic-index__row {
+    min-height: 50px;
+  }
+
+  /* The entry, set large on the left page. */
+  .fic-card {
+    gap: 16px;
+  }
+  .fic-card__head {
+    padding-right: 0;
+  }
+  .fic-card__no {
+    font-size: 84px;
+  }
+  .fic-card__cat {
+    font-size: 20px;
+  }
+  .fic-card .fic-entry,
+  .fic-page--pick .fic-card .fic-entry,
+  .fic-page--reveal .fic-card .fic-entry {
+    font-size: clamp(28px, 3.3cqw, 56px);
+    line-height: 1.28;
+  }
+  .fic-page--pick .fic-card__no,
+  .fic-page--reveal .fic-card__no {
+    font-size: 72px;
+  }
+  .fic-fleuron,
+  .fic-page--pick .fic-fleuron,
+  .fic-page--reveal .fic-fleuron {
+    display: block;
+    width: 40px;
+    height: 40px;
+  }
+  .fic-side--l > .fic-card {
+    margin-block: auto;
+  }
+
+  /* Choosing: the heading on the left, the tabs on the right. */
+  .fic-page--choose {
+    display: flex;
+  }
+  .fic-page--choose .fic-choose {
+    flex: 1;
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+    grid-template-rows: 1fr auto auto auto 1fr auto;
+    column-gap: 0;
+    row-gap: 12px;
+  }
+  .fic-choose > * {
+    grid-column: 1;
+    margin-inline: clamp(28px, 3cqw, 56px);
+  }
+  .fic-choose > .fic-kicker {
+    grid-row: 2;
+    font-size: 20px;
+  }
+  .fic-choose > .fic-title {
+    grid-row: 3;
+    font-size: clamp(48px, 4.6cqw, 76px);
+  }
+  .fic-choose > .fic-sub {
+    grid-row: 4;
+    font-size: var(--step-1);
+  }
+  .fic-choose .fic-margin__stage {
+    display: none;
+  }
+  .fic-choose > .fic-margin {
+    grid-row: 6;
+    margin-bottom: clamp(26px, 3.2cqh, 44px);
+  }
+  .fic-choose > .fic-tabs {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: stretch;
+    align-content: center;
+    margin: 0;
+    padding: clamp(26px, 3.2cqh, 44px) clamp(28px, 3cqw, 56px);
+    border-left: 8px double var(--fic-rule);
+    gap: 18px;
+  }
+  .fic-thumb {
+    min-height: 96px;
+    border-width: 3px;
+  }
+  .fic-thumb__letter {
+    width: clamp(72px, 7cqw, 96px);
+    font-size: clamp(42px, 4cqw, 56px);
+  }
+  .fic-thumb__name {
+    font-size: clamp(22px, 2.2cqw, 30px);
+  }
+
+  /* Writing and picking on the right page. */
+  .fic-side--r > .fic-dock {
+    margin-block: auto;
+    gap: 18px;
+  }
+  .fic-side--r > .fic-dock--pick {
+    margin-block: 0;
+  }
+  .fic-input {
+    min-height: 68px;
+    font-size: 32px;
+  }
+  .fic-label {
+    font-size: 16px;
+  }
+  .fic-idea {
+    min-height: 52px;
+    font-size: 21px;
+  }
+  .fic-done {
+    font-size: var(--step-2);
+  }
+  .fic-desk {
+    min-height: 50px;
+  }
+  .fic-desk__name {
+    font-size: 19px;
+  }
+  .fic--phone .fic-answers:not(.fic-answers--tight) {
+    gap: 12px;
+  }
+  .fic--phone .fic-answers:not(.fic-answers--tight) .fic-answer__pick {
+    min-height: 68px;
+    font-size: 24px;
+  }
+  .fic--phone .fic-answers--tight .fic-answer__pick {
+    min-height: 52px;
+    font-size: 20px;
+  }
+  .fic--phone .fic-answer__id {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+  .fic--phone .fic-like {
+    width: 60px;
+  }
+
+  /* The desks: a card for each player, crest and all. */
+  .fic-desks {
+    gap: 12px;
+  }
+  .fic-desk {
+    position: relative;
+    min-height: 0;
+    gap: 14px;
+    padding: 12px 14px;
+    background: var(--fic-paper-2);
+    border: 2px solid var(--fic-rule);
+    transition:
+      border-color 300ms,
+      background 300ms;
+  }
+  .fic-desk--done {
+    border-color: var(--fic-fact);
+  }
+  .fic-desk--me {
+    border-color: var(--fic-pencil);
+  }
+  .fic-desk .jd-token {
+    --z: 56px;
+  }
+  .fic-desk__name {
+    font: 800 23px var(--font-display);
+  }
+  .fic-desk__in {
+    font-size: 18px;
+    border-width: 4px;
+  }
+  .fic-desks--many .fic-desk {
+    padding: 8px 10px;
+  }
+  .fic-desks--many .fic-desk .jd-token {
+    --z: 42px;
+  }
+  .fic-desks--many .fic-desk__name {
+    font-size: 19px;
+  }
+  .fic-pickers {
+    display: block;
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 3px double var(--fic-rule);
+  }
+  .fic-pickers .fic-desk {
+    padding: 8px 12px;
+  }
+  .fic-pickers .fic-desk .jd-token {
+    --z: 44px;
+  }
+  .fic-pickers .fic-desks--many {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .fic-pickers .fic-desks--many .fic-desk .jd-token {
+    --z: 34px;
+  }
+  .fic-row--wait {
+    justify-content: flex-end;
+  }
+  .fic-row--wait .fic-roll {
+    display: none;
+  }
+  .fic-roll {
+    gap: 10px;
+  }
+  .fic-slip .fic-roll .jd-token {
+    --z: 64px;
+  }
+  .fic-index__token .jd-token {
+    --z: 42px;
+  }
+
+  /* The reveal: the slip, large, in the middle of the right page. */
+  .fic-show {
+    gap: 18px;
+  }
+  .fic-track__chit {
+    font-size: 16px;
+    padding: 4px 12px;
+  }
+  .fic--phone .fic-slip {
+    gap: 14px;
+    padding: 32px 30px 26px;
+    outline-offset: -9px;
+  }
+  .fic--phone .fic-slip__text {
+    font-size: clamp(34px, 3.6cqw, 64px);
+    padding-right: clamp(110px, 12cqw, 170px);
+  }
+  .fic--phone .fic-stamp {
+    top: 22px;
+    right: 22px;
+    font-size: clamp(32px, 3.2cqw, 46px);
+    border-width: 6px;
+  }
+  .fic-slip__by {
+    font-size: 20px;
+  }
+  .fic--phone .fic-slip__note {
+    font-size: 21px;
+  }
+  .fic-slip__gain {
+    font-size: 28px;
+  }
+  .fic-index__row {
+    min-height: 48px;
+  }
+  .fic-index__name {
+    font-size: 21px;
+  }
+  .fic-index__score {
+    font-size: 26px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fic *,
   .fic *::before,

@@ -146,8 +146,9 @@ export function Scriptorium({
   players,
   me,
   busyWord,
-  size = 30,
+  size,
 }: {
+  /** Token size in px; by default the stylesheet sizes it for the screen. */
   size?: number;
   ids: string[];
   done: string[];
@@ -259,7 +260,7 @@ export function Roll({
   ids,
   done,
   players,
-  size = 40,
+  size,
 }: {
   ids: string[];
   done?: string[];
@@ -293,7 +294,7 @@ export function RevealStage({
   me,
   scores,
   likeSlot,
-  tokenSize = 36,
+  tokenSize,
 }: {
   /** Tokens of who fell for it or found it (bigger on the TV). */
   tokenSize?: number;
@@ -379,7 +380,7 @@ export function ScoreIndex({
           <li key={id} className={cx('fic-index__row', id === me && 'fic-index__row--me')}>
             <span className="fic-index__rank">{i + 1}</span>
             <span className="fic-index__token">
-              <Token avatar={p.avatar} size={30} away={!p.online} />
+              <Token avatar={p.avatar} away={!p.online} />
               {reactions && <PlayerReaction reactions={reactions} playerId={id} name={p.name} />}
             </span>
             <span className="fic-index__name">{p.name}</span>

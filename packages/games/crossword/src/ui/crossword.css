@@ -675,7 +675,7 @@
 }
 
 /* On PC the lists span the game area, beside the grid and its controls. */
-@media (min-width: 1000px) {
+@media (min-width: 768px) {
   .cw-player {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
@@ -700,6 +700,9 @@
     min-height: 0;
   }
   .cw-player .cw-clue-panel {
+    display: flex;
+    position: static;
+    inset: auto;
     grid-column: 2;
     grid-row: 3 / 8;
     min-height: 0;
@@ -727,6 +730,9 @@
   .cw-player .cw-notice {
     grid-column: 1;
     grid-row: 7;
+  }
+  .cw-player .cw-close {
+    display: none;
   }
   .cw-player .cw-clues {
     gap: 16px;

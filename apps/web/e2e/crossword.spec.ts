@@ -308,6 +308,14 @@ for (const [size, width] of [
         );
       }
       await page.screenshot({ path: info.outputPath('generated-' + width + '-desktop.png') });
+      await page.setViewportSize({ width: 800, height: 720 });
+      await expect(page.locator('.cw-clue-panel')).toBeVisible();
+      expect(
+        await page.locator('.cw-clue-panel').evaluate((e) => e.getBoundingClientRect().height),
+      ).toBeGreaterThan(400);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+      ).toBeLessThanOrEqual(1);
       const tv = await context.newPage();
       await tv.setViewportSize({ width: 1920, height: 1080 });
       await tv.goto('/tv/' + code);

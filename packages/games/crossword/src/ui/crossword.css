@@ -601,18 +601,7 @@
   outline: 2px solid var(--azure);
   outline-offset: -4px;
 }
-.cw-clue-pages {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
-}
-.cw-clue-pages button {
-  min-height: 44px;
-  background: var(--paper);
-  border: 1px solid var(--ink);
-  padding: 4px 8px;
-}
+
 .cw-player--fit:has(.cw-input:focus) .cw-workspace,
 .cw-player--fit:has(.cw-input:focus) .cw-grid-wrap {
   min-height: 0;
@@ -636,9 +625,7 @@
   flex: 1;
   min-height: 0;
 }
-.cw-player .cw-clue-pages {
-  flex-shrink: 0;
-}
+
 @media (max-width: 999px) {
   .cw-player .cw-clue-panel {
     display: none;
@@ -664,4 +651,25 @@
 }
 .cw-final--giant .cw-number {
   font-size: clamp(5px, calc(22cqw / var(--cw-columns)), 12px);
+}
+
+/* Keep complete clue lists available independently of the fitted grid. */
+.cw-player .cw-clues {
+  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr);
+}
+.cw-player .cw-clues section {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.cw-player .cw-clues h2 {
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 2;
+}
+.cw-player .cw-close {
+  flex-shrink: 0;
 }

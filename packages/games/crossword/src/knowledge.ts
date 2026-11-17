@@ -6,7 +6,7 @@ POT|A home for a houseplant
 ERAS|Long spans of history
 TEXTS|Messages sent from a phone
 SEAL|A flippered animal that basks on rocks
-DRY|Ready to fold, after a spin in the dryer
+DRY|Ready to fold, after a tumble in the machine
 PET|A companion animal
 ORES|Sources of mined metal
 TAXED|Charged a levy on

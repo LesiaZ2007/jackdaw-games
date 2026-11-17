@@ -1,57 +1,73 @@
 import { describe, it, expect } from 'vitest';
 import { createRng } from '@jackdaw/engine';
-import { generatePuzzle } from './generator';
-import { gridClues } from './grid';
-import { WORD_BANK } from './bank';
+import { generatePuzzle, withDifficulty } from './generator';
+import { gridClues, type Puzzle } from './grid';
+import { WORD_BANK, puzzleWords, type PuzzleDifficulty } from './bank';
+import { CHALLENGE_WORDS, HARD_CLUES } from './challenge';
+import { PUZZLES } from './puzzles';
+function validate(p: Puzzle, size: number, difficulty: PuzzleDifficulty) {
+  const clues = gridClues(p.rows, p.across, p.down),
+    flat = p.rows.join('');
+  const vocabulary = puzzleWords(size, difficulty);
+  expect(p.rows).toHaveLength(size);
+  expect(p.rows.every((r) => r.length === size)).toBe(true);
+  const answers = clues.map((c) => c.cells.map((i) => flat[i]).join(''));
+  expect(new Set(answers).size).toBe(answers.length);
+  expect(clues.length).toBeGreaterThanOrEqual(size === 5 ? 3 : Math.min(size, 20));
+  for (const c of clues)
+    expect(vocabulary.find((w) => w.answer === c.cells.map((i) => flat[i]).join(''))?.clue).toBe(
+      c.text,
+    );
+  const white = new Set([...flat].flatMap((c, i) => (c === '#' ? [] : [i])));
+  for (const i of white) expect(clues.some((c) => c.cells.includes(i))).toBe(true);
+  const seen = new Set([white.values().next().value!]);
+  for (const i of seen) {
+    const r = Math.floor(i / size),
+      c = i % size;
+    for (const [y, x] of [
+      [r - 1, c],
+      [r + 1, c],
+      [r, c - 1],
+      [r, c + 1],
+    ])
+      if (y! >= 0 && y! < size && x! >= 0 && x! < size && white.has(y! * size + x!))
+        seen.add(y! * size + x!);
+  }
+  expect(seen.size).toBe(white.size);
+}
 describe('generated original crosswords', () => {
-  it('has hundreds of unique, clued answer words', () => {
+  it('contains a broad original word and clue vocabulary', () => {
     expect(WORD_BANK.length).toBeGreaterThan(350);
-    expect(new Set(WORD_BANK.map((w) => w.answer)).size).toBe(WORD_BANK.length);
-    for (const w of WORD_BANK) {
-      expect(w.answer).toMatch(/^[A-Z]{3,8}$/);
+    expect(CHALLENGE_WORDS.length).toBeGreaterThan(100);
+    for (const w of [...WORD_BANK, ...CHALLENGE_WORDS]) {
+      expect(w.answer).toMatch(/^[A-Z]{3,15}$/);
       expect(w.clue.length).toBeGreaterThan(3);
     }
   });
-  for (const size of [5, 9, 13])
-    for (let seed = 1; seed <= 4; seed++)
+  for (const size of [5, 9, 13, 17, 21, 31])
+    for (const difficulty of ['easy', 'normal', 'hard'] as const)
       it(
-        size + ' × ' + size + ', seed ' + seed + ' has connected, valid, unique entries',
+        size + ' × ' + size + ' ' + difficulty + ' is connected and fully clued',
         () => {
-          const p = generatePuzzle(size, createRng(seed));
-          const clues = gridClues(p.rows, p.across, p.down);
-          const flat = p.rows.join('');
-          expect(p.rows).toHaveLength(size);
-          expect(p.rows.every((r) => r.length === size)).toBe(true);
-          const answers = clues.map((c) => c.cells.map((i) => flat[i]).join(''));
-          expect(new Set(answers).size).toBe(answers.length);
-          expect(clues.length).toBeGreaterThanOrEqual(size === 5 ? 3 : size === 9 ? 7 : 13);
-          for (const c of clues) {
-            const word = c.cells.map((i) => flat[i]).join('');
-            expect(WORD_BANK.find((w) => w.answer === word)?.clue).toBe(c.text);
-          }
-          const white = [...flat].flatMap((c, i) => (c === '#' ? [] : [i]));
-          for (const cell of white) expect(clues.some((c) => c.cells.includes(cell))).toBe(true);
-          const seen = new Set([white[0]!]);
-          let prior = 0;
-          while (seen.size !== prior) {
-            prior = seen.size;
-            for (const i of seen)
-              for (const j of white)
-                if (
-                  Math.abs(i - j) === size ||
-                  (Math.floor(i / size) === Math.floor(j / size) && Math.abs(i - j) === 1)
-                )
-                  seen.add(j);
-          }
-          expect(seen.size).toBe(white.length);
+          validate(generatePuzzle(size, createRng(13), difficulty), size, difficulty);
         },
-        15000,
+        20000,
       );
-  it('is deterministic for a seed and yields many different layouts', () => {
-    const signatures = new Set<string>();
-    for (let seed = 30; seed < 42; seed++)
-      signatures.add(generatePuzzle(9, createRng(seed)).rows.join(''));
-    expect(signatures.size).toBeGreaterThanOrEqual(10);
-    expect(generatePuzzle(5, createRng(7))).toEqual(generatePuzzle(5, createRng(7)));
-  }, 15000);
+  it('uses different clues and vocabulary for Hard', () => {
+    expect(puzzleWords(13, 'easy').some((w) => w.answer === 'HYPOTHESIS')).toBe(false);
+    expect(puzzleWords(13, 'hard').find((w) => w.answer === 'PEN')?.clue).toBe(HARD_CLUES.PEN);
+    expect(puzzleWords(13, 'normal').some((w) => w.answer === 'HYPOTHESIS')).toBe(true);
+    const hard = withDifficulty(PUZZLES[0]!, 'hard');
+    expect(hard.rows).toEqual(PUZZLES[0]!.rows);
+    expect(hard.across).not.toEqual(PUZZLES[0]!.across);
+  });
+  it('is deterministic but varies across seeds', () => {
+    expect(generatePuzzle(9, createRng(12), 'hard')).toEqual(
+      generatePuzzle(9, createRng(12), 'hard'),
+    );
+    const layouts = new Set(
+      Array.from({ length: 8 }, (_, seed) => generatePuzzle(9, createRng(seed)).rows.join('')),
+    );
+    expect(layouts.size).toBeGreaterThanOrEqual(7);
+  }, 20000);
 });

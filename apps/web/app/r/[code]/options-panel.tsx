@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties } from 'react';
 import type { ZodType } from 'zod';
+import { optionField } from '@/lib/option-field';
 import { arrangeOptions, toggleKey, type OptionGroup } from '@jackdaw/ui';
 import { useOptionsDraft } from '@/lib/use-options-draft';
 
@@ -110,9 +111,9 @@ export function OptionsPanel({
   const shape = (schema as unknown as { shape?: Record<string, ZodType> }).shape;
   if (!shape || Object.keys(shape).length === 0) return null;
   // Only plain choices are drawn here; a game sets anything richer itself (Wavelength's teams).
-  const fields = Object.entries(shape).filter(([, f]) =>
-    DRAWN.has((f as unknown as { def: { type: string } }).def.type),
-  );
+  const fields = Object.entries(shape)
+    .map(([key, f]) => [key, optionField(f)] as const)
+    .filter(([, f]) => DRAWN.has((f as unknown as { def: { type: string } }).def.type));
 
   const byKey = new Map(fields);
   const booleans = new Set(
@@ -170,7 +171,8 @@ export function OptionsPanel({
         const field = byKey.get(key)!;
         const f = field as unknown as FieldDef & { def: { type: string } };
         const type = f.def.type;
-        const value = current[key];
+        const fallback = current[key] === undefined ? shape[key]?.safeParse(undefined) : undefined;
+        const value = current[key] ?? (fallback?.success ? fallback.data : undefined);
         const set = (v: unknown) => save({ ...current, [key]: v });
         const h = help?.[key];
         const note = typeof h === 'string' ? h : h?.[String(value)];

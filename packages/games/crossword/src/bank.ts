@@ -417,3 +417,15 @@ WILLOW|A tree with long, flexible branches
     return { answer: answer!, clue: clue.join('|') };
   })
   .filter((entry, i, all) => all.findIndex((e) => e.answer === entry.answer) === i);
+
+import { CHALLENGE_WORDS, HARD_CLUES } from './challenge';
+export type PuzzleDifficulty = 'easy' | 'normal' | 'hard';
+export function puzzleWords(size: number, difficulty: PuzzleDifficulty = 'normal') {
+  const combined = difficulty === 'easy' ? WORD_BANK : [...WORD_BANK, ...CHALLENGE_WORDS];
+  return combined
+    .filter((w, i, a) => w.answer.length <= size && a.findIndex((x) => x.answer === w.answer) === i)
+    .map((w) => ({
+      answer: w.answer,
+      clue: difficulty === 'hard' ? (HARD_CLUES[w.answer] ?? w.clue) : w.clue,
+    }));
+}

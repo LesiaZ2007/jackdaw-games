@@ -519,3 +519,28 @@
 .cw-board {
   grid-template-rows: repeat(var(--cw-columns), 1fr);
 }
+
+.cw-player .cw-number {
+  font-size: clamp(11px, calc(25cqw / var(--cw-columns)), 16px);
+}
+.cw-input {
+  padding-top: 12px;
+}
+.cw-tv--giant .cw-grid-wrap {
+  display: block;
+  overflow: hidden;
+}
+.cw-tv--giant .cw-board,
+.cw-tv--giant.cw-final .cw-board {
+  width: calc(var(--cw-columns) * 44px + 4px);
+  min-width: calc(var(--cw-columns) * 44px + 4px);
+}
+
+.cw-final--giant .cw-grid-wrap {
+  display: block;
+  overflow: auto;
+}
+.cw-final--giant .cw-board {
+  width: calc(var(--cw-columns) * 44px + 4px);
+  min-width: calc(var(--cw-columns) * 44px + 4px);
+}

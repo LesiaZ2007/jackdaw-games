@@ -58,6 +58,7 @@ test('crossword: two phones share a grid, recover on reload, and finish together
   await expect(wren!.locator('[data-cell="0"]')).toHaveAttribute('inputmode', 'text');
   await wren!.keyboard.type('p');
   await wren!.keyboard.type('en', { delay: 40 });
+  await expect(wren!.locator('[data-cell="5"]')).toBeFocused();
   await expect(rook!.getByRole('textbox', { name: 'Row 1, column 3: N', exact: true })).toBeVisible(
     {
       timeout: 20000,
@@ -66,6 +67,7 @@ test('crossword: two phones share a grid, recover on reload, and finish together
   await rook!.locator('[data-cell="5"]').click();
   await expect(rook!.locator('[data-cell="5"]')).toBeFocused();
   await rook!.keyboard.type('eras', { delay: 30 });
+  await expect(rook!.locator('[data-cell="10"]')).toBeFocused();
   await expect(wren!.getByRole('textbox', { name: 'Row 2, column 4: S', exact: true })).toBeVisible(
     {
       timeout: 20000,
@@ -179,6 +181,9 @@ for (const [size, width] of [
   ['mini', 5],
   ['standard', 9],
   ['large', 13],
+  ['extraLarge', 17],
+  ['sunday', 21],
+  ['giant', 31],
 ] as const)
   test(
     'crossword: generated ' +
@@ -196,7 +201,7 @@ for (const [size, width] of [
       const url = '/api/lobby/' + code;
       await call(request, url, key, {
         type: 'setOptions',
-        options: { puzzle: 'random', size, mode: 'cooperative', help: true },
+        options: { puzzle: 'random', size, mode: 'cooperative', help: true, difficulty: 'hard' },
       });
       const started = await call(request, url, key, { type: 'start', look: 'light' });
       const view = started.tableView as CrosswordView;
@@ -304,3 +309,38 @@ test('crossword race: separate native-input grids, private letters and one winne
   expect(ended.results?.winners).toEqual([ended.me]);
   for (const c of contexts) await c.close();
 });
+
+for (const mode of ['cooperative', 'race'] as const)
+  test('crossword bots progress during human activity: ' + mode, async ({ request }) => {
+    test.setTimeout(90000);
+    const key = 'bot-' + mode + '-' + Date.now() + '-abcdefghijklmnop';
+    const { code } = await call(request, '/api/lobby', key, { name: 'Wren', gameId: 'crossword' });
+    const url = '/api/lobby/' + code;
+    await call(request, url, key, { type: 'addBot' });
+    await call(request, url, key, {
+      type: 'setOptions',
+      options: { puzzle: 'ink', size: 'mini', mode, help: false, difficulty: 'hard' },
+    });
+    await call(request, url, key, { type: 'start', look: 'light' });
+    await expect
+      .poll(
+        async () => {
+          const s = await call(request, url, key);
+          await call(request, url, key, {
+            type: 'action',
+            sessionId: s.session!.id,
+            seq: s.session!.seq,
+            action: { type: 'focus', cell: 24, direction: 'across' },
+          });
+          const v = s.view as CrosswordView;
+          const bot = v.players.find((p) => p !== s.me)!;
+          if (mode === 'race') {
+            expect(v.letters.every((l) => !l)).toBe(true);
+            expect((s.tableView as CrosswordView).letters.every((l) => !l)).toBe(true);
+          }
+          return v.progress[bot] ?? 0;
+        },
+        { timeout: 45000, intervals: [700] },
+      )
+      .toBeGreaterThan(0);
+  });

@@ -8,6 +8,7 @@ export interface Clue {
   cells: number[];
 }
 export interface Puzzle {
+  difficulty?: 'easy' | 'normal' | 'hard';
   id: string;
   title: string;
   author: string;

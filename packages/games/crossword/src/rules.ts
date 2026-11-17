@@ -1,16 +1,18 @@
 import { GameError, type GameModule, type GameResult } from '@jackdaw/engine';
 import { z } from 'zod';
-import { PUZZLES, generatePuzzle } from '#puzzles';
+import { PUZZLES, generatePuzzle, withDifficulty } from '#puzzles';
+import { crosswordBot } from './bot';
 import { gridClues, type Clue, type Direction, type Puzzle } from './grid';
 import { meta } from './meta';
 export const optionsSchema = z.object({
   puzzle: z.enum(['random', 'ink', 'camp', 'post']),
   help: z.boolean(),
-  size: z.enum(['mini', 'standard', 'large']),
+  size: z.enum(['mini', 'standard', 'large', 'extraLarge', 'sunday', 'giant']),
   mode: z.enum(['cooperative', 'race']),
+  difficulty: z.enum(['easy', 'normal', 'hard']).default('normal').describe('Puzzle difficulty'),
 });
-export type CrosswordOptions = z.infer<typeof optionsSchema>;
-const cell = z.number().int().min(0).max(224);
+export type CrosswordOptions = z.input<typeof optionsSchema>;
+const cell = z.number().int().min(0).max(960);
 const direction = z.enum(['across', 'down']);
 export const actionSchema = z.discriminatedUnion('type', [
   z.object({
@@ -59,11 +61,11 @@ type BoardState = Pick<
 >;
 function boardState(s: CrosswordState): BoardState {
   return {
-    letters: s.letters,
-    revisions: s.revisions,
-    authors: s.authors,
-    errors: s.errors,
-    revealed: s.revealed,
+    letters: [...s.letters],
+    revisions: [...s.revisions],
+    authors: [...s.authors],
+    errors: [...s.errors],
+    revealed: [...s.revealed],
     checks: s.checks,
     notice: s.notice,
   };
@@ -167,7 +169,13 @@ export const crossword: GameModule<
   meta,
   optionsSchema,
   actionSchema,
-  defaultOptions: () => ({ puzzle: 'random', size: 'standard', mode: 'cooperative', help: true }),
+  defaultOptions: () => ({
+    puzzle: 'random',
+    size: 'standard',
+    mode: 'cooperative',
+    help: true,
+    difficulty: 'normal',
+  }),
   validateOptions: (options, count) =>
     options.mode === 'race' && count < 2
       ? 'Race needs at least two players.'
@@ -177,8 +185,17 @@ export const crossword: GameModule<
   setup({ playerIds, options, rng, now }) {
     const puzzle =
       options.puzzle === 'random'
-        ? generatePuzzle({ mini: 5, standard: 9, large: 13 }[options.size], rng)
-        : PUZZLES.find((p) => p.id === options.puzzle)!;
+        ? generatePuzzle(
+            { mini: 5, standard: 9, large: 13, extraLarge: 17, sunday: 21, giant: 31 }[
+              options.size
+            ],
+            rng,
+            options.difficulty ?? 'normal',
+          )
+        : withDifficulty(
+            PUZZLES.find((p) => p.id === options.puzzle)!,
+            options.difficulty ?? 'normal',
+          );
     const length = puzzle.rows.join('').length;
     const initial: CrosswordState = {
       mode: options.mode,
@@ -316,6 +333,9 @@ export const crossword: GameModule<
       };
     return next;
   },
+  bot: crosswordBot,
+  botDelayMs: 1500,
+  realTime: true,
   getResult: (s) => (s.finishedAt === null ? null : result(s)),
   announce: (prev, next) =>
     !prev

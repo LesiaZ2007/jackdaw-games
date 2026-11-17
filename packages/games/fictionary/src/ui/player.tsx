@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   Plaque,
   useCountdown,
@@ -18,6 +18,7 @@ import {
   Head,
   RevealStage,
   Roll,
+  ScoreIndex,
   Scriptorium,
   TabChoice,
   useBeat,
@@ -60,6 +61,16 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, now, ..
 
   const p = v.play;
   const cls = useBookClass('fic--phone');
+  // Laptops only: the left page's margin keeps the round and the standings in view.
+  const margin = (
+    <aside className="fic-margin" aria-label="Standings">
+      <p className="fic-margin__stage">
+        <span className="fic-kicker">{stageName(p.stage)}</span>
+        <span className="fic-sub">{stageLine(p.stage)}</span>
+      </p>
+      <ScoreIndex players={byId} me={v.me} scores={v.scores} reactions={props.reactions} />
+    </aside>
+  );
   // The blank: your draft in pencil while writing; each lie struck through in red as it's
   // revealed; the truth inked in green.
   const [fill, tone] =
@@ -76,47 +87,52 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({ view, sendAction, now, ..
       <Head t={v} now={now} name={name} />
       <section className={cx('fic-page', `fic-page--${v.phase}`, `fic-tab--${p.cat ?? 'blank'}`)}>
         {v.phase === 'choose' ? (
-          <Choose v={v} name={name} send={send} busy={busy} />
+          <Choose v={v} name={name} send={send} busy={busy} margin={margin} />
         ) : (
           <>
-            {(card?.q ?? p.q) && (
-              <Card n={p.n} cat={p.cat} q={card?.q ?? p.q!} fill={fill} tone={tone} />
-            )}
-            {v.phase === 'write' && (
-              <Write
-                v={v}
-                draft={draft}
-                setDraft={setDraft}
-                send={send}
-                busy={busy}
-                byId={byId}
-                now={now}
-              />
-            )}
-            {v.phase === 'pick' && <Pick v={v} send={send} busy={busy} byId={byId} now={now} />}
-            {v.phase === 'reveal' && card && beat && (
-              <div className="fic-show">
-                <BeatTrack card={card} beat={beat} />
-                <RevealStage
-                  card={card}
-                  beat={beat}
-                  players={byId}
-                  name={name}
-                  me={v.me}
-                  scores={v.scores}
-                  likeSlot={
-                    beat.kind === 'lie' && !beat.entry.by.includes(v.me) ? (
-                      <Like
-                        on={v.myLike === beat.entry.id}
-                        onClick={() => void send({ type: 'like', id: beat.entry.id })}
-                        disabled={busy}
-                      />
-                    ) : null
-                  }
+            <div className="fic-side fic-side--l">
+              {(card?.q ?? p.q) && (
+                <Card n={p.n} cat={p.cat} q={card?.q ?? p.q!} fill={fill} tone={tone} />
+              )}
+              {!scored && margin}
+            </div>
+            <div className="fic-side fic-side--r">
+              {v.phase === 'write' && (
+                <Write
+                  v={v}
+                  draft={draft}
+                  setDraft={setDraft}
+                  send={send}
+                  busy={busy}
+                  byId={byId}
+                  now={now}
                 />
-                {scored && <Next v={v} now={now} send={send} busy={busy} />}
-              </div>
-            )}
+              )}
+              {v.phase === 'pick' && <Pick v={v} send={send} busy={busy} byId={byId} now={now} />}
+              {v.phase === 'reveal' && card && beat && (
+                <div className="fic-show">
+                  <BeatTrack card={card} beat={beat} />
+                  <RevealStage
+                    card={card}
+                    beat={beat}
+                    players={byId}
+                    name={name}
+                    me={v.me}
+                    scores={v.scores}
+                    likeSlot={
+                      beat.kind === 'lie' && !beat.entry.by.includes(v.me) ? (
+                        <Like
+                          on={v.myLike === beat.entry.id}
+                          onClick={() => void send({ type: 'like', id: beat.entry.id })}
+                          disabled={busy}
+                        />
+                      ) : null
+                    }
+                  />
+                  {scored && <Next v={v} now={now} send={send} busy={busy} />}
+                </div>
+              )}
+            </div>
           </>
         )}
       </section>
@@ -141,11 +157,13 @@ function Choose({
   name,
   send,
   busy,
+  margin,
 }: {
   v: FictionaryPlayerView;
   name: (id: string) => string;
   send: Send;
   busy: boolean;
+  margin: ReactNode;
 }) {
   const mine = v.play.chooser === v.me;
   return (
@@ -153,6 +171,7 @@ function Choose({
       <p className="fic-kicker">{stageName(v.play.stage)}</p>
       <h2 className="fic-title">{mine ? 'Choose a tab' : statusLine(v, name)}</h2>
       <p className="fic-sub">{stageLine(v.play.stage)}</p>
+      {margin}
       <TabChoice
         offer={v.play.offer}
         disabled={busy}
@@ -319,9 +338,19 @@ function Pick({
           );
         })}
       </ol>
+      {/* Laptops only: everyone's desk under the answers, stamped In as they pick. */}
+      <div className="fic-pickers">
+        <Scriptorium
+          ids={v.players}
+          done={v.play.picked}
+          players={byId}
+          me={v.me}
+          busyWord="Picking"
+        />
+      </div>
       {v.myPick && (
         <div className="fic-row fic-row--wait">
-          <Roll ids={v.players} done={v.play.picked} players={byId} size={28} />
+          <Roll ids={v.players} done={v.play.picked} players={byId} />
           <Nudge v={v} send={send} busy={busy} now={now} />
         </div>
       )}

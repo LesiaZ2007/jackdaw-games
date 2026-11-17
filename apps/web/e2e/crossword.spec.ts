@@ -215,6 +215,8 @@ for (const [size, width] of [
       await context.addInitScript((t) => localStorage.setItem('jackdaw:token', t), key);
       const page = await context.newPage();
       await page.goto('/r/' + code);
+      // Next's development insight badge covers the bottom-left phone control.
+      await page.addStyleTag({ content: 'nextjs-portal{display:none!important}' });
       const input = page.locator('.cw-input').first();
       await expect(input).toBeVisible({ timeout: 60000 });
       await expect(input).toHaveAttribute('inputmode', 'text');

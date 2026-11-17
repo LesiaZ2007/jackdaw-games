@@ -1,20 +1,14 @@
 import type { Metadata, Viewport } from 'next';
-import {
-  Alegreya_Sans,
-  Big_Shoulders,
-  Germania_One,
-  Grenze,
-  Grenze_Gotisch,
-  Montserrat,
-} from 'next/font/google';
+import localFont from 'next/font/local';
+import { Alegreya_Sans, Big_Shoulders, Germania_One, Grenze, Montserrat } from 'next/font/google';
 import '@jackdaw/ui/tokens.css';
 import '@jackdaw/ui/kit.css';
 import './globals.css';
 import { ServiceWorker } from './pwa';
 
-const display = Grenze_Gotisch({
-  subsets: ['latin'],
-  weight: ['600', '700', '800'],
+const display = localFont({
+  src: './fonts/GrenzeGotisch.ttf',
+  weight: '100 900',
   variable: '--ff-display',
 });
 const code = Grenze({ subsets: ['latin'], weight: ['700', '800'], variable: '--ff-code' });

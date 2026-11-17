@@ -5,6 +5,7 @@ import { CATEGORIES, type Category } from './bank/types';
 import { fictionaryBot } from './bot';
 import {
   factOf,
+  fillBlank,
   FOOL_POINTS,
   fictionary as game,
   LIKE_POINTS,
@@ -252,6 +253,35 @@ describe('hidden information', () => {
         if (id !== 'wren' && st.phase === 'write') expect(view).not.toContain('zzq secret one');
       }
     }
+  });
+});
+
+describe('the recap', () => {
+  // 2026-11-16: "make sure there's a game recap for fictionary too".
+  it('tells every card: the truth, who found it and every lie that fooled someone', () => {
+    let s = writeAll(toWrite(start(3)));
+    const truth = s.play.entries.find((e) => e.truth)!;
+    const wrens = s.play.entries.find((e) => e.by.includes('wren'))!;
+    s = act(s, 'wren', { type: 'pick', id: truth.id });
+    s = act(s, 'rook', { type: 'pick', id: wrens.id });
+    s = act(s, 'magpie', { type: 'pick', id: wrens.id });
+    const r = game.partialResult!(s)!;
+    const texts = r.recap.map((e) => e.text);
+    expect(r.recap.every((e) => e.round === 1)).toBe(true);
+    expect(texts[0]).toContain(`“${s.history[0]!.answer}”`);
+    expect(texts).toContain('{wren} found the truth.');
+    expect(
+      texts.some((t) => t.startsWith('{wren}’s lie') && t.includes('{rook} and {magpie}')),
+    ).toBe(true);
+    expect(r.recap.some((e) => e.key)).toBe(true);
+    expect(r.roundName).toBe('Card');
+  });
+
+  it('never doubles the quotes round a blank that is already quoted', () => {
+    expect(fillBlank('Reykjavík means “____ bay.”', 'smoky')).toBe('Reykjavík means “smoky bay.”');
+    expect(fillBlank('A group of owls is a ____.', 'parliament')).toBe(
+      'A group of owls is a “parliament”.',
+    );
   });
 });
 

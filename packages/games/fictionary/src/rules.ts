@@ -365,37 +365,100 @@ function openReveal(s: FictionaryState, now: number): FictionaryState {
     TRUTH_BEAT_MS +
     SCORES_BEAT_MS +
     (p.stage === 3 ? FINAL_EXTRA_MS : 0);
-  const truthFinders = entries.find((e) => e.truth)!.pickers;
-  const best = [...fooled].sort((a, b) => b.pickers.length - a.pickers.length)[0];
-  const recap: RecapEvent[] = [
-    ...s.recap,
-    {
-      round: p.n,
-      text: fact.q.replace('____', `“${fact.a}”`),
-      tag: `${truthFinders.length} found it`,
-      tone: truthFinders.length > 0 ? 'good' : 'bad',
-      key: p.stage === 3,
-      data: { kind: 'card', cat: p.cat },
-    },
-  ];
-  if (best && best.by.length > 0)
-    recap.push({
-      round: p.n,
-      actor: best.by[0],
-      text: `${best.by.map((id) => `{${id}}`).join(' and ')} fooled ${best.pickers.length} with “${best.text}”.`,
-      tag: `+${FOOL_POINTS * mult * best.pickers.length}`,
-      tone: 'good',
-      key: best.pickers.length >= 3,
-    });
+  const recap = [...s.recap, ...recapOf(result, p.chooser)];
   return {
     ...s,
     phase: 'reveal',
     scores,
     history: [...s.history, result],
+    recap,
     actBy: null,
     revealAt: now,
     nextAt: now + duration,
   };
+}
+
+/** Players for a recap line: "{wren}", "{wren} and {rook}", "{wren}, {rook} and {finch}". */
+function who(ids: string[]): string {
+  const n = ids.map((id) => `{${id}}`);
+  return n.length <= 1 ? (n[0] ?? '') : `${n.slice(0, -1).join(', ')} and ${n[n.length - 1]}`;
+}
+
+const pts = (n: number) => n.toLocaleString('en-US');
+
+/** The card with its answer in the blank, quoted unless the blank already sits in quotes. */
+export function fillBlank(q: string, answer: string): string {
+  return /[“‘"]____/.test(q) ? q.replace('____', answer) : q.replace('____', `“${answer}”`);
+}
+
+/**
+ * What a card adds to the recap (2026-11-16: "make sure there's a game recap"): the fact with
+ * its truth, who found it, every lie that fooled someone (with who fell for it), and the
+ * favorite lie when it was liked. The Final Fib and any lie that fooled two or more are the
+ * turning points the TV shows first.
+ */
+export function recapOf(card: CardResult, chooser: string | null): RecapEvent[] {
+  const mult = card.stage;
+  const truth = card.entries.find((e) => e.truth)!;
+  const found = truth.pickers;
+  const stage = card.stage === 3 ? 'The Final Fib' : `Round ${card.stage}`;
+  const out: RecapEvent[] = [
+    {
+      round: card.n,
+      actor: chooser ?? undefined,
+      text: `${stage}, ${CATEGORIES[card.cat]}${chooser ? ` (chosen by {${chooser}})` : ''}: ${fillBlank(card.q, card.answer)}`,
+      tag: found.length === 0 ? 'Nobody found it' : `${found.length} found it`,
+      tone: found.length > 0 ? 'good' : 'bad',
+      key: card.stage === 3,
+      data: { kind: 'card', cat: card.cat, stage: card.stage },
+    },
+  ];
+  if (found.length > 0)
+    out.push({
+      round: card.n,
+      actor: found[0],
+      text: `${who(found)} found the truth.`,
+      tag: `+${pts(1000 * mult)}${found.length > 1 ? ' each' : ''}`,
+      tone: 'good',
+      data: { kind: 'truth' },
+    });
+  const fooled = card.entries
+    .filter((e) => !e.truth && e.pickers.length > 0)
+    .sort((a, b) => b.pickers.length - a.pickers.length);
+  for (const e of fooled) {
+    if (e.by.length === 0) {
+      out.push({
+        round: card.n,
+        text: `A house lie, “${e.text}”, fooled ${who(e.pickers)}.`,
+        tag: `${e.pickers.length} fooled`,
+        tone: 'bad',
+        data: { kind: 'house' },
+      });
+      continue;
+    }
+    out.push({
+      round: card.n,
+      actor: e.by[0],
+      text: `${who(e.by)}’s lie “${e.text}” fooled ${who(e.pickers)}.`,
+      tag: `+${pts(FOOL_POINTS * mult * e.pickers.length)}${e.by.length > 1 ? ' each' : ''}`,
+      tone: 'good',
+      key: e.pickers.length >= 2,
+      data: { kind: 'fib', fooled: e.pickers.length },
+    });
+  }
+  const fave = card.entries
+    .filter((e) => !e.truth && e.by.length > 0 && e.likes > 0)
+    .sort((a, b) => b.likes - a.likes)[0];
+  if (fave)
+    out.push({
+      round: card.n,
+      actor: fave.by[0],
+      text: `${who(fave.by)}’s “${fave.text}” was the favorite lie, with ${fave.likes} like${fave.likes === 1 ? '' : 's'}.`,
+      tag: `+${pts(LIKE_POINTS * mult * fave.likes)}`,
+      tone: 'good',
+      data: { kind: 'like' },
+    });
+  return out;
 }
 
 /** After a reveal: the next card, or the end. */
@@ -735,9 +798,12 @@ function rescoreLikes(next: FictionaryState, before: FictionaryState): Fictionar
     gains[id] = (gains[id] ?? 0) + d;
     scores[id] = (scores[id] ?? 0) + d;
   }
+  const card = { ...last, entries, gains };
   return {
     ...next,
     scores,
-    history: [...next.history.slice(0, -1), { ...last, entries, gains }],
+    history: [...next.history.slice(0, -1), card],
+    // The card's recap lines follow its likes.
+    recap: [...next.recap.filter((e) => e.round !== last.n), ...recapOf(card, p.chooser)],
   };
 }

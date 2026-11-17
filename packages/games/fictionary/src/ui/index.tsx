@@ -4,6 +4,7 @@ import type { GameUi } from '@jackdaw/ui';
 import { PlayerScreen } from './player';
 import { Reveal } from './reveal';
 import { TvScreen } from './tv';
+import { TvReveal } from './tv-reveal';
 
 /** Fictionary: catalog art, detail page and screens. It uses Jackdaw's lobby. */
 export const fictionaryUi: GameUi = {
@@ -46,4 +47,5 @@ export const fictionaryUi: GameUi = {
   PlayerScreen,
   TvScreen,
   Reveal,
+  TvReveal,
 };

@@ -155,7 +155,13 @@ test('crossword: two phones share a grid, recover on reload, and finish together
     ).toBeLessThanOrEqual(0);
     const grid = await tv.locator('.cw-board').boundingBox();
     expect(grid!.width).toBeGreaterThan(width! * 0.2);
-    expect(grid!.y + grid!.height).toBeLessThanOrEqual(height!);
+    // TvStage responds through ResizeObserver; wait for the new scale before measuring.
+    await expect
+      .poll(async () => {
+        const box = await tv.locator('.cw-board').boundingBox();
+        return box ? box.y + box.height : Infinity;
+      })
+      .toBeLessThanOrEqual(height!);
     const tvPicture = info.outputPath('crossword-tv-' + width + '.png');
     await tv.screenshot({ path: tvPicture, style: 'nextjs-portal{display:none!important}' });
     await info.attach('crossword-tv-' + width, { path: tvPicture, contentType: 'image/png' });
@@ -247,9 +253,11 @@ for (const [size, width] of [
       ).toBeLessThanOrEqual(1);
       if (width > 5) {
         await page.getByRole('button', { name: 'All clues', exact: true }).click();
-        await expect(page.getByRole('button', { name: 'Next clues', exact: true })).toBeVisible();
-        await page.getByRole('button', { name: 'Next clues', exact: true }).click();
-        await page.getByRole('button', { name: 'Back to grid', exact: true }).click();
+        const clueView = (await call(request, url, key)).view as CrosswordView;
+        await expect(page.locator('.cw-clue-panel .cw-clue')).toHaveCount(clueView.clues.length);
+        await expect(page.getByRole('button', { name: 'Next clues', exact: true })).toHaveCount(0);
+        await page.locator('.cw-clue-panel .cw-clue').last().click();
+        await expect(page.locator('.cw-clue-panel--open')).toHaveCount(0);
       }
       await page.screenshot({
         path: info.outputPath('generated-' + width + '-phone.png'),
@@ -267,6 +275,12 @@ for (const [size, width] of [
           await page.evaluate(() => document.documentElement.scrollHeight - innerHeight),
         ).toBeLessThanOrEqual(1);
       }
+      const allClues = (await call(request, url, key)).view as CrosswordView;
+      await expect(page.locator('.cw-clue-panel .cw-clue')).toHaveCount(allClues.clues.length);
+      await page.locator('.cw-clue-panel .cw-clue').last().click();
+      expect(
+        await page.evaluate(() => document.documentElement.scrollHeight - innerHeight),
+      ).toBeLessThanOrEqual(1);
       await page.screenshot({ path: info.outputPath('generated-' + width + '-desktop.png') });
       const tv = await context.newPage();
       await tv.setViewportSize({ width: 1920, height: 1080 });

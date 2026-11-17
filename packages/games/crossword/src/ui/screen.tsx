@@ -193,7 +193,6 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     return () => viewport.removeEventListener('resize', resize);
   }, []);
   const fitted = view.width > 5;
-  const [cluePage, setCluePage] = useState(0);
   const pendingFocus = useRef(false);
   useEffect(() => {
     if (!pendingFocus.current) return;
@@ -361,19 +360,7 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           <button type="button" className="cw-close" onClick={() => setShowClues(false)}>
             Back to grid
           </button>
-          <Clues view={view} active={active} onChoose={choose} page={cluePage} pageSize={1} />
-          <div className="cw-clue-pages">
-            <button
-              type="button"
-              onClick={() => setCluePage((p) => Math.max(0, p - 1))}
-              disabled={cluePage === 0}
-            >
-              Previous clues
-            </button>
-            <button type="button" onClick={() => setCluePage((p) => p + 1)}>
-              Next clues
-            </button>
-          </div>
+          <Clues view={view} active={active} onChoose={choose} />
         </div>
       </div>
       <div className="cw-current">

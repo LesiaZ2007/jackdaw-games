@@ -1308,6 +1308,97 @@
   gap: 12px;
 }
 
+/* ── The TV's end of the night: the cards as one page of the book ─────── */
+.fic-night {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 26px;
+  box-sizing: border-box;
+  background: var(--fic-paper);
+  border: 3px solid var(--fic-ink);
+  border-left: 18px solid var(--fic-binding);
+  outline: 2px solid var(--fic-rule);
+  outline-offset: -10px;
+}
+.fic-night__title {
+  margin: 0;
+  font: 800 40px / 1 var(--font-display);
+}
+.fic-night__list {
+  flex: 1;
+  min-height: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 16px 22px;
+}
+.fic-night__card {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 4px double var(--fic-rule);
+  overflow: hidden;
+  animation: fic-deal 520ms var(--fic-ease) both;
+}
+.fic-night__card:nth-child(2) {
+  animation-delay: 120ms;
+}
+.fic-night__card:nth-child(3) {
+  animation-delay: 240ms;
+}
+.fic-night__card:nth-child(4) {
+  animation-delay: 360ms;
+}
+.fic-night__head {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font: 800 24px var(--font-plaque);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fic-ink-2);
+}
+.fic-night__no {
+  font: 800 44px / 0.8 var(--font-display);
+  color: var(--fic-cat, var(--fic-binding));
+}
+.fic-night .fic-entry {
+  font-size: 26px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.fic-night__line {
+  margin: 0;
+  font: 800 24px var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fic-fact);
+}
+.fic-night__fib {
+  margin: 0;
+  font-size: 24px;
+  color: var(--fic-ink-2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.fic-night .fic-stamp--small {
+  font-size: 22px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fic *,
   .fic *::before,

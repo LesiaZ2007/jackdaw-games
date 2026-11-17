@@ -673,3 +673,72 @@
 .cw-player .cw-close {
   flex-shrink: 0;
 }
+
+/* On PC the lists span the game area, beside the grid and its controls. */
+@media (min-width: 768px) {
+  .cw-player {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto auto auto;
+    column-gap: 24px;
+    height: 100%;
+  }
+  .cw-player > .cw-masthead {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  .cw-player > .cw-solvers {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .cw-player .cw-workspace {
+    display: contents;
+  }
+  .cw-player .cw-grid-wrap {
+    grid-column: 1;
+    grid-row: 3;
+    min-height: 0;
+  }
+  .cw-player .cw-clue-panel {
+    display: flex;
+    position: static;
+    inset: auto;
+    grid-column: 2;
+    grid-row: 3 / 8;
+    min-height: 0;
+    padding-left: 16px;
+  }
+  .cw-player .cw-current {
+    grid-column: 1;
+    grid-row: 4;
+  }
+  .cw-player .cw-entry {
+    grid-column: 1;
+    grid-row: 5;
+  }
+  .cw-player .cw-tools {
+    grid-column: 1;
+    grid-row: 6;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .cw-player .cw-tools button {
+    padding: 4px;
+    line-height: 1.05;
+  }
+  .cw-player .cw-notice {
+    grid-column: 1;
+    grid-row: 7;
+  }
+  .cw-player .cw-close {
+    display: none;
+  }
+  .cw-player .cw-clues {
+    gap: 16px;
+  }
+  .cw-player .cw-clue {
+    padding: 8px 4px;
+    font-size: 16px !important;
+  }
+}

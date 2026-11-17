@@ -281,7 +281,41 @@ for (const [size, width] of [
       expect(
         await page.evaluate(() => document.documentElement.scrollHeight - innerHeight),
       ).toBeLessThanOrEqual(1);
+      // Check actual visible rows, not merely that every clue exists in the DOM.
+      await page.locator('.cw-clue-panel section').evaluateAll((sections) => {
+        for (const section of sections) section.scrollTop = 0;
+      });
+      const columns = await page.locator('.cw-clue-panel section').evaluateAll((sections) =>
+        sections.map((section) => {
+          const bounds = section.getBoundingClientRect();
+          return {
+            height: bounds.height,
+            visible: [...section.querySelectorAll('.cw-clue')].filter((clue) => {
+              const box = clue.getBoundingClientRect();
+              return box.top >= bounds.top && box.bottom <= bounds.bottom;
+            }).length,
+          };
+        }),
+      );
+      for (const column of columns) {
+        expect(column.height).toBeGreaterThan(400);
+        expect(column.visible).toBeGreaterThanOrEqual(
+          Math.min(
+            3,
+            allClues.clues.filter((c) => c.direction === 'across').length,
+            allClues.clues.filter((c) => c.direction === 'down').length,
+          ),
+        );
+      }
       await page.screenshot({ path: info.outputPath('generated-' + width + '-desktop.png') });
+      await page.setViewportSize({ width: 800, height: 720 });
+      await expect(page.locator('.cw-clue-panel')).toBeVisible();
+      expect(
+        await page.locator('.cw-clue-panel').evaluate((e) => e.getBoundingClientRect().height),
+      ).toBeGreaterThan(400);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),
+      ).toBeLessThanOrEqual(1);
       const tv = await context.newPage();
       await tv.setViewportSize({ width: 1920, height: 1080 });
       await tv.goto('/tv/' + code);

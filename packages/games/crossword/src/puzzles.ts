@@ -51,7 +51,7 @@ export const PUZZLES: Puzzle[] = [
       'Long spans of history',
       'Messages sent from a phone',
       'A flippered animal that basks on rocks',
-      'Ready to fold, after a spin in the dryer',
+      'Ready to fold, after a tumble in the machine',
     ],
     down: [
       'A companion animal',

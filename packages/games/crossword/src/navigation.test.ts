@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { gridClues } from './grid';
-import { afterLetter } from './navigation';
+import { afterLetter, beforeSquare } from './navigation';
 const clues = gridClues(
   ['PEN##', 'ERAS#', 'ARIAS', '#SLIP', '##SLY'],
   ['pen', 'eras', 'arias', 'slip', 'sly'],
@@ -57,5 +57,20 @@ describe('automatic crossword navigation', () => {
     expect(afterLetter(clues, '1-across', letters(), 0, '')).toBeNull();
     const l = [...'PEN##ERAS#ARIAS#SLIP##SLY'].map((c) => (c === '#' ? '' : c));
     expect(afterLetter(clues, '9-across', l, 24, 'Y')).toBeNull();
+  });
+});
+describe('backspace on an empty square', () => {
+  it('steps back within the word, over revealed squares', () => {
+    expect(beforeSquare(clues, '6-across', 12)).toEqual({ cell: 11, direction: 'across' });
+    expect(beforeSquare(clues, '6-across', 12, [11])).toEqual({ cell: 10, direction: 'across' });
+    expect(beforeSquare(clues, '3-down', 12)).toEqual({ cell: 7, direction: 'down' });
+  });
+  it('goes to the end of the previous clue from the first square', () => {
+    expect(beforeSquare(clues, '4-across', 5)).toEqual({ cell: 2, direction: 'across' });
+    expect(beforeSquare(clues, '1-down', 0)).toEqual({ cell: 24, direction: 'across' });
+    expect(beforeSquare(clues, '1-across', 0)).toEqual({ cell: 24, direction: 'down' });
+  });
+  it('skips a previous clue that is entirely revealed', () => {
+    expect(beforeSquare(clues, '4-across', 5, [0, 1, 2])).toEqual({ cell: 24, direction: 'down' });
   });
 });

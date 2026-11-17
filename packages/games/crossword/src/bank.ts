@@ -100,7 +100,7 @@ MUG|A large cup
 NAP|A short sleep
 NET|A mesh used to catch fish
 NOD|Move your head to say yes
-NUT|A hard-shelled food such as a walnut
+NUT|A hard-shelled food such as an almond or pecan
 OAK|A tree that grows acorns
 OAR|A tool for rowing
 OAT|A grain used to make porridge
@@ -253,7 +253,7 @@ SEAT|A place to sit
 SEED|The part of a plant from which a new one grows
 SHIP|A large vessel at sea
 SHOE|Footwear below the ankle
-SILK|A fabric made from a silkworm's thread
+SILK|A smooth fabric spun by moth caterpillars
 SLIP|Lose your footing
 SNOW|Frozen flakes falling from clouds
 SOAP|Something used with water for washing
@@ -314,7 +314,7 @@ HORSE|An animal ridden with a saddle
 HOUSE|A building used as a home
 IVORY|The material of an elephant's tusks
 JELLY|A wobbly dessert
-JEWEL|A precious stone used in jewellery
+JEWEL|A precious stone set in a ring or crown
 KNIFE|A tool with a cutting blade
 LEMON|A sour yellow citrus fruit
 LIGHT|What makes things visible

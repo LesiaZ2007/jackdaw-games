@@ -44,6 +44,28 @@ describe('generated original crosswords', () => {
       expect(w.clue.length).toBeGreaterThan(3);
     }
   });
+  it('never gives the answer away inside its own clue', () => {
+    const named = PUZZLES.flatMap((p) => {
+      const flat = p.rows.join('');
+      return gridClues(p.rows, p.across, p.down).map((c) => ({
+        answer: c.cells.map((i) => flat[i]).join(''),
+        clue: c.text,
+      }));
+    });
+    const all = [
+      ...WORD_BANK,
+      ...CHALLENGE_WORDS,
+      ...Object.entries(HARD_CLUES).map(([answer, clue]) => ({ answer, clue })),
+      ...named,
+    ];
+    const giveaways = all.filter((w) =>
+      w.clue
+        .toUpperCase()
+        .replace(/[^A-Z]/g, '')
+        .includes(w.answer.length > 4 ? w.answer.slice(0, -1) : w.answer),
+    );
+    expect(giveaways).toEqual([]);
+  });
   for (const size of [5, 9, 13, 17, 21, 31])
     for (const difficulty of ['easy', 'normal', 'hard'] as const)
       it(

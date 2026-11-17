@@ -1,7 +1,21 @@
 'use client';
-import type { CSSProperties } from 'react';
+import type { ChangeEvent, CSSProperties } from 'react';
 import type { CrosswordView } from '../rules';
 import type { Clue } from '../grid';
+/**
+ * The letter a phone keyboard just typed into a square. There's no maxLength: with one,
+ * Android refuses a new letter whenever the caret sits after the old one instead of over it.
+ */
+export function typedLetter(event: ChangeEvent<HTMLInputElement>, previous: string) {
+  const value = event.currentTarget.value.toUpperCase();
+  const data = (event.nativeEvent as InputEvent).data;
+  const letter = !value
+    ? ''
+    : data
+      ? data.slice(-1).toUpperCase()
+      : (value.replace(previous, '') || value).slice(-1);
+  return /^[A-Z]?$/.test(letter) ? letter : null;
+}
 export function Board({
   view,
   active,
@@ -65,7 +79,6 @@ export function Board({
                 autoCorrect="off"
                 autoComplete="off"
                 spellCheck={false}
-                maxLength={1}
                 value={(letters ?? view.letters)[i]}
                 readOnly={view.revealed.includes(i)}
                 onFocus={(event) => {
@@ -74,8 +87,8 @@ export function Board({
                 }}
                 onClick={(event) => event.currentTarget.select()}
                 onChange={(event) => {
-                  const value = event.currentTarget.value.toUpperCase();
-                  if (/^[A-Z]?$/.test(value)) onEdit(i, value);
+                  const letter = typedLetter(event, (letters ?? view.letters)[i] ?? '');
+                  if (letter !== null) onEdit(i, letter);
                 }}
               />
             ) : (

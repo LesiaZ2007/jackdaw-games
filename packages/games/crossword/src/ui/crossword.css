@@ -742,3 +742,125 @@
     font-size: 16px !important;
   }
 }
+
+/* Grid ink. In dark mode the ink token is cream, so blocks and rules use darker table tones
+   rather than turning the grid into a negative. */
+.cw {
+  --cw-block: var(--ink);
+  --cw-line: var(--ink);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .cw {
+    --cw-block: var(--table);
+    --cw-line: color-mix(in srgb, var(--ink) 30%, var(--table));
+  }
+}
+:root[data-theme='dark'] .cw {
+  --cw-block: var(--table);
+  --cw-line: color-mix(in srgb, var(--ink) 30%, var(--table));
+}
+.cw .cw-board {
+  background: var(--cw-line);
+  border-color: var(--cw-line);
+}
+.cw .cw-cell {
+  border-color: var(--cw-line);
+}
+.cw .cw-block {
+  background: var(--cw-block);
+}
+
+.cw-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* Finished clues fade back, as in a printed solve. */
+.cw-clue--filled > span {
+  color: var(--ink-2);
+}
+.cw-clue--crossing {
+  box-shadow: inset 4px 0 var(--rule);
+}
+
+/* Tools share the row evenly, however many there are. */
+.cw-player .cw-tools {
+  display: grid;
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+}
+@media (min-width: 768px) {
+  /* The lists are always beside the grid here. */
+  .cw-player .cw-all-clues {
+    display: none;
+  }
+}
+
+/* The board sits in the middle of its space instead of leaving a gap above the clue bar. */
+.cw-player .cw-grid-wrap {
+  display: flex;
+}
+.cw-player .cw-board {
+  flex-shrink: 0;
+}
+
+/* On a fitted overview the squares are small, so the active word needs a stronger wash. */
+.cw-player--fit .cw-cell--word {
+  background: color-mix(in srgb, var(--azure) 28%, var(--paper));
+}
+.cw-player--fit .cw-cell--selected {
+  background: color-mix(in srgb, var(--azure) 50%, var(--paper));
+  box-shadow: none;
+  outline: 2px solid var(--azure);
+  outline-offset: -1px;
+  z-index: 1;
+}
+.cw-entry .cw-entry-input--error {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.cw-entry .cw-entry-input--revealed {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* TV: keep clear of the screen edges; letters fill their squares. */
+.cw-tv {
+  padding: 0 48px 16px;
+  box-sizing: border-box;
+}
+.cw-tv .cw-letter {
+  align-self: center;
+  padding: 18% 0 0;
+  font-size: clamp(24px, calc(55cqw / var(--cw-columns)), 96px);
+}
+.cw-tv--giant .cw-grid-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.cw-tv-window {
+  overflow: hidden;
+  flex-shrink: 0;
+  outline: 2px solid var(--cw-line);
+}
+.cw-tv .cw-clues {
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+}
+.cw-tv .cw-clues section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.cw-tv .cw-clue-list {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}

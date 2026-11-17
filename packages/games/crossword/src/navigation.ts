@@ -34,3 +34,28 @@ export function afterLetter(
   }
   return null;
 }
+const ordered = (clues: Clue[]) => [
+  ...clues.filter((c) => c.direction === 'across').sort((a, b) => a.number - b.number),
+  ...clues.filter((c) => c.direction === 'down').sort((a, b) => a.number - b.number),
+];
+/** Backspace on an empty or revealed square: the editable square before it, in the word or the clue before. */
+export function beforeSquare(
+  clues: Clue[],
+  activeId: string,
+  cell: number,
+  revealed: readonly number[] = [],
+): NextSquare | null {
+  const editable = (i: number) => !revealed.includes(i);
+  const active = clues.find((c) => c.id === activeId);
+  if (!active) return null;
+  const inWord = active.cells.slice(0, active.cells.indexOf(cell)).reverse().find(editable);
+  if (inWord !== undefined) return { cell: inWord, direction: active.direction };
+  const list = ordered(clues);
+  const at = list.findIndex((c) => c.id === active.id);
+  for (let step = 1; step < list.length; step++) {
+    const clue = list[(at - step + list.length) % list.length]!;
+    const last = [...clue.cells].reverse().find(editable);
+    if (last !== undefined) return { cell: last, direction: clue.direction };
+  }
+  return null;
+}

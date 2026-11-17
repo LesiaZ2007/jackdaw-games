@@ -187,6 +187,63 @@ test('crossword: two phones share a grid, recover on reload, and finish together
   for (const context of contexts) await context.close();
 });
 
+test('crossword: fast typing saves in batches, and blocks stay dark in both themes', async ({
+  browser,
+  request,
+}) => {
+  test.setTimeout(120000);
+  const key = 'batch-' + Date.now() + '-abcdefghijklmnop';
+  const { code } = await call(request, '/api/lobby', key, { name: 'Wren', gameId: 'crossword' });
+  const url = '/api/lobby/' + code;
+  await call(request, url, key, {
+    type: 'setOptions',
+    options: { puzzle: 'ink', help: true, size: 'mini', mode: 'cooperative' },
+  });
+  await call(request, url, key, { type: 'start', look: 'light' });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  await context.addInitScript((t) => localStorage.setItem('jackdaw:token', t), key);
+  const page = await context.newPage();
+  await page.goto('/r/' + code);
+  await page.addStyleTag({ content: 'nextjs-portal{display:none!important}' });
+  await expect(page.locator('[data-cell="10"]')).toBeVisible({ timeout: 60000 });
+  await page.locator('[data-cell="10"]').click();
+  await expect(page.locator('.cw-notice')).not.toContainText('Saving');
+  let writes = 0;
+  page.on('request', (r) => {
+    if (r.method() === 'POST' && r.url().includes('/api/lobby/' + code)) writes++;
+  });
+  await page.keyboard.type('arias', { delay: 20 });
+  await expect
+    .poll(async () => ((await call(request, url, key)).view as CrosswordView).letters.slice(10, 15))
+    .toEqual([...'ARIAS']);
+  expect(writes).toBeLessThanOrEqual(3);
+  // Typing the same letter again moves on without another write.
+  const before = writes;
+  await page.locator('[data-cell="10"]').click();
+  await page.keyboard.type('a');
+  await expect(page.locator('[data-cell="11"]')).toBeFocused();
+  await page.waitForTimeout(800);
+  expect(writes - before).toBeLessThanOrEqual(1);
+  // The filled clue fades and keeps a spoken "filled".
+  await expect(page.locator('.cw-clue--filled')).toContainText('Opera solos');
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('.cw-current b')).toHaveText('2 down');
+  for (const scheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.evaluate((t) => (document.documentElement.dataset.theme = t), scheme);
+    const [block, cell] = await page.evaluate(() =>
+      ['.cw-block', '.cw-cell'].map((s) => {
+        const [r, g, b] = getComputedStyle(document.querySelector(s)!)
+          .backgroundColor.match(/[\d.]+/g)!
+          .map(Number);
+        return r! + g! + b!;
+      }),
+    );
+    expect(block, scheme + ' blocks darker than squares').toBeLessThan(cell!);
+  }
+  await context.close();
+});
+
 for (const [size, width] of [
   ['mini', 5],
   ['standard', 9],
@@ -320,6 +377,36 @@ for (const [size, width] of [
       await tv.setViewportSize({ width: 1920, height: 1080 });
       await tv.goto('/tv/' + code);
       await expect(tv.locator('.cw-board')).toBeVisible();
+      // Every clue row shown on the TV fits inside its column; a cut-off row waits for its page.
+      await expect
+        .poll(() =>
+          tv.locator('.cw-clue-list').evaluateAll((lists) =>
+            lists.every((list) => {
+              const box = list.getBoundingClientRect();
+              const shown = [...list.querySelectorAll('.cw-clue')].filter(
+                (row) => getComputedStyle(row).visibility !== 'hidden',
+              );
+              return (
+                shown.length > 0 &&
+                shown.every((row) => {
+                  const r = row.getBoundingClientRect();
+                  return r.top >= box.top - 1 && r.bottom <= box.bottom + 1;
+                })
+              );
+            }),
+          ),
+        )
+        .toBe(true);
+      if (width > 13) {
+        // Big grids pan through a window of whole squares.
+        const window = await tv.locator('.cw-tv-window').evaluate((e) => ({
+          w: e.clientWidth,
+          h: e.clientHeight,
+        }));
+        expect(window.w % 44).toBe(0);
+        expect(window.h % 44).toBe(0);
+        expect(window.h).toBeGreaterThanOrEqual(44 * 8);
+      }
       await tv.screenshot({
         path: info.outputPath('generated-' + width + '-tv.png'),
         style: 'nextjs-portal{display:none!important}',

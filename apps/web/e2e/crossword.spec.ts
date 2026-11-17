@@ -155,7 +155,13 @@ test('crossword: two phones share a grid, recover on reload, and finish together
     ).toBeLessThanOrEqual(0);
     const grid = await tv.locator('.cw-board').boundingBox();
     expect(grid!.width).toBeGreaterThan(width! * 0.2);
-    expect(grid!.y + grid!.height).toBeLessThanOrEqual(height!);
+    // TvStage responds through ResizeObserver; wait for the new scale before measuring.
+    await expect
+      .poll(async () => {
+        const box = await tv.locator('.cw-board').boundingBox();
+        return box ? box.y + box.height : Infinity;
+      })
+      .toBeLessThanOrEqual(height!);
     const tvPicture = info.outputPath('crossword-tv-' + width + '.png');
     await tv.screenshot({ path: tvPicture, style: 'nextjs-portal{display:none!important}' });
     await info.attach('crossword-tv-' + width, { path: tvPicture, contentType: 'image/png' });

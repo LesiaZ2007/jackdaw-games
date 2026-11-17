@@ -237,3 +237,69 @@ describe('expanded puzzle options', () => {
     expect(act(s, action).letters[cell]).toBe('A');
   });
 });
+
+describe('batched typing and honest notices', () => {
+  it('applies a fill in order as one write, including two edits to the same square', () => {
+    const s = setup();
+    const a = act(s, {
+      type: 'fill',
+      edits: [
+        { cell: 0, letter: 'X', revision: 0 },
+        { cell: 1, letter: 'E', revision: 0 },
+        { cell: 0, letter: 'P', revision: 1 },
+      ],
+      direction: 'across',
+    });
+    expect(a.letters.slice(0, 3)).toEqual(['P', 'E', '']);
+    expect(a.revisions.slice(0, 2)).toEqual([2, 1]);
+    expect(a.cursors.wren).toMatchObject({ cell: 0, direction: 'across' });
+    expect(s.letters[0]).toBe('');
+  });
+  it('refuses the whole fill when one square is stale, revealed or a block', () => {
+    const s = edit(setup(), 1, 'E', 'rook');
+    const fill = (edits: { cell: number; letter: string; revision: number }[]) =>
+      act(s, { type: 'fill', edits });
+    expect(() =>
+      fill([
+        { cell: 0, letter: 'P', revision: 0 },
+        { cell: 1, letter: 'X', revision: 0 },
+      ]),
+    ).toThrow('teammate');
+    expect(() => fill([{ cell: 3, letter: 'P', revision: 0 }])).toThrow('white square');
+    const revealed = act(s, { type: 'reveal', cell: 2, direction: 'across', scope: 'letter' });
+    expect(() =>
+      act(revealed, { type: 'fill', edits: [{ cell: 2, letter: 'X', revision: 1 }] }),
+    ).toThrow('revealed');
+    expect(() => actionSchema.parse({ type: 'fill', edits: [] })).toThrow();
+  });
+  it('does not claim a reveal when the letter was already right', () => {
+    const s = act(edit(setup(), 0, 'P'), {
+      type: 'reveal',
+      cell: 0,
+      direction: 'across',
+      scope: 'letter',
+    });
+    expect(s.revealed).toEqual([]);
+    expect(s.notice).toBe('That letter is already correct.');
+  });
+  it('congratulates a race winner on winning, not on solving together', () => {
+    let s = crossword.setup({
+      playerIds: ['wren', 'rook'],
+      options: { puzzle: 'ink', size: 'mini', mode: 'race', help: false },
+      rng: rng(),
+      now: 1000,
+    });
+    expect(() => act(edit(s, 0, 'P'), { type: 'edit', cell: 0, letter: 'X', revision: 0 })).toThrow(
+      'That square changed',
+    );
+    const solution = s.puzzle.rows.join('');
+    s = act(s, {
+      type: 'fill',
+      edits: [...solution].flatMap((letter, cell) =>
+        letter === '#' ? [] : [{ cell, letter, revision: 0 }],
+      ),
+    });
+    expect(crossword.getResult(s)?.winners).toEqual(['wren']);
+    expect(crossword.getPlayerView(s, 'wren').notice).not.toContain('together');
+  });
+});

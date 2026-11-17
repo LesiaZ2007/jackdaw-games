@@ -38,7 +38,7 @@ export function crosswordBot(
   const candidates = v.clues.flatMap((clue) => {
     const known = answers(clue.text, clue.cells.length);
     if (!known.length) return [];
-    const word = known.sort(
+    const word = [...known].sort(
       (a, b) =>
         clue.cells.filter((cell, i) => v.letters[cell] === b[i]).length -
         clue.cells.filter((cell, i) => v.letters[cell] === a[i]).length,

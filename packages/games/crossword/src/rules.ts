@@ -14,12 +14,14 @@ export const optionsSchema = z.object({
 export type CrosswordOptions = z.input<typeof optionsSchema>;
 const cell = z.number().int().min(0).max(960);
 const direction = z.enum(['across', 'down']);
+const letter = z.string().regex(/^[A-Z]?$/);
+const revision = z.number().int().nonnegative();
 export const actionSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('edit'), cell, letter, revision, direction: direction.optional() }),
+  /** Several squares typed while the previous save was in flight, applied in order as one write. */
   z.object({
-    type: z.literal('edit'),
-    cell,
-    letter: z.string().regex(/^[A-Z]?$/),
-    revision: z.number().int().nonnegative(),
+    type: z.literal('fill'),
+    edits: z.array(z.object({ cell, letter, revision })).min(1).max(64),
     direction: direction.optional(),
   }),
   z.object({ type: z.literal('focus'), cell, direction }),
@@ -234,8 +236,9 @@ export const crossword: GameModule<
     const root = s;
     if (s.mode === 'race') s = { ...s, ...s.boards[playerId]! };
     const solution = [...s.puzzle.rows.join('')];
-    if (action.cell >= solution.length || solution[action.cell] === '#')
-      throw new GameError('BAD_CELL', 'Choose a white square.');
+    for (const target of action.type === 'fill' ? action.edits.map((e) => e.cell) : [action.cell])
+      if (target >= solution.length || solution[target] === '#')
+        throw new GameError('BAD_CELL', 'Choose a white square.');
     if (action.type === 'focus')
       return {
         ...root,
@@ -250,26 +253,32 @@ export const crossword: GameModule<
       revisions: [...s.revisions],
       authors: [...s.authors],
     };
-    if (action.type === 'edit') {
-      if (s.revealed.includes(action.cell))
-        throw new GameError('REVEALED', 'That letter has been revealed.');
-      if (action.revision !== s.revisions[action.cell])
-        throw new GameError(
-          'STALE_CELL',
-          'A teammate just changed that square. Check their letter and try again.',
-        );
-      next.letters[action.cell] = action.letter;
-      next.revisions[action.cell] = s.revisions[action.cell]! + 1;
+    if (action.type === 'edit' || action.type === 'fill') {
+      const edits = action.type === 'fill' ? action.edits : [action];
+      for (const e of edits) {
+        if (s.revealed.includes(e.cell))
+          throw new GameError('REVEALED', 'That letter has been revealed.');
+        if (e.revision !== next.revisions[e.cell])
+          throw new GameError(
+            'STALE_CELL',
+            s.mode === 'race'
+              ? 'That square changed. Try again.'
+              : 'A teammate just changed that square. Check their letter and try again.',
+          );
+        next.letters[e.cell] = e.letter;
+        next.revisions[e.cell] = next.revisions[e.cell]! + 1;
+        next.authors[e.cell] = e.letter ? playerId : null;
+      }
+      const last = edits[edits.length - 1]!.cell;
       next.cursors = {
         ...s.cursors,
         [playerId]: {
-          cell: action.cell,
+          cell: last,
           direction: action.direction ?? s.cursors[playerId]?.direction ?? 'across',
           at: now,
         },
       };
-      next.authors[action.cell] = action.letter ? playerId : null;
-      next.errors = s.errors.filter((i) => i !== action.cell);
+      next.errors = s.errors.filter((i) => !edits.some((e) => e.cell === i));
       next.notice = '';
     } else {
       if (!s.help) throw new GameError('HELP_OFF', 'Checks and reveals are off for this puzzle.');
@@ -300,6 +309,7 @@ export const crossword: GameModule<
             : 'The filled letters are correct. Some squares are still empty.';
       } else {
         const revealed = new Set(s.revealed);
+        const before = revealed.size;
         for (const i of cells) {
           if (s.letters[i] === solution[i]) continue;
           next.letters[i] = solution[i]!;
@@ -309,7 +319,12 @@ export const crossword: GameModule<
         }
         next.revealed = [...revealed];
         next.errors = s.errors.filter((i) => !cells.includes(i));
-        next.notice = 'Revealed letters are underlined. They stay in the grid.';
+        next.notice =
+          revealed.size > before
+            ? 'Revealed letters are underlined. They stay in the grid.'
+            : action.scope === 'letter'
+              ? 'That letter is already correct.'
+              : 'Those letters are already correct.';
       }
     }
     if (solution.every((letter, i) => letter === '#' || next.letters[i] === letter))
@@ -317,7 +332,10 @@ export const crossword: GameModule<
         ...next,
         finishedAt: now,
         errors: [],
-        notice: 'Crossword complete. You solved it together!',
+        notice:
+          s.mode === 'race'
+            ? 'Crossword complete. Yours was the first correct grid!'
+            : 'Crossword complete. You solved it together!',
       };
     else if (solution.every((letter, i) => letter === '#' || next.letters[i]))
       next.notice = 'The grid is full, but something is not quite right. Revisit your crossings.';

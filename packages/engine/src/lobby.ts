@@ -968,8 +968,22 @@ function nextBotAt(lobby: Lobby, ctx: Pick<Ctx, 'games'> & { now?: number }): nu
   const session = lobby.session;
   if (lobby.status !== 'in_game' || !session) return null;
   const game = ctx.games[session.gameId];
-  // A real-time game's bots move on whatever read comes along (see runRealTimeBots).
-  if (!game?.bot || game.realTime || !lobby.players.some((p) => p.bot)) return null;
+  if (!game?.bot || !lobby.players.some((p) => p.bot)) return null;
+  // Polling only enters runTimers when a deadline is due. Real-time bots need
+  // their own deadline even in a game with no clock or recent human action.
+  if (game.realTime) {
+    const bots = new Set(lobby.players.filter((p) => p.bot).map((p) => p.id));
+    const failed = session.botFailed?.seq === session.seq ? session.botFailed.ids : [];
+    const due = session.playerIds
+      .filter((id) => bots.has(id) && !failed.includes(id))
+      .map((id) => {
+        const since = session.botAt?.[id] ?? session.startedAt;
+        return since + ownBotDelay(game, session, id, since);
+      });
+    if (!due.length) return null;
+    const at = Math.min(...due);
+    return botHasMoveAt(lobby, ctx, Math.max(at, ctx.now ?? 0)) ? at : null;
+  }
   const at = (session.movedAt ?? session.startedAt) + botDelay(game, session);
   return botHasMoveAt(lobby, ctx, Math.max(at, ctx.now ?? 0)) ? at : null;
 }

@@ -63,4 +63,4 @@ export const PUZZLES: Puzzle[] = [
   },
 ];
 
-export { generatePuzzle } from './generator';
+export { generatePuzzle, withDifficulty } from './generator';

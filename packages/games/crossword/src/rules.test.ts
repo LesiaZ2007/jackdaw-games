@@ -208,3 +208,32 @@ describe('private crossword races', () => {
     ).toContain('5 × 5');
   });
 });
+
+describe('expanded puzzle options', () => {
+  it('keeps old lobbies valid and accepts edits past the old grid limit', () => {
+    expect(
+      crossword.optionsSchema.parse({
+        puzzle: 'random',
+        size: 'giant',
+        mode: 'cooperative',
+        help: true,
+      }).difficulty,
+    ).toBe('normal');
+    const s = crossword.setup({
+      playerIds: ['wren'],
+      options: {
+        puzzle: 'random',
+        size: 'giant',
+        mode: 'cooperative',
+        help: true,
+        difficulty: 'hard',
+      },
+      rng: rng(),
+      now: 1000,
+    });
+    expect(s.puzzle.rows).toHaveLength(31);
+    const cell = [...s.puzzle.rows.join('')].findIndex((c, i) => i > 224 && c !== '#');
+    const action = actionSchema.parse({ type: 'edit', cell, letter: 'A', revision: 0 });
+    expect(act(s, action).letters[cell]).toBe('A');
+  });
+});

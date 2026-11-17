@@ -5,6 +5,7 @@ import type { Reaction } from '@jackdaw/engine';
 import type { CrosswordAction, CrosswordView } from '../rules';
 import type { Clue, Direction } from '../grid';
 import { Board } from './board';
+import { afterLetter } from '../navigation';
 import './crossword.css';
 function useClock(view: CrosswordView, now: () => number) {
   const [time, setTime] = useState(() => now());
@@ -99,22 +100,27 @@ function Masthead({ view, elapsed }: { view: CrosswordView; elapsed: number }) {
     </header>
   );
 }
+function cluePageSize(view: CrosswordView) {
+  return view.width > 13 || view.clues.some((c) => c.text.length > 50) ? 4 : 6;
+}
 function Clues({
   view,
   active,
   onChoose,
   page,
+  pageSize = cluePageSize(view),
 }: {
   view: CrosswordView;
   active?: Clue;
   onChoose?: (clue: Clue) => void;
   page?: number;
+  pageSize?: number;
 }) {
   return (
     <div className="cw-clues">
       {(['across', 'down'] as const).map((direction) => {
         const clues = view.clues.filter((c) => c.direction === direction);
-        const pages = Math.max(1, Math.ceil(clues.length / 6));
+        const pages = Math.max(1, Math.ceil(clues.length / pageSize));
         const current = (page ?? 0) % pages;
         return (
           <section key={direction}>
@@ -123,7 +129,7 @@ function Clues({
               {page !== undefined && pages > 1 ? ' · ' + (current + 1) + '/' + pages : ''}
             </h2>
             {clues
-              .filter((_c, i) => page === undefined || Math.floor(i / 6) === current)
+              .filter((_c, i) => page === undefined || Math.floor(i / pageSize) === current)
               .map((c) => (
                 <button
                   type="button"
@@ -186,6 +192,16 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     viewport.addEventListener('resize', resize);
     return () => viewport.removeEventListener('resize', resize);
   }, []);
+  const fitted = view.width > 5;
+  const [cluePage, setCluePage] = useState(0);
+  const pendingFocus = useRef(false);
+  useEffect(() => {
+    if (!pendingFocus.current) return;
+    pendingFocus.current = false;
+    rootRef.current
+      ?.querySelector<HTMLInputElement>('[data-cell="' + selected + '"]')
+      ?.focus({ preventScroll: true });
+  }, [selected, direction]);
   const active =
     view.clues.find((c) => c.direction === direction && c.cells.includes(selected)) ??
     view.clues.find((c) => c.cells.includes(selected)) ??
@@ -224,12 +240,13 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     const validDirection = view.clues.some((c) => c.direction === dir && c.cells.includes(cell))
       ? dir
       : view.clues.find((c) => c.cells.includes(cell))!.direction;
+    pendingFocus.current = true;
     selectedRef.current = cell;
     setSelected(cell);
     setDirection(validDirection);
     setConfirmReveal(false);
-    boardRef.current?.querySelectorAll<HTMLInputElement>('.cw-input').forEach((button) => {
-      if (button.getAttribute('data-cell') === String(cell)) button.focus();
+    rootRef.current?.querySelectorAll<HTMLInputElement>('.cw-input').forEach((button) => {
+      if (button.getAttribute('data-cell') === String(cell)) button.focus({ preventScroll: true });
     });
     if (announce) enqueue({ type: 'focus', cell, direction: validDirection });
   }
@@ -244,16 +261,24 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
   }
   function edit(letter: string, cell = selected) {
     if (view.revealed.includes(cell) || view.finishedAt !== null) return;
+    const before = view.letters.map((letter, i) =>
+      draftRef.current[i] && draftRef.current[i]!.revision > view.revisions[i]!
+        ? draftRef.current[i]!.letter
+        : letter,
+    );
+    const entryClue =
+      view.clues.find((c) => c.id === active.id && c.cells.includes(cell)) ??
+      view.clues.find((c) => c.direction === direction && c.cells.includes(cell)) ??
+      view.clues.find((c) => c.cells.includes(cell))!;
     const pending = draftRef.current[cell];
     const revision = Math.max(view.revisions[cell]!, pending?.revision ?? 0);
     const entry = { letter, revision: revision + 1 };
     draftRef.current = { ...draftRef.current, [cell]: entry };
     setDraft(draftRef.current);
     setFailure('');
-    enqueue({ type: 'edit', cell, letter, revision, direction: active.direction });
-    const at = active.cells.indexOf(cell);
-    const next = active.cells.slice(at + 1).find((i) => !view.revealed.includes(i));
-    if (letter && next !== undefined) focus(next, active.direction, false);
+    enqueue({ type: 'edit', cell, letter, revision, direction: entryClue.direction });
+    const next = afterLetter(view.clues, entryClue.id, before, cell, letter, view.revealed);
+    if (next) focus(next.cell, next.direction, false);
   }
   function erase() {
     const at = active.cells.indexOf(selected);
@@ -285,6 +310,10 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
       event.preventDefault();
       const dir: Direction =
         event.key === 'ArrowLeft' || event.key === 'ArrowRight' ? 'across' : 'down';
+      if (dir !== active.direction) {
+        focus(selected, dir);
+        return;
+      }
       const step =
         event.key === 'ArrowLeft'
           ? -1
@@ -308,7 +337,11 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     }
   }
   return (
-    <div className="cw cw-player" onKeyDown={keyDown} ref={rootRef}>
+    <div
+      className={'cw cw-player' + (fitted ? ' cw-player--fit' : '')}
+      onKeyDown={keyDown}
+      ref={rootRef}
+    >
       <Masthead view={view} elapsed={elapsed} />
       <Solvers view={view} players={players} reactions={reactions} time={time} me={me} />
       <div className="cw-workspace">
@@ -321,14 +354,26 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
             onSelect={(cell) => {
               if (cell !== selectedRef.current) focus(cell);
             }}
-            onEdit={(cell, letter) => edit(letter, cell)}
+            onEdit={fitted ? undefined : (cell, letter) => edit(letter, cell)}
           />
         </div>
         <div className={'cw-clue-panel' + (showClues ? ' cw-clue-panel--open' : '')}>
           <button type="button" className="cw-close" onClick={() => setShowClues(false)}>
             Back to grid
           </button>
-          <Clues view={view} active={active} onChoose={choose} />
+          <Clues view={view} active={active} onChoose={choose} page={cluePage} pageSize={1} />
+          <div className="cw-clue-pages">
+            <button
+              type="button"
+              onClick={() => setCluePage((p) => Math.max(0, p - 1))}
+              disabled={cluePage === 0}
+            >
+              Previous clues
+            </button>
+            <button type="button" onClick={() => setCluePage((p) => p + 1)}>
+              Next clues
+            </button>
+          </div>
         </div>
       </div>
       <div className="cw-current">
@@ -351,6 +396,43 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
           ›
         </button>
       </div>
+      {fitted && (
+        <div className="cw-entry" role="group" aria-label="Active word">
+          {active.cells.map((cell) => (
+            <input
+              key={cell}
+              className={
+                'cw-input cw-entry-input' + (cell === selected ? ' cw-entry-input--selected' : '')
+              }
+              data-cell={cell}
+              aria-label={
+                'Row ' +
+                (Math.floor(cell / view.width) + 1) +
+                ', column ' +
+                ((cell % view.width) + 1) +
+                ': ' +
+                (letters[cell] || 'empty')
+              }
+              inputMode="text"
+              autoCapitalize="characters"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={1}
+              value={letters[cell]}
+              readOnly={view.revealed.includes(cell)}
+              onFocus={(e) => {
+                e.currentTarget.select();
+                if (cell !== selectedRef.current) focus(cell);
+              }}
+              onChange={(e) => {
+                const letter = e.currentTarget.value.toUpperCase();
+                if (/^[A-Z]?$/.test(letter)) edit(letter, cell);
+              }}
+            />
+          ))}
+        </div>
+      )}
       <div className="cw-tools">
         <button type="button" onClick={() => setShowClues(true)}>
           All clues
@@ -395,23 +477,57 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
     </div>
   );
 };
+function TvBoard({ view }: { view: CrosswordView }) {
+  const viewport = useRef<HTMLDivElement>(null);
+  const lastPan = useRef(0);
+  const cursor = Object.values(view.cursors).sort((a, b) => b.at - a.at)[0];
+  const cell = cursor?.cell ?? view.clues[0]?.cells[0] ?? 0;
+  useEffect(() => {
+    const root = viewport.current;
+    if (!root || view.width <= 13) return;
+    if (view.finishedAt !== null) {
+      let page = 0;
+      const count = Math.ceil(view.width / 12);
+      const turn = () => {
+        root.scrollTo({ left: (page % count) * 12 * 44, top: Math.floor(page / count) * 12 * 44 });
+        page = (page + 1) % (count * count);
+      };
+      turn();
+      const id = setInterval(turn, 8000);
+      return () => clearInterval(id);
+    }
+    const pan = () => {
+      root.scrollTo({
+        left: Math.max(0, (cell % view.width) * 44 - root.clientWidth / 2),
+        top: Math.max(0, Math.floor(cell / view.width) * 44 - root.clientHeight / 2),
+      });
+      lastPan.current = Date.now();
+    };
+    const delay = Math.max(0, 5000 - (Date.now() - lastPan.current));
+    const id = setTimeout(pan, delay);
+    return () => clearTimeout(id);
+  }, [cell, view.width, view.finishedAt]);
+  return (
+    <div className="cw-grid-wrap" ref={viewport}>
+      <Board view={view} />
+    </div>
+  );
+}
 export const TvScreen: GameUi['TvScreen'] = ({ tableView: raw, players, now, reactions }) => {
   const view = raw as CrosswordView;
   const { time, elapsed } = useClock(view, now);
   const pages = Math.max(
     1,
     ...(['across', 'down'] as const).map((d) =>
-      Math.ceil(view.clues.filter((c) => c.direction === d).length / 6),
+      Math.ceil(view.clues.filter((c) => c.direction === d).length / cluePageSize(view)),
     ),
   );
   const page = Math.floor(elapsed / 15) % pages;
   return (
-    <div className="cw cw-tv">
+    <div className={'cw cw-tv' + (view.width > 13 ? ' cw-tv--giant' : '')}>
       <Masthead view={view} elapsed={elapsed} />
       <div className="cw-workspace">
-        <div className="cw-grid-wrap">
-          <Board view={view} />
-        </div>
+        <TvBoard view={view} />
         <Clues view={view} page={page} />
       </div>
       <Solvers view={view} players={players} reactions={reactions} time={time} />
@@ -419,6 +535,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView: raw, players, now, rea
         {view.mode === 'race'
           ? 'Race grids stay private. Compare the progress counts below.'
           : view.notice || 'Solve together on your phones.'}
+        {view.width > 13 ? ' · Board follows the latest entry.' : ''}
         {pages > 1 ? ' · Clues turn every 15 seconds.' : ''}
       </p>
     </div>
@@ -427,7 +544,7 @@ export const TvScreen: GameUi['TvScreen'] = ({ tableView: raw, players, now, rea
 export const Reveal: NonNullable<GameUi['Reveal']> = ({ result }) => {
   const view = result.reveal as CrosswordView;
   return (
-    <div className="cw cw-final">
+    <div className={'cw cw-final' + (view.width > 13 ? ' cw-final--giant' : '')}>
       <h2>
         {view.title} · {view.mode === 'race' ? 'race finished' : 'solved together'}
       </h2>
@@ -443,11 +560,9 @@ export const Reveal: NonNullable<GameUi['Reveal']> = ({ result }) => {
 export const TvReveal: NonNullable<GameUi['TvReveal']> = ({ result }) => {
   const view = result.reveal as CrosswordView;
   return (
-    <div className="cw cw-tv cw-final">
+    <div className={'cw cw-tv cw-final' + (view.width > 13 ? ' cw-tv--giant' : '')}>
       <h2>{view.title}</h2>
-      <div className="cw-grid-wrap">
-        <Board view={view} />
-      </div>
+      <TvBoard view={view} />
     </div>
   );
 };

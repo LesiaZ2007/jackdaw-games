@@ -21,6 +21,8 @@ function words(key: string) {
 
 /** The chosen options in one line, e.g. "Rounds: 3". Mirrors what OptionsPanel shows. */
 export function optionsSummary(schema: ZodType, options: Record<string, unknown>): string {
+  const parsed = schema.safeParse(options);
+  if (parsed.success) options = parsed.data as Record<string, unknown>;
   const shape = (schema as unknown as { shape?: Record<string, { description?: string }> }).shape;
   if (!shape) return '';
   return Object.entries(shape)

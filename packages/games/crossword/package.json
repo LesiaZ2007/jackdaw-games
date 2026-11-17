@@ -12,6 +12,10 @@
     "#puzzles": {
       "browser": "./src/puzzles.none.ts",
       "default": "./src/puzzles.ts"
+    },
+    "#clue-bank": {
+      "browser": "./src/knowledge.none.ts",
+      "default": "./src/knowledge.ts"
     }
   },
   "scripts": {

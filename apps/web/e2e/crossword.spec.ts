@@ -56,8 +56,13 @@ test('crossword: two phones share a grid, recover on reload, and finish together
   });
   await wren!.locator('[data-cell="0"]').click();
   await expect(wren!.locator('[data-cell="0"]')).toHaveAttribute('inputmode', 'text');
+  await wren!.keyboard.press('ArrowDown');
+  await expect(wren!.locator('.cw-current b')).toHaveText('1 down');
+  await wren!.keyboard.press('ArrowRight');
+  await expect(wren!.locator('.cw-current b')).toHaveText('1 across');
   await wren!.keyboard.type('p');
   await wren!.keyboard.type('en', { delay: 40 });
+  await expect(wren!.locator('[data-cell="5"]')).toBeFocused();
   await expect(rook!.getByRole('textbox', { name: 'Row 1, column 3: N', exact: true })).toBeVisible(
     {
       timeout: 20000,
@@ -66,6 +71,7 @@ test('crossword: two phones share a grid, recover on reload, and finish together
   await rook!.locator('[data-cell="5"]').click();
   await expect(rook!.locator('[data-cell="5"]')).toBeFocused();
   await rook!.keyboard.type('eras', { delay: 30 });
+  await expect(rook!.locator('[data-cell="10"]')).toBeFocused();
   await expect(wren!.getByRole('textbox', { name: 'Row 2, column 4: S', exact: true })).toBeVisible(
     {
       timeout: 20000,
@@ -179,13 +185,12 @@ for (const [size, width] of [
   ['mini', 5],
   ['standard', 9],
   ['large', 13],
+  ['extraLarge', 17],
+  ['sunday', 21],
+  ['giant', 31],
 ] as const)
   test(
-    'crossword: generated ' +
-      width +
-      ' × ' +
-      width +
-      ' uses the native keyboard and a scrollable phone grid',
+    'crossword: generated ' + width + ' × ' + width + ' uses the native keyboard and a fitted grid',
     async ({ browser, request }, info) => {
       test.setTimeout(180000);
       const key = 'size-' + size + '-' + Date.now() + '-abcdefghijklmnop';
@@ -196,7 +201,7 @@ for (const [size, width] of [
       const url = '/api/lobby/' + code;
       await call(request, url, key, {
         type: 'setOptions',
-        options: { puzzle: 'random', size, mode: 'cooperative', help: true },
+        options: { puzzle: 'random', size, mode: 'cooperative', help: true, difficulty: 'hard' },
       });
       const started = await call(request, url, key, { type: 'start', look: 'light' });
       const view = started.tableView as CrosswordView;
@@ -210,6 +215,8 @@ for (const [size, width] of [
       await context.addInitScript((t) => localStorage.setItem('jackdaw:token', t), key);
       const page = await context.newPage();
       await page.goto('/r/' + code);
+      // Next's development insight badge covers the bottom-left phone control.
+      await page.addStyleTag({ content: 'nextjs-portal{display:none!important}' });
       const input = page.locator('.cw-input').first();
       await expect(input).toBeVisible({ timeout: 60000 });
       await expect(input).toHaveAttribute('inputmode', 'text');
@@ -234,11 +241,33 @@ for (const [size, width] of [
       if (width > 5)
         expect(
           await page.locator('.cw-grid-wrap').evaluate((e) => e.scrollWidth > e.clientWidth),
-        ).toBe(true);
+        ).toBe(false);
+      expect(
+        await page.evaluate(() => document.documentElement.scrollHeight - innerHeight),
+      ).toBeLessThanOrEqual(1);
+      if (width > 5) {
+        await page.getByRole('button', { name: 'All clues', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Next clues', exact: true })).toBeVisible();
+        await page.getByRole('button', { name: 'Next clues', exact: true }).click();
+        await page.getByRole('button', { name: 'Back to grid', exact: true }).click();
+      }
       await page.screenshot({
         path: info.outputPath('generated-' + width + '-phone.png'),
         style: 'nextjs-portal{display:none!important}',
       });
+      await page.setViewportSize({ width: 1280, height: 720 });
+      if (width > 5) {
+        const fit = await page.locator('.cw-grid-wrap').evaluate((e) => ({
+          x: e.scrollWidth - e.clientWidth,
+          y: e.scrollHeight - e.clientHeight,
+        }));
+        expect(fit.x).toBeLessThanOrEqual(1);
+        expect(fit.y).toBeLessThanOrEqual(1);
+        expect(
+          await page.evaluate(() => document.documentElement.scrollHeight - innerHeight),
+        ).toBeLessThanOrEqual(1);
+      }
+      await page.screenshot({ path: info.outputPath('generated-' + width + '-desktop.png') });
       const tv = await context.newPage();
       await tv.setViewportSize({ width: 1920, height: 1080 });
       await tv.goto('/tv/' + code);
@@ -304,3 +333,54 @@ test('crossword race: separate native-input grids, private letters and one winne
   expect(ended.results?.winners).toEqual([ended.me]);
   for (const c of contexts) await c.close();
 });
+
+for (const activeHuman of [false, true])
+  for (const mode of ['cooperative', 'race'] as const)
+    test(
+      'crossword bots progress ' +
+        (activeHuman ? 'during human activity: ' : 'while humans watch: ') +
+        mode,
+      async ({ request }) => {
+        test.setTimeout(90000);
+        const key = 'bot-' + mode + '-' + Date.now() + '-abcdefghijklmnop';
+        const { code } = await call(request, '/api/lobby', key, {
+          name: 'Wren',
+          gameId: 'crossword',
+        });
+        const url = '/api/lobby/' + code;
+        await call(request, url, key, { type: 'addBot' });
+        await call(request, url, key, {
+          type: 'setOptions',
+          options: {
+            puzzle: activeHuman ? 'ink' : 'random',
+            size: activeHuman ? 'mini' : 'giant',
+            mode,
+            help: false,
+            difficulty: 'hard',
+          },
+        });
+        await call(request, url, key, { type: 'start', look: 'light' });
+        await expect
+          .poll(
+            async () => {
+              const s = await call(request, url, key);
+              if (activeHuman)
+                await call(request, url, key, {
+                  type: 'action',
+                  sessionId: s.session!.id,
+                  seq: s.session!.seq,
+                  action: { type: 'focus', cell: 24, direction: 'across' },
+                });
+              const v = s.view as CrosswordView;
+              const bot = v.players.find((p) => p !== s.me)!;
+              if (mode === 'race') {
+                expect(v.letters.every((l) => !l)).toBe(true);
+                expect((s.tableView as CrosswordView).letters.every((l) => !l)).toBe(true);
+              }
+              return v.progress[bot] ?? 0;
+            },
+            { timeout: 45000, intervals: [700] },
+          )
+          .toBeGreaterThan(0);
+      },
+    );

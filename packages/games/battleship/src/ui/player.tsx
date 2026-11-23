@@ -22,7 +22,7 @@ import {
   type Placement,
   type ShipId,
 } from '../fleet';
-import type { BattleshipAction, BattleshipPlayerView, Mark, OwnShip } from '../rules';
+import type { BattleshipAction, BattleshipPlayerView, Mark, OwnShip, Wreck } from '../rules';
 import { Chart, hullsFromShips, hullsFromWrecks, HULL, ShipArt } from './chart';
 import { feltMoment, useArrival, useDelayedFelt } from './motion';
 import './battleship.css';
@@ -306,7 +306,14 @@ export const PlayerScreen: GameUi['PlayerScreen'] = ({
             </Plaque>
           </div>
         ) : (
-          <FleetStrip ships={v.ships} marks={v.boards[v.me]?.cells ?? []} />
+          <div className="bs-strips">
+            <div className={showFleet ? '' : 'is-back'}>
+              <FleetStrip label="Your ships" ships={ownStrip(v)} />
+            </div>
+            <div className={showFleet ? 'is-back' : ''}>
+              <FleetStrip label="Their ships" ships={foeStrip(v.boards[foe]?.wrecks ?? [])} />
+            </div>
+          </div>
         )}
       </footer>
 
@@ -378,29 +385,59 @@ function Clock({ at, now }: { at: number | null; now: () => number }) {
 
 export { Clock };
 
+interface StripShip {
+  id: ShipId;
+  name: string;
+  /** One entry per square of the ship, true where it was hit. */
+  pips: boolean[];
+  sunk: boolean;
+}
+
+/** Your ships, with every hit they've taken. */
+function ownStrip(v: BattleshipPlayerView): StripShip[] {
+  const marks: readonly Mark[] = v.boards[v.me]?.cells ?? [];
+  return v.ships.map((ship) => ({
+    id: ship.id,
+    name: ship.name,
+    pips: ship.cells.map((cell) => marks[cell] === 'hit' || marks[cell] === 'sunk'),
+    sunk: ship.sunk,
+  }));
+}
+
+/** Their ships: you only learn which ones are sunk, so a ship still afloat shows no hits. */
+function foeStrip(wrecks: readonly Wreck[]): StripShip[] {
+  const sunk = new Set(wrecks.map((w) => w.id));
+  return SHIPS.map((spec) => ({
+    id: spec.id,
+    name: spec.name,
+    pips: Array.from({ length: spec.len }, () => sunk.has(spec.id)),
+    sunk: sunk.has(spec.id),
+  }));
+}
+
 /** Each ship drawn to scale, with a square for each of its squares, red where it was hit. */
-function FleetStrip({ ships, marks }: { ships: OwnShip[]; marks: readonly Mark[] }) {
+function FleetStrip({ label, ships }: { label: string; ships: StripShip[] }) {
   if (ships.length === 0) return null;
   return (
-    <ul className="bs-strip" aria-label="Your ships">
-      {ships.map((ship) => (
-        <li
-          key={ship.id}
-          className={ship.sunk ? 'is-sunk' : ''}
-          style={{ '--hull': HULL[ship.id] } as CSSProperties}
-          aria-label={`${ship.name}, ${ship.sunk ? 'sunk' : ship.hits ? `${ship.hits} hit` : 'afloat'}`}
-        >
-          <ShipArt id={ship.id} />
-          <span className="bs-strip__pips" aria-hidden="true">
-            {ship.cells.map((cell) => (
-              <span
-                key={cell}
-                className={marks[cell] === 'hit' || marks[cell] === 'sunk' ? 'is-hit' : ''}
-              />
-            ))}
-          </span>
-        </li>
-      ))}
+    <ul className="bs-strip" aria-label={label}>
+      {ships.map((ship) => {
+        const hits = ship.pips.filter(Boolean).length;
+        return (
+          <li
+            key={ship.id}
+            className={ship.sunk ? 'is-sunk' : ''}
+            style={{ '--hull': HULL[ship.id] } as CSSProperties}
+            aria-label={`${ship.name}, ${ship.sunk ? 'sunk' : hits ? `${hits} hit` : 'afloat'}`}
+          >
+            <ShipArt id={ship.id} />
+            <span className="bs-strip__pips" aria-hidden="true">
+              {ship.pips.map((hit, i) => (
+                <span key={i} className={hit ? 'is-hit' : ''} />
+              ))}
+            </span>
+          </li>
+        );
+      })}
     </ul>
   );
 }

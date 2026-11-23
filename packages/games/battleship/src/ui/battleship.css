@@ -273,10 +273,26 @@
   background: var(--gules);
 }
 
+/* Phone: the strip for the chart on show. */
+.bs-strips {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.bs-strips > .is-back {
+  display: none;
+}
+
 /* Laptop: both charts, the switch steps aside. */
 @container game (min-width: 740px) {
   .bs-switch {
     display: none;
+  }
+  .bs-strips {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+  .bs-strips > .is-back {
+    display: block;
   }
   .bs-boards {
     grid-template-columns: 1fr 1fr;

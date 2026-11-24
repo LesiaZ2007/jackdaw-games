@@ -2,9 +2,13 @@ import {
   GameError,
   type GameModule,
   type GameResult,
+  type GameStory,
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type StoryFact,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import { DEV_DECK, RESOURCE_COUNT, makeBoard, type BoardStyle } from './board';
@@ -243,6 +247,22 @@ export interface AwardChange {
   to: string | null;
 }
 
+/** What the stats page remembers while the game is played. All small numbers, no board copies. */
+export interface CatanStats {
+  /** Victory points after each full round; index 0 is the start of round 1. */
+  trail: Record<string, number[]>;
+  /** How many times each dice total (index 2 to 12) has been rolled. */
+  dice: number[];
+  /** Cards each player took from the dice. */
+  gained: Record<string, number>;
+  /** Robberies: thief, then victim, then how many times. */
+  robbed: Record<string, Record<string, number>>;
+  /** Trades each player made with another player. */
+  trades: Record<string, number>;
+  /** Longest Road and Largest Army changing hands. */
+  awards: { kind: AwardChange['kind']; from: string | null; to: string | null; round: number }[];
+}
+
 export interface CatanState {
   size: Size;
   board: Board;
@@ -308,6 +328,8 @@ export interface CatanState {
   owedNext?: Phase;
   /** Where play goes once everyone has discarded (absent: the robber). */
   afterDiscard?: 'robber' | 'main';
+  /** For the stats page (absent in older saves). */
+  stats?: CatanStats;
 }
 
 export interface CatanTableView {
@@ -404,6 +426,66 @@ export function logged(s: CatanState, text: string, who?: string, chip: Chip = {
   return { ...s, log: [...s.log, ev].slice(-LOG_KEEP) };
 }
 
+const freshStats = (): CatanStats => ({
+  trail: {},
+  dice: Array<number>(13).fill(0),
+  gained: {},
+  robbed: {},
+  trades: {},
+  awards: [],
+});
+
+/** The stats so far; saves from before they existed start with none. */
+function statsOf(s: CatanState): CatanStats {
+  return s.stats ?? freshStats();
+}
+
+/**
+ * Notes what a move changed for the stats page, by comparing the state before and after:
+ * points at the end of each round, dice rolled, cards taken from the dice, robberies and awards.
+ */
+export function trackStats(prev: CatanState, next: CatanState): CatanState {
+  const old = statsOf(next);
+  const st: CatanStats = { ...old };
+  let changed = !next.stats;
+  if (prev.phase === 'setup' && next.phase !== 'setup') {
+    st.trail = Object.fromEntries(next.seats.map((p) => [p, [points(next, p, false)]]));
+    changed = true;
+  } else if (next.round > prev.round && next.round > 0) {
+    st.trail = Object.fromEntries(
+      next.seats.map((p) => [
+        p,
+        [...(old.trail[p] ?? [points(prev, p, false)]), points(next, p, false)],
+      ]),
+    );
+    changed = true;
+  }
+  if (next.rollSeq !== prev.rollSeq && next.dice) {
+    const total = next.dice[0] + next.dice[1];
+    st.dice = [...old.dice];
+    st.dice[total] = (st.dice[total] ?? 0) + 1;
+    st.gained = { ...old.gained };
+    for (const [p, c] of Object.entries(next.produced)) {
+      const n = countCards(c);
+      if (n) st.gained[p] = (st.gained[p] ?? 0) + n;
+    }
+    changed = true;
+  }
+  const rob = next.robbery;
+  if (rob && rob.seq !== prev.robbery?.seq && rob.victim) {
+    st.robbed = { ...old.robbed, [rob.thief]: { ...old.robbed[rob.thief] } };
+    const row = st.robbed[rob.thief]!;
+    row[rob.victim] = (row[rob.victim] ?? 0) + 1;
+    changed = true;
+  }
+  const aw = next.award;
+  if (aw && aw.seq !== prev.award?.seq) {
+    st.awards = [...old.awards, { kind: aw.kind, from: aw.from, to: aw.to, round: prev.round }];
+    changed = true;
+  }
+  return changed ? { ...next, stats: st } : next;
+}
+
 export const add = (a: Cards, b: Partial<Cards>, sign = 1): Cards => {
   const out = fullCards(a);
   for (const r of CARDS) out[r] += sign * (b[r] ?? 0);
@@ -474,6 +556,7 @@ function setup({ playerIds, options, rng }: Parameters<CatanModule['setup']>[0])
     award: null,
     monopoly: null,
     best: { haul: null },
+    stats: freshStats(),
     log: [],
     actBy: null,
     winner: null,
@@ -986,8 +1069,16 @@ function accept(s: CatanState, who: string, id: number, partner: string): CatanS
     [maker]: add(add(s.hands[maker]!, offer.give, -1), offer.want),
     [taker]: add(add(s.hands[taker]!, offer.want, -1), offer.give),
   };
+  const stats = statsOf(s);
+  const trades = { ...stats.trades };
+  for (const p of [maker, taker]) trades[p] = (trades[p] ?? 0) + 1;
   return logged(
-    { ...s, hands, offers: s.offers.filter((o) => o.id !== offer.id) },
+    {
+      ...s,
+      hands,
+      offers: s.offers.filter((o) => o.id !== offer.id),
+      stats: { ...stats, trades },
+    },
     `{actor} traded ${cardsText(offer.give)} for ${cardsText(offer.want)} with {${taker}}`,
     maker,
     { tag: 'Trade' },
@@ -1523,6 +1614,178 @@ export function partialResult(s: CatanState): GameResult | null {
   );
 }
 
+/** The stats page: the points race, the dice, the robber, trades and the two awards. */
+function catanStory(s: CatanState, winners: string[]): GameStory | undefined {
+  const st = s.stats;
+  if (!st) return undefined;
+  const series = s.seats
+    .filter((p) => (st.trail[p]?.length ?? 0) > 0)
+    .map((p) => ({ playerId: p, points: [...st.trail[p]!] }));
+  // Close the chart on where everyone finished (this counts victory point cards too).
+  if (series.length) {
+    const now = (p: string) => points(s, p, true);
+    if (series.some((x) => x.points[x.points.length - 1] !== now(x.playerId)))
+      for (const x of series) x.points.push(now(x.playerId));
+  }
+  const last = Math.max(0, ...series.map((x) => x.points.length - 1));
+  const names = { road: 'Longest Road', army: 'Largest Army' } as const;
+  const race = raceStory({
+    series,
+    winners,
+    step: 'round',
+    title: 'Victory points',
+    unit: ' VP',
+    marks: st.awards
+      .filter((a) => a.to && (a.kind === 'road' || a.kind === 'army'))
+      .slice(0, 8)
+      .map((a) => ({
+        x: Math.min(a.round, last),
+        text: `{${a.to}} takes ${names[a.kind as 'road' | 'army']}`,
+      })),
+  });
+
+  const facts: StoryFact[] = [];
+  const rolls = st.dice.reduce((n, c) => n + c, 0);
+  const sevens = st.dice[7] ?? 0;
+  const expected = rolls / 6;
+
+  // The robber: who took the most from whom.
+  let pair: { thief: string; victim: string; n: number } | null = null;
+  const robbedTimes: Record<string, number> = {};
+  const robberies: Record<string, number> = {};
+  for (const [thief, row] of Object.entries(st.robbed)) {
+    for (const [victim, n] of Object.entries(row)) {
+      robbedTimes[victim] = (robbedTimes[victim] ?? 0) + n;
+      robberies[thief] = (robberies[thief] ?? 0) + n;
+      if (!pair || n > pair.n) pair = { thief, victim, n };
+    }
+  }
+  const most = (m: Record<string, number>) => Object.entries(m).sort((a, b) => b[1] - a[1])[0];
+  const magnet = most(robbedTimes);
+  const thief = most(robberies);
+  if (pair && pair.n >= 3) {
+    facts.push({
+      label: 'Favorite target',
+      text: `{${pair.thief}} robbed {${pair.victim}} ${pair.n} times, more than any other pair.`,
+      playerIds: [pair.thief, pair.victim],
+    });
+  }
+  if (magnet && magnet[1] >= 3 && magnet[0] !== pair?.victim) {
+    facts.push({
+      label: 'Robber magnet',
+      text: `{${magnet[0]}} was robbed ${magnet[1]} times.`,
+      playerIds: [magnet[0]],
+      tone: 'bad',
+    });
+  }
+  if (thief && thief[1] >= 3 && thief[0] !== pair?.thief) {
+    facts.push({
+      label: 'Sticky fingers',
+      text: `{${thief[0]}} robbed ${thief[1]} times.`,
+      playerIds: [thief[0]],
+      tone: 'good',
+    });
+  }
+
+  // The two awards.
+  const road = st.awards.filter((a) => a.kind === 'road' && a.to).length;
+  const army = st.awards.filter((a) => a.kind === 'army' && a.to).length;
+  if (road >= 3) {
+    facts.push({
+      label: 'Road race',
+      text: `Longest Road changed hands ${road} times.`,
+    });
+  }
+  if (army >= 2) {
+    facts.push({
+      label: 'Arms race',
+      text: `Largest Army changed hands ${army} times.`,
+    });
+  }
+  const knight = most(s.knights);
+  if (knight && knight[1] >= 4) {
+    facts.push({
+      label: 'Knight errant',
+      text: `{${knight[0]}} played ${knight[1]} knights.`,
+      playerIds: [knight[0]],
+    });
+  }
+
+  // The dice.
+  if (rolls >= 20) {
+    const top = Math.max(...st.dice);
+    const hot = st.dice.map((c, n) => (c === top ? n : 0)).filter(Boolean);
+    if (hot.length <= 2) {
+      facts.push({
+        label: 'Lucky number',
+        text: `${hot.join(' and ')} came up the most, ${top} times in ${rolls} rolls.`,
+      });
+    }
+  }
+  if (rolls >= 24 && sevens >= Math.max(4, expected * 1.5)) {
+    facts.push({
+      label: 'Seven storm',
+      text: `Seven came up ${sevens} times in ${rolls} rolls, a lot for one game.`,
+      tone: 'bad',
+    });
+  } else if (rolls >= 24 && sevens <= expected * 0.5) {
+    facts.push({
+      label: 'Quiet robber',
+      text: `Only ${sevens} ${sevens === 1 ? 'seven' : 'sevens'} in ${rolls} rolls.`,
+      tone: 'good',
+    });
+  }
+
+  // Trades.
+  const trader = most(st.trades);
+  if (trader && trader[1] >= 3) {
+    facts.push({
+      label: 'Dealmaker',
+      text: `{${trader[0]}} made ${trader[1]} trades with other players.`,
+      playerIds: [trader[0]],
+      tone: 'good',
+    });
+  } else if (!trader && s.round >= 8) {
+    facts.push({
+      label: 'Lone wolves',
+      text: `Nobody traded with another player all game.`,
+    });
+  }
+
+  // Luck of the dice.
+  const gained = [...s.seats].map((p) => ({ p, n: st.gained[p] ?? 0 })).sort((a, b) => b.n - a.n);
+  if (gained.length > 1 && gained[0]!.n - gained[gained.length - 1]!.n >= 20) {
+    const hi = gained[0]!;
+    const lo = gained[gained.length - 1]!;
+    facts.push({
+      label: 'Dice favorite',
+      text: `{${hi.p}} took ${hi.n} cards from the dice, ${hi.n - lo.n} more than {${lo.p}}.`,
+      playerIds: [hi.p, lo.p],
+    });
+  }
+
+  return buildStory({
+    race,
+    ownFirst: true,
+    headlines:
+      rolls >= 5 ? [{ label: 'Sevens', value: String(sevens), detail: `in ${rolls} rolls` }] : [],
+    facts,
+    bars: [
+      {
+        title: 'Cards from the dice',
+        rows: gained.filter((r) => r.n > 0).map((r) => ({ playerId: r.p, value: r.n })),
+      },
+      {
+        title: 'Trades made',
+        rows: [...s.seats]
+          .map((p) => ({ playerId: p, value: st.trades[p] ?? 0 }))
+          .filter((r) => r.value > 0)
+          .sort((a, b) => b.value - a.value),
+      },
+    ],
+  });
+}
+
 function resultFor(s: CatanState, winners: string[], early = false): GameResult {
   const pts = Object.fromEntries(s.seats.map((p) => [p, breakdown(s, p)]));
   const reveal: CatanReveal = {
@@ -1590,6 +1853,7 @@ function resultFor(s: CatanState, winners: string[], early = false): GameResult 
     reveal,
     recap: s.log,
     roundName: 'Round',
+    story: catanStory(s, winners),
     stats,
     standings: s.seats.map((p) => ({
       playerId: p,
@@ -1685,7 +1949,7 @@ export const catan: CatanModule = {
   getTableView: (s) => getTableView(upgrade(s)),
   applyAction: (s0, who, a, rng, now) => {
     const s = upgrade(s0);
-    return stamp(s, rolled(s, dated(s, applyMove(s, who, a, rng), now)), now);
+    return stamp(s, rolled(s, dated(s, trackStats(s, applyMove(s, who, a, rng)), now)), now);
   },
   getResult: (s) => getResult(upgrade(s)),
   partialResult: (s) => partialResult(upgrade(s)),
@@ -1697,6 +1961,8 @@ export const catan: CatanModule = {
     s.turnSecs && s.actBy !== null && s.phase !== 'over' ? { id: 'turn', at: s.actBy } : null,
   onTimer: (s0, timer, rng, now) => {
     const s = upgrade(s0);
-    return timer !== 'turn' || s.phase === 'over' ? s : stamp(s, rolled(s, timeUp(s, rng)), now);
+    return timer !== 'turn' || s.phase === 'over'
+      ? s
+      : stamp(s, rolled(s, trackStats(s, timeUp(s, rng))), now);
   },
 };

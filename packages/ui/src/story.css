@@ -115,6 +115,15 @@
   gap: 8px;
   height: var(--plot-h);
 }
+/* Room above the top line for the labels centered on it. */
+.jd-story__axis,
+.jd-story__area {
+  margin-top: 10px;
+}
+.jd-story--tv .jd-story__axis,
+.jd-story--tv .jd-story__area {
+  margin-top: 22px;
+}
 .jd-story__axis {
   position: relative;
   min-width: 2.2em;

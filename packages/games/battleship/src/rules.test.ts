@@ -319,6 +319,21 @@ describe('recap', () => {
     expect(r.stats!.rows).toHaveLength(2);
     expect(r.recap.at(-1)).toMatchObject({ tag: 'Fleet sunk', key: true });
   });
+
+  it('tells the story of the battle', () => {
+    let s = placed(5);
+    const attacker = s.toAct!;
+    const defender = other(s, attacker);
+    for (const cell of FLEET[defender]!.flatMap(squares))
+      s = act(s, attacker, { type: 'fire', cells: [cell] });
+    const r = game.getResult(game.onTimer!(s, 'show', createRng(1), s.showBy!))!;
+    const chart = r.story?.charts?.[0];
+    expect(chart?.series.map((x) => x.playerId).sort()).toEqual(['rook', 'wren']);
+    expect(chart?.series.find((x) => x.playerId === attacker)?.points.at(-1)).toBe(17);
+    expect(r.story?.headlines?.[0]).toMatchObject({ label: 'Shots to win', value: '17' });
+    expect(r.story?.facts?.some((f) => f.label === 'Hot streak')).toBe(true);
+    expect(r.story?.facts?.some((f) => f.label === 'Untouched')).toBe(true);
+  });
 });
 
 describe('salvo', () => {

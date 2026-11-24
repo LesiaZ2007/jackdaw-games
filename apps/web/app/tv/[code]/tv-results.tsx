@@ -332,7 +332,7 @@ export function TvResults({
       {showing && (
         <section className="tv-show" aria-live="polite">
           {count > 1 && (
-            <ol className="tv-show__tabs" aria-hidden>
+            <ol className="tv-show__tabs" data-many={count > 7 || undefined} aria-hidden>
               {panels.map((p, i) => (
                 <li key={p.id} data-on={i === at % count || undefined}>
                   {TABS[p.title] ?? p.title}

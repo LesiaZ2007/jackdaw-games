@@ -828,6 +828,15 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   border: 2px solid var(--rule);
   overflow: hidden;
 }
+/* Many panels: smaller tabs, so they stay on one line. */
+.tv-show__tabs[data-many] {
+  gap: 6px;
+}
+.tv-show__tabs[data-many] li {
+  padding: 5px 9px 7px;
+  font-size: 20px;
+  letter-spacing: 0.03em;
+}
 .tv-show__tabs li[data-on] {
   color: var(--table);
   background: var(--ink);

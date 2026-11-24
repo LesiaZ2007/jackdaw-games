@@ -134,6 +134,17 @@ describe('Monopoly bots', { timeout: 180_000 }, () => {
     expect(ask(gift, 'wren', 1, 0)).toEqual({ type: 'accept', id: 2 });
   });
 
+  it('tells the story of a finished game', () => {
+    const s = playOut(3, { ends: 'After 20 rounds' }, 2, 20_000);
+    const r = game.getResult(s)!;
+    const chart = r.story?.charts?.[0];
+    expect(chart?.series.map((x) => x.playerId).sort()).toEqual([...s.players].sort());
+    expect(chart!.series[0]!.points.length).toBeGreaterThan(5);
+    expect(chart!.series[0]!.points[0]).toBe(1500);
+    expect(r.story?.headlines?.length).toBeLessThanOrEqual(4);
+    expect(r.story?.bars?.[0]?.title).toBe('Rent collected');
+  });
+
   it('reports the average length', () => {
     const avg = lengths.reduce((a, b) => a + b, 0) / Math.max(1, lengths.length);
     expect(avg).toBeGreaterThan(0);

@@ -107,6 +107,13 @@ describe('random whole games', () => {
         expect(result.winners).toEqual([s.winner]);
         expect(reveal.points[s.winner!]!.total).toBeGreaterThanOrEqual(s.target);
         expect(result.standings!.filter((x) => x.outcome === 'win')).toHaveLength(1);
+        // The stats page has a points race that covers everyone and ends on the final points.
+        const chart = result.story?.charts?.[0];
+        expect(chart?.series.map((x) => x.playerId).sort()).toEqual([...s.seats].sort());
+        for (const x of chart!.series) {
+          expect(x.points.length).toBeGreaterThan(1);
+          expect(x.points[x.points.length - 1]).toBe(reveal.points[x.playerId!]!.total);
+        }
       }
     },
     60_000,

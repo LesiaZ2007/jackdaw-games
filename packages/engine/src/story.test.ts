@@ -40,9 +40,7 @@ describe('raceStory', () => {
     });
     expect(r.facts.map((f) => f.label)).toContain('Wire to wire');
     expect(r.facts.map((f) => f.label)).toContain('Photo finish');
-    expect(r.headlines.find((h) => h.label === 'Lead changes')?.detail).toBe(
-      'Nobody else ever led',
-    );
+    expect(r.headlines.find((h) => h.label === 'Lead changes')).toBeUndefined();
   });
 
   it('turns the order round when the low score wins', () => {

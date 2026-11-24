@@ -94,11 +94,14 @@ export function raceStory(input: RaceInput): RaceStory {
       playerId: top.playerId,
     });
   }
-  headlines.push({
-    label: 'Lead changes',
-    value: fmt(changes),
-    detail: changes === 0 ? 'Nobody else ever led' : `over ${steps - 1} ${step}s`,
-  });
+  // No changes says nothing (ties at the top don't count as a lead); "wire to wire" covers it.
+  if (changes > 0) {
+    headlines.push({
+      label: 'Lead changes',
+      value: fmt(changes),
+      detail: `over ${steps - 1} ${step}s`,
+    });
+  }
   if (bigLead.by > 0) {
     headlines.push({
       label: 'Biggest lead',

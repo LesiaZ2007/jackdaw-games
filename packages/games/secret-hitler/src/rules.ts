@@ -832,8 +832,6 @@ function statsOf(s: ShState, winners: string[]): RecapStats {
   };
 }
 
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-
 /**
  * The stats page, read out of the governments: the race of the two policy tracks, how the votes
  * went, who held office, executions, who got Hitler elected and the best and worst draws. The
@@ -854,7 +852,11 @@ function shStory(s: ShState): GameStory | undefined {
     let f = fasTrail[i]!;
     if (g.enacted === 'liberal') l++;
     if (g.enacted === 'fascist') f++;
-    for (const c of s.chaos) if (c.after === g.n) c.enacted === 'liberal' ? l++ : f++;
+    for (const c of s.chaos)
+      if (c.after === g.n) {
+        if (c.enacted === 'liberal') l++;
+        else f++;
+      }
     libTrail.push(l);
     fasTrail.push(f);
     if (g.power?.kind === 'execute' && g.power.target)

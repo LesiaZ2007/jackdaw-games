@@ -557,7 +557,6 @@ function statsOf(s: BattleshipState, winners: string[]): RecapStats {
 /** The stats page: the hit race by turn, accuracy, streaks, first blood and who lost what. */
 function battleshipStory(s: BattleshipState, winners: string[]): GameStory | undefined {
   if (s.volleys.length === 0) return undefined;
-  const hitsOf = (v: Volley) => v.shots.filter((x) => x.result !== 'miss').length;
   // A turn is a run of volleys by the same player (a clean hit keeps the turn going).
   const points: Record<string, number[]> = Object.fromEntries(s.players.map((id) => [id, [0]]));
   const total: Record<string, number> = Object.fromEntries(s.players.map((id) => [id, 0]));

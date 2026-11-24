@@ -330,6 +330,10 @@ describe('bots', () => {
       expect(s.history).toHaveLength(s.plan[0] + s.plan[1] + 1);
       expect(new Set(s.used).size).toBe(s.used.length);
       expect(r.stats!.rows).toHaveLength(n);
+      expect(r.story).toBeTruthy();
+      expect(r.story!.charts![0]!.series.map((x) => x.playerId).sort()).toEqual(
+        [...s.players].sort(),
+      );
     }
   });
 });

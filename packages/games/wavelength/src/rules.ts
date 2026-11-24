@@ -6,6 +6,12 @@ import {
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type GameStory,
+  type StoryBars,
+  type StoryChart,
+  type StoryFact,
+  type StoryHeadline,
+  buildStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import { wavelengthBot } from './bot';
@@ -228,6 +234,200 @@ function statsOf(s: WavelengthState, winners: string[]): RecapStats {
       };
     }),
   };
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * The stats page: points by round (a line per team, or one for the whole team when playing
+ * together), bullseyes, the closest and worst guesses, the best psychic and the left/right calls.
+ */
+function wavelengthStory(s: WavelengthState): GameStory | undefined {
+  const history = s.history;
+  if (history.length === 0) return undefined;
+  const teams = s.mode === 'teams';
+  const gap = (h: RoundResult) => Math.abs(h.guess - h.target);
+  const clueOf = (h: RoundResult) => `“${h.clue}” (${h.spectrum[0]} to ${h.spectrum[1]})`;
+
+  // Points after each round, per team. A right call earns the other team a point.
+  const trail: Record<Team, number[]> = { sun: [0], moon: [0] };
+  for (const h of history)
+    for (const t of TEAMS)
+      trail[t].push(
+        trail[t][trail[t].length - 1]! + (h.team === t ? h.points : h.callPoint ? 1 : 0),
+      );
+  const series = teams
+    ? TEAMS.map((t) => ({ label: `${TEAM_NAME[t]} team`, points: trail[t] }))
+    : [{ label: 'The team', points: trail.sun }];
+  const chart: StoryChart = { title: 'Points', xLabel: 'Round', kind: 'race', series };
+  // Bullseyes pinned on the chart.
+  const marks = history.flatMap((h, i) =>
+    h.points === 4 ? [{ x: i + 1, text: `Bullseye for {${h.psychic}}` }] : [],
+  );
+  if (marks.length && marks.length <= 8) chart.marks = marks;
+
+  const headlines: StoryHeadline[] = [];
+  const facts: StoryFact[] = [];
+  const bulls = history.filter((h) => h.points === 4);
+  const avgMiss = history.reduce((n, h) => n + gap(h), 0) / history.length;
+
+  if (teams) {
+    const lead = (i: number) => Math.sign(trail.sun[i]! - trail.moon[i]!);
+    let changes = 0;
+    let last = 0;
+    for (let i = 1; i <= history.length; i++) {
+      const l = lead(i);
+      if (l === 0) continue;
+      if (last !== 0 && l !== last) changes++;
+      last = l;
+    }
+    const diff = trail.sun[history.length]! - trail.moon[history.length]!;
+    if (diff !== 0) {
+      const top: Team = diff > 0 ? 'sun' : 'moon';
+      headlines.push({
+        label: s.phase === 'over' ? 'Winning margin' : 'Lead',
+        value: `${Math.abs(diff)}`,
+        detail: `${TEAM_NAME[top]} over ${TEAM_NAME[other(top)]}`,
+      });
+    }
+    if (changes > 0)
+      headlines.push({
+        label: 'Lead changes',
+        value: `${changes}`,
+        detail: `over ${history.length} rounds`,
+      });
+  } else {
+    const total = s.scores.sun;
+    headlines.push({
+      label: 'Points',
+      value: `${total}`,
+      detail: `in ${plural(history.length, 'round')}: ${rating(total, history.length)}`,
+    });
+  }
+  headlines.push({
+    label: 'Bullseyes',
+    value: `${bulls.length}`,
+    detail: `of ${history.length} rounds`,
+  });
+  headlines.push({
+    label: 'Average miss',
+    value: avgMiss.toFixed(1),
+    detail: 'on the 0 to 100 dial',
+  });
+
+  // Dead-on and closest guesses.
+  const closest = [...history].sort((a, b) => gap(a) - gap(b))[0]!;
+  if (closest.points === 4)
+    facts.push({
+      label: gap(closest) < 0.5 ? 'Dead on' : 'Closest',
+      text:
+        gap(closest) < 0.5
+          ? `{${closest.psychic}}’s clue ${clueOf(closest)} put the dial dead on the target.`
+          : `{${closest.psychic}}’s clue ${clueOf(closest)} landed within ${Math.max(1, Math.round(gap(closest)))} of the target.`,
+      playerIds: [closest.psychic],
+      tone: 'good',
+    });
+  const worst = [...history].sort((a, b) => gap(b) - gap(a))[0]!;
+  if (gap(worst) >= 25)
+    facts.push({
+      label: 'Way off',
+      text: `{${worst.psychic}}’s clue ${clueOf(worst)} missed by ${Math.round(gap(worst))} on the dial.`,
+      playerIds: [worst.psychic],
+      tone: 'bad',
+    });
+
+  // Psychics, by the points their clues earned.
+  const psychics = s.players
+    .map((id) => {
+      const mine = history.filter((h) => h.psychic === id);
+      const pts = mine.reduce((n, h) => n + h.points, 0);
+      return { id, n: mine.length, pts, avg: mine.length ? pts / mine.length : 0 };
+    })
+    .filter((p) => p.n > 0);
+  const best = [...psychics].sort((a, b) => b.avg - a.avg || b.n - a.n)[0];
+  if (best && best.n >= 2 && best.avg >= 2.5 && psychics.length > 1)
+    facts.push({
+      label: 'Best psychic',
+      text: `{${best.id}}’s clues earned ${best.avg.toFixed(1)} points each over ${plural(best.n, 'round')}.`,
+      playerIds: [best.id],
+      tone: 'good',
+    });
+  const misses = (id: string) => history.filter((h) => h.psychic === id && h.points === 0).length;
+  const unlucky = [...psychics].sort((a, b) => misses(b.id) - misses(a.id))[0];
+  if (unlucky && misses(unlucky.id) >= 2)
+    facts.push({
+      label: 'Static',
+      text: `{${unlucky.id}}’s clues scored nothing ${misses(unlucky.id)} times.`,
+      playerIds: [unlucky.id],
+      tone: 'bad',
+    });
+
+  // A bullseye while behind, and a run of bullseyes.
+  const rescue = history.find((h) => h.catchUp && h.points === 4);
+  if (rescue)
+    facts.push({
+      label: 'Bullseye while behind',
+      text: `{${rescue.psychic}} hit the bullseye in round ${rescue.n} while ${TEAM_NAME[rescue.team]} was behind, for another turn.`,
+      playerIds: [rescue.psychic],
+      tone: 'good',
+    });
+  let run = 0;
+  let bestRun = 0;
+  for (const h of history) {
+    run = h.points === 4 ? run + 1 : 0;
+    bestRun = Math.max(bestRun, run);
+  }
+  if (bestRun >= 2)
+    facts.push({
+      label: 'Hot streak',
+      text: `${plural(bestRun, 'bullseye')} in a row.`,
+      tone: 'good',
+    });
+
+  // Left/right calls by the other team.
+  if (teams) {
+    for (const t of TEAMS) {
+      const made = history.filter((h) => h.team !== t && h.call !== null);
+      const right = made.filter((h) => h.callPoint).length;
+      if (made.length >= 3 && right / made.length >= 0.7)
+        facts.push({
+          label: 'Good calls',
+          text: `${TEAM_NAME[t]} called left or right correctly ${right} of ${made.length} times.`,
+          tone: 'good',
+        });
+    }
+  }
+
+  // Everyone guesses: who set the closest dial most often.
+  const spots = history.filter((h) => h.dials && Object.keys(h.dials).length > 1);
+  if (spots.length >= 2) {
+    const wins: Record<string, number> = {};
+    for (const h of spots) {
+      const d = Object.entries(h.dials!).map(([id, at]) => ({ id, d: Math.abs(at - h.target) }));
+      const low = Math.min(...d.map((x) => x.d));
+      for (const x of d) if (x.d === low) wins[x.id] = (wins[x.id] ?? 0) + 1;
+    }
+    const [id, n] = Object.entries(wins).sort((a, b) => b[1] - a[1])[0]!;
+    if (n >= 2)
+      facts.push({
+        label: 'Sharpshooter',
+        text: `{${id}} had the closest dial in ${n} of ${spots.length} rounds.`,
+        playerIds: [id],
+        tone: 'good',
+      });
+  }
+
+  const bars: StoryBars[] = [];
+  const bullRows = s.players
+    .map((playerId) => ({
+      playerId,
+      value: history.filter((h) => h.psychic === playerId && h.points === 4).length,
+    }))
+    .filter((r) => r.value > 0)
+    .sort((a, b) => b.value - a.value);
+  if (bullRows.length) bars.push({ title: 'Bullseyes as psychic', rows: bullRows });
+
+  return buildStory({ headlines, charts: [chart], facts, bars });
 }
 
 /** The points a guess scores against a target. */
@@ -794,6 +994,7 @@ export const wavelength: GameModule<
         reveal,
         recap: s.recap,
         roundName: 'Round',
+        story: wavelengthStory(s),
         stats: statsOf(s, s.players),
         standings: s.players.map((playerId) => ({ playerId, outcome: pass ? 'win' : 'loss' })),
       };
@@ -809,6 +1010,7 @@ export const wavelength: GameModule<
       reveal: { ...reveal, winner: leader },
       recap: s.recap,
       roundName: 'Round',
+      story: wavelengthStory(s),
       stats: statsOf(s, leaderPlayers),
       standings: s.players.map((playerId) => ({
         playerId,
@@ -849,6 +1051,7 @@ export const wavelength: GameModule<
         reveal,
         recap: s.recap,
         roundName: 'Round',
+        story: wavelengthStory(s),
         stats: statsOf(s, s.players),
         highlights,
         standings: s.players.map((playerId) => ({
@@ -865,6 +1068,7 @@ export const wavelength: GameModule<
       reveal,
       recap: s.recap,
       roundName: 'Round',
+      story: wavelengthStory(s),
       stats: statsOf(
         s,
         s.players.filter((id) => s.teams[id] === winner),

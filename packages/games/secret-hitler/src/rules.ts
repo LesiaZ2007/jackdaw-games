@@ -5,6 +5,12 @@ import {
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type GameStory,
+  type StoryBars,
+  type StoryChart,
+  type StoryFact,
+  type StoryHeadline,
+  buildStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import {
@@ -826,6 +832,226 @@ function statsOf(s: ShState, winners: string[]): RecapStats {
   };
 }
 
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * The stats page, read out of the governments: the race of the two policy tracks, how the votes
+ * went, who held office, executions, who got Hitler elected and the best and worst draws. The
+ * game is over, so the roles and the hidden draws can be told.
+ */
+function shStory(s: ShState): GameStory | undefined {
+  const govs = s.governments;
+  if (govs.length === 0) return undefined;
+  const lib = (id: string) => teamOf(s.roles[id]!) === 'liberal';
+  const hitler = s.players.find((id) => s.roles[id] === 'hitler');
+
+  // Laws on each track after every government (a top-decked policy counts on its government).
+  const libTrail = [0];
+  const fasTrail = [0];
+  const marks: { x: number; text: string }[] = [];
+  govs.forEach((g, i) => {
+    let l = libTrail[i]!;
+    let f = fasTrail[i]!;
+    if (g.enacted === 'liberal') l++;
+    if (g.enacted === 'fascist') f++;
+    for (const c of s.chaos) if (c.after === g.n) c.enacted === 'liberal' ? l++ : f++;
+    libTrail.push(l);
+    fasTrail.push(f);
+    if (g.power?.kind === 'execute' && g.power.target)
+      marks.push({ x: i + 1, text: `{${g.president}} executed {${g.power.target}}` });
+    if (g.hitlerElected) marks.push({ x: i + 1, text: `Hitler elected: {${g.chancellor}}` });
+  });
+  const chart: StoryChart = {
+    title: 'Policies enacted',
+    xLabel: 'Government',
+    kind: 'race',
+    series: [
+      { label: 'Liberal laws', points: libTrail },
+      { label: 'Fascist laws', points: fasTrail },
+    ],
+    ...(marks.length ? { marks } : {}),
+  };
+
+  // Who was ahead on their track (Liberals need 5, Fascists 6), and how often that flipped.
+  let changes = 0;
+  let prev = 0;
+  for (let i = 1; i < libTrail.length; i++) {
+    const d = Math.sign(libTrail[i]! * FASCIST_WIN - fasTrail[i]! * LIBERAL_WIN);
+    if (d === 0) continue;
+    if (prev !== 0 && d !== prev) changes++;
+    prev = d;
+  }
+  const failed = govs.filter((g) => !g.passed).length;
+  const executions = govs.filter((g) => g.power?.kind === 'execute' && g.power.target);
+
+  const headlines: StoryHeadline[] = [
+    {
+      label: 'Governments',
+      value: `${govs.length}`,
+      detail: failed ? `${failed} voted down` : 'every one elected',
+    },
+    {
+      label: 'Laws',
+      value: `${s.liberal} to ${s.fascist}`,
+      detail: 'Liberal to Fascist',
+    },
+  ];
+  if (changes > 0)
+    headlines.push({ label: 'Lead changes', value: `${changes}`, detail: 'between the tracks' });
+  if (executions.length)
+    headlines.push({ label: 'Executions', value: `${executions.length}`, detail: 'players shot' });
+
+  const facts: StoryFact[] = [];
+
+  // Hitler: elected, shot, or hiding in plain sight.
+  if (hitler) {
+    const elected = govs.find((g) => g.hitlerElected);
+    const shot = executions.find((g) => g.power!.target === hitler);
+    const served = govs.filter((g) => g.passed && g.chancellor === hitler && !g.hitlerElected);
+    if (elected) {
+      const backers = s.players.filter((id) => lib(id) && elected.votes[id]);
+      facts.push({
+        label: 'Hitler elected',
+        text: backers.length
+          ? `{${hitler}} became chancellor on government ${elected.n}, with Ja votes from the Liberals ${backers.map((id) => `{${id}}`).join(', ')}.`
+          : `{${hitler}} became chancellor on government ${elected.n}, and no Liberal voted for it.`,
+        playerIds: [hitler, ...backers],
+        tone: 'bad',
+      });
+    } else if (shot) {
+      facts.push({
+        label: 'Hitler shot',
+        text: `{${shot.president}} executed {${hitler}} on government ${shot.n}, and the Liberals won on the spot.`,
+        playerIds: [shot.president, hitler],
+        tone: 'good',
+      });
+    }
+    if (served.length >= 2)
+      facts.push({
+        label: 'Hiding in plain sight',
+        text: `{${hitler}}, Hitler, was elected chancellor ${served.length} times before it came out.`,
+        playerIds: [hitler],
+      });
+  }
+  for (const g of executions.filter((x) => x.power!.target !== hitler).slice(0, 2)) {
+    const t = g.power!.target!;
+    facts.push({
+      label: 'Executed',
+      text: `{${g.president}} executed {${t}}, ${lib(t) ? 'a Liberal' : 'on the Fascist team'}.`,
+      playerIds: [g.president, t],
+      tone: lib(t) === lib(g.president) ? 'bad' : 'good',
+    });
+  }
+
+  // The draws.
+  const cursed = govs.find((g) => g.drawn?.length === 3 && g.drawn.every((p) => p === 'fascist'));
+  if (cursed)
+    facts.push({
+      label: 'Cursed draw',
+      text: `{${cursed.president}} drew three Fascist policies on government ${cursed.n}, with nothing else to enact.`,
+      playerIds: [cursed.president],
+      tone: 'bad',
+    });
+  const dream = govs.find((g) => g.drawn?.length === 3 && g.drawn.every((p) => p === 'liberal'));
+  if (dream && !cursed)
+    facts.push({
+      label: 'Dream draw',
+      text: `{${dream.president}} drew three Liberal policies on government ${dream.n}.`,
+      playerIds: [dream.president],
+      tone: 'good',
+    });
+
+  // Fascists burying Liberal policies (both discards were a real choice).
+  const buried: Record<string, number> = {};
+  for (const g of govs) {
+    if (lib(g.president)) continue;
+    if (g.presidentDiscard === 'liberal' && g.drawn?.includes('fascist'))
+      buried[g.president] = (buried[g.president] ?? 0) + 1;
+  }
+  for (const g of govs) {
+    if (lib(g.chancellor)) continue;
+    if (g.enacted === 'fascist' && g.chancellorDiscard === 'liberal')
+      buried[g.chancellor] = (buried[g.chancellor] ?? 0) + 1;
+  }
+  const mole = Object.entries(buried).sort((a, b) => b[1] - a[1])[0];
+  if (mole && mole[1] >= 2)
+    facts.push({
+      label: 'Double agent',
+      text: `{${mole[0]}} threw away a Liberal policy ${mole[1] === 2 ? 'twice' : `${mole[1]} times`} and nobody noticed.`,
+      playerIds: [mole[0]],
+    });
+
+  // Votes: the yes-man and the contrarian.
+  const rows = s.players.map((id) => {
+    const cast = govs.filter((g) => id in g.votes);
+    const ja = cast.filter((g) => g.votes[id]).length;
+    return { id, cast: cast.length, ja };
+  });
+  if (govs.length >= 5) {
+    const yes = [...rows].sort((a, b) => b.ja / (b.cast || 1) - a.ja / (a.cast || 1))[0]!;
+    if (yes.cast >= 5 && yes.ja === yes.cast)
+      facts.push({
+        label: 'Yes-man',
+        text: `{${yes.id}} voted Ja on every one of ${yes.cast} governments.`,
+        playerIds: [yes.id],
+      });
+    const no = [...rows].sort((a, b) => a.ja / (a.cast || 1) - b.ja / (b.cast || 1))[0]!;
+    if (no.cast >= 5 && no.ja / no.cast <= 0.25)
+      facts.push({
+        label: 'Contrarian',
+        text: `{${no.id}} voted Nein ${no.cast - no.ja} of ${no.cast} times.`,
+        playerIds: [no.id],
+      });
+  }
+  if (s.chaos.length)
+    facts.push({
+      label: 'Chaos',
+      text:
+        s.chaos.length === 1
+          ? `Three failed governments in a row put a ${s.chaos[0]!.enacted} policy on the board with no power.`
+          : `Failed governments forced the top policy onto the board ${s.chaos.length} times.`,
+      tone: s.chaos.some((c) => c.enacted === 'fascist') ? 'bad' : 'good',
+    });
+  const vetoed = govs.find((g) => g.vetoed);
+  if (vetoed)
+    facts.push({
+      label: 'Veto',
+      text: `{${vetoed.chancellor}} asked for a veto and {${vetoed.president}} agreed, so nothing passed on government ${vetoed.n}.`,
+      playerIds: [vetoed.chancellor, vetoed.president],
+    });
+  const caught = s.investigations.find((x) => lib(x.by) && x.team === 'fascist');
+  if (caught)
+    facts.push({
+      label: 'Caught one',
+      text: `{${caught.by}} investigated {${caught.target}} and found a Fascist.`,
+      playerIds: [caught.by, caught.target],
+      tone: 'good',
+    });
+
+  const terms = s.players
+    .map((playerId) => ({
+      playerId,
+      value: govs.filter((g) => g.passed && (g.president === playerId || g.chancellor === playerId))
+        .length,
+    }))
+    .sort((a, b) => b.value - a.value);
+  const bars: StoryBars[] = [{ title: 'Terms served', rows: terms }];
+  if (govs.length >= 4)
+    bars.push({
+      title: 'Ja vote rate',
+      rows: rows
+        .filter((r) => r.cast > 0)
+        .map((r) => ({
+          playerId: r.id,
+          value: Math.round((r.ja / r.cast) * 100),
+          display: `${Math.round((r.ja / r.cast) * 100)}%`,
+        }))
+        .sort((a, b) => b.value - a.value),
+    });
+
+  return buildStory({ headlines, charts: [chart], bars, facts });
+}
+
 /** Everything about the game, now that it's over: the reveal behind the recap screen. */
 export interface ShReveal {
   players: string[];
@@ -881,6 +1107,7 @@ function resultFor(s: ShState, winner: Winner, reason: WinReason, ended: boolean
         : e;
     }),
     roundName: 'Government',
+    story: shStory(s),
     stats: statsOf(s, winners),
     standings: s.players.map((playerId) => {
       const role = s.roles[playerId]!;

@@ -2,10 +2,16 @@ import {
   GameError,
   type GameModule,
   type GameResult,
+  type GameStory,
   type Highlight,
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type StoryBars,
+  type StoryFact,
+  type StoryHeadline,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import { BANK } from './bank';
@@ -570,6 +576,149 @@ function highlightsOf(s: FictionaryState): Highlight[] {
   return out;
 }
 
+const times = (n: number) => (n === 1 ? 'once' : n === 2 ? 'twice' : `${n} times`);
+const players = (n: number) => `${n} ${n === 1 ? 'player' : 'players'}`;
+
+/** The stats page: the score race by card, the best liar, the truth finders and who fell for whom. */
+function fictionaryStory(s: FictionaryState, winners: string[]): GameStory | undefined {
+  const ids = s.players;
+  const history = s.history;
+  if (history.length === 0) return undefined;
+
+  const race =
+    history.length >= 2
+      ? raceStory({
+          series: ids.map((id) => ({
+            playerId: id,
+            points: history.reduce(
+              (acc, h) => [...acc, acc[acc.length - 1]! + (h.gains[id] ?? 0)],
+              [0],
+            ),
+          })),
+          winners,
+          step: 'card',
+          title: 'Score',
+          unit: ' points',
+        })
+      : undefined;
+
+  const headlines: StoryHeadline[] = [];
+  const facts: StoryFact[] = [];
+
+  // Players fooled, truths found, and who fell for whose lies.
+  const fooled: Record<string, number> = Object.fromEntries(ids.map((id) => [id, 0]));
+  const truths: Record<string, number> = Object.fromEntries(ids.map((id) => [id, 0]));
+  const fell = new Map<string, number>();
+  let best: { by: string[]; text: string; n: number; card: number } | null = null;
+  let liked: { by: string[]; text: string; n: number; card: number } | null = null;
+  for (const h of history)
+    for (const e of h.entries) {
+      if (e.truth) {
+        for (const p of e.pickers) truths[p] = (truths[p] ?? 0) + 1;
+        continue;
+      }
+      for (const a of e.by) {
+        fooled[a] = (fooled[a] ?? 0) + e.pickers.length;
+        for (const p of e.pickers) fell.set(`${p}|${a}`, (fell.get(`${p}|${a}`) ?? 0) + 1);
+      }
+      if (e.by.length === 0) continue;
+      if (e.pickers.length > (best?.n ?? 0))
+        best = { by: e.by, text: e.text, n: e.pickers.length, card: h.n };
+      if (e.likes > (liked?.n ?? 0)) liked = { by: e.by, text: e.text, n: e.likes, card: h.n };
+    }
+
+  if (best && best.n >= 2) {
+    headlines.push({
+      label: 'Best fib',
+      value: `${best.n} fooled`,
+      detail: `{${best.by[0]}}, card ${best.card}`,
+      playerId: best.by[0],
+    });
+    facts.push({
+      label: 'Best fib',
+      text: `{${best.by[0]}}’s “${best.text}” on card ${best.card} fooled ${players(best.n)}.`,
+      playerIds: best.by,
+      tone: 'good',
+    });
+  }
+  const liar = [...ids].sort((a, b) => fooled[b]! - fooled[a]!)[0]!;
+  if (fooled[liar]! >= 3)
+    facts.push({
+      label: 'Best liar',
+      text: `{${liar}} fooled other players ${fooled[liar]} times over the game.`,
+      playerIds: [liar],
+      tone: 'good',
+    });
+  const cards = history.length;
+  const sharp = [...ids].sort((a, b) => truths[b]! - truths[a]!)[0]!;
+  if (cards >= 3 && truths[sharp] === cards)
+    facts.push({
+      label: 'Lie detector',
+      text: `{${sharp}} found the truth on every card.`,
+      playerIds: [sharp],
+      tone: 'good',
+    });
+  else if (cards >= 4 && truths[sharp]! / cards >= 0.75)
+    facts.push({
+      label: 'Truth finder',
+      text: `{${sharp}} found the truth on ${truths[sharp]} of ${cards} cards.`,
+      playerIds: [sharp],
+      tone: 'good',
+    });
+  const gullible = [...ids].sort((a, b) => truths[a]! - truths[b]!)[0]!;
+  if (cards >= 4 && truths[gullible] === 0)
+    facts.push({
+      label: 'Easily fooled',
+      text: `{${gullible}} never found the truth, not once in ${cards} cards.`,
+      playerIds: [gullible],
+      tone: 'bad',
+    });
+  let nemesis: { victim: string; liar: string; n: number } | null = null;
+  for (const [key, n] of fell) {
+    const [victim, liar2] = key.split('|') as [string, string];
+    if (victim !== liar2 && n > (nemesis?.n ?? 0)) nemesis = { victim, liar: liar2, n };
+  }
+  if (nemesis && nemesis.n >= 2)
+    facts.push({
+      label: 'Nemesis',
+      text: `{${nemesis.victim}} fell for {${nemesis.liar}}’s lies ${times(nemesis.n)}.`,
+      playerIds: [nemesis.victim, nemesis.liar],
+    });
+  if (liked && liked.n >= 2)
+    facts.push({
+      label: 'Crowd favorite',
+      text: `{${liked.by[0]}}’s “${liked.text}” on card ${liked.card} got ${liked.n} likes.`,
+      playerIds: liked.by,
+      tone: 'good',
+    });
+  const stumpers = history.filter((h) => h.entries.find((e) => e.truth)!.pickers.length === 0);
+  if (stumpers.length > 0)
+    facts.push({
+      label: 'Stumper',
+      text:
+        stumpers.length === 1
+          ? `Nobody found the truth on card ${stumpers[0]!.n}: “${stumpers[0]!.answer}”.`
+          : `Nobody found the truth on ${stumpers.length} of the ${cards} cards.`,
+      tone: 'bad',
+    });
+
+  const bars: StoryBars[] = [];
+  const foolRows = ids
+    .map((playerId) => ({ playerId, value: fooled[playerId]! }))
+    .sort((a, b) => b.value - a.value);
+  if (foolRows[0]!.value > 0) bars.push({ title: 'Players fooled', rows: foolRows });
+  const truthRows = ids
+    .map((playerId) => ({
+      playerId,
+      value: truths[playerId]!,
+      display: `${Math.round((truths[playerId]! / cards) * 100)}%`,
+    }))
+    .sort((a, b) => b.value - a.value);
+  if (cards >= 2 && truthRows[0]!.value > 0) bars.push({ title: 'Truths found', rows: truthRows });
+
+  return buildStory({ race, headlines, facts, bars });
+}
+
 function resultOf(s: FictionaryState, early: boolean): GameResult {
   const top = Math.max(...s.players.map((id) => s.scores[id] ?? 0));
   const winners = s.players.filter((id) => (s.scores[id] ?? 0) === top);
@@ -584,6 +733,7 @@ function resultOf(s: FictionaryState, early: boolean): GameResult {
     reveal,
     recap: s.recap,
     roundName: 'Card',
+    story: fictionaryStory(s, winners),
     stats: statsOf(s, order),
     highlights: highlightsOf(s),
     standings: s.players.map((playerId) => ({

@@ -490,6 +490,7 @@ export function settleShared(
     ghostsEaten: prev.ghostsEaten + facts.ghosts.length - prev.facts.ghosts.length,
     fruit: prev.fruit + facts.fruit.length - prev.facts.fruit.length,
     power: powerAt(facts, levelOf(prev.maze), tick.t),
+    powerUps: (prev.powerUps ?? 0) + facts.powers.length - prev.facts.powers.length,
   };
   const p = chargeCatches(s, prev, gained);
   let out: MazeState = { ...s, players: { ...s.players, [playerId]: p } };

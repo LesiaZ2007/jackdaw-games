@@ -6,6 +6,12 @@ import {
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type GameStory,
+  type StoryBars,
+  type StoryChart,
+  type StoryFact,
+  type StoryHeadline,
+  buildStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import { mafiaBot } from './bot';
@@ -941,6 +947,281 @@ function statsOf(s: MafiaState, winners: string[]): RecapStats {
   };
 }
 
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * The stats page, read out of the recap: how many players each side had left after every
+ * morning and vote, how well the votes found the killers, who was hunted at night, and the
+ * powers that made a difference. The game is over, so every card can be named.
+ */
+function mafiaStory(s: MafiaState): GameStory | undefined {
+  const names = TEAM_NAME[s.mode];
+  const baseTeam = (id: string): Team => ROLE_INFO[s.roles[id]!].team;
+  const bad = (id: string) => ['pack', 'killer'].includes(baseTeam(id));
+  const packWord = s.mode === 'Mafia' ? 'Mafia' : 'werewolves';
+  const roleName = (id: string) => ROLE_INFO[s.roles[id]!].name;
+  const causeOf = (id: string) => s.deaths.find((d) => d.id === id)?.cause;
+  const verb = (id: string) =>
+    causeOf(id) === 'vote'
+      ? 'voted out'
+      : causeOf(id) === 'shot'
+        ? 'shot'
+        : causeOf(id) === 'grief'
+          ? 'lost to grief'
+          : 'killed';
+
+  type Ev = { kind?: string; [k: string]: unknown };
+  const events = s.recap.map((e) => ({ round: e.round ?? 0, d: (e.data ?? {}) as Ev }));
+
+  // Players alive per side, after each morning and each vote.
+  const sides = (['town', 'pack', 'killer', 'jester'] as Team[]).filter((t) =>
+    s.players.some((id) => baseTeam(id) === t),
+  );
+  const alive = new Set(s.players);
+  const count = (t: Team) => [...alive].filter((id) => baseTeam(id) === t).length;
+  const points: Record<string, number[]> = Object.fromEntries(sides.map((t) => [t, [count(t)]]));
+  const marks: { x: number; text: string }[] = [];
+  const out = (ids: string[], x: number) => {
+    for (const id of ids) {
+      alive.delete(id);
+      marks.push({ x, text: `{${id}} ${verb(id)}` });
+    }
+  };
+  let steps = 0;
+  const step = (ids: string[]) => {
+    steps++;
+    out(ids, steps);
+    for (const t of sides) points[t]!.push(count(t));
+  };
+  for (const { d } of events) {
+    if (d.kind === 'dawn') step((d.dead as string[] | undefined) ?? []);
+    else if (d.kind === 'vote') step((d.about as string[] | undefined) ?? []);
+    else if (d.kind === 'shot' && d.about) {
+      out(d.about as string[], steps);
+      for (const t of sides) points[t]![steps] = count(t);
+    }
+  }
+  const chart: StoryChart = {
+    title: 'Players alive',
+    xLabel: 'Night or day',
+    kind: 'race',
+    series: sides.map((t) => ({ label: names[t], points: points[t]! })),
+    ...(marks.length && marks.length <= 14 ? { marks } : {}),
+  };
+
+  // The votes: who got out, and who voted for whom.
+  const lynches = events.filter((e) => e.d.kind === 'vote' && e.d.out) as {
+    round: number;
+    d: Ev & { out: string };
+  }[];
+  const right = lynches.filter((e) => bad(e.d.out)).length;
+  const wrong = lynches.length - right;
+  const allVoteEvents = events.filter((e) => e.d.kind === 'vote');
+  const stalls = allVoteEvents.length - lynches.length;
+  const ballots = events.filter((e) => e.d.kind === 'ballots') as {
+    round: number;
+    d: Ev & { votes: Record<string, string> };
+  }[];
+  const hit: Record<string, number> = {};
+  const cast: Record<string, number> = {};
+  const received: Record<string, number> = {};
+  for (const b of ballots)
+    for (const [voter, t] of Object.entries(b.d.votes)) {
+      if (t === 'skip') continue;
+      received[t] = (received[t] ?? 0) + 1;
+      if (baseTeam(voter) !== 'town') continue;
+      cast[voter] = (cast[voter] ?? 0) + 1;
+      if (bad(t)) hit[voter] = (hit[voter] ?? 0) + 1;
+    }
+
+  const headlines: StoryHeadline[] = [];
+  const facts: StoryFact[] = [];
+  headlines.push({
+    label: 'Nights',
+    value: `${s.night}`,
+    detail: `${s.alive.length} of ${s.players.length} still standing`,
+  });
+  if (lynches.length)
+    headlines.push({
+      label: 'Vote accuracy',
+      value: `${Math.round((right / lynches.length) * 100)}%`,
+      detail: `${right} of ${plural(lynches.length, 'vote')} found ${s.mode === 'Mafia' ? 'a killer' : 'a wolf'}`,
+    });
+  if (s.saves.length)
+    headlines.push({
+      label: 'Lives saved',
+      value: `${s.saves.length}`,
+      detail: [...new Set(s.saves)].map((id) => `{${id}}`).join(', '),
+    });
+
+  // The votes' record.
+  if (lynches.length >= 2 && wrong > right)
+    facts.push({
+      label: 'Wrong turns',
+      text: `${SETTING[s.mode].town} voted out ${plural(wrong, 'innocent player')}${right === 0 ? ' and never caught a ' + (s.mode === 'Mafia' ? 'killer' : 'wolf') : `, and only ${plural(right, 'guilty one')}`}.`,
+      tone: 'bad',
+    });
+  else if (lynches.length >= 2 && right === lynches.length)
+    facts.push({
+      label: 'Clean sweep',
+      text: `All ${lynches.length} votes found a ${s.mode === 'Mafia' ? 'killer' : 'wolf'}.`,
+      tone: 'good',
+    });
+  // The sharpest and the most misled voter on the town's side.
+  const voters = Object.keys(cast).map((id) => ({ id, n: cast[id]!, h: hit[id] ?? 0 }));
+  const sharp = [...voters].sort((a, b) => b.h - a.h || a.n - b.n)[0];
+  if (sharp && sharp.h >= 2 && sharp.h / sharp.n >= 0.6)
+    facts.push({
+      label: 'Sharp eyes',
+      text: `{${sharp.id}} pointed at a ${packWord === 'Mafia' ? 'killer' : 'wolf'} in ${sharp.h} of ${sharp.n} votes.`,
+      playerIds: [sharp.id],
+      tone: 'good',
+    });
+  const lost = [...voters].sort((a, b) => b.n - b.h - (a.n - a.h))[0];
+  if (lost && lost.n - lost.h >= 3 && lost.h === 0)
+    facts.push({
+      label: 'Way off',
+      text: `{${lost.id}} voted for an innocent player every time, ${lost.n} votes in a row.`,
+      playerIds: [lost.id],
+      tone: 'bad',
+    });
+  const popular = Object.entries(received).sort((a, b) => b[1] - a[1])[0];
+  if (popular && popular[1] >= 4)
+    facts.push({
+      label: 'Most suspected',
+      text: `{${popular[0]}} collected ${popular[1]} votes over the game${s.alive.includes(popular[0]) ? ' and lived through it' : ''}.`,
+      playerIds: [popular[0]],
+    });
+  if (stalls >= 2)
+    facts.push({
+      label: 'Stalemates',
+      text: `${stalls} votes ended with nobody voted out.`,
+    });
+
+  // Night: the hunted, the savior, the poison, the hunter's shot.
+  const hunted: Record<string, number> = {};
+  for (const e of events)
+    if (e.d.kind === 'attack' || e.d.kind === 'stab')
+      for (const id of (e.d.about as string[]) ?? []) hunted[id] = (hunted[id] ?? 0) + 1;
+  const target = Object.entries(hunted).sort((a, b) => b[1] - a[1])[0];
+  if (target && target[1] >= 2)
+    facts.push({
+      label: 'Marked',
+      text: `{${target[0]}} was the target of the night attack ${target[1]} times${s.alive.includes(target[0]) ? ' and survived them all' : ''}.`,
+      playerIds: [target[0]],
+      tone: s.alive.includes(target[0]) ? 'good' : undefined,
+    });
+  const savers = new Map<string, number>();
+  for (const id of s.saves) savers.set(id, (savers.get(id) ?? 0) + 1);
+  for (const [id, n] of [...savers].sort((a, b) => b[1] - a[1]).slice(0, 2))
+    facts.push({
+      label: 'Guardian',
+      text: `{${id}}, the ${roleName(id)}, saved ${plural(n, 'life', 'lives')}.`,
+      playerIds: [id],
+      tone: 'good',
+    });
+  const witch = s.players.find((id) => s.roles[id] === 'witch');
+  const poisoned = events.find((e) => e.d.kind === 'poison');
+  if (poisoned && witch) {
+    const victim = (poisoned.d.about as string[])[0]!;
+    facts.push({
+      label: 'Poison',
+      text: `{${witch}}’s poison took {${victim}}, ${bad(victim) ? `a ${roleName(victim)}` : `an innocent ${roleName(victim)}`}.`,
+      playerIds: [witch, victim],
+      tone: bad(victim) ? 'good' : 'bad',
+    });
+  }
+  const shot = events.find((e) => e.d.kind === 'shot' && e.d.target) as
+    { d: Ev & { by: string; target: string } } | undefined;
+  if (shot)
+    facts.push({
+      label: 'Last shot',
+      text: `{${shot.d.by}}, the Hunter, took {${shot.d.target}} down with them, ${bad(shot.d.target) ? 'a ' + (s.mode === 'Mafia' ? 'killer' : 'wolf') : 'an innocent'}.`,
+      playerIds: [shot.d.by, shot.d.target],
+      tone: bad(shot.d.target) ? 'good' : 'bad',
+    });
+  if (s.lovers && s.deaths.some((d) => d.cause === 'grief'))
+    facts.push({
+      label: 'Broken heart',
+      text: `{${s.lovers[0]}} and {${s.lovers[1]}} were lovers, and when one fell the other followed.`,
+      playerIds: [...s.lovers],
+    });
+  if (s.win?.team === 'jester') {
+    const jester = s.players.find((id) => s.roles[id] === 'jester');
+    if (jester)
+      facts.push({
+        label: 'Fooled them',
+        text: `{${jester}} got the town to vote them out, and won.`,
+        playerIds: [jester],
+        tone: 'good',
+      });
+  }
+  // A Mayor whose second vote settled a close one.
+  for (const b of ballots) {
+    const vote = lynches.find((e) => e.round === b.round);
+    const mayor = s.players.find((id) => s.roles[id] === 'mayor');
+    if (!vote || !mayor || b.d.votes[mayor] !== vote.d.out) continue;
+    const tally: Record<string, number> = {};
+    for (const [voter, t] of Object.entries(b.d.votes))
+      tally[t] = (tally[t] ?? 0) + (s.roles[voter] === 'mayor' ? 2 : 1);
+    const second = Math.max(
+      0,
+      ...Object.entries(tally)
+        .filter(([t]) => t !== vote.d.out)
+        .map(([, n]) => n),
+    );
+    if (tally[vote.d.out]! - 1 <= second) {
+      facts.push({
+        label: 'Double vote',
+        text: `The Mayor’s second vote decided day ${b.round}: {${vote.d.out}} went out.`,
+        playerIds: [mayor, vote.d.out],
+      });
+      break;
+    }
+  }
+  const first = s.deaths[0];
+  if (first && first.cause === 'night' && first.night === 1)
+    facts.push({
+      label: 'First blood',
+      text: `{${first.id}}, the ${roleName(first.id)}, was killed on the very first night.`,
+      playerIds: [first.id],
+      tone: 'bad',
+    });
+
+  // How long each player lasted, in nights and days.
+  const lasted = (id: string) => {
+    let n = 0;
+    for (const { d } of events) {
+      if (d.kind === 'dawn' || d.kind === 'vote') n++;
+      const gone = [d.dead, d.about].flat().filter((x): x is string => typeof x === 'string');
+      if (d.kind !== 'ballots' && gone.includes(id)) return n;
+    }
+    return n + 1;
+  };
+  const bars: StoryBars[] = [
+    {
+      title: 'Who lasted longest',
+      rows: s.players
+        .map((playerId) => ({
+          playerId,
+          value: lasted(playerId),
+          display: outAt(s, playerId),
+        }))
+        .sort((a, b) => b.value - a.value),
+    },
+  ];
+  const ballotsCast: StoryBars = {
+    title: 'Votes received',
+    rows: Object.entries(received)
+      .map(([playerId, value]) => ({ playerId, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6),
+  };
+  if (ballotsCast.rows[0] && ballotsCast.rows[0].value >= 2) bars.push(ballotsCast);
+
+  return buildStory({ headlines, charts: [chart], bars, facts });
+}
+
 function result(s: MafiaState, win: Win, early: boolean): GameResult {
   // Nobody left standing is a draw for everyone.
   const draw = s.alive.length === 0;
@@ -971,6 +1252,7 @@ function result(s: MafiaState, win: Win, early: boolean): GameResult {
     reveal,
     recap: s.recap.map((e) => withTone(e, winners)),
     roundName: 'Round',
+    story: mafiaStory(s),
     stats: statsOf(s, winners),
     highlights,
     standings: s.players.map((playerId) => {

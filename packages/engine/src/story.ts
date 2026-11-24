@@ -122,7 +122,8 @@ export function raceStory(input: RaceInput): RaceStory {
         const rank = 1 + series.filter((s) => good(at(s, i)) > good(at(w, i))).length;
         if (gap > worst.gap) worst = { gap, step: i, rank };
       }
-      const ledAll = leaders.every((l) => l === null || l === winner) && leaders.includes(winner);
+      // Led outright after every step: a tie at any point isn't leading.
+      const ledAll = leaders.every((l) => l === winner);
       if (worst.gap > 0 && worst.step < steps - 1 && worst.rank >= Math.min(3, series.length)) {
         facts.push({
           label: 'Comeback',
@@ -156,13 +157,21 @@ export function raceStory(input: RaceInput): RaceStory {
   // The biggest swings between two steps, either way.
   let gain = { by: 0, player: '', step: 0 };
   let drop = { by: 0, player: '', step: 0 };
+  const ups: number[] = [];
+  const downs: number[] = [];
   for (const s of series) {
     for (let i = 1; i < s.points.length; i++) {
       const d = good(s.points[i]!) - good(s.points[i - 1]!);
+      if (d > 0) ups.push(d);
+      if (d < 0) downs.push(-d);
       if (d > gain.by) gain = { by: d, player: s.playerId, step: i };
       if (-d > drop.by) drop = { by: -d, player: s.playerId, step: i };
     }
   }
+  // Only a swing that stands out: more than one, and at least twice the usual one that way.
+  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
+  if (gain.by <= 1 || gain.by < 2 * mean(ups)) gain.by = 0;
+  if (drop.by <= 1 || drop.by < 2 * mean(downs)) drop.by = 0;
   if (gain.by > 0) {
     facts.push({
       label: `Huge ${step}`,

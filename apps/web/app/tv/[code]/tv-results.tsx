@@ -18,7 +18,7 @@ import {
 } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 
-const RECAP_ROWS = 8;
+const RECAP_ROWS = 6;
 /** The winner gets the screen to themselves this long before the stats begin. */
 const REVEAL_MS = 8_000;
 const PANEL_MS = 12_000;
@@ -332,7 +332,15 @@ export function TvResults({
       {showing && (
         <section className="tv-show" aria-live="polite">
           {count > 1 && (
-            <ol className="tv-show__tabs" data-many={count > 7 || undefined} aria-hidden>
+            <ol
+              className="tv-show__tabs"
+              data-many={
+                count > 7 ||
+                panels.reduce((n, p) => n + (TABS[p.title] ?? p.title).length, 0) > 56 ||
+                undefined
+              }
+              aria-hidden
+            >
               {panels.map((p, i) => (
                 <li key={p.id} data-on={i === at % count || undefined}>
                   {TABS[p.title] ?? p.title}

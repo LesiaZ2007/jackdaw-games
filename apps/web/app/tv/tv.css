@@ -720,10 +720,12 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   border-color: var(--danger);
 }
 .tv-recap__event[data-tone='good'] .tv-recap__round {
-  color: var(--win-ink);
+  color: var(--on-fill);
+  background: var(--vert);
 }
 .tv-recap__event[data-tone='bad'] .tv-recap__round {
-  color: var(--danger);
+  color: var(--on-fill);
+  background: var(--gules);
 }
 .tv-recap__empty,
 .tv-recap__more {
@@ -832,10 +834,18 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
 .tv-show__tabs[data-many] {
   gap: 6px;
 }
+.tv-show__tabs[data-many] {
+  flex-wrap: nowrap;
+}
 .tv-show__tabs[data-many] li {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 220px;
   padding: 5px 9px 7px;
   font-size: 20px;
   letter-spacing: 0.03em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .tv-show__tabs li[data-on] {
   color: var(--table);

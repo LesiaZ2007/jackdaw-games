@@ -83,8 +83,11 @@ function spread(ys: number[], gap: number): number[] {
   return out;
 }
 
+/** 12,500 as "12.5k", 2.5 as "2.5", 1240 as "1,240". */
 const short = (n: number) =>
-  Math.abs(n) >= 10_000 ? `${Math.round(n / 1000)}k` : Math.round(n).toLocaleString('en-US');
+  Math.abs(n) >= 10_000
+    ? `${(n / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 })}k`
+    : n.toLocaleString('en-US', { maximumFractionDigits: 1 });
 
 export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryContext }) {
   const steps = Math.max(...chart.series.map((s) => s.points.length));
@@ -96,13 +99,14 @@ export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryCo
   let hi = Math.max(...all);
   if (chart.kind !== 'per-step' && lo > 0) lo = 0;
   if (hi === lo) hi = lo + 1;
-  // A clean scale: the top is the next round number (1, 2, 2.5 or 5 times a power of ten).
-  const nice = (v: number) => {
-    const p = 10 ** Math.floor(Math.log10(v));
-    return ([1, 2, 2.5, 5, 10].find((m) => m * p >= v) ?? 10) * p;
-  };
-  const top = hi > 0 ? nice(hi) : 0;
-  const bottom = lo < 0 ? -nice(-lo) : 0;
+  // A clean scale: a round step (1, 2, 2.5 or 5 times a power of ten, whole numbers for small
+  // ranges) about a fifth of the range, and the top and bottom on whole steps.
+  const raw = (hi - Math.min(lo, 0)) / 5;
+  const p = 10 ** Math.floor(Math.log10(raw));
+  const stepSize =
+    ([1, 2, 2.5, 5, 10].find((m) => m * p >= raw && (p >= 10 || m !== 2.5)) ?? 10) * p;
+  const top = Math.max(stepSize, Math.ceil(hi / stepSize) * stepSize);
+  const bottom = lo < 0 ? Math.floor(lo / stepSize) * stepSize : 0;
   const W = 1000;
   const H = 1000;
   const x = (i: number) => (i / (steps - 1)) * W;
@@ -130,16 +134,17 @@ export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryCo
   const drawn = [...lines].sort((a, b) => Number(a.won) - Number(b.won));
   const zero = bottom < 0 && top > 0 ? y(0) / H : null;
   // Pins close together stack in rows, so their notes don't cover each other.
-  const marks: { x: number; text: string; at: number; row: number }[] = [];
-  for (const m of [...(chart.marks ?? [])].sort((a, b) => a.x - b.x).slice(0, 6)) {
-    const at = m.x / (steps - 1);
-    const row = marks.filter((p) => Math.abs(p.at - at) < 0.25).length;
-    marks.push({ ...m, at, row });
-  }
-  const ticks = [top, (top + bottom) / 2, bottom].map((v) => ({
-    v,
-    at: y(v) / H,
-  }));
+  // Each note gets a row of its own (they're wide), so at most three are written out; any
+  // more keep just their dashed line.
+  const marks = [...(chart.marks ?? [])]
+    .sort((a, b) => a.x - b.x)
+    .map((m, i) => ({ ...m, at: m.x / (steps - 1), row: i < 3 ? i : -1 }));
+  const count = Math.round((top - bottom) / stepSize);
+  // Every step, or every other one when there are many.
+  const every = count > 6 ? 2 : 1;
+  const ticks = Array.from({ length: count + 1 }, (_, i) => bottom + i * stepSize)
+    .filter((_, i) => i % every === 0 || bottom + i * stepSize === 0)
+    .map((v) => ({ v, at: y(v) / H }));
 
   return (
     <figure className="jd-story__chart">
@@ -169,7 +174,7 @@ export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryCo
               data-right={m.at > 0.6 || undefined}
               style={{ left: `${m.at * 100}%`, ['--row' as string]: m.row }}
             >
-              <span>{storyText(m.text, ctx.names)}</span>
+              {m.row >= 0 && <span>{storyText(m.text, ctx.names)}</span>}
             </span>
           ))}
           <svg

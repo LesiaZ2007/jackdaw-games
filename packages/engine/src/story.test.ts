@@ -25,7 +25,21 @@ describe('raceStory', () => {
     expect(r.facts.find((f) => f.label === 'Huge hand')?.text).toBe(
       '{b} gained 30 chips on hand 4.',
     );
-    expect(r.facts.find((f) => f.label === 'Rough hand')?.tone).toBe('bad');
+    // The drops (10 and 5) are alike, so neither stands out as a rough hand.
+    expect(r.facts.find((f) => f.label === 'Rough hand')).toBeUndefined();
+  });
+
+  it('needs an outright lead after every step for wire to wire', () => {
+    const r = raceStory({
+      series: [
+        { playerId: 'a', points: [0, 2, 2, 4, 6] },
+        { playerId: 'b', points: [0, 2, 2, 3, 3] },
+      ],
+      winners: ['a'],
+      step: 'round',
+      title: 'Score',
+    });
+    expect(r.facts.map((f) => f.label)).not.toContain('Wire to wire');
   });
 
   it('calls a wire-to-wire win and a photo finish', () => {

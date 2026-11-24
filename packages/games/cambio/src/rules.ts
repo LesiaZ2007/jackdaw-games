@@ -2,9 +2,15 @@ import {
   GameError,
   type GameModule,
   type GameResult,
+  type GameStory,
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type StoryBars,
+  type StoryFact,
+  type StoryHeadline,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import {
@@ -250,6 +256,22 @@ export interface CambioState {
   actBy: number | null;
   /** The lowest hand of any round, for the night's awards. */
   lowest?: { player: string; total: number; round: number };
+  /** Each player's score after every round, for the stats page (index 0 is the start). */
+  trail?: Record<string, number[]>;
+  /** What each player has done with their turns, for the stats page. */
+  tally?: Record<string, Tally>;
+}
+
+/** Counts of what a player did over the game. */
+export interface Tally {
+  /** Cards swapped with another player (a Jack or Queen, or a King's swap). */
+  swaps: number;
+  /** Looks at another player's card (a spy, or a King's look). */
+  snoops: number;
+  /** Looks at their own card with a power. */
+  peeks: number;
+  /** Times they took the top discard. */
+  takes: number;
 }
 
 /** Everything public: the TV and every phone render this. */
@@ -418,7 +440,19 @@ function swapCards(
 /** Record a public move. */
 function log(s: CambioState, m: Omit<Move, 'seq'>): CambioState {
   const seq = s.seq + 1;
-  return { ...s, seq, moves: [...s.moves, { ...m, seq }].slice(-MOVES_KEPT) };
+  const key: keyof Tally | null =
+    m.kind === 'swap' || m.kind === 'kingSwap'
+      ? 'swaps'
+      : m.kind === 'spy' || m.kind === 'look'
+        ? 'snoops'
+        : m.kind === 'peek'
+          ? 'peeks'
+          : m.kind === 'take'
+            ? 'takes'
+            : null;
+  const mine: Tally = { swaps: 0, snoops: 0, peeks: 0, takes: 0, ...s.tally?.[m.player] };
+  const tally = key ? { tally: { ...s.tally, [m.player]: { ...mine, [key]: mine[key] + 1 } } } : {};
+  return { ...s, seq, ...tally, moves: [...s.moves, { ...m, seq }].slice(-MOVES_KEPT) };
 }
 
 /** Add an event to the recap, for this round. */
@@ -540,6 +574,9 @@ function finishRound(s: CambioState): CambioState {
     look: null,
     scores,
     lowest,
+    trail: Object.fromEntries(
+      s.players.map((id) => [id, [...(s.trail?.[id] ?? [0]), scores[id]!]]),
+    ),
     last: result,
     history: [...s.history, result],
     nextReady: [],
@@ -897,6 +934,171 @@ function recapStats(s: CambioState, order: string[]): RecapStats {
   };
 }
 
+/** The stats page: the score race (low wins), the best and worst hands, Cambio calls and powers. */
+function cambioStory(s: CambioState, winners: string[]): GameStory | undefined {
+  const ids = s.players;
+  const history = s.history;
+  if (history.length === 0) return undefined;
+
+  // Older games have no trail: rebuild it from what each round scored.
+  const trail = (id: string) =>
+    s.trail?.[id] ??
+    history.reduce((acc, r) => [...acc, acc[acc.length - 1]! + (r.scored[id] ?? 0)], [0]);
+  const race =
+    history.length >= 2
+      ? raceStory({
+          series: ids.map((id) => ({ playerId: id, points: trail(id) })),
+          winners,
+          step: 'round',
+          title: 'Score (lower is better)',
+          unit: ' points',
+          lowWins: true,
+        })
+      : undefined;
+
+  const headlines: StoryHeadline[] = [];
+  const facts: StoryFact[] = [];
+
+  // Best and worst hands laid down.
+  let best: { id: string; total: number; round: number } | null = null;
+  let worst: { id: string; total: number; round: number } | null = null;
+  for (const r of history)
+    for (const id of ids) {
+      const t = r.totals[id];
+      if (t === undefined) continue;
+      if (!best || t < best.total) best = { id, total: t, round: r.round };
+      if (!worst || t > worst.total) worst = { id, total: t, round: r.round };
+    }
+  if (best)
+    headlines.push({
+      label: 'Best hand',
+      value: `${best.total}`,
+      detail: `{${best.id}}, card total in round ${best.round}`,
+      playerId: best.id,
+    });
+  if (worst && worst.total >= 25 && history.length > 1)
+    facts.push({
+      label: 'Heavy hand',
+      text: `{${worst.id}} was left holding ${worst.total} points in round ${worst.round}.`,
+      playerIds: [worst.id],
+      tone: 'bad',
+    });
+
+  // Cambio calls that worked and ones that backfired.
+  const calls = ids.map((id) => {
+    const mine = history.filter((r) => r.caller === id);
+    return { id, n: mine.length, won: mine.filter((r) => r.callerWon).length };
+  });
+  const cool = [...calls].sort((a, b) => b.won - a.won)[0]!;
+  if (cool.won >= 2)
+    facts.push({
+      label: 'Cool caller',
+      text:
+        cool.won === cool.n
+          ? `{${cool.id}} called Cambio ${cool.n} times and had the lowest hand every time.`
+          : `{${cool.id}} called Cambio ${cool.n} times and had the lowest hand ${cool.won} of them.`,
+      playerIds: [cool.id],
+      tone: 'good',
+    });
+  const rash = [...calls].sort((a, b) => b.n - b.won - (a.n - a.won))[0]!;
+  if (rash.n - rash.won >= 2)
+    facts.push({
+      label: 'Called too soon',
+      text: `{${rash.id}} called Cambio and got beaten ${rash.n - rash.won} times.`,
+      playerIds: [rash.id],
+      tone: 'bad',
+    });
+  // The costliest backfire.
+  let costly: { id: string; extra: number; round: number } | null = null;
+  for (const r of history) {
+    if (r.callerWon) continue;
+    const extra = (r.scored[r.caller] ?? 0) - (r.totals[r.caller] ?? 0);
+    if (extra >= 10 && (!costly || extra > costly.extra))
+      costly = { id: r.caller, extra, round: r.round };
+  }
+  if (costly && rash.n - rash.won < 2)
+    facts.push({
+      label: 'Backfired',
+      text: `{${costly.id}} called Cambio in round ${costly.round} and paid ${costly.extra} extra points for it.`,
+      playerIds: [costly.id],
+      tone: 'bad',
+    });
+
+  // Powers: the swapper, the snoop and the discard scavenger.
+  const tally = (id: string): Tally => ({
+    swaps: 0,
+    snoops: 0,
+    peeks: 0,
+    takes: 0,
+    ...s.tally?.[id],
+  });
+  const top = (key: keyof Tally) => [...ids].sort((a, b) => tally(b)[key] - tally(a)[key])[0]!;
+  const swapper = top('swaps');
+  if (tally(swapper).swaps >= 3)
+    facts.push({
+      label: 'Card swapper',
+      text: `{${swapper}} swapped cards with other players ${tally(swapper).swaps} times.`,
+      playerIds: [swapper],
+    });
+  const snoop = top('snoops');
+  if (tally(snoop).snoops >= 4)
+    facts.push({
+      label: 'Snoop',
+      text: `{${snoop}} looked at other players' cards ${tally(snoop).snoops} times.`,
+      playerIds: [snoop],
+    });
+  const scavenger = top('takes');
+  if (tally(scavenger).takes >= 8)
+    facts.push({
+      label: 'Discard diver',
+      text: `{${scavenger}} took the top discard ${tally(scavenger).takes} times.`,
+      playerIds: [scavenger],
+    });
+  for (const r of history)
+    for (const id of r.dropped ?? [])
+      facts.push({
+        label: 'Back to 50',
+        text: `{${id}} landed on exactly 100 in round ${r.round} and dropped back to 50.`,
+        playerIds: [id],
+        tone: 'bad',
+      });
+
+  // Rounds with the lowest hand, ties counted for everyone.
+  const lowest = ids.map((id) => ({
+    playerId: id,
+    value: history.filter((r) => r.totals[id] === Math.min(...Object.values(r.totals))).length,
+  }));
+  const bars: StoryBars[] = [];
+  if (history.length >= 2)
+    bars.push({
+      title: 'Rounds with the lowest hand',
+      rows: [...lowest].sort((a, b) => b.value - a.value),
+    });
+  const swaps = ids
+    .map((playerId) => ({ playerId, value: tally(playerId).swaps }))
+    .sort((a, b) => b.value - a.value);
+  if (swaps[0]!.value >= 3) bars.push({ title: 'Cards swapped', rows: swaps });
+
+  // "Backfired" already tells the story of a costly call; skip the race's "Rough round" when it
+  // names the same player and round.
+  const trimmed =
+    race && costly && rash.n - rash.won < 2
+      ? {
+          ...race,
+          facts: race.facts.filter(
+            (f) =>
+              !(
+                f.label === 'Rough round' &&
+                f.text.includes(`{${costly.id}}`) &&
+                f.text.includes(`round ${costly.round}`)
+              ),
+          ),
+        }
+      : race;
+
+  return buildStory({ race: trimmed, headlines, facts, bars });
+}
+
 /** The result on the rounds scored so far (a finished game, or ended early). */
 function resultOf(s: CambioState): GameResult {
   const low = Math.min(...s.players.map((id) => s.scores[id] ?? 0));
@@ -923,6 +1125,7 @@ function resultOf(s: CambioState): GameResult {
     reveal,
     recap: s.recap,
     roundName: 'Round',
+    story: cambioStory(s, winners),
     stats: recapStats(s, [...winners, ...ranked.filter((id) => !winners.includes(id))]),
     highlights: s.lowest
       ? [

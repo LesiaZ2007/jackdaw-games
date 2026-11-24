@@ -1,0 +1,488 @@
+/* The end-of-game stats page. Printed: flat fills, ink rules, no gradients or glows.
+   Phone sizes here; `.jd-story--tv` (or anything inside `.tv-story`) takes the TV sizes. */
+
+/* The inks players' lines and bars are drawn in; lifted on dark paper so they all read. */
+:root {
+  --story-gules: var(--gules);
+  --story-azure: var(--azure);
+  --story-vert: var(--vert);
+  --story-or: var(--or);
+  --story-purpure: var(--purpure);
+  --story-tenne: var(--tenne);
+  --story-sable: var(--sable);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --story-gules: #d4695d;
+    --story-azure: #6f9fd6;
+    --story-vert: #6fb28e;
+    --story-or: #d2aa5c;
+    --story-purpure: #b58bc0;
+    --story-tenne: #d98f4e;
+    --story-sable: #c9cdd2;
+  }
+}
+:root[data-theme='dark'] {
+  --story-gules: #d4695d;
+  --story-azure: #6f9fd6;
+  --story-vert: #6fb28e;
+  --story-or: #d2aa5c;
+  --story-purpure: #b58bc0;
+  --story-tenne: #d98f4e;
+  --story-sable: #c9cdd2;
+}
+
+.jd-story {
+  display: grid;
+  gap: var(--space-4, 24px);
+}
+
+/* ── Big numbers ─────────────────────────────────────────────────────────── */
+.jd-story__heads {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.jd-story__head {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px 12px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  animation: jd-story-in 520ms var(--ease-out) both;
+}
+.jd-story__head:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+/* Pins on a chart need the TV's room; phones have the facts instead. */
+.jd-story:not(.jd-story--tv) .jd-story__mark {
+  display: none;
+}
+.jd-story__kicker,
+.jd-story__fact-label {
+  font: 800 13px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+}
+.jd-story__value {
+  font: 800 clamp(30px, 9vw, 44px) / 0.95 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.jd-story__detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--ink-2);
+  min-width: 0;
+}
+.jd-story__detail b {
+  color: var(--ink);
+}
+
+/* ── Charts ──────────────────────────────────────────────────────────────── */
+.jd-story__chart,
+.jd-story__bars {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.jd-story__chart {
+  --end-w: 112px;
+}
+.jd-story--tv .jd-story__chart {
+  --end-w: 340px;
+}
+.jd-story__chart-title {
+  font: 800 16px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.jd-story__plot {
+  --plot-h: 210px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  height: var(--plot-h);
+}
+/* Room above the top line for the labels centered on it. */
+.jd-story__axis,
+.jd-story__area {
+  margin-top: 10px;
+}
+.jd-story--tv .jd-story__axis,
+.jd-story--tv .jd-story__area {
+  margin-top: 22px;
+}
+.jd-story__axis {
+  position: relative;
+  min-width: 2.2em;
+  font: 700 12px/1 var(--font-plaque);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.jd-story__axis span {
+  position: absolute;
+  right: 0;
+  transform: translateY(-50%);
+}
+/* The plot leaves room on the right for the names at the ends of the lines. */
+.jd-story__area {
+  position: relative;
+  margin-right: var(--end-w);
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+}
+.jd-story__grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--ink) 25%, transparent);
+}
+.jd-story__grid--zero {
+  border-top: 2px solid color-mix(in srgb, var(--ink) 60%, transparent);
+}
+.jd-story__svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  animation: jd-story-draw 1400ms var(--ease-out) 200ms both;
+}
+.jd-story__line {
+  fill: none;
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+.jd-story__line[data-won] {
+  stroke-width: 5px;
+  opacity: 1;
+}
+.jd-story__end {
+  position: absolute;
+  left: 100%;
+  width: var(--end-w);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 8px;
+  transform: translateY(-50%);
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  animation: jd-story-fade 500ms ease 1300ms both;
+}
+.jd-story__end i {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  background: var(--ink-line);
+  border: 1.5px solid var(--ink);
+}
+.jd-story__end-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.jd-story__end-val {
+  font: 800 13px/1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.jd-story__end[data-won] .jd-story__end-name {
+  font-weight: 800;
+}
+.jd-story__end[data-me] .jd-story__end-name {
+  text-decoration: underline 2px var(--or);
+  text-underline-offset: 3px;
+}
+.jd-story__mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1.5px dashed var(--ink-2);
+}
+.jd-story__mark > span {
+  position: absolute;
+  top: calc(2px + var(--row, 0) * 1.6em);
+  left: 4px;
+  max-width: 12em;
+  padding: 1px 5px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  font-size: 11px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.jd-story__mark[data-right] > span {
+  left: auto;
+  right: 4px;
+}
+.jd-story__x {
+  display: flex;
+  justify-content: space-between;
+  margin-left: 2.6em;
+  margin-right: var(--end-w);
+  font: 700 12px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+
+/* ── Bars ────────────────────────────────────────────────────────────────── */
+.jd-story__bars ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.jd-story__bars li {
+  display: grid;
+  grid-template-columns: minmax(0, 7.5em) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+}
+.jd-story__bar-who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.jd-story__bar-who > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.jd-story__bars li[data-me] .jd-story__bar-who > span {
+  text-decoration: underline 2px var(--or);
+  text-underline-offset: 3px;
+}
+.jd-story__bar-track {
+  height: 18px;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--ink) 30%, transparent);
+}
+.jd-story__bar {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border: 1.5px solid var(--ink);
+  transform-origin: left;
+  animation: jd-story-grow 800ms var(--ease-out) both;
+}
+.jd-story__bar-val {
+  font: 800 16px/1 var(--font-plaque);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.5ch;
+  text-align: right;
+}
+.jd-story__bars li[data-best] .jd-story__bar-val::after {
+  content: ' ★';
+  color: var(--or);
+}
+
+/* ── Fun facts ───────────────────────────────────────────────────────────── */
+.jd-story__facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.jd-story__fact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'label who' 'text who';
+  gap: 4px 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-left-width: 8px;
+  animation: jd-story-in 520ms var(--ease-out) both;
+}
+.jd-story__fact[data-tone='good'] {
+  border-left-color: var(--vert);
+}
+.jd-story__fact[data-tone='bad'] {
+  border-left-color: var(--gules);
+}
+.jd-story__fact-label {
+  grid-area: label;
+}
+.jd-story__fact[data-tone='good'] .jd-story__fact-label {
+  color: var(--win-ink);
+}
+.jd-story__fact[data-tone='bad'] .jd-story__fact-label {
+  color: var(--danger);
+}
+.jd-story__fact-text {
+  grid-area: text;
+  font-size: 16px;
+  line-height: 1.3;
+}
+.jd-story__fact-who {
+  grid-area: who;
+  display: flex;
+}
+.jd-story__fact-who > * + * {
+  margin-left: -8px;
+}
+
+/* ── TV sizes (stage pixels on the 1920×1080 stage) ──────────────────────── */
+.jd-story--tv .jd-story__heads {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+.jd-story--tv .jd-story__head {
+  gap: 12px;
+  padding: 26px 30px;
+  border-width: 3px;
+  box-shadow: 8px 8px 0 var(--ink);
+}
+.jd-story--tv .jd-story__kicker,
+.jd-story--tv .jd-story__fact-label {
+  font-size: 26px;
+}
+.jd-story--tv .jd-story__value {
+  font-size: 104px;
+}
+.jd-story--tv .jd-story__detail {
+  gap: 12px;
+  font-size: 30px;
+}
+.jd-story--tv .jd-story__chart,
+.jd-story--tv .jd-story__bars {
+  gap: 16px;
+}
+/* On the TV the panel's own heading names the chart. */
+.jd-story--tv .jd-story__chart-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.jd-story--tv .jd-story__plot {
+  --plot-h: 100%;
+  gap: 14px;
+  height: auto;
+  min-height: 0;
+}
+.jd-story--tv .jd-story__chart {
+  height: 100%;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.jd-story--tv .jd-story__axis {
+  font-size: 24px;
+}
+.jd-story--tv .jd-story__area {
+  border-width: 3px;
+}
+.jd-story--tv .jd-story__line {
+  stroke-width: 5px;
+}
+.jd-story--tv .jd-story__line[data-won] {
+  stroke-width: 10px;
+}
+.jd-story--tv .jd-story__end {
+  gap: 12px;
+  padding-left: 16px;
+  font-size: 28px;
+}
+.jd-story--tv .jd-story__end i {
+  width: 20px;
+  height: 20px;
+  border-width: 2.5px;
+}
+.jd-story--tv .jd-story__end-val {
+  font-size: 28px;
+}
+.jd-story--tv .jd-story__mark > span {
+  font-size: 24px;
+  padding: 2px 10px;
+  border-width: 2px;
+}
+.jd-story--tv .jd-story__x {
+  margin-left: 3.4em;
+  font-size: 24px;
+}
+.jd-story--tv .jd-story__bars ol {
+  gap: 14px;
+}
+.jd-story--tv .jd-story__bars li {
+  grid-template-columns: minmax(0, 9em) minmax(0, 1fr) auto;
+  gap: 18px;
+  font-size: 30px;
+}
+.jd-story--tv .jd-story__bar-track {
+  height: 40px;
+}
+.jd-story--tv .jd-story__bar {
+  border-width: 2.5px;
+}
+.jd-story--tv .jd-story__bar-val {
+  font-size: 36px;
+}
+.jd-story--tv .jd-story__facts {
+  gap: 22px;
+}
+.jd-story--tv .jd-story__fact {
+  gap: 10px 24px;
+  padding: 22px 28px;
+  border-width: 3px;
+  border-left-width: 16px;
+}
+.jd-story--tv .jd-story__fact-text {
+  font-size: 36px;
+  line-height: 1.25;
+}
+
+@keyframes jd-story-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes jd-story-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes jd-story-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+/* The lines draw themselves left to right. */
+@keyframes jd-story-draw {
+  from {
+    clip-path: inset(-20px 100% -20px -20px);
+  }
+  to {
+    clip-path: inset(-20px -20px -20px -20px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jd-story__head,
+  .jd-story__svg,
+  .jd-story__end,
+  .jd-story__bar,
+  .jd-story__fact {
+    animation: none;
+  }
+}

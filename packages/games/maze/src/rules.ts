@@ -1,11 +1,17 @@
+import { buildStory } from '@jackdaw/engine';
 import type {
   Announcement,
   GameModule,
   GameResult,
+  GameStory,
   RecapEvent,
   RecapStats,
   Rng,
   Standing,
+  StoryBars,
+  StoryChart,
+  StoryFact,
+  StoryHeadline,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import { meta } from './meta';
@@ -129,6 +135,8 @@ export interface PlayerRec {
    * the player had when it was reported, so earlier catches can't eat later points.
    */
   lost?: number;
+  /** Round total of power spots picked up (the facts forget them when a maze is cleared). */
+  powerUps?: number;
 }
 
 export interface PowerSpot {
@@ -190,6 +198,11 @@ export interface MazeState {
   /** Last attack id handed out. */
   attackId: number;
   log: RecapEvent[];
+  /**
+   * Everyone's score every TRAIL_MS of round time, for the stats page: index 0 is the start,
+   * index k the score at the end of the k-th step. Older games lack it.
+   */
+  trail?: { step: number; scores: Record<string, number[]> };
 }
 
 const int = (min: number, max: number) => z.number().int().min(min).max(max);
@@ -748,6 +761,7 @@ function settleOwn(
     fruit: prev.fruit + facts.fruit.length - prev.facts.fruit.length,
     pellets: prev.pellets + pelletsNow - pelletsBefore,
     power: powerAt(facts, levelOf(prev.maze), a.t),
+    powerUps: (prev.powerUps ?? 0) + facts.powers.length - prev.facts.powers.length,
   };
   p = chargeCatches(s, prev, p);
   let out: MazeState = rescore({ ...s, players: { ...s.players, [id]: p } }, id);
@@ -876,6 +890,207 @@ function table(s: MazeState): MazeTableView {
   };
 }
 
+/** Round time between score samples for the stats page, and how many samples are kept. */
+export const TRAIL_MS = 10_000;
+const TRAIL_MAX = 400;
+
+/** Notes everyone's score for the sample the clock is in (a few numbers a player, no more). */
+function recordTrail(s: MazeState, now: number): MazeState {
+  if (s.phase !== 'play') return s;
+  const k = Math.floor((now - s.startAt) / TRAIL_MS) + 1;
+  if (k < 1 || k > TRAIL_MAX) return s;
+  const old = s.trail?.scores ?? {};
+  const scores: Record<string, number[]> = {};
+  let changed = false;
+  for (const id of s.ids) {
+    const arr = old[id] ?? [0];
+    const cur = s.players[id]!.score;
+    if (arr.length === k + 1 && arr[k] === cur) {
+      scores[id] = arr;
+      continue;
+    }
+    if (arr.length > k + 1) {
+      scores[id] = arr;
+      continue;
+    }
+    const next = arr.slice(0, k + 1);
+    while (next.length < k) next.push(next[next.length - 1] ?? 0);
+    next[k] = cur;
+    scores[id] = next;
+    changed = true;
+  }
+  return changed ? { ...s, trail: { step: TRAIL_MS, scores } } : s;
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * The stats page: everyone's score over the round, the ghost hunter, the most caught, power-ups
+ * and fruit, and who cleared the mazes fastest. Older games without a score trail get no chart.
+ */
+function mazeStory(s: MazeState, winners: string[]): GameStory | undefined {
+  const ids = s.ids;
+  if (ids.length === 0) return undefined;
+  const rec = (id: string) => s.players[id]!;
+  const solo = s.options.mode === 'Solo';
+  const named = (id: string) => `{${id}}`;
+
+  // Score samples, thinned to under 80 points.
+  const raw = s.trail?.scores;
+  let chart: StoryChart | undefined;
+  let leadChanges = 0;
+  let comeback: { id: string; gap: number; ms: number } | undefined;
+  if (raw && ids.length > 0) {
+    const len = Math.max(...ids.map((id) => raw[id]?.length ?? 1));
+    const full = ids.map((id) => {
+      const a = [...(raw[id] ?? [0])];
+      while (a.length < len) a.push(a[a.length - 1] ?? 0);
+      a.push(rec(id).score);
+      return a;
+    });
+    const total = len + 1;
+    const stride = Math.max(1, Math.ceil(total / 78));
+    const idx: number[] = [];
+    for (let i = 0; i < total; i += stride) idx.push(i);
+    if (idx[idx.length - 1] !== total - 1) idx.push(total - 1);
+    chart = {
+      title: 'Score',
+      xLabel: 'Time',
+      // Samples are 10 seconds apart, so the end reads as the time played.
+      xEnd: `${Math.floor((len * 10) / 60)}:${String((len * 10) % 60).padStart(2, '0')}`,
+      kind: 'race',
+      series: ids.map((playerId, n) => ({ playerId, points: idx.map((i) => full[n]![i]!) })),
+    };
+    // Lead changes between the leaders, and the winner's deepest hole.
+    let prev: string | null = null;
+    const w = winners.length === 1 ? winners[0]! : null;
+    const wn = w ? ids.indexOf(w) : -1;
+    for (let i = 1; i < total; i++) {
+      const top = Math.max(...full.map((a) => a[i]!));
+      const leaders = ids.filter((_, n) => full[n]![i] === top);
+      if (top > 0 && leaders.length === 1) {
+        if (prev && leaders[0] !== prev) leadChanges++;
+        prev = leaders[0]!;
+      }
+      if (wn >= 0 && ids.length > 1 && i < total - 1) {
+        const gap = top - full[wn]![i]!;
+        if (gap > (comeback?.gap ?? 0)) comeback = { id: w!, gap, ms: i * TRAIL_MS };
+      }
+    }
+  }
+
+  const headlines: StoryHeadline[] = [];
+  const facts: StoryFact[] = [];
+  const order = orderOf(s);
+  if (!solo && ids.length > 1 && winners.length === 1) {
+    const margin = rec(order[0]!).score - rec(order[1]!).score;
+    if (margin > 0)
+      headlines.push({
+        label: 'Winning margin',
+        value: margin.toLocaleString('en-US'),
+        detail: `${named(order[0]!)} over ${named(order[1]!)}`,
+        playerId: order[0],
+      });
+  }
+  if (leadChanges > 0)
+    headlines.push({ label: 'Lead changes', value: `${leadChanges}`, detail: 'during the round' });
+  const ghosts = ids.reduce((n, id) => n + rec(id).ghostsEaten, 0);
+  if (ghosts > 0) headlines.push({ label: 'Ghosts eaten', value: `${ghosts}` });
+  const pellets = ids.reduce((n, id) => n + rec(id).pellets, 0);
+  if (pellets > 0 && ids.length > 1)
+    headlines.push({ label: 'Pellets', value: pellets.toLocaleString('en-US') });
+  if (solo) {
+    const p = rec(ids[0]!);
+    headlines.push({
+      label: 'Mazes cleared',
+      value: `${p.cleared}`,
+      detail: `of ${s.layouts.length}`,
+    });
+  }
+
+  const top = (f: (id: string) => number) => [...ids].sort((a, b) => f(b) - f(a))[0]!;
+  const hunter = top((id) => rec(id).ghostsEaten);
+  if (rec(hunter).ghostsEaten >= 3)
+    facts.push({
+      label: 'Ghost hunter',
+      text: `${named(hunter)} ate ${plural(rec(hunter).ghostsEaten, 'ghost')}.`,
+      playerIds: [hunter],
+      tone: 'good',
+    });
+  if (comeback && comeback.gap >= 300 && comeback.ms >= 20_000)
+    facts.push({
+      label: 'Comeback',
+      text: `${named(comeback.id)} was ${comeback.gap.toLocaleString('en-US')} points behind after ${fmtTime(comeback.ms)} and still won.`,
+      playerIds: [comeback.id],
+      tone: 'good',
+    });
+  const finishers = ids
+    .filter((id) => rec(id).finishMs !== null && rec(id).cleared >= s.layouts.length)
+    .sort((a, b) => rec(a).finishMs! - rec(b).finishMs!);
+  if (finishers[0])
+    facts.push({
+      label: solo ? 'All clear' : 'First across',
+      text: `${named(finishers[0])} cleared ${s.layouts.length === 1 ? 'the maze' : `all ${s.layouts.length} mazes`} in ${fmtTime(rec(finishers[0]).finishMs!)}.`,
+      playerIds: [finishers[0]],
+      tone: 'good',
+    });
+  if (solo) {
+    const p = rec(ids[0]!);
+    if (p.lives === 0)
+      facts.push({
+        label: 'Out of lives',
+        text: `${named(ids[0]!)} ran out of lives after ${plural(p.cleared, 'maze')} cleared.`,
+        playerIds: [ids[0]!],
+        tone: 'bad',
+      });
+  } else {
+    const hit = top((id) => rec(id).caught);
+    if (rec(hit).caught >= 3)
+      facts.push({
+        label: 'Ghost food',
+        text: `${named(hit)} was caught ${rec(hit).caught} times.`,
+        playerIds: [hit],
+        tone: 'bad',
+      });
+    const clean = ids.filter((id) => rec(id).caught === 0 && rec(id).pellets >= 50);
+    // Only worth saying when ghosts caught someone; with ghosts off, nobody was ever caught.
+    if (ids.length > 1 && rec(hit).caught > 0 && clean.length > 0 && clean.length < ids.length)
+      facts.push({
+        label: 'Untouchable',
+        text: `${clean.map(named).join(', ')} ${clean.length === 1 ? 'was' : 'were'} never caught.`,
+        playerIds: clean,
+        tone: 'good',
+      });
+  }
+  const juice = top((id) => rec(id).powerUps ?? 0);
+  if ((rec(juice).powerUps ?? 0) >= 3)
+    facts.push({
+      label: 'Power hungry',
+      text: `${named(juice)} grabbed ${plural(rec(juice).powerUps!, 'power-up')}.`,
+      playerIds: [juice],
+    });
+  const fruity = top((id) => rec(id).fruit);
+  if (rec(fruity).fruit >= 2)
+    facts.push({
+      label: 'Fruit stand',
+      text: `${named(fruity)} ate ${plural(rec(fruity).fruit, 'piece')} of bonus fruit.`,
+      playerIds: [fruity],
+    });
+
+  const bars: StoryBars[] = [];
+  const bar = (title: string, f: (id: string) => number) => {
+    const rows = ids
+      .map((playerId) => ({ playerId, value: f(playerId) }))
+      .filter((r) => r.value > 0)
+      .sort((a, b) => b.value - a.value);
+    if (rows.length && ids.length > 1) bars.push({ title, rows });
+  };
+  bar('Ghosts eaten', (id) => rec(id).ghostsEaten);
+  bar('Power-ups', (id) => rec(id).powerUps ?? 0);
+
+  return buildStory({ headlines, charts: chart ? [chart] : [], bars, facts });
+}
+
 function resultOf(s: MazeState, winners: string[], summary: string): GameResult {
   const order = orderOf(s);
   const solo = s.options.mode === 'Solo';
@@ -905,6 +1120,7 @@ function resultOf(s: MazeState, winners: string[], summary: string): GameResult 
     },
     recap: s.log,
     roundName: 'Round',
+    story: mazeStory(s, winners),
     standings,
     stats,
   };
@@ -961,7 +1177,8 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
 
   applyAction(s, playerId, action, _rng, now) {
     try {
-      return tick(s, playerId, action, now);
+      const next = tick(s, playerId, action, now);
+      return next === s ? s : recordTrail(next, now);
     } catch {
       // A tick never refuses; anything unexpected leaves the game as it was.
       return s;

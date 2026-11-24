@@ -720,10 +720,12 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   border-color: var(--danger);
 }
 .tv-recap__event[data-tone='good'] .tv-recap__round {
-  color: var(--win-ink);
+  color: var(--on-fill);
+  background: var(--vert);
 }
 .tv-recap__event[data-tone='bad'] .tv-recap__round {
-  color: var(--danger);
+  color: var(--on-fill);
+  background: var(--gules);
 }
 .tv-recap__empty,
 .tv-recap__more {
@@ -735,6 +737,207 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   grid-column: 1 / -1;
   text-align: center;
   color: var(--ink-2);
+}
+/* The winner's moment: the standings take the whole width under the verdict. */
+.tv-results:not(.tv-results--stats) .tv-standings {
+  grid-column: 1 / -1;
+}
+
+/* ── Results, part two: the stats show ───────────────────────────────────── */
+.tv-results--stats {
+  grid-template-columns: 560px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 28px 64px;
+}
+.tv-results__champ {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin: 0 40px;
+  animation: tv-rise 700ms var(--ease-out) both;
+}
+.tv-results__champ-tokens {
+  display: flex;
+  flex: none;
+}
+.tv-results__champ-tokens > * + * {
+  margin-left: -14px;
+}
+.tv-results__champ-text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.tv-results__champ-text b {
+  font: 800 48px/1 var(--font-display);
+}
+.tv-results__champ-text span {
+  font-size: 26px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tv-results--stats .tv-standings ol {
+  grid-template-columns: 1fr;
+}
+.tv-results--stats .tv-standing {
+  min-height: 64px;
+  animation: tv-rise 600ms var(--ease-out) both;
+}
+/* A few players get big rows, so the column isn't mostly empty. */
+.tv-results--stats .tv-standings[data-few] .tv-standing {
+  min-height: 104px;
+  font-size: 36px;
+}
+.tv-results--stats .tv-standings[data-few] .jd-token {
+  --z: 72px !important;
+}
+.tv-results--stats .tv-standings[data-many] .tv-standing {
+  min-height: 50px;
+  font-size: 26px;
+}
+.tv-results--stats .tv-standing__role {
+  font-size: 24px;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+.tv-show {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 18px;
+}
+.tv-show__tabs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.tv-show__tabs li {
+  position: relative;
+  padding: 6px 14px 8px;
+  font: 800 24px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  border: 2px solid var(--rule);
+  overflow: hidden;
+}
+/* Many panels: smaller tabs, so they stay on one line. */
+.tv-show__tabs[data-many] {
+  gap: 6px;
+}
+.tv-show__tabs[data-many] {
+  flex-wrap: nowrap;
+}
+.tv-show__tabs[data-many] li {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 220px;
+  padding: 5px 9px 7px;
+  font-size: 20px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.tv-show__tabs li[data-on] {
+  color: var(--table);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+/* How long until the next panel: a bar filling along the bottom of the current tab. */
+.tv-show__clock {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 5px;
+  width: 100%;
+  background: var(--or);
+  transform-origin: left;
+  animation: tv-show-clock linear both;
+}
+@keyframes tv-show-clock {
+  from {
+    transform: scaleX(0);
+  }
+}
+.tv-show__title {
+  font-size: 64px;
+  margin: 0;
+}
+.tv-show__body {
+  min-height: 0;
+  overflow: hidden;
+  animation: tv-show-in 600ms var(--ease-out) both;
+}
+.tv-show__body > * {
+  height: 100%;
+}
+.tv-show__body > .jd-story__heads,
+.tv-show__body > .jd-story__facts,
+.tv-show__body > .jd-story__bars,
+.tv-show__body > .tv-table,
+.tv-show__body > .tv-recap {
+  height: auto;
+}
+@keyframes tv-show-in {
+  from {
+    opacity: 0;
+    transform: translateX(60px);
+  }
+}
+.tv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+}
+.tv-table th,
+.tv-table td {
+  padding: 12px 18px;
+  text-align: right;
+  border-bottom: 2px solid var(--rule);
+  white-space: nowrap;
+}
+.tv-table thead th {
+  font: 800 26px/1 var(--font-plaque);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  border-bottom: 3px solid var(--ink);
+}
+.tv-table tbody th {
+  text-align: left;
+  font-weight: 700;
+  max-width: 360px;
+}
+.tv-table__who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tv-table tbody td {
+  font: 800 38px/1 var(--font-plaque);
+}
+.tv-table tr[data-won] {
+  background: color-mix(in srgb, var(--vert) 13%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-show__body,
+  .tv-results__champ,
+  .tv-results--stats .tv-standing,
+  .tv-show__clock {
+    animation: none;
+  }
 }
 
 /* ── Closed or loading ────────────────────────────────────────────────────── */

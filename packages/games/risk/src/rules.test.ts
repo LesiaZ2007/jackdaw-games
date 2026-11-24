@@ -784,7 +784,19 @@ describe('random whole games', () => {
           }
         }
       }
-      if (game.getResult(s)) finished++;
+      const result = game.getResult(s);
+      if (result) {
+        finished++;
+        // The stats page has a land race that covers everyone and ends on the final count.
+        const chart = result.story?.charts?.[0];
+        expect(chart?.series.map((x) => x.playerId).sort()).toEqual([...s.seats].sort());
+        for (const x of chart!.series) {
+          expect(x.points.length).toBeGreaterThan(1);
+          expect(x.points[x.points.length - 1]).toBe(
+            Object.values(s.owner).filter((o) => o === x.playerId).length,
+          );
+        }
+      }
     },
     30_000,
   );

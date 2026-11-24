@@ -1,5 +1,9 @@
 import {
   GameError,
+  buildStory,
+  raceStory,
+  type GameStory,
+  type StoryFact,
   type BotLevel,
   type GameModule,
   type GameResult,
@@ -156,6 +160,12 @@ export interface PokerState {
   /** Hands won (a split counts for each) and the biggest single win, per player, for the recap. Older games don't have them. */
   handsWon?: Record<string, number>;
   bestPot?: Record<string, number>;
+  /** Everyone's chips before the first hand and after each one, for the stats page. Older games don't have it. */
+  trail?: Record<string, number[]>;
+  /** Per player: hands dealt in, folded, gone all in, and pots taken with no showdown. */
+  tally?: Record<string, { dealt: number; folds: number; allIns: number; steals: number }>;
+  /** The best hand shown down all game. */
+  topHand?: { player: string; name: string; score: number[]; hand: number };
 }
 
 /** Everything public: the TV and every phone render this. */
@@ -547,9 +557,34 @@ function finishHand(s: PokerState): PokerState {
         with: showdown ? best[id]?.name.toLowerCase() : undefined,
       };
   }
+  // The stats page's record: chips after every hand, and how each player played.
+  const trail = { ...s.trail };
+  for (const id of s.players) {
+    const before = (s.stacks[id] ?? 0) + (s.committed[id] ?? 0);
+    trail[id] = [...(trail[id] ?? [before]), stacks[id] ?? 0];
+  }
+  const tally = { ...s.tally };
+  for (const id of s.inHand) {
+    const t = tally[id] ?? { dealt: 0, folds: 0, allIns: 0, steals: 0 };
+    tally[id] = {
+      dealt: t.dealt + 1,
+      folds: t.folds + (s.folded.includes(id) ? 1 : 0),
+      allIns: t.allIns + (s.allIn.includes(id) ? 1 : 0),
+      steals: t.steals + (!showdown && won[id] ? 1 : 0),
+    };
+  }
+  let topHand = s.topHand;
+  for (const id of contenders) {
+    const b = best[id];
+    if (b && (!topHand || compareScore(b.score, topHand.score) > 0))
+      topHand = { player: id, name: b.name, score: b.score, hand: s.hand };
+  }
   return {
     ...s,
     biggest,
+    trail,
+    tally,
+    ...(topHand ? { topHand } : {}),
     phase: 'done',
     board,
     deck,
@@ -809,6 +844,90 @@ function move(s: PokerState, playerId: string, action: PokerAction, rng: Rng): P
 
 const chipText = (n: number) => n.toLocaleString('en-GB');
 
+/** The stats page: the chip race, the biggest pot, the best hand, and how everyone played. */
+function pokerStory(s: PokerState, winners: string[]): GameStory | undefined {
+  const series = s.players
+    .filter((id) => s.trail?.[id])
+    .map((id) => ({ playerId: id, points: s.trail![id]! }));
+  const race = raceStory({
+    series,
+    winners,
+    step: 'hand',
+    title: 'Chips',
+    unit: ' chips',
+    marks: s.recap
+      .filter((e) => e.tag === 'Busted' && e.actor && e.round !== undefined)
+      .map((e) => ({ x: e.round!, text: `{${e.actor}} out` })),
+  });
+  const facts: StoryFact[] = [];
+  if (s.topHand) {
+    facts.push({
+      label: 'Best hand',
+      text: `{${s.topHand.player}} showed the best hand of the game on hand ${s.topHand.hand}: ${s.topHand.name.toLowerCase()}.`,
+      playerIds: [s.topHand.player],
+      tone: 'good',
+    });
+  }
+  const tallies = Object.entries(s.tally ?? {}).filter(([, t]) => t.dealt >= 5);
+  const pct = (t: { dealt: number; folds: number }) => Math.round((t.folds / t.dealt) * 100);
+  if (tallies.length >= 2) {
+    const byFold = [...tallies].sort((a, b) => pct(b[1]) - pct(a[1]));
+    const [tight, loose] = [byFold[0]!, byFold[byFold.length - 1]!];
+    if (pct(tight[1]) - pct(loose[1]) >= 15) {
+      facts.push({
+        label: 'The rock',
+        text: `{${tight[0]}} folded ${pct(tight[1])}% of hands.`,
+        playerIds: [tight[0]],
+      });
+      facts.push({
+        label: 'Always in',
+        text: `{${loose[0]}} folded only ${pct(loose[1])}% of hands.`,
+        playerIds: [loose[0]],
+      });
+    }
+  }
+  const most = (key: 'allIns' | 'steals') =>
+    Object.entries(s.tally ?? {}).sort((a, b) => b[1][key] - a[1][key])[0];
+  const shover = most('allIns');
+  if (shover && shover[1].allIns >= 2) {
+    facts.push({
+      label: 'Fearless',
+      text: `{${shover[0]}} went all in ${shover[1].allIns} times.`,
+      playerIds: [shover[0]],
+    });
+  }
+  const thief = most('steals');
+  if (thief && thief[1].steals >= 3) {
+    facts.push({
+      label: 'Pickpocket',
+      text: `{${thief[0]}} took ${thief[1].steals} pots without showing a card.`,
+      playerIds: [thief[0]],
+    });
+  }
+  return buildStory({
+    race,
+    headlines: s.biggest
+      ? [
+          {
+            label: 'Biggest pot',
+            value: chipText(s.biggest.amount),
+            detail: `{${s.biggest.player}}, hand ${s.biggest.hand}`,
+            playerId: s.biggest.player,
+          },
+        ]
+      : [],
+    facts,
+    bars: [
+      {
+        title: 'Hands won',
+        rows: [...s.players]
+          .sort((a, b) => (s.handsWon?.[b] ?? 0) - (s.handsWon?.[a] ?? 0))
+          .map((id) => ({ playerId: id, value: s.handsWon?.[id] ?? 0 })),
+      },
+    ],
+  });
+}
+
 /** The game's result from these stacks: the most chips wins, a tie shares it. */
 function resultFrom(s: PokerState, stacks: Record<string, number>, summary: string): GameResult {
   const top = Math.max(...s.players.map((id) => stacks[id] ?? 0));
@@ -827,6 +946,7 @@ function resultFrom(s: PokerState, stacks: Record<string, number>, summary: stri
       return { ...e, tone: winners.includes(e.actor) ? 'good' : e.tone, key: e.key || last };
     }),
     roundName: 'Hand',
+    story: pokerStory(s, winners),
     stats: {
       columns: ['Chips', 'Hands won', 'Biggest pot'],
       rows: ranked.map((id) => ({

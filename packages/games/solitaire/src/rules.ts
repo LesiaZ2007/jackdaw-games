@@ -7,9 +7,13 @@ import {
   type BotLevel,
   type GameModule,
   type GameResult,
+  type GameStory,
   type RecapEvent,
   type RecapStats,
   type Standing,
+  type StoryFact,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { DECK, cardShort, rankOf, stacks, suitOf, type Card, type Suit } from './cards';
 import { meta } from './meta';
@@ -111,6 +115,11 @@ export interface SolitaireState {
   recap: RecapEvent[];
   /** Who last led by two or more cards, so the recap notes each change of lead once. Older games don't have it. */
   lead?: string | null;
+  /**
+   * Who put up each card in the middle, in order: one character per card, the player's index in
+   * `players`. Small, and enough to rebuild the race and the streaks. Older games don't have it.
+   */
+  upLog?: string;
 }
 
 /** One foundation as the screens see it. */
@@ -454,6 +463,7 @@ export function setup(
     startedAt: now,
     endedAt: null,
     recap: [{ text: 'Every deck dealt, and the uncovered aces put in the middle' }],
+    upLog: '',
   };
   return settle(s, now);
 }
@@ -466,6 +476,7 @@ function apply(s: SolitaireState, id: string, a: SolitaireAction, now: number): 
   let foundations = s.foundations;
   let last = s.last;
   let ups = s.ups;
+  let upLog = s.upLog;
   const notes: RecapEvent[] = [];
 
   if (a.type === 'draw') {
@@ -501,6 +512,7 @@ function apply(s: SolitaireState, id: string, a: SolitaireAction, now: number): 
       foundations[pile] = { ...f, cards: [...f.cards, a.card], by: [...f.by, id] };
     }
     ups++;
+    upLog = (upLog ?? '') + s.players.indexOf(id).toString(36);
     last = { n: ups, by: id, card: a.card, pile: at };
     const rank = rankOf(a.card);
     if (rank === 1 || rank === 13) {
@@ -529,7 +541,14 @@ function apply(s: SolitaireState, id: string, a: SolitaireAction, now: number): 
     seat = { ...seat, cols };
   }
 
-  const next: SolitaireState = { ...s, seats: { ...s.seats, [id]: seat }, foundations, ups, last };
+  const next: SolitaireState = {
+    ...s,
+    seats: { ...s.seats, [id]: seat },
+    foundations,
+    ups,
+    last,
+    upLog,
+  };
   // A change of lead, once someone is two cards clear of everyone else.
   const left = s.players.map((p) => cardsLeft(next.seats[p]!)).sort((x, y) => x - y);
   const front = leaders(next);
@@ -591,6 +610,115 @@ export const viewLayout = (seat: SeatView): Layout => ({
   cols: seat.cols,
 });
 
+/** The stats page: cards played over time, hot streaks, and who started and finished the piles. */
+function solitaireStory(s: SolitaireState, winners: string[]): GameStory | undefined {
+  const log = s.upLog;
+  if (log === undefined || log.length < 2) return undefined;
+  const ids = s.players;
+  const who = (c: string) => ids[parseInt(c, 36)]!;
+
+  // Cards played after each card put up in the middle (0 is the deal, aces already out).
+  const counts = ids.map((id) => [...log].filter((c) => who(c) === id).length);
+  const series = ids.map((playerId, i) => {
+    let n = s.seats[playerId]!.played - counts[i]!;
+    const points = [n];
+    for (const c of log) {
+      if (who(c) === playerId) n++;
+      points.push(n);
+    }
+    return { playerId, points };
+  });
+  const race = raceStory({
+    series,
+    winners: s.blocked ? [] : winners,
+    step: 'play',
+    title: 'Cards played',
+    unit: ' cards',
+  });
+  // A play is always one card, so the "huge step" facts would only repeat themselves.
+  race.facts = race.facts.filter((f) => !/^(Huge|Rough) /.test(f.label));
+
+  const facts: StoryFact[] = [];
+
+  // Longest run of cards put up with nobody else getting one in.
+  let best = { id: '', n: 0 };
+  let run = 0;
+  for (let i = 0; i < log.length; i++) {
+    run = i > 0 && log[i] === log[i - 1] ? run + 1 : 1;
+    if (run > best.n) best = { id: who(log[i]!), n: run };
+  }
+  if (best.n >= 6)
+    facts.push({
+      label: 'Hot streak',
+      text: `{${best.id}} put up ${best.n} cards in a row before anyone else got one in.`,
+      playerIds: [best.id],
+      tone: 'good',
+    });
+
+  // Who began the piles (including the aces dealt face up) and who finished them.
+  const started: Record<string, number> = {};
+  const finished: Record<string, number> = {};
+  for (const f of s.foundations) {
+    started[f.by[0]!] = (started[f.by[0]!] ?? 0) + 1;
+    if (f.cards.length === 13) finished[f.by.at(-1)!] = (finished[f.by.at(-1)!] ?? 0) + 1;
+  }
+  const top = (m: Record<string, number>) => Object.entries(m).sort((a, b) => b[1] - a[1])[0];
+  const starter = top(started);
+  if (starter && starter[1] >= 3 && starter[1] > s.foundations.length / 2)
+    facts.push({
+      label: 'Pile starter',
+      text: `{${starter[0]}} started ${starter[1]} of the ${s.foundations.length} piles in the middle.`,
+      playerIds: [starter[0]],
+    });
+  const closer = top(finished);
+  if (closer && closer[1] >= 2)
+    facts.push({
+      label: 'Closer',
+      text: `{${closer[0]}} played the king on ${closer[1]} finished piles.`,
+      playerIds: [closer[0]],
+      tone: 'good',
+    });
+
+  // How near the loser who was closest came.
+  if (!s.blocked && winners.length === 1) {
+    const near = ids
+      .filter((id) => !winners.includes(id))
+      .map((id) => [id, cardsLeft(s.seats[id]!)] as const)
+      .sort((a, b) => a[1] - b[1])[0];
+    if (near && near[1] <= 6)
+      facts.push({
+        label: 'So close',
+        text: `{${near[0]}} was just ${near[1]} ${near[1] === 1 ? 'card' : 'cards'} short.`,
+        playerIds: [near[0]],
+        tone: 'bad',
+      });
+  }
+  if (s.pulls >= 3)
+    facts.push({
+      label: 'Stuck',
+      text: `Everyone was stuck ${s.pulls} times and had to pull a covered card.`,
+    });
+  if (s.blocked)
+    facts.push({
+      label: 'Dead end',
+      text: 'The game ran dry: nobody could play and nothing was left to pull.',
+      tone: 'bad',
+    });
+
+  return buildStory({
+    race,
+    facts,
+    bars: [
+      {
+        title: 'Cards played',
+        rows: ids
+          .map((playerId, i) => ({ playerId, value: series[i]!.points.at(-1)! }))
+          .sort((a, b) => b.value - a.value),
+      },
+    ],
+  });
+}
+
 function resultOf(s: SolitaireState, early: boolean): GameResult | null {
   const winners = s.over ? s.winners : leaders(s);
   if (early && winners.length === s.players.length && s.players.length > 1) return null;
@@ -624,7 +752,17 @@ function resultOf(s: SolitaireState, early: boolean): GameResult | null {
     columns: ['Cards left', 'Cards played'],
     rows: order.map((id) => ({ playerId: id, values: [left[id]!, played[id]!] })),
   };
-  return { winners, summary, reveal, recap: s.recap, standings, roundName: 'Stretch', stats };
+  const story = solitaireStory(s, winners);
+  return {
+    winners,
+    summary,
+    reveal,
+    recap: s.recap,
+    standings,
+    roundName: 'Stretch',
+    stats,
+    ...(story ? { story } : {}),
+  };
 }
 
 // ── Bot ───────────────────────────────────────────────────────────────────────

@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { meta } from './meta';
 import { checkKings, makePuzzle, MAX_SIZE, MIN_SIZE, solve, type Puzzle } from './puzzle';
 import { clock } from './time';
+import { puzzleStory } from './story';
 
 /**
  * Kings: LinkedIn's Queens, with kings. Everyone gets the same run of puzzles, made fresh for
@@ -207,6 +208,7 @@ function resultFrom(s: KingsState, early: boolean): GameResult | null {
     reveal,
     recap: s.recap,
     roundName: 'Puzzle',
+    story: puzzleStory(s, winners),
     stats: {
       columns: ['Solved', 'Time', 'Fastest'],
       rows: order.map((id) => {

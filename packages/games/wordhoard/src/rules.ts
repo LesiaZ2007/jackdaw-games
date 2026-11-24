@@ -2,9 +2,14 @@ import {
   GameError,
   type GameModule,
   type GameResult,
+  type GameStory,
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type StoryFact,
+  type StoryHeadline,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import {
@@ -422,6 +427,181 @@ function statsOf(s: WordhoardState, won: string[]): RecapStats {
   };
 }
 
+/** The stats page, read out of the moves: the score race, best and longest words, bingos, swaps. */
+function wordhoardStory(s: WordhoardState, winners: string[]): GameStory | undefined {
+  const sides = keys(s);
+  const n = sides.length;
+  if (s.moves.length < n * 2) return undefined;
+  const sideKey = (m: Move) => sideOf(s, m.player) ?? m.player;
+
+  // Each side's score after every full round, then the final score with the end bonus.
+  const running = Object.fromEntries(sides.map((id) => [id, 0]));
+  const points = Object.fromEntries(sides.map((id) => [id, [0]]));
+  s.moves.forEach((m, i) => {
+    running[sideKey(m)] = (running[sideKey(m)] ?? 0) + m.score;
+    if ((i + 1) % n === 0) for (const id of sides) points[id]!.push(running[id]!);
+  });
+  for (const id of sides) {
+    const final = s.scores[id] ?? 0;
+    if (points[id]!.at(-1) !== final || s.moves.length % n !== 0) points[id]!.push(final);
+  }
+  // A pair is known by its first player.
+  const won = sides.filter((id) => winners.includes(id));
+  const race = raceStory({
+    series: sides.map((id) => ({ playerId: id, points: points[id]! })),
+    winners: won.length === 1 ? won : [],
+    step: 'round',
+    title: 'Score',
+    unit: ' points',
+  });
+
+  const plays = s.moves.filter((m) => m.kind === 'play');
+  const facts: StoryFact[] = [];
+  const headlines: StoryHeadline[] = [];
+
+  const best = plays.reduce<Move | null>((a, m) => (!a || m.score > a.score ? m : a), null);
+  const bestWord = (m: Move) =>
+    [...(m.words ?? [])].sort((a, b) => b.score - a.score)[0]?.word ?? '';
+  if (best && best.score >= 20) {
+    headlines.push({
+      label: 'Best play',
+      value: bestWord(best),
+      detail: `{${best.player}}, ${best.score} points`,
+      playerId: best.player,
+    });
+  }
+
+  // The longest word anywhere on the board, first one to make it.
+  let longest: { word: string; player: string } | null = null;
+  for (const m of plays)
+    for (const w of m.words ?? [])
+      if (!longest || w.word.length > longest.word.length)
+        longest = { word: w.word, player: m.player };
+  if (longest && longest.word.length >= 6)
+    facts.push({
+      label: 'Longest word',
+      text: `{${longest.player}} spelled ${longest.word}, ${longest.word.length} letters.`,
+      playerIds: [longest.player],
+    });
+
+  // Bingos: all seven tiles at once.
+  const bingos = plays.filter((m) => m.bingo);
+  if (bingos.length > 0) {
+    const count: Record<string, number> = {};
+    for (const m of bingos) count[m.player] = (count[m.player] ?? 0) + 1;
+    const [champ, num] = Object.entries(count).sort((a, b) => b[1] - a[1])[0]!;
+    const top = bingos.reduce((a, m) => (m.score > a.score ? m : a));
+    facts.unshift(
+      num >= 2
+        ? {
+            label: 'Bingo king',
+            text: `{${champ}} used all seven tiles ${num} times.`,
+            playerIds: [champ],
+            tone: 'good',
+          }
+        : {
+            label: 'Bingo',
+            text: `{${top.player}} used all seven tiles to play ${bestWord(top)} for ${top.score}.`,
+            playerIds: [top.player],
+            tone: 'good',
+          },
+    );
+  }
+
+  // Best average over a decent number of plays.
+  const perPlayer = s.players
+    .map((id) => {
+      const mine = plays.filter((m) => m.player === id);
+      return {
+        id,
+        plays: mine.length,
+        avg: mine.reduce((t, m) => t + m.score, 0) / (mine.length || 1),
+      };
+    })
+    .filter((p) => p.plays >= 4);
+  if (s.sides.every((side) => side.length === 1) && perPlayer.length >= 2) {
+    const top = [...perPlayer].sort((a, b) => b.avg - a.avg)[0]!;
+    const low = [...perPlayer].sort((a, b) => a.avg - b.avg)[0]!;
+    if (top.avg - low.avg >= 3)
+      facts.push({
+        label: 'Steady scorer',
+        text: `{${top.id}} averaged ${top.avg.toFixed(1)} points a play, against {${low.id}}'s ${low.avg.toFixed(1)}.`,
+        playerIds: [top.id, low.id],
+      });
+  }
+
+  // Tiles thrown back, and clocks run out.
+  const swapped: Record<string, number> = {};
+  const late: Record<string, number> = {};
+  for (const m of s.moves) {
+    if (m.kind === 'swap') swapped[m.player] = (swapped[m.player] ?? 0) + (m.count ?? 0);
+    if (m.late) late[m.player] = (late[m.player] ?? 0) + 1;
+  }
+  const swapper = Object.entries(swapped).sort((a, b) => b[1] - a[1])[0];
+  if (swapper && swapper[1] >= 5)
+    facts.push({
+      label: 'Fresh tiles',
+      text: `{${swapper[0]}} swapped away ${swapper[1]} tiles hunting for a better rack.`,
+      playerIds: [swapper[0]],
+    });
+  const slow = Object.entries(late).sort((a, b) => b[1] - a[1])[0];
+  if (slow && slow[1] >= 2)
+    facts.push({
+      label: 'Out of time',
+      text: `{${slow[0]}} let the clock run out ${slow[1]} times.`,
+      playerIds: [slow[0]],
+      tone: 'bad',
+    });
+
+  // Going out: the last tile and what the other racks cost.
+  const bonus = Object.entries(s.endBonus).sort((a, b) => b[1] - a[1])[0];
+  if (s.over && bonus && bonus[1] >= 8) {
+    const who = s.moves.at(-1)?.player ?? bonus[0];
+    facts.push({
+      label: 'Out first',
+      text: `{${who}} used the last tile and collected ${bonus[1]} points from the other racks.`,
+      playerIds: [who],
+      tone: 'good',
+    });
+  }
+  // Stuck at the end: the biggest penalty for tiles left.
+  const stuck = Object.entries(s.endBonus).sort((a, b) => a[1] - b[1])[0];
+  if (s.over && stuck && stuck[1] <= -15) {
+    const who = s.players.find((p) => sideOf(s, p) === stuck[0]) ?? stuck[0];
+    facts.push({
+      label: 'Stuck holding',
+      text: `{${who}} lost ${-stuck[1]} points for tiles left on the rack.`,
+      playerIds: [who],
+      tone: 'bad',
+    });
+  }
+
+  return buildStory({
+    race,
+    headlines,
+    facts,
+    bars: [
+      {
+        title: 'Average points per play',
+        rows: s.players
+          .map((id) => {
+            const mine = plays.filter((m) => m.player === id);
+            const avg = mine.reduce((t, m) => t + m.score, 0) / (mine.length || 1);
+            return {
+              playerId: id,
+              value: Math.round(avg * 10) / 10,
+              display: avg.toFixed(1),
+              n: mine.length,
+            };
+          })
+          .filter((r) => r.n >= 3)
+          .sort((a, b) => b.value - a.value)
+          .map(({ n: _n, ...row }) => row),
+      },
+    ],
+  });
+}
+
 /**
  * The result from the scores as they stand: at the end of the game, or (`partialResult`) when the
  * host ends it early, before the tiles left on the racks are settled.
@@ -452,6 +632,7 @@ function resultOf(s: WordhoardState): GameResult {
     recap: s.recap,
     roundName: 'Round',
     stats: statsOf(s, won),
+    story: wordhoardStory(s, winners),
     highlights: best
       ? [
           {

@@ -54,7 +54,13 @@ describe('the bot', () => {
     for (const [n, options] of tables)
       for (let seed = 1; seed <= 12; seed++) {
         const { s, moves } = playOut(n, seed * 97 + n, options);
-        expect(game.getResult(s)).not.toBe(null);
+        const result = game.getResult(s);
+        expect(result).not.toBe(null);
+        const chart = result!.story!.charts![0]!;
+        expect(chart.series.map((x) => x.label)).toEqual(['Liberal laws', 'Fascist laws']);
+        expect(chart.series[0]!.points).toHaveLength(s.governments.length + 1);
+        expect(chart.series[0]!.points.at(-1)).toBe(s.liberal);
+        expect(chart.series[1]!.points.at(-1)).toBe(s.fascist);
         expect(moves).toBeLessThan(1000);
         reasons.add(s.reason!);
       }

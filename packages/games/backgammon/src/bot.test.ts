@@ -211,6 +211,20 @@ function playOut(options: BackgammonOptions, level: BotLevel, seed: number) {
   return s;
 }
 
+describe('Backgammon match story', () => {
+  it('charts the match score by game and counts the rolls', () => {
+    const s = playOut({ matchTo: '5 points', cube: 'On', turnTimer: 'Off' }, 'hard', 4);
+    const story = game.getResult(s)!.story!;
+    const chart = story.charts![0]!;
+    expect(chart.series.map((x) => x.playerId)).toEqual(s.players);
+    expect(chart.series[0]!.points).toHaveLength(s.ends.length + 1);
+    expect(chart.series[0]!.points.at(-1)).toBe(s.score[0]);
+    expect(chart.series[1]!.points.at(-1)).toBe(s.score[1]);
+    const rolls = story.headlines!.find((h) => h.label === 'Rolls')!;
+    expect(Number(rolls.value)).toBe(s.rolls![0] + s.rolls![1]);
+  });
+});
+
 describe('Backgammon all-bot matches', () => {
   for (const cube of ['On', 'Off'] as const) {
     for (const level of BOT_LEVELS) {

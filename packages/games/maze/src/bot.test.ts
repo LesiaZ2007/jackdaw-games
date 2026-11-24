@@ -230,7 +230,12 @@ describe('mazeBot', () => {
     expect(total(s)).toBeGreaterThan(total(after));
     const best = Math.max(...IDS.map((id) => s.players[id]!.score));
     const over = game.onTimer!(s, 'show', rng, s.showBy!);
-    expect(game.getResult(over)!.winners.every((id) => s.players[id]!.score === best)).toBe(true);
+    const result = game.getResult(over)!;
+    expect(result.winners.every((id) => s.players[id]!.score === best)).toBe(true);
+    const chart = result.story!.charts![0]!;
+    expect(chart.series.map((x) => x.playerId)).toEqual(IDS);
+    expect(chart.series[0]!.points.length).toBeLessThan(80);
+    expect(chart.series[0]!.points.at(-1)).toBe(s.players[IDS[0]!]!.score);
   }, 60_000);
 
   it('plays a Race of two bots to a finish', () => {

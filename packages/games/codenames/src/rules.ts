@@ -5,6 +5,12 @@ import {
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type GameStory,
+  type StoryBars,
+  type StoryChart,
+  type StoryFact,
+  type StoryHeadline,
+  buildStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import { codenamesBot } from './bot';
@@ -148,6 +154,184 @@ function statsOf(state: CodenamesState, winners: string[]): RecapStats {
       return { playerId, values: [given.length, guesses.length, hits] };
     }),
   };
+}
+
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * The stats page: words left for each team after every turn, the best clue, the assassin, the
+ * words handed to the other team and the perfect turns. All of it comes from the clue history.
+ */
+function codenamesStory(state: CodenamesState): GameStory | undefined {
+  const clues = state.clues;
+  if (clues.length === 0) return undefined;
+  const found = (c: Clue) => c.guesses.filter((g) => g.card === c.team).length;
+
+  // Words left for each team after each turn (0 is the start).
+  const left: Record<Team, number[]> = {
+    red: [teamSize('red', state.starting)],
+    blue: [teamSize('blue', state.starting)],
+  };
+  for (const c of clues)
+    for (const t of TEAMS) {
+      const taken = c.guesses.filter((g) => g.card === t).length;
+      left[t].push(left[t][left[t].length - 1]! - taken);
+    }
+  const chart: StoryChart = {
+    title: 'Words left to find',
+    xLabel: 'Turn',
+    kind: 'race',
+    series: TEAMS.map((t) => ({ label: `${TEAM_NAME[t]} team`, points: left[t] })),
+  };
+  const last = clues.length;
+  const winner = state.winner;
+
+  // Lead changes: whoever has fewer words left leads.
+  let changes = 0;
+  let prev = 0;
+  for (let i = 1; i <= last; i++) {
+    const l = Math.sign(left.blue[i]! - left.red[i]!);
+    if (l === 0) continue;
+    if (prev !== 0 && l !== prev) changes++;
+    prev = l;
+  }
+
+  const headlines: StoryHeadline[] = [];
+  const facts: StoryFact[] = [];
+  headlines.push({
+    label: 'Turns',
+    value: `${last}`,
+    detail: winner ? `${TEAM_NAME[winner]} finished it` : `so far`,
+  });
+  if (winner) {
+    const loser = other(winner);
+    headlines.push({
+      label: 'Words left',
+      value: `${left[loser][last]}`,
+      detail: `for ${TEAM_NAME[loser]}`,
+    });
+  }
+  if (changes > 0)
+    headlines.push({
+      label: 'Lead changes',
+      value: `${changes}`,
+      detail: `over ${plural(last, 'turn')}`,
+    });
+
+  // The best clue.
+  const best = clues.reduce<Clue | null>((a, c) => (!a || found(c) > found(a) ? c : a), null)!;
+  if (found(best) >= 2) {
+    headlines.push({
+      label: 'Best clue',
+      value: `${found(best)} words`,
+      detail: `{${best.by}}, ${best.word}`,
+      playerId: best.by,
+    });
+    if (found(best) >= 3)
+      facts.push({
+        label: 'Best clue',
+        text: `{${best.by}}’s clue ${best.word} ${best.count ?? '∞'} led ${TEAM_NAME[best.team]} to ${found(best)} words in one turn.`,
+        playerIds: [best.by],
+        tone: 'good',
+      });
+  }
+
+  // The assassin.
+  if (state.how === 'assassin' && winner) {
+    const c = clues[last - 1]!;
+    const g = c.guesses[c.guesses.length - 1]!;
+    facts.push({
+      label: 'Assassin',
+      text: `{${g.by}} picked ${state.words[g.index]}, the assassin, on {${c.by}}’s clue ${c.word}, and ${TEAM_NAME[winner]} won on the spot.`,
+      playerIds: [g.by, c.by],
+      tone: 'bad',
+    });
+  }
+
+  // A comeback by the winning team, after being well behind in words.
+  if (winner && state.how === 'words') {
+    const lose = other(winner);
+    let worst = { gap: 0, turn: 0 };
+    for (let i = 1; i < last; i++) {
+      const gap = left[winner][i]! - left[lose][i]!;
+      if (gap > worst.gap) worst = { gap, turn: i };
+    }
+    if (worst.gap >= 3)
+      facts.push({
+        label: 'Comeback',
+        text: `${TEAM_NAME[winner]} was ${plural(worst.gap, 'word')} behind after turn ${worst.turn} and still won.`,
+        tone: 'good',
+      });
+    if (last <= 6 && clues.filter((c) => c.team === winner).length <= 4)
+      facts.push({
+        label: 'Fast finish',
+        text: `${TEAM_NAME[winner]} found all ${teamSize(winner, state.starting)} words in just ${plural(clues.filter((c) => c.team === winner).length, 'turn')}.`,
+        tone: 'good',
+      });
+  }
+
+  // Words guessed for the other team, and who gave them away.
+  const gifts: Record<string, number> = {};
+  const given: Record<Team, number> = { red: 0, blue: 0 };
+  for (const c of clues)
+    for (const g of c.guesses)
+      if (g.card === other(c.team)) {
+        gifts[g.by] = (gifts[g.by] ?? 0) + 1;
+        given[c.team]++;
+      }
+  const generous = Object.entries(gifts).sort((a, b) => b[1] - a[1])[0];
+  if (generous && generous[1] >= 2)
+    facts.push({
+      label: 'Helping hand',
+      text: `{${generous[0]}} uncovered ${plural(generous[1], 'word')} for the other team.`,
+      playerIds: [generous[0]],
+      tone: 'bad',
+    });
+  const gaveMore = given.red >= given.blue ? 'red' : 'blue';
+  if (given[gaveMore] >= 3 && given[gaveMore] > given[other(gaveMore)] + 1)
+    facts.push({
+      label: 'Gifts',
+      text: `${TEAM_NAME[gaveMore]} uncovered ${plural(given[gaveMore], 'word')} for ${TEAM_NAME[other(gaveMore)]} over the game.`,
+      tone: 'bad',
+    });
+
+  // Perfect turns: every guess landed, up to the clue's number or beyond.
+  const perfect = (c: Clue) =>
+    !!c.count && c.count >= 2 && found(c) >= c.count && c.guesses.every((g) => g.card === c.team);
+  for (const t of TEAMS) {
+    const n = clues.filter((c) => c.team === t && perfect(c)).length;
+    if (n >= 2)
+      facts.push({
+        label: 'Perfect turns',
+        text: `${TEAM_NAME[t]} found every word its spymaster aimed for on ${n} turns.`,
+        tone: 'good',
+      });
+  }
+  const byBystander = state.key.filter((c, i) => c === 'bystander' && state.revealed[i]).length;
+  if (byBystander >= 4)
+    facts.push({
+      label: 'Bystanders',
+      text: `${plural(byBystander, 'innocent bystander')} got uncovered.`,
+      tone: 'bad',
+    });
+
+  // Own-team words each operative found.
+  const hits = state.players
+    .filter((id) => state.spymasters[state.teams[id]!] !== id)
+    .map((playerId) => ({
+      playerId,
+      value: clues.reduce(
+        (n, c) => n + c.guesses.filter((g) => g.by === playerId && g.card === c.team).length,
+        0,
+      ),
+    }))
+    .filter((r) => r.value > 0)
+    .sort((a, b) => b.value - a.value);
+  const bars: StoryBars[] = hits.length
+    ? [{ title: 'Words found for their team', rows: hits }]
+    : [];
+
+  return buildStory({ headlines, charts: [chart], bars, facts });
 }
 
 /** Each team's word count: the starting team has one more. */
@@ -483,6 +667,7 @@ export const codenames: GameModule<
       reveal,
       recap: state.recap,
       roundName: 'Turn',
+      story: codenamesStory(state),
       stats: statsOf(
         state,
         state.players.filter((id) => state.teams[id] === winner),
@@ -540,6 +725,7 @@ export const codenames: GameModule<
       } satisfies CodenamesReveal,
       recap: state.recap,
       roundName: 'Turn',
+      story: codenamesStory(state),
       stats: statsOf(
         state,
         state.players.filter((id) => leader && state.teams[id] === leader),

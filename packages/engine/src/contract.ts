@@ -105,6 +105,71 @@ export interface Highlight {
   value: number;
 }
 
+/**
+ * The end-of-game stats page: a few big numbers, charts of how the game went, comparisons and
+ * fun facts. Every part is optional and public. Text may name players as `{playerId}`.
+ * `storyFromSeries` (story.ts) works out lead changes, the biggest lead and comebacks from a
+ * score history, so a game mostly records its running scores and adds its own facts.
+ */
+export interface GameStory {
+  /** Up to four big numbers for the top of the page: "Winning margin +42", "Lead changes 6". */
+  headlines?: StoryHeadline[];
+  /** Something over the course of the game, one line per player: chips by hand, VP by turn. */
+  charts?: StoryChart[];
+  /** One measure compared across players: shots fired, words played, bluffs called. */
+  bars?: StoryBars[];
+  /** Fun facts and superlatives, best first. */
+  facts?: StoryFact[];
+}
+
+export interface StoryHeadline {
+  /** "Winning margin", "Biggest pot", "Lead changes". */
+  label: string;
+  /** Short and big: "+42", "1,240", "6", "QUIXOTIC". */
+  value: string;
+  /** One line under it: "{p1} over {p2}", "on hand 14". */
+  detail?: string;
+  /** Whose number it is, to show their token. */
+  playerId?: string;
+}
+
+export interface StoryChart {
+  /** "Chips", "Victory points", "Score". */
+  title: string;
+  /** What each step along the bottom is called: "Hand", "Turn", "Round". */
+  xLabel?: string;
+  /** The label at the right end instead of "<xLabel> <last step>", e.g. a time: "2:10". */
+  xEnd?: string;
+  /** Points are cumulative running totals (a race), or per-step values. Defaults to 'race'. */
+  kind?: 'race' | 'per-step';
+  /** One line per player (or per team, with `label`). Each point is the value after step i (0 = start). */
+  series: { playerId?: string; label?: string; points: number[] }[];
+  /** Moments to pin on the chart: "{p} doubles". `x` indexes into points. */
+  marks?: { x: number; text: string }[];
+}
+
+export interface StoryBars {
+  /** "Shots fired", "Words played". */
+  title: string;
+  rows: {
+    playerId?: string;
+    label?: string;
+    value: number;
+    /** Shown instead of the number: "62%". */ display?: string;
+  }[];
+}
+
+export interface StoryFact {
+  /** A short kicker: "Comeback", "Ice cold", "Nemesis". */
+  label: string;
+  /** The fact itself: "{p3} was last after hand 9 and still won." */
+  text: string;
+  /** Who it's about, for their tokens. */
+  playerIds?: string[];
+  /** 'good' for a feat, 'bad' for a blunder. */
+  tone?: 'good' | 'bad';
+}
+
 export interface GameResult {
   /** Player ids of the winners. */
   winners: string[];
@@ -125,6 +190,8 @@ export interface GameResult {
   roundName?: string;
   /** Optional per-player numbers, shown as a table on phones and beside each standing on the TV. */
   stats?: RecapStats;
+  /** Optional stats page: big numbers, charts, comparisons and fun facts. */
+  story?: GameStory;
 }
 
 export interface GameModule<State, Action, View, TableView, Options> {

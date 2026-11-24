@@ -21,6 +21,7 @@ import {
   type Puzzle,
 } from './puzzle';
 import { clock } from './time';
+import { puzzleStory } from './story';
 
 /**
  * Fandango: LinkedIn's Tango. Everyone gets the same run of puzzles, made fresh for the game, and
@@ -215,6 +216,7 @@ function resultFrom(s: FandangoState, early: boolean): GameResult | null {
     reveal,
     recap: s.recap,
     roundName: 'Puzzle',
+    story: puzzleStory(s, winners),
     stats: {
       columns: ['Solved', 'Time', 'Fastest'],
       rows: order.map((id) => {

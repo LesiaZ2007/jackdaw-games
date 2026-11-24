@@ -247,6 +247,7 @@ describe('guessing', () => {
     expect(s.how).toBe('assassin');
     const r = codenames.getResult(s)!;
     expect(r.summary).toBe('Blue wins: Red found the assassin');
+    expect(r.story!.facts!.some((f) => f.label === 'Assassin')).toBe(true);
     expect(new Set(r.winners)).toEqual(new Set(['dee', 'eli', 'fay']));
   });
 
@@ -261,6 +262,8 @@ describe('guessing', () => {
     expect(s.how).toBe('words');
     const r = codenames.getResult(s)!;
     expect(r.summary).toBe('Red wins: all 9 words found');
+    expect(r.story!.charts![0]!.series.map((x) => x.label)).toEqual(['Red team', 'Blue team']);
+    expect(r.story!.charts![0]!.series[0]!.points.at(-1)).toBe(0);
     expect(r.standings).toContainEqual({
       playerId: 'ana',
       outcome: 'win',

@@ -471,6 +471,7 @@ describe('winning', () => {
     expect(result.winners).toHaveLength(3);
     expect(result.summary).toMatch(/wins, 9 to 0/);
     expect(result.highlights?.[0]?.award).toBe('Bullseye');
+    expect(result.story!.charts![0]!.series.map((x) => x.label)).toEqual(['Sun team', 'Moon team']);
     expect(result.standings?.find((x) => x.playerId === result.winners[0])?.outcome).toBe('win');
   });
 
@@ -515,6 +516,8 @@ describe('together', () => {
     expect(s.scores.sun).toBe(14);
     expect(result.winners).toEqual(['a', 'b', 'c']);
     expect(result.summary).toMatch(/14 points in 6 rounds/);
+    expect(result.story!.charts![0]!.series).toHaveLength(1);
+    expect(result.story!.charts![0]!.series[0]!.points).toHaveLength(7);
   });
 });
 

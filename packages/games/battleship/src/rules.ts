@@ -3,9 +3,14 @@ import {
   type Announcement,
   type GameModule,
   type GameResult,
+  type GameStory,
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type StoryFact,
+  type StoryHeadline,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import {
@@ -549,6 +554,189 @@ function statsOf(s: BattleshipState, winners: string[]): RecapStats {
   };
 }
 
+/** The stats page: the hit race by turn, accuracy, streaks, first blood and who lost what. */
+function battleshipStory(s: BattleshipState, winners: string[]): GameStory | undefined {
+  if (s.volleys.length === 0) return undefined;
+  // A turn is a run of volleys by the same player (a clean hit keeps the turn going).
+  const points: Record<string, number[]> = Object.fromEntries(s.players.map((id) => [id, [0]]));
+  const total: Record<string, number> = Object.fromEntries(s.players.map((id) => [id, 0]));
+  const marks: { x: number; text: string }[] = [];
+  const run: Record<string, number> = Object.fromEntries(s.players.map((id) => [id, 0]));
+  const bestRun = { by: '', n: 0, turn: 0 };
+  const bestDry = { by: '', n: 0 };
+  const dry: Record<string, number> = Object.fromEntries(s.players.map((id) => [id, 0]));
+  let turn = 0;
+  let prev = '';
+  let blood: { by: string; shot: number } | null = null;
+  const shotNo: Record<string, number> = Object.fromEntries(s.players.map((id) => [id, 0]));
+  let doubles: { by: string; turn: number } | null = null;
+  for (const v of s.volleys) {
+    if (v.by !== prev) {
+      if (prev) for (const id of s.players) points[id]!.push(total[id]!);
+      turn++;
+      prev = v.by;
+      for (const id of s.players) run[id] = 0;
+    }
+    for (const shot of v.shots) {
+      shotNo[v.by] = (shotNo[v.by] ?? 0) + 1;
+      if (shot.result === 'miss') {
+        run[v.by] = 0;
+        dry[v.by] = (dry[v.by] ?? 0) + 1;
+        if (dry[v.by]! > bestDry.n) {
+          bestDry.by = v.by;
+          bestDry.n = dry[v.by]!;
+        }
+      } else {
+        dry[v.by] = 0;
+        run[v.by] = (run[v.by] ?? 0) + 1;
+        total[v.by] = (total[v.by] ?? 0) + 1;
+        if (!blood) blood = { by: v.by, shot: shotNo[v.by]! };
+        if (run[v.by]! > bestRun.n) {
+          bestRun.by = v.by;
+          bestRun.n = run[v.by]!;
+          bestRun.turn = turn;
+        }
+      }
+    }
+    if (v.sunk.length >= 2 && !doubles) doubles = { by: v.by, turn };
+    for (const w of v.sunk)
+      marks.push({ x: turn, text: `{${v.by}} sank the ${shipOf(w.id).name.toLowerCase()}` });
+  }
+  for (const id of s.players) points[id]!.push(total[id]!);
+  const race = raceStory({
+    series: s.players.map((id) => ({ playerId: id, points: points[id]! })),
+    winners,
+    step: 'turn',
+    title: 'Hits',
+    unit: ' hits',
+    marks,
+  });
+  const fired = (id: string) => s.shots[foeOf(s, id)]?.length ?? 0;
+  const hit = (id: string) => total[id] ?? 0;
+  const pct = (id: string) => (fired(id) ? Math.round((hit(id) / fired(id)) * 100) : 0);
+  const over = s.phase === 'over' || s.phase === 'show';
+  const winner = winners.length === 1 ? winners[0]! : undefined;
+  const loser = winner ? foeOf(s, winner) : undefined;
+  const headlines: StoryHeadline[] = [];
+  if (over && winner) {
+    headlines.push({
+      label: 'Shots to win',
+      value: String(fired(winner)),
+      detail: `{${winner}}`,
+      playerId: winner,
+    });
+  }
+  const sharp = [...s.players].sort((a, b) => pct(b) - pct(a))[0]!;
+  if (fired(sharp) >= 10) {
+    headlines.push({
+      label: 'Best aim',
+      value: `${pct(sharp)}%`,
+      detail: `{${sharp}}, ${hit(sharp)} of ${fired(sharp)}`,
+      playerId: sharp,
+    });
+  }
+  const facts: StoryFact[] = [];
+  if (blood) {
+    facts.push({
+      label: 'First blood',
+      text: `{${blood.by}} landed the first hit of the battle, on shot ${blood.shot}.`,
+      playerIds: [blood.by],
+    });
+  }
+  if (bestRun.n >= 4) {
+    facts.push({
+      label: 'Hot streak',
+      text: `{${bestRun.by}} hit ${bestRun.n} in a row on turn ${bestRun.turn}.`,
+      playerIds: [bestRun.by],
+      tone: 'good',
+    });
+  }
+  if (doubles) {
+    facts.push({
+      label: 'Double sink',
+      text: `{${doubles.by}} sank two ships with one volley on turn ${doubles.turn}.`,
+      playerIds: [doubles.by],
+      tone: 'good',
+    });
+  }
+  if (bestDry.n >= 8) {
+    facts.push({
+      label: 'Dry spell',
+      text: `{${bestDry.by}} missed ${bestDry.n} shots in a row.`,
+      playerIds: [bestDry.by],
+      tone: 'bad',
+    });
+  }
+  if (s.players.length === 2 && fired(s.players[0]!) >= 10 && fired(s.players[1]!) >= 10) {
+    const gap = Math.abs(pct(s.players[0]!) - pct(s.players[1]!));
+    if (gap >= 12) {
+      const [hi, lo] =
+        pct(s.players[0]!) > pct(s.players[1]!) ? s.players : [...s.players].reverse();
+      facts.push({
+        label: 'Aim gap',
+        text: `{${hi}} hit ${pct(hi!)}% of shots to {${lo}}'s ${pct(lo!)}%.`,
+        playerIds: [hi!, lo!],
+      });
+    }
+  }
+  if (over && winner && loser) {
+    const lost = s.wrecks[winner]?.length ?? 0;
+    if (lost <= 1) {
+      facts.push({
+        label: lost === 0 ? 'Untouched' : 'Barely scratched',
+        text:
+          lost === 0
+            ? `{${winner}} won without losing a single ship.`
+            : `{${winner}} won having lost only one ship.`,
+        playerIds: [winner],
+        tone: 'good',
+      });
+    }
+    const last = s.wrecks[loser]?.[(s.wrecks[loser]?.length ?? 1) - 1];
+    if (last && fired(winner) >= 30) {
+      facts.push({
+        label: 'Last stand',
+        text: `{${loser}}'s ${shipOf(last.id).name.toLowerCase()} was the last ship afloat.`,
+        playerIds: [loser],
+      });
+    }
+    if (fired(winner) <= 45) {
+      facts.push({
+        label: 'Quick work',
+        text: `{${winner}} sank the whole fleet in just ${fired(winner)} shots.`,
+        playerIds: [winner],
+        tone: 'good',
+      });
+    } else if (fired(winner) >= 85) {
+      facts.push({
+        label: 'Long hunt',
+        text: `{${winner}} needed ${fired(winner)} shots of the 100 squares to find everything.`,
+        playerIds: [winner],
+      });
+    }
+  }
+  return buildStory({
+    race,
+    headlines,
+    ownFirst: true,
+    facts,
+    bars: [
+      {
+        title: 'Shots fired',
+        rows: [...s.players]
+          .sort((a, b) => fired(b) - fired(a))
+          .map((id) => ({ playerId: id, value: fired(id) })),
+      },
+      {
+        title: 'Accuracy',
+        rows: [...s.players]
+          .sort((a, b) => pct(b) - pct(a))
+          .map((id) => ({ playerId: id, value: pct(id), display: `${pct(id)}%` })),
+      },
+    ],
+  });
+}
+
 function resultOf(s: BattleshipState, summary: string, winners: string[]): GameResult {
   const fired: Record<string, number> = {};
   for (const id of s.players) fired[id] = s.shots[foeOf(s, id)]?.length ?? 0;
@@ -585,6 +773,7 @@ function resultOf(s: BattleshipState, summary: string, winners: string[]): GameR
     } satisfies BattleshipReveal,
     recap: s.recap,
     roundName: 'Turn',
+    story: battleshipStory(s, winners),
     stats: statsOf(s, winners),
     standings: s.players.map((id) => ({
       playerId: id,

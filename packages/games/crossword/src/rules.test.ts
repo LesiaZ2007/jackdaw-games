@@ -118,6 +118,7 @@ describe('cooperative crossword', () => {
     expect(s.notice).toContain('not quite right');
     for (let i = 0; i < answer.length; i++) if (answer[i] !== '#') s = edit(s, i, answer[i]!);
     expect(crossword.getResult(s)?.winners).toEqual(['wren', 'rook']);
+    expect(crossword.getResult(s)?.story?.bars?.[0]?.rows[0]?.playerId).toBe('wren');
     expect(crossword.getResult(s)?.standings?.every((s) => s.outcome === 'win')).toBe(true);
     expect(() => edit(s, 0, 'X')).toThrow('complete');
   });

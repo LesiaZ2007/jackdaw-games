@@ -95,6 +95,22 @@ describe('the computer player', () => {
         expect(game.getResult(s)).not.toBe(null);
       });
 
+  it('tells the story of a finished game', () => {
+    const { s } = playOut(birds.slice(0, 4), { length: 'To 200 points', stacking: 'Yes' }, 2, 5000);
+    const story = game.getResult(s)!.story!;
+    const chart = story.charts![0]!;
+    expect(chart.series.map((x) => x.playerId)).toEqual(s.players);
+    for (const x of chart.series) {
+      expect(x.points).toHaveLength(s.round + 1);
+      expect(x.points.at(-1)).toBe(s.scores[x.playerId!]);
+    }
+    // Every card a Draw Two or Four made someone take is counted on both sides.
+    const dealt = s.players.reduce((n, id) => n + (s.tally?.[id]?.dealt ?? 0), 0);
+    const hit = s.players.reduce((n, id) => n + (s.tally?.[id]?.hit ?? 0), 0);
+    expect(dealt).toBeGreaterThan(0);
+    expect(dealt).toBe(hit);
+  });
+
   it('waits off its turn, and between rounds', () => {
     const s = table({ a: [10, 30], b: [11, 31] });
     expect(ask(s, 'b')).toBe(null);

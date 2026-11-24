@@ -2,9 +2,13 @@ import {
   GameError,
   type GameModule,
   type GameResult,
+  type GameStory,
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type StoryFact,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import {
@@ -118,6 +122,20 @@ export interface Battle {
   ended: boolean;
 }
 
+/** What the stats page remembers while the game is played. Small numbers only. */
+export interface RiskStats {
+  /** Territories each player holds after each full round; index 0 is the start. */
+  trail: Record<string, number[]>;
+  /** Armies killed and lost on attack, armies killed on defense, and territories taken. */
+  tally: Record<string, { killed: number; lost: number; held: number; taken: number }>;
+  /** Players knocked out, who did it and in which round. */
+  outs: { player: string; by: string; round: number }[];
+  /** Rounds each player has held each continent (counted at the end of every round). */
+  holds: Record<string, Record<string, number>>;
+  /** Attack moves made. */
+  attacks: number;
+}
+
 export interface RiskState {
   map: MapId;
   goal: 'missions' | 'domination';
@@ -176,6 +194,8 @@ export interface RiskState {
   log: RecapEvent[];
   actBy: number | null;
   winner: string | null;
+  /** For the stats page (absent in older saves). */
+  stats?: RiskStats;
 }
 
 export interface RiskTableView {
@@ -320,8 +340,70 @@ function setup(ctx: {
     log: [{ round: 1, actor: first, text: '{actor} goes first' }],
     actBy: null,
     winner: null,
+    stats: {
+      trail: Object.fromEntries(playerIds.map((p) => [p, [territoriesOf(owner, p).length]])),
+      tally: {},
+      outs: [],
+      holds: {},
+      attacks: 0,
+    },
   };
   return stamp(null, s, now);
+}
+
+/**
+ * Notes what a move changed for the stats page, by comparing the state before and after:
+ * the battle's losses, who was knocked out, and the land and continents held at the end of a round.
+ */
+export function trackStats(prev: RiskState, next: RiskState): RiskState {
+  const old = next.stats ?? {
+    trail: Object.fromEntries(next.seats.map((p) => [p, [territoriesOf(prev.owner, p).length]])),
+    tally: {},
+    outs: [],
+    holds: {},
+    attacks: 0,
+  };
+  const st: RiskStats = { ...old };
+  let changed = !next.stats;
+  const b = next.battle;
+  if (b && next.battleSeq !== prev.battleSeq) {
+    const row = (p: string) => ({ killed: 0, lost: 0, held: 0, taken: 0, ...st.tally[p] });
+    st.tally = { ...old.tally };
+    const a = row(b.attacker);
+    a.killed += b.defenderLost;
+    a.lost += b.attackerLost;
+    if (b.conquered) a.taken += 1;
+    st.tally[b.attacker] = a;
+    if (b.defender !== NEUTRAL) {
+      const d = row(b.defender);
+      d.held += b.attackerLost;
+      st.tally[b.defender] = d;
+    }
+    st.attacks = old.attacks + 1;
+    changed = true;
+  }
+  const out = next.eliminated.slice(prev.eliminated.length);
+  if (out.length) {
+    st.outs = [
+      ...old.outs,
+      ...out.map((player) => ({ player, by: next.eliminatedBy[player]!, round: prev.round })),
+    ];
+    changed = true;
+  }
+  if (next.round > prev.round) {
+    const map = mapOf(next);
+    st.trail = Object.fromEntries(
+      next.seats.map((p) => [p, [...(old.trail[p] ?? []), territoriesOf(next.owner, p).length]]),
+    );
+    st.holds = { ...old.holds };
+    for (const p of next.seats) {
+      const row = { ...st.holds[p] };
+      for (const c of continentsHeld(map, next.owner, p)) row[c] = (row[c] ?? 0) + 1;
+      st.holds[p] = row;
+    }
+    changed = true;
+  }
+  return changed ? { ...next, stats: st } : next;
 }
 
 /** Fog of war is down on the board: on, and the game still going. */
@@ -1075,6 +1157,139 @@ function statsOf(s: RiskState, winners: string[]): RecapStats {
   };
 }
 
+/** The stats page: the land race, kills and losses, knock-outs and the longest-held continent. */
+function riskStory(s: RiskState, winners: string[]): GameStory | undefined {
+  const st = s.stats;
+  if (!st) return undefined;
+  const map = mapOf(s);
+  const series = s.seats
+    .filter((p) => (st.trail[p]?.length ?? 0) > 0)
+    .map((p) => ({ playerId: p, points: [...st.trail[p]!] }));
+  // Close the chart on where everyone finished.
+  if (series.length) {
+    const now = (p: string) => territoriesOf(s.owner, p).length;
+    if (series.some((x) => x.points[x.points.length - 1] !== now(x.playerId)))
+      for (const x of series) x.points.push(now(x.playerId));
+  }
+  const last = Math.max(0, ...series.map((x) => x.points.length - 1));
+  const race = raceStory({
+    series,
+    winners,
+    step: 'round',
+    title: 'Territories',
+    unit: ' territories',
+    marks: st.outs.map((o) => ({ x: Math.min(o.round, last), text: `{${o.player}} out` })),
+  });
+
+  const facts: StoryFact[] = [];
+  const row = (p: string) => st.tally[p] ?? { killed: 0, lost: 0, held: 0, taken: 0 };
+  const top = (get: (p: string) => number) =>
+    [...s.seats].sort((a, b) => get(b) - get(a)).map((p) => ({ p, n: get(p) }));
+
+  const first = st.outs[0];
+  if (first) {
+    facts.push({
+      label: st.outs.length > 1 ? 'First casualty' : 'Knocked out',
+      text: `{${first.player}} was ${st.outs.length > 1 ? 'the first player ' : ''}knocked out by {${first.by}} in round ${first.round}.`,
+      playerIds: [first.player, first.by],
+      tone: 'bad',
+    });
+  }
+  const knockouts = top((p) => st.outs.filter((o) => o.by === p).length)[0];
+  if (knockouts && knockouts.n >= 2) {
+    facts.push({
+      label: 'Conqueror',
+      text: `{${knockouts.p}} knocked out ${knockouts.n} players.`,
+      playerIds: [knockouts.p],
+      tone: 'good',
+    });
+  }
+  const killer = top((p) => row(p).killed)[0];
+  if (killer && killer.n >= 20) {
+    facts.push({
+      label: 'Butcher',
+      text: `{${killer.p}} destroyed ${killer.n} enemy armies, more than anyone.`,
+      playerIds: [killer.p],
+      tone: 'good',
+    });
+  }
+  const wall = top((p) => row(p).held)[0];
+  if (wall && wall.n >= 10 && wall.p !== killer?.p) {
+    facts.push({
+      label: 'Iron wall',
+      text: `Attackers lost ${wall.n} armies against {${wall.p}}'s defenses.`,
+      playerIds: [wall.p],
+      tone: 'good',
+    });
+  }
+  const ratio = (p: string) => (row(p).lost ? row(p).killed / row(p).lost : 0);
+  const lucky = s.seats.filter((p) => row(p).lost >= 15).sort((a, b) => ratio(b) - ratio(a))[0];
+  if (lucky && ratio(lucky) >= 1.25) {
+    facts.push({
+      label: 'Hot dice',
+      text: `{${lucky}} destroyed ${ratio(lucky).toFixed(1)} armies for every one lost attacking.`,
+      playerIds: [lucky],
+      tone: 'good',
+    });
+  }
+  const unlucky = s.seats.filter((p) => row(p).lost >= 15).sort((a, b) => ratio(a) - ratio(b))[0];
+  if (unlucky && unlucky !== lucky && ratio(unlucky) <= 0.8) {
+    facts.push({
+      label: 'Costly campaign',
+      text: `{${unlucky}} lost ${row(unlucky).lost} armies attacking and destroyed only ${row(unlucky).killed}.`,
+      playerIds: [unlucky],
+      tone: 'bad',
+    });
+  }
+  // The longest hold on a continent.
+  let hold: { p: string; c: string; n: number } | null = null;
+  for (const [p, conts] of Object.entries(st.holds))
+    for (const [c, n] of Object.entries(conts)) if (!hold || n > hold.n) hold = { p, c, n };
+  if (hold && hold.n >= 4) {
+    const name = map.continents.find((c) => c.id === hold!.c)?.name ?? hold.c;
+    facts.push({
+      label: 'Held the line',
+      text: `{${hold.p}} held ${name} for ${hold.n} rounds.`,
+      playerIds: [hold.p],
+    });
+  }
+
+  return buildStory({
+    race,
+    ownFirst: true,
+    headlines: [
+      ...(s.best.conquest && s.best.conquest.value >= 2
+        ? [
+            {
+              label: 'Greatest conquest',
+              value: String(s.best.conquest.value),
+              detail: `{${s.best.conquest.pid}}, lands in one turn`,
+              playerId: s.best.conquest.pid,
+            },
+          ]
+        : []),
+      ...(st.attacks >= 5
+        ? [{ label: 'Attacks', value: String(st.attacks), detail: `over ${s.round} rounds` }]
+        : []),
+    ],
+    facts,
+    bars: [
+      {
+        title: 'Enemy armies destroyed',
+        rows: top((p) => row(p).killed)
+          .filter((r) => r.n > 0)
+          .map((r) => ({ playerId: r.p, value: r.n })),
+      },
+      {
+        title: 'Territories taken',
+        rows: top((p) => row(p).taken)
+          .filter((r) => r.n > 0)
+          .map((r) => ({ playerId: r.p, value: r.n })),
+      },
+    ],
+  });
+}
+
 function getResult(s: RiskState): GameResult | null {
   if (s.phase !== 'over' || !s.winner) return null;
   const mission = s.missions?.[s.winner];
@@ -1086,6 +1301,7 @@ function getResult(s: RiskState): GameResult | null {
     reveal: revealOf(s, s.winner),
     recap: s.log,
     roundName: 'Round',
+    story: riskStory(s, [s.winner]),
     stats: statsOf(s, [s.winner]),
     standings: standingsOf(s, [s.winner]),
     highlights: highlightsOf(s),
@@ -1124,6 +1340,7 @@ function partialResult(s: RiskState): GameResult | null {
     reveal: revealOf(s, winners.length === 1 ? winners[0]! : null),
     recap: s.log,
     roundName: 'Round',
+    story: riskStory(s, winners),
     stats: statsOf(s, winners),
     standings: standingsOf(s, winners),
     highlights: highlightsOf(s),
@@ -1169,7 +1386,8 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
   setup,
   getPlayerView,
   getTableView,
-  applyAction: (s, pid, a, rng, now) => stamp(s, settle(applyAction(s, pid, a, rng), pid, s), now),
+  applyAction: (s, pid, a, rng, now) =>
+    stamp(s, trackStats(s, settle(applyAction(s, pid, a, rng), pid, s)), now),
   getResult,
   partialResult,
   bot: riskBot,
@@ -1181,5 +1399,7 @@ export const risk: GameModule<RiskState, RiskAction, RiskView, RiskTableView, Ri
   nextTimer: (s) =>
     s.turnSecs && s.actBy !== null && s.phase !== 'over' ? { id: 'turn', at: s.actBy } : null,
   onTimer: (s, id, rng, now) =>
-    id !== 'turn' || s.phase === 'over' ? s : stamp(s, settle(timeUp(s, rng), s.turn, s), now),
+    id !== 'turn' || s.phase === 'over'
+      ? s
+      : stamp(s, trackStats(s, settle(timeUp(s, rng), s.turn, s)), now),
 };

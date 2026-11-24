@@ -156,6 +156,19 @@ describe('the computer player', () => {
         expect(game.getResult(s)).not.toBe(null);
       });
 
+  it('tells the story of a finished game', () => {
+    const { s } = playOut(birds.slice(0, 3), { goal: '5 rounds' }, 2, 'normal');
+    const story = game.getResult(s)!.story!;
+    const chart = story.charts![0]!;
+    expect(chart.series.map((x) => x.playerId)).toEqual(s.players);
+    for (const x of chart.series) {
+      expect(x.points).toHaveLength(s.history.length + 1);
+      expect(x.points.at(-1)).toBe(s.scores[x.playerId!]);
+    }
+    const best = Math.min(...s.history.flatMap((r) => Object.values(r.totals)));
+    expect(story.headlines!.find((h) => h.label === 'Best hand')!.value).toBe(`${best}`);
+  });
+
   it('says it is ready in the peek phase, once', () => {
     const s = game.setup({
       playerIds: ['wren', 'rook'],

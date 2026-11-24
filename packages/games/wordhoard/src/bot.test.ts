@@ -76,6 +76,18 @@ describe('the bot', () => {
     expect(median(times)).toBeLessThan(50);
   }, 60_000);
 
+  it('tells the story of a finished game', () => {
+    const { s } = playOut(3, 5, { pairs: 'Past four players', turnTimer: 'Off' }, []);
+    const story = game.getResult(s)!.story!;
+    const chart = story.charts![0]!;
+    expect(chart.series.map((x) => x.playerId)).toEqual(s.players);
+    for (const x of chart.series) expect(x.points.at(-1)).toBe(s.scores[x.playerId!]);
+    const best = Math.max(...s.moves.map((m) => m.score));
+    expect(story.headlines!.find((h) => h.label === 'Best play')?.detail).toContain(
+      `${best} points`,
+    );
+  });
+
   it('finds the best opening and only legal words', () => {
     const plays = findPlays(emptyBoard(), [...'QUIZEST']);
     expect(plays.length).toBeGreaterThan(0);

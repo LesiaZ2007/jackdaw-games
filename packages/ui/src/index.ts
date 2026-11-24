@@ -16,3 +16,4 @@ export * from './motion';
 export * from './format';
 export * from './util';
 export * from './option-groups';
+export * from './story';

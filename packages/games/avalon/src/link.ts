@@ -1,7 +1,11 @@
 import {
   GameError,
+  buildStory,
   type GameLink,
   type GameResult,
+  type GameStory,
+  type StoryFact,
+  type StoryHeadline,
   type RecapEvent,
   type RecapStats,
   type LinkStatus,
@@ -173,6 +177,195 @@ function questStats(status: StatusResponse): RecapStats | undefined {
   };
 }
 
+/**
+ * The stats page, from the quest data Avalon sends back: the quest track (Good against Evil),
+ * how teams were voted, who led, and the Assassin's guess. Older builds send no quests, and then
+ * there is no story.
+ */
+function avalonStory(status: StatusResponse): GameStory | undefined {
+  const quests = (status.quests ?? []).filter((q) => q.result);
+  const proposals = status.proposals ?? [];
+  if (!quests.length) return undefined;
+  const players = status.players ?? [];
+  const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+  // The quest track, quest by quest.
+  let good = 0;
+  let evil = 0;
+  const goodTrack = [0];
+  const evilTrack = [0];
+  const marks: { x: number; text: string }[] = [];
+  quests.forEach((q, i) => {
+    if (q.result === 'success') good++;
+    else evil++;
+    goodTrack.push(good);
+    evilTrack.push(evil);
+    if (q.result === 'fail' && (q.fails ?? 0) >= 2)
+      marks.push({ x: i + 1, text: `${plural(q.fails ?? 0, 'Fail card')}` });
+  });
+
+  const headlines: StoryHeadline[] = [
+    { label: 'Quests', value: `${good}–${evil}`, detail: 'Good to Evil' },
+  ];
+  const facts: StoryFact[] = [];
+  const bars: GameStory['bars'] = [];
+
+  if (proposals.length) {
+    const approvedCount = proposals.filter((p) => p.approved).length;
+    const rate = Math.round((approvedCount / proposals.length) * 100);
+    headlines.push({
+      label: 'Teams approved',
+      value: `${rate}%`,
+      detail: `${approvedCount} of ${proposals.length}`,
+    });
+    const rejected = proposals.length - approvedCount;
+    if (rejected > 0) headlines.push({ label: 'Teams rejected', value: String(rejected) });
+
+    // Longest run of rejected teams.
+    let run = 0;
+    let bestRun = 0;
+    let runQuest = 0;
+    for (const p of proposals) {
+      run = p.approved ? 0 : run + 1;
+      if (run > bestRun) {
+        bestRun = run;
+        runQuest = p.quest + 1;
+      }
+    }
+    if (bestRun >= 3)
+      facts.push({
+        label: 'Gridlock',
+        text:
+          bestRun >= 5
+            ? `Five teams in a row were rejected, ending on quest ${runQuest}.`
+            : `${bestRun} teams in a row were rejected on the way to quest ${runQuest}.`,
+        tone: 'bad',
+      });
+
+    // Who led the most teams.
+    const led = players
+      .map((p) => ({ id: p.id, n: proposals.filter((h) => h.leader === p.id).length }))
+      .sort((a, b) => b.n - a.n);
+    if (led.length)
+      bars.push({
+        title: 'Teams led',
+        rows: led.map((l) => ({ playerId: l.id, value: l.n })),
+      });
+    if (led[0] && led[0].n >= 3 && led[0].n > (led[1]?.n ?? 0))
+      facts.push({
+        label: 'Kingmaker',
+        text: `{${led[0].id}} led ${led[0].n} team proposals, more than anyone.`,
+        playerIds: [led[0].id],
+      });
+
+    // Teams that went on a quest, per player.
+    const sent = proposals.filter((p) => p.approved);
+    const onTeams = players
+      .map((p) => ({ id: p.id, n: sent.filter((h) => h.team.includes(p.id)).length }))
+      .sort((a, b) => b.n - a.n);
+    if (onTeams.length)
+      bars.push({
+        title: 'Quests joined',
+        rows: onTeams.map((l) => ({ playerId: l.id, value: l.n })),
+      });
+
+    // A team that passed by one vote, or was shot down by one.
+    const split = proposals.find(
+      (p) =>
+        p.approve.length > 0 &&
+        p.reject.length > 0 &&
+        Math.abs(p.approve.length - p.reject.length) <= 1 &&
+        players.length >= 7,
+    );
+    if (split)
+      facts.push({
+        label: split.approved ? 'Squeaker' : 'Narrow veto',
+        text: `{${split.leader}}'s team for quest ${split.quest + 1} ${split.approved ? 'passed' : 'fell'} by ${split.approve.length}–${split.reject.length}.`,
+        playerIds: [split.leader],
+      });
+    // A team nobody backed.
+    const unanimous = proposals.find(
+      (p) => !p.approved && p.approve.length === 0 && players.length >= 5,
+    );
+    if (unanimous)
+      facts.push({
+        label: 'No takers',
+        text: `Nobody voted for {${unanimous.leader}}'s team for quest ${unanimous.quest + 1}.`,
+        playerIds: [unanimous.leader],
+        tone: 'bad',
+      });
+  }
+
+  // How the track went.
+  if (status.winner === 'good' && evil === 0 && quests.length >= 3)
+    facts.unshift({ label: 'Clean sweep', text: 'Good won every quest it sent.', tone: 'good' });
+  else if (status.winner === 'evil' && good === 0 && quests.length >= 3)
+    facts.unshift({ label: 'Clean sweep', text: 'Evil failed every quest.', tone: 'bad' });
+  else {
+    const first = quests.slice(0, 2).every((q) => q.result === 'fail');
+    const firstGood = quests.slice(0, 2).every((q) => q.result === 'success');
+    if (status.winner === 'good' && first && quests.length >= 3)
+      facts.unshift({
+        label: 'Comeback',
+        text: 'Good lost the first two quests and still won.',
+        tone: 'good',
+      });
+    else if (status.winner === 'evil' && firstGood && quests.length >= 3)
+      facts.unshift({ label: 'Comeback', text: 'Evil trailed 0–2 and still won.', tone: 'bad' });
+  }
+  const heavy = [...quests].sort((a, b) => (b.fails ?? 0) - (a.fails ?? 0))[0];
+  if (heavy && (heavy.fails ?? 0) >= 2)
+    facts.push({
+      label: 'Double cross',
+      text: `Quest ${quests.indexOf(heavy) + 1} drew ${heavy.fails} Fail cards.`,
+    });
+
+  const caught = (status.lady ?? []).find((l) => l.evil);
+  if (caught)
+    facts.push({
+      label: 'Lady knew',
+      text: `{${caught.holder}} used the Lady of the Lake on {${caught.target}} and found Evil.`,
+      playerIds: [caught.holder, caught.target],
+      tone: 'good',
+    });
+
+  const a = status.assassin;
+  if (a) {
+    const merlin = players.find((p) => p.role === 'merlin')?.id;
+    const hit = a.target === merlin;
+    headlines.push({
+      label: 'Assassin',
+      value: hit ? 'Hit' : 'Missed',
+      detail: `named {${a.target}}`,
+      playerId: a.target,
+    });
+    facts.unshift({
+      label: hit ? 'Merlin found' : 'Merlin hid',
+      text: hit
+        ? `The Assassin${a.by ? ` ({${a.by}})` : ''} named {${a.target}} and found Merlin.`
+        : `The Assassin${a.by ? ` ({${a.by}})` : ''} named {${a.target}}, but Merlin was ${merlin ? `{${merlin}}` : 'someone else'}.`,
+      playerIds: [a.target, ...(merlin && !hit ? [merlin] : [])],
+    });
+  }
+
+  return buildStory({
+    headlines,
+    charts: [
+      {
+        title: 'Quests won',
+        xLabel: 'Quest',
+        series: [
+          { label: 'Good', points: goodTrack },
+          { label: 'Evil', points: evilTrack },
+        ],
+        ...(marks.length ? { marks } : {}),
+      },
+    ],
+    bars,
+    facts,
+  });
+}
+
 /** The avatar as Avalon stores it: a crest id (or null for initials) and a tint index. */
 export function avalonAvatar(avatar: { crest: string; tint: string }) {
   const tint = AVALON_TINT_ORDER.indexOf(avatar.tint);
@@ -218,6 +411,7 @@ export function resultFrom(status: StatusResponse): GameResult {
   const reason = status.reason?.trim().replace(/\.+$/, '');
   const summary = reason ? `${winner} wins: ${reason}` : `${winner} wins`;
   const stats = questStats(status);
+  const story = avalonStory(status);
   return {
     winners: players.filter((p) => p.won).map((p) => p.id),
     summary,
@@ -242,6 +436,7 @@ export function resultFrom(status: StatusResponse): GameResult {
         : []),
     ],
     roundName: 'Quest',
+    ...(story ? { story } : {}),
     ...(stats ? { stats } : {}),
     standings,
   };

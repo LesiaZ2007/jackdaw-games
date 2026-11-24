@@ -80,6 +80,11 @@ describe('Mafia bots', () => {
         const r = game.getResult(s)!;
         expect(r.standings).toHaveLength(n);
         expect(r.summary.length).toBeGreaterThan(0);
+        expect(r.story).toBeTruthy();
+        const alive = r.story!.charts![0]!;
+        expect(alive.series.length).toBeGreaterThanOrEqual(2);
+        expect(alive.series.reduce((a, x) => a + x.points[0]!, 0)).toBe(n);
+        expect(r.story!.bars![0]!.rows).toHaveLength(n);
       }
     });
   }

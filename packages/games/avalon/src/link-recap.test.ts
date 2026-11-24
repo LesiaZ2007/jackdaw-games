@@ -40,6 +40,8 @@ describe("the Avalon link's recap", () => {
       assassin: { by: 'rook', target: 'wren' },
     });
     expect(r.roundName).toBe('Quest');
+    expect(r.story?.charts?.[0]?.series.map((s) => s.label)).toEqual(['Good', 'Evil']);
+    expect(r.story?.facts?.[0]?.label).toBe('Merlin found');
     const tags = r.recap.map((e) => e.tag);
     expect(tags).toEqual(
       expect.arrayContaining([

@@ -304,9 +304,11 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
 }
+/* As big as fits: the column's width or the panel's height, whichever is smaller. */
 .ctn-reveal--tv .ctn-reveal__board {
   max-height: none;
-  height: 100%;
+  width: min(100%, 100cqh);
+  justify-self: center;
 }
 .ctn-reveal--tv .ctn-scores {
   font-size: 28px;

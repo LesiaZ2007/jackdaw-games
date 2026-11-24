@@ -3,9 +3,13 @@ import {
   type Announcement,
   type GameModule,
   type GameResult,
+  type GameStory,
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type StoryFact,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import {
@@ -131,6 +135,8 @@ export interface Debt {
   why: string;
   /** A tax, which goes to Free Parking when that rule is on. */
   tax?: boolean;
+  /** For rent: the deed it was owed on. */
+  space?: number;
 }
 
 export interface Auction {
@@ -232,6 +238,16 @@ export interface MonopolyState {
   winners: string[];
   ending: string | null;
   recap: RecapEvent[];
+  /** Net worth of each player after each full round; index 0 is the start. For the stats page. */
+  trail?: Record<string, number[]>;
+  /** Small per-player counts for the stats page. */
+  tally?: Record<string, { paid: number; jails: number; doubles: number; rolls: number }>;
+  /** Rent earned by each deed, by space. */
+  spaceRent?: Record<string, number>;
+  /** Rent paid from one player to another: payer, then payee. */
+  rentPairs?: Record<string, Record<string, number>>;
+  /** The biggest single rent payment. */
+  bigRent?: { from: string; to: string; amount: number; space: number; round: number };
 }
 
 export interface SeatView {
@@ -445,6 +461,27 @@ function credit(s: MonopolyState, to: string | null, amount: number, tax = false
   else if (tax && s.parkingPot) s.pot += amount;
 }
 
+function bump(s: MonopolyState, id: string, key: 'paid' | 'jails' | 'doubles' | 'rolls', n = 1) {
+  s.tally ??= {};
+  const t = (s.tally[id] ??= { paid: 0, jails: 0, doubles: 0, rolls: 0 });
+  t[key] += n;
+}
+
+/** Records a rent payment for the stats page. `space` is where the rent was earned. */
+function noteRent(s: MonopolyState, debt: Debt) {
+  if (debt.why !== 'rent' || !debt.to) return;
+  bump(s, debt.from, 'paid', debt.amount);
+  s.rentPairs ??= {};
+  const row = (s.rentPairs[debt.from] ??= {});
+  row[debt.to] = (row[debt.to] ?? 0) + debt.amount;
+  const space = debt.space;
+  if (space === undefined) return;
+  s.spaceRent ??= {};
+  s.spaceRent[String(space)] = (s.spaceRent[String(space)] ?? 0) + debt.amount;
+  if (!s.bigRent || debt.amount > s.bigRent.amount)
+    s.bigRent = { from: debt.from, to: debt.to, amount: debt.amount, space, round: s.round };
+}
+
 /** Pay at once if the cash is there and nothing is queued ahead; otherwise queue the debt. */
 function charge(s: MonopolyState, debt: Debt) {
   if (debt.amount <= 0) return;
@@ -455,6 +492,7 @@ function charge(s: MonopolyState, debt: Debt) {
     p.cash -= debt.amount;
     credit(s, debt.to, debt.amount, debt.tax);
     if (debt.to) s.rent[debt.to] = (s.rent[debt.to] ?? 0) + (debt.why === 'rent' ? debt.amount : 0);
+    noteRent(s, debt);
     return;
   }
   s.debts.push(debt);
@@ -523,6 +561,7 @@ function toJail(s: MonopolyState, id: string) {
   p.pos = JAIL;
   p.jailed = true;
   p.tries = 0;
+  bump(s, id, 'jails');
   if (id === s.turn) s.after = 'done';
   note(s, 'jail', `{${id}} went to Jail.`, { by: id });
   recap(s, id, `{${id}} went to Jail.`, { tag: 'Jail', tone: 'bad' });
@@ -605,7 +644,7 @@ function land(s: MonopolyState, id: string, rng: Rng, card: 'double' | 'ten' | n
           tone: 'bad',
           ...(rent >= HUGE_RENT ? { key: true } : {}),
         });
-      charge(s, { from: id, to: h.owner, amount: rent, why: 'rent' });
+      charge(s, { from: id, to: h.owner, amount: rent, why: 'rent', space: p.pos });
       return;
     }
     default:
@@ -723,7 +762,13 @@ function nextTurn(s: MonopolyState, now: number) {
     const id = s.order[(at + k) % s.order.length]!;
     if (!s.seats[id]!.out) {
       next = id;
-      if ((at + k) % s.order.length <= at) s.round += 1;
+      if ((at + k) % s.order.length <= at) {
+        s.round += 1;
+        s.trail ??= {};
+        for (const pid of s.players) {
+          s.trail[pid] = [...(s.trail[pid] ?? [START_CASH]), netWorth(s, pid)];
+        }
+      }
       break;
     }
   }
@@ -761,6 +806,7 @@ function settle(s: MonopolyState, rng: Rng, now: number) {
         p.cash -= head.amount;
         credit(s, head.to, head.amount, head.tax);
         if (head.to && head.why === 'rent') s.rent[head.to] = (s.rent[head.to] ?? 0) + head.amount;
+        noteRent(s, head);
         continue;
       }
       if (liquidValue(s, head.from) < head.amount) {
@@ -801,6 +847,8 @@ function roll(s: MonopolyState, id: string, rng: Rng) {
   const doubles = d[0] === d[1];
   s.dice = d;
   s.rolls += 1;
+  bump(s, id, 'rolls');
+  if (doubles) bump(s, id, 'doubles');
   note(s, 'roll', `{${id}} rolled ${d[0]} and ${d[1]}.`, { by: id });
   if (p.jailed) {
     if (doubles) {
@@ -1102,6 +1150,142 @@ function table(s: MonopolyState): MonopolyTableView {
   };
 }
 
+/** The stats page: the net worth race, rent, jail time, doubles and the busiest deed. */
+function monopolyStory(s: MonopolyState, winners: string[]): GameStory | undefined {
+  const series = s.players
+    .filter((id) => (s.trail?.[id]?.length ?? 0) > 1)
+    .map((id) => ({ playerId: id, points: [...s.trail![id]!] }));
+  // The last round may not be over: close the lines on where everyone stands now.
+  if (series.length) {
+    const rounds = Math.max(...series.map((x) => x.points.length));
+    const now = (id: string) => netWorth(s, id);
+    if (series.some((x) => x.points[x.points.length - 1] !== now(x.playerId))) {
+      for (const x of series) {
+        while (x.points.length < rounds) x.points.push(x.points[x.points.length - 1] ?? 0);
+        x.points.push(now(x.playerId));
+      }
+    }
+  }
+  const race = raceStory({
+    series,
+    winners,
+    step: 'round',
+    title: 'Net worth',
+    unit: ' in worth',
+    marks: s.recap
+      .filter((e) => e.tag === 'Bankrupt' && e.actor && e.round !== undefined)
+      .map((e) => ({ x: e.round!, text: `{${e.actor}} bankrupt` })),
+  });
+  const facts: StoryFact[] = [];
+  const tally = s.tally ?? {};
+  const top = (get: (id: string) => number) =>
+    [...s.players].sort((a, b) => get(b) - get(a)).map((id) => ({ id, n: get(id) }));
+
+  const earned = top((id) => s.rent[id] ?? 0);
+  if (earned[0] && earned[0].n >= 300) {
+    facts.push({
+      label: 'Landlord',
+      text: `{${earned[0].id}} collected ${money(earned[0].n)} in rent.`,
+      playerIds: [earned[0].id],
+      tone: 'good',
+    });
+  }
+  const paid = top((id) => tally[id]?.paid ?? 0);
+  if (paid[0] && paid[0].n >= 300 && paid[0].id !== earned[0]?.id) {
+    facts.push({
+      label: 'Best tenant',
+      text: `{${paid[0].id}} handed over ${money(paid[0].n)} in rent.`,
+      playerIds: [paid[0].id],
+      tone: 'bad',
+    });
+  }
+  let pair: { from: string; to: string; n: number } | null = null;
+  for (const [from, row] of Object.entries(s.rentPairs ?? {}))
+    for (const [to, n] of Object.entries(row)) if (!pair || n > pair.n) pair = { from, to, n };
+  if (pair && pair.n >= 400) {
+    facts.push({
+      label: 'Rivalry',
+      text: `{${pair.from}} paid {${pair.to}} ${money(pair.n)} in rent, the most between any two players.`,
+      playerIds: [pair.from, pair.to],
+    });
+  }
+  const best = Object.entries(s.spaceRent ?? {}).sort((a, b) => b[1] - a[1])[0];
+  if (best && best[1] >= 400) {
+    const owner = s.deeds[best[0]]?.owner;
+    facts.push({
+      label: 'Gold mine',
+      text: `${nameOf(s, Number(best[0]))} earned ${money(best[1])} in rent, more than any other deed.`,
+      ...(owner ? { playerIds: [owner] } : {}),
+    });
+  }
+  const jailed = top((id) => tally[id]?.jails ?? 0);
+  if (jailed[0] && jailed[0].n >= 3) {
+    facts.push({
+      label: 'Jailbird',
+      text: `{${jailed[0].id}} went to Jail ${jailed[0].n} times.`,
+      playerIds: [jailed[0].id],
+      tone: 'bad',
+    });
+  }
+  const lucky = [...s.players]
+    .filter((id) => (tally[id]?.rolls ?? 0) >= 30)
+    .map((id) => ({ id, n: tally[id]!.doubles, rate: tally[id]!.doubles / tally[id]!.rolls }))
+    .sort((a, b) => b.rate - a.rate)[0];
+  if (lucky && lucky.rate >= 0.25) {
+    facts.push({
+      label: 'Double trouble',
+      text: `{${lucky.id}} rolled doubles ${lucky.n} times in ${tally[lucky.id]!.rolls} rolls.`,
+      playerIds: [lucky.id],
+    });
+  }
+  const first = s.recap.find((e) => e.actor && e.tag?.endsWith(' set') && e.round !== undefined);
+  if (first) {
+    facts.push({
+      label: 'First monopoly',
+      text: `${first.text.replace(/\.$/, '')} in round ${first.round}, the first of the game.`,
+      playerIds: [first.actor!],
+    });
+  }
+  if (s.fallen.length) {
+    facts.push({
+      label: s.fallen.length === 1 ? 'First out' : 'First to fall',
+      text: `{${s.fallen[0]}} was the first to go bankrupt.`,
+      playerIds: [s.fallen[0]!],
+      tone: 'bad',
+    });
+  }
+
+  return buildStory({
+    race,
+    ownFirst: true,
+    headlines: s.bigRent
+      ? [
+          {
+            label: 'Biggest rent',
+            value: money(s.bigRent.amount),
+            detail: `{${s.bigRent.from}} to {${s.bigRent.to}}, ${nameOf(s, s.bigRent.space)}`,
+            playerId: s.bigRent.to,
+          },
+        ]
+      : [],
+    facts,
+    bars: [
+      {
+        title: 'Rent collected',
+        rows: earned
+          .filter((r) => r.n > 0)
+          .map((r) => ({ playerId: r.id, value: r.n, display: money(r.n) })),
+      },
+      {
+        title: 'Rent paid',
+        rows: paid
+          .filter((r) => r.n > 0)
+          .map((r) => ({ playerId: r.id, value: r.n, display: money(r.n) })),
+      },
+    ],
+  });
+}
+
 function resultOf(s: MonopolyState, winners: string[], summary: string): GameResult {
   const worth = Object.fromEntries(s.players.map((id) => [id, netWorth(s, id)]));
   const topRent = Math.max(0, ...Object.values(s.rent));
@@ -1121,6 +1305,7 @@ function resultOf(s: MonopolyState, winners: string[], summary: string): GameRes
     } satisfies MonopolyReveal,
     recap: s.recap,
     roundName: 'Round',
+    story: monopolyStory(s, winners),
     stats: {
       columns: ['Worth', 'Deeds', 'Rent'],
       rows: [...s.players]
@@ -1443,6 +1628,7 @@ export const monopoly: GameModule<
       winners: [],
       ending: null,
       recap: [],
+      trail: Object.fromEntries(playerIds.map((id) => [id, [START_CASH]])),
     };
     clock(s, now);
     return s;

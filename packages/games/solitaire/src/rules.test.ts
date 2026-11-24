@@ -829,6 +829,17 @@ describe('the computer player', () => {
     }
   }
 
+  it('tells the story of a finished game', () => {
+    const { s } = playOut(3, 'hard', 1, 'Draw one');
+    const story = game.getResult(s)!.story!;
+    const chart = story.charts![0]!;
+    expect(chart.series.map((x) => x.playerId)).toEqual(s.players);
+    expect(chart.series[0]!.points).toHaveLength(s.ups + 1);
+    for (const id of s.players)
+      expect(chart.series.find((x) => x.playerId === id)!.points.at(-1)).toBe(s.seats[id]!.played);
+    expect(story.bars![0]!.rows).toHaveLength(3);
+  });
+
   it('does nothing when the game is over or the player is stuck', () => {
     const s = stuckTable();
     const ask = (st: SolitaireState, id: string) =>

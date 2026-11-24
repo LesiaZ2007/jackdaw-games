@@ -10,6 +10,8 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/.next/**',
       '**/.next-check/**',
+      '**/.open-next/**',
+      '**/.wrangler/**',
       '**/dist/**',
       '**/coverage/**',
       '**/next-env.d.ts',

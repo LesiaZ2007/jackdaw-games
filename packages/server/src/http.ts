@@ -72,8 +72,12 @@ async function readJson(req: Request): Promise<unknown> {
 /**
  * The client's address as Vercel (or any proxy in front) reports it. Without any address header
  * every such request shares one 'unknown' bucket, so the address limits still apply.
+ *
+ * `ipHeader` names the one header the host sets itself (Cloudflare: cf-connecting-ip). When it's
+ * given, only that header counts, because the others can come from the visitor.
  */
-export function clientIp(req: Request): string {
+export function clientIp(req: Request, ipHeader?: string): string {
+  if (ipHeader) return req.headers.get(ipHeader)?.split(',')[0]?.trim() || 'unknown';
   const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
   return (
     req.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() ||
@@ -83,7 +87,7 @@ export function clientIp(req: Request): string {
   );
 }
 
-export function createHttpHandlers(runtime: RoomRuntime) {
+export function createHttpHandlers(runtime: RoomRuntime, opts: { ipHeader?: string } = {}) {
   /**
    * Runs a request for one lobby. An address that keeps asking for lobbies that don't exist
    * (guessing codes) is turned away for a while.
@@ -92,7 +96,7 @@ export function createHttpHandlers(runtime: RoomRuntime) {
     req: Request,
     handle: (ip: string) => Promise<Response>,
   ): Promise<Response> {
-    const ip = clientIp(req);
+    const ip = clientIp(req, opts.ipHeader);
     try {
       runtime.checkAddress(ip);
       return await handle(ip);
@@ -109,7 +113,10 @@ export function createHttpHandlers(runtime: RoomRuntime) {
         const body = CreateLobbyRequest.safeParse(await readJson(req));
         if (!body.success)
           throw new RoomError(400, 'BAD_REQUEST', body.error.issues[0]?.message ?? 'Bad request.');
-        return json(await runtime.create({ token, ...body.data, ip: clientIp(req) }), 201);
+        return json(
+          await runtime.create({ token, ...body.data, ip: clientIp(req, opts.ipHeader) }),
+          201,
+        );
       } catch (e) {
         return errorResponse(e);
       }

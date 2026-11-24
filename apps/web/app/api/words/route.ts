@@ -1,11 +1,13 @@
 import { isWord } from '@jackdaw/game-wordhoard';
+import { ensureWords } from '@/lib/words';
 
 /**
  * Letterhoard's word list, asked a few words at a time, so a phone can say "not in the word list"
  * before Play without downloading the whole list. `GET /api/words?w=HOARD,QZX` returns
  * `{ unknown: ["QZX"] }`. The list never changes between deploys, so answers cache well.
  */
-export function GET(req: Request) {
+export async function GET(req: Request) {
+  await ensureWords();
   const raw = new URL(req.url).searchParams.get('w') ?? '';
   const asked = raw
     .split(',')

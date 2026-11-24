@@ -1,4 +1,5 @@
 import { define, isWord, type Definition } from '@jackdaw/game-wordhoard';
+import { ensureWords } from '@/lib/words';
 
 /**
  * What the words just played mean, for Letterhoard's card after each play.
@@ -35,6 +36,7 @@ async function lookUp(word: string): Promise<Definition> {
 }
 
 export async function GET(req: Request) {
+  await ensureWords();
   const url = new URL(req.url);
   const raw = url.searchParams.get('w') ?? '';
   const asked = [
@@ -47,8 +49,10 @@ export async function GET(req: Request) {
   ]
     .slice(0, 4)
     .sort();
-  const canonical = `?w=${asked.join(',')}`;
-  if (url.search !== canonical) {
+  // Compared as parsed parameters: the server may hand the URL over with the commas encoded
+  // (%2C), and comparing the raw text then redirected the URL to itself forever.
+  const canonical = new URLSearchParams({ w: asked.join(',') }).toString();
+  if (url.searchParams.toString() !== canonical) {
     url.search = canonical;
     return new Response(null, {
       status: 308,

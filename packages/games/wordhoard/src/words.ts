@@ -7,6 +7,21 @@ import { PACKED_WORDS } from '#packed-words';
 let words: Set<string> | null = null;
 
 /**
+ * The packed list when the host keeps it outside the server bundle (the Cloudflare build, where
+ * the bundle has a size limit): it fetches the list and hands it over before the first check.
+ */
+let provided: string | null = null;
+
+/** True when this server has no word list yet and must call provideWords first. */
+export function wordsMissing(): boolean {
+  return !PACKED_WORDS && provided === null;
+}
+
+export function provideWords(packed: string): void {
+  if (words === null) provided = packed;
+}
+
+/**
  * Newer words players expect that ENABLE (from the 1990s) doesn't have: the short words added to
  * the tournament lists since (QI, ZA, OK, EW…) and a few everyday modern ones. The official lists
  * themselves (NWL, Collins) are copyrighted, so they can't be shipped.
@@ -33,7 +48,7 @@ function unpack(packed: string): Set<string> {
 
 /** Every word in the list, lower case (the computer player builds its search tree from it). */
 export function wordSet(): ReadonlySet<string> {
-  words ??= new Set([...unpack(PACKED_WORDS), ...EXTRA]);
+  words ??= new Set([...unpack(provided ?? PACKED_WORDS), ...EXTRA]);
   return words;
 }
 

@@ -9,5 +9,5 @@
     "paths": { "@/*": ["./*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next-check"]
+  "exclude": ["node_modules", ".next-check", ".open-next", ".wrangler"]
 }

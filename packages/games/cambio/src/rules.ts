@@ -973,7 +973,7 @@ function cambioStory(s: CambioState, winners: string[]): GameStory | undefined {
     headlines.push({
       label: 'Best hand',
       value: `${best.total}`,
-      detail: `{${best.id}}, round ${best.round}`,
+      detail: `{${best.id}}, card total in round ${best.round}`,
       playerId: best.id,
     });
   if (worst && worst.total >= 25 && history.length > 1)
@@ -1079,7 +1079,24 @@ function cambioStory(s: CambioState, winners: string[]): GameStory | undefined {
     .sort((a, b) => b.value - a.value);
   if (swaps[0]!.value >= 3) bars.push({ title: 'Cards swapped', rows: swaps });
 
-  return buildStory({ race, headlines, facts, bars });
+  // "Backfired" already tells the story of a costly call; skip the race's "Rough round" when it
+  // names the same player and round.
+  const trimmed =
+    race && costly && rash.n - rash.won < 2
+      ? {
+          ...race,
+          facts: race.facts.filter(
+            (f) =>
+              !(
+                f.label === 'Rough round' &&
+                f.text.includes(`{${costly.id}}`) &&
+                f.text.includes(`round ${costly.round}`)
+              ),
+          ),
+        }
+      : race;
+
+  return buildStory({ race: trimmed, headlines, facts, bars });
 }
 
 /** The result on the rounds scored so far (a finished game, or ended early). */

@@ -955,7 +955,9 @@ function mazeStory(s: MazeState, winners: string[]): GameStory | undefined {
     if (idx[idx.length - 1] !== total - 1) idx.push(total - 1);
     chart = {
       title: 'Score',
-      xLabel: `Round time (${Math.round((TRAIL_MS * stride) / 1000)} s steps)`,
+      xLabel: 'Time',
+      // Samples are 10 seconds apart, so the end reads as the time played.
+      xEnd: `${Math.floor((len * 10) / 60)}:${String((len * 10) % 60).padStart(2, '0')}`,
       kind: 'race',
       series: ids.map((playerId, n) => ({ playerId, points: idx.map((i) => full[n]![i]!) })),
     };
@@ -1051,7 +1053,8 @@ function mazeStory(s: MazeState, winners: string[]): GameStory | undefined {
         tone: 'bad',
       });
     const clean = ids.filter((id) => rec(id).caught === 0 && rec(id).pellets >= 50);
-    if (ids.length > 1 && clean.length > 0 && clean.length < ids.length)
+    // Only worth saying when ghosts caught someone; with ghosts off, nobody was ever caught.
+    if (ids.length > 1 && rec(hit).caught > 0 && clean.length > 0 && clean.length < ids.length)
       facts.push({
         label: 'Untouchable',
         text: `${clean.map(named).join(', ')} ${clean.length === 1 ? 'was' : 'were'} never caught.`,

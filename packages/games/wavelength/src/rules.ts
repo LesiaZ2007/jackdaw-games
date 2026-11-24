@@ -250,7 +250,14 @@ function wavelengthStory(s: WavelengthState): GameStory | undefined {
   const clueOf = (h: RoundResult) => `“${h.clue}” (${h.spectrum[0]} to ${h.spectrum[1]})`;
 
   // Points after each round, per team. A right call earns the other team a point.
-  const trail: Record<Team, number[]> = { sun: [0], moon: [0] };
+  // The team that goes second starts with a point, so begin from the scores minus what the
+  // rounds added, and the line ends on the final score.
+  const earned = (t: Team) =>
+    history.reduce((n, h) => n + (h.team === t ? h.points : h.callPoint ? 1 : 0), 0);
+  const trail: Record<Team, number[]> = {
+    sun: [s.scores.sun - earned('sun')],
+    moon: [s.scores.moon - earned('moon')],
+  };
   for (const h of history)
     for (const t of TEAMS)
       trail[t].push(

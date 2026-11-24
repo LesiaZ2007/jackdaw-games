@@ -1188,8 +1188,10 @@ function mafiaStory(s: MafiaState): GameStory | undefined {
       tone: 'bad',
     });
 
-  // How long each player lasted, in nights and days.
+  // How long each player lasted, in nights and days. Everyone still standing gets the full bar.
+  const fullSteps = events.filter((e) => e.d.kind === 'dawn' || e.d.kind === 'vote').length + 1;
   const lasted = (id: string) => {
+    if (s.alive.includes(id)) return fullSteps;
     let n = 0;
     for (const { d } of events) {
       if (d.kind === 'dawn' || d.kind === 'vote') n++;

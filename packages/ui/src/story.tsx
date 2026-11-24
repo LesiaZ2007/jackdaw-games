@@ -217,9 +217,7 @@ export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryCo
       </div>
       <div className="jd-story__x" aria-hidden>
         <span>{perStep ? `${chart.xLabel ?? 'Step'} 1` : 'Start'}</span>
-        <span>
-          {chart.xLabel ?? 'Step'} {perStep ? steps : steps - 1}
-        </span>
+        <span>{chart.xEnd ?? `${chart.xLabel ?? 'Step'} ${perStep ? steps : steps - 1}`}</span>
       </div>
     </figure>
   );

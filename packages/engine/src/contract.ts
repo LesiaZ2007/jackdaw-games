@@ -138,6 +138,8 @@ export interface StoryChart {
   title: string;
   /** What each step along the bottom is called: "Hand", "Turn", "Round". */
   xLabel?: string;
+  /** The label at the right end instead of "<xLabel> <last step>", e.g. a time: "2:10". */
+  xEnd?: string;
   /** Points are cumulative running totals (a race), or per-step values. Defaults to 'race'. */
   kind?: 'race' | 'per-step';
   /** One line per player (or per team, with `label`). Each point is the value after step i (0 = start). */

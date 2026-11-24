@@ -8,6 +8,7 @@ import {
   Plaque,
   RecapStatsTable,
   RecapTimeline,
+  StoryView,
   Token,
   Verdict,
   type LobbyChat,
@@ -199,6 +200,22 @@ export function Results({
           )}
         </>
       )}
+      <StoryView
+        story={result.story}
+        ctx={{
+          names,
+          players,
+          order: [
+            ...new Set([
+              ...result.winners,
+              ...standings.map((st) => st.playerId),
+              ...players.map((p) => p.id),
+            ]),
+          ],
+          me: s.me,
+          winners: result.winners,
+        }}
+      />
       {/* Every game gets the numbers and the timeline, under its own reveal if it has one. */}
       <RecapStatsTable stats={result.stats} names={names} me={s.me} />
       <RecapTimeline events={result.recap} names={names} roundName={result.roundName} />

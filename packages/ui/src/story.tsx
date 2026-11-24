@@ -94,9 +94,13 @@ export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryCo
   let hi = Math.max(...all);
   if (chart.kind !== 'per-step' && lo > 0) lo = 0;
   if (hi === lo) hi = lo + 1;
-  const pad = (hi - lo) * 0.06;
-  const top = hi + pad;
-  const bottom = lo === 0 ? 0 : lo - pad;
+  // A clean scale: the top is the next round number (1, 2, 2.5 or 5 times a power of ten).
+  const nice = (v: number) => {
+    const p = 10 ** Math.floor(Math.log10(v));
+    return ([1, 2, 2.5, 5, 10].find((m) => m * p >= v) ?? 10) * p;
+  };
+  const top = hi > 0 ? nice(hi) : 0;
+  const bottom = lo < 0 ? -nice(-lo) : lo;
   const W = 1000;
   const H = 1000;
   const x = (i: number) => (i / (steps - 1)) * W;
@@ -130,7 +134,7 @@ export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryCo
     const row = marks.filter((p) => Math.abs(p.at - at) < 0.25).length;
     marks.push({ ...m, at, row });
   }
-  const ticks = [top - pad, (top - pad + bottom) / 2, bottom].map((v) => ({
+  const ticks = [top, (top + bottom) / 2, bottom].map((v) => ({
     v,
     at: y(v) / H,
   }));

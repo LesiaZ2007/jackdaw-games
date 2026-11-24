@@ -2,9 +2,15 @@ import {
   GameError,
   type GameModule,
   type GameResult,
+  type GameStory,
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type StoryBars,
+  type StoryFact,
+  type StoryHeadline,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import {
@@ -176,6 +182,56 @@ export interface UnoState {
   biggest?: { player: string; points: number; round: number };
   /** Cards each player has drawn or been made to take, for the recap. Older games don't have it. */
   took?: Record<string, number>;
+  /** Each player's score after every round, for the stats page (index 0 is the start). */
+  trail?: Record<string, number[]>;
+  /** Small per-player counts for the stats page. */
+  tally?: Record<string, Tally>;
+  /** The biggest pile of stacked draw cards anyone has had to take, when stacking is on. */
+  stack?: { player: string; count: number; round: number };
+}
+
+/** What a player has done over the game, for the stats page. */
+export interface Tally {
+  /** Cards others were made to take from this player's Draw Twos and Wild Draw Fours. */
+  dealt: number;
+  /** Cards this player was made to take from others' Draw Twos and Wild Draw Fours. */
+  hit: number;
+  /** Times caught down to one card without calling UNO. */
+  caught: number;
+  /** Times this player caught someone else. */
+  catches: number;
+  /** Times this player called UNO. */
+  calls: number;
+  /** Wild Draw Fours played. */
+  wild4: number;
+  /** Wild Draw Fours played while holding the color in play. */
+  bluffs: number;
+  /** Bluffs that were challenged and caught. */
+  bluffCaught: number;
+  /** Challenges this player made that caught a bluff. */
+  challengeWon: number;
+  /** Challenges this player made against a fair Wild Draw Four. */
+  challengeLost: number;
+}
+
+const BLANK_TALLY: Tally = {
+  dealt: 0,
+  hit: 0,
+  caught: 0,
+  catches: 0,
+  calls: 0,
+  wild4: 0,
+  bluffs: 0,
+  bluffCaught: 0,
+  challengeWon: 0,
+  challengeLost: 0,
+};
+
+/** Adds to one of a player's counts. */
+function bump(s: UnoState, id: string, key: keyof Tally, n = 1): UnoState {
+  if (n === 0) return s;
+  const t = { ...BLANK_TALLY, ...s.tally?.[id] };
+  return { ...s, tally: { ...s.tally, [id]: { ...t, [key]: t[key] + n } } };
 }
 
 /** Everything public: the TV and every phone render this. */
@@ -281,6 +337,11 @@ function take(s: UnoState, id: string, n: number, rng: Rng): { s: UnoState; got:
   };
 }
 
+/** The biggest stack so far, counting this one (only piles of six or more are worth a note). */
+function biggerStack(s: UnoState, player: string, count: number): UnoState['stack'] {
+  return count >= 6 && count > (s.stack?.count ?? 0) ? { player, count, round: s.round } : s.stack;
+}
+
 /** Record a public move. */
 function log(s: UnoState, m: Omit<Move, 'seq'>): UnoState {
   const seq = s.seq + 1;
@@ -351,6 +412,9 @@ function finishRound(s: UnoState, winner: string): UnoState {
     0,
   );
   const scores = { ...s.scores, [winner]: (s.scores[winner] ?? 0) + scored };
+  const trail = Object.fromEntries(
+    s.players.map((id) => [id, [...(s.trail?.[id] ?? [0]), scores[id] ?? 0]]),
+  );
   const biggest =
     scored > (s.biggest?.points ?? 0)
       ? { player: winner, points: scored, round: s.round }
@@ -364,6 +428,7 @@ function finishRound(s: UnoState, winner: string): UnoState {
     uncalled: null,
     called: [],
     scores,
+    trail,
     biggest,
     last: { round: s.round, winner, points: scored, left },
     recap: [
@@ -429,6 +494,7 @@ function play(
     uncalled: rest.length === 1 && !a.call ? me : null,
     called: rest.length === 1 && a.call ? [...s.called, me] : s.called,
   };
+  if (c.face === 'wild4') next = bump(bump(next, me, 'wild4'), me, 'bluffs', bluff ? 1 : 0);
   if (c.face === 'rev') next = { ...next, dir: next.dir === 1 ? -1 : 1 };
   const victim = seatFrom(next, me);
   const two = s.players.length === 2;
@@ -457,6 +523,7 @@ function play(
           ...next,
           pending: { count, from: me, wild4: false, bluff: false },
           toAct: victim,
+          stack: biggerStack(s, me, count),
         };
         if (s.pending)
           next = note(next, {
@@ -468,7 +535,8 @@ function play(
           });
       } else {
         const t = take(next, victim, 2, rng);
-        next = log(t.s, { player: victim, kind: 'take', count: t.got.length });
+        next = bump(bump(t.s, me, 'dealt', t.got.length), victim, 'hit', t.got.length);
+        next = log(next, { player: victim, kind: 'take', count: t.got.length });
         next = note(next, {
           actor: victim,
           text: `{${me}} played a Draw Two and {${victim}} took ${t.got.length}.`,
@@ -511,6 +579,7 @@ function play(
           bluff,
         },
         toAct: victim,
+        stack: biggerStack(s, me, count),
       };
       break;
     }
@@ -519,13 +588,16 @@ function play(
       next = { ...next, toAct: victim };
   }
 
-  if (rest.length === 1 && a.call)
+  if (rest.length === 1 && a.call) {
+    next = bump(next, me, 'calls');
     next = note(next, { actor: me, text: `{${me}} called UNO.`, tag: 'UNO!', tone: 'good' });
+  }
   if (rest.length === 0) {
     // Going out on a draw card still makes the next player draw, for the points.
     if (next.pending) {
       const t = take(next, victim, next.pending.count, rng);
-      next = log({ ...t.s, pending: null }, { player: victim, kind: 'take', count: t.got.length });
+      next = bump(bump(t.s, me, 'dealt', t.got.length), victim, 'hit', t.got.length);
+      next = log({ ...next, pending: null }, { player: victim, kind: 'take', count: t.got.length });
     }
     return finishRound(next, me);
   }
@@ -546,7 +618,10 @@ function move(s: UnoState, me: string, action: UnoAction, rng: Rng, late = false
     if ((s.hands[me]?.length ?? 0) !== 1 || s.called.includes(me))
       throw new GameError('no_call', 'You can call it when you’re down to one card.');
     return note(
-      log({ ...s, called: [...s.called, me], uncalled: null }, { player: me, kind: 'call' }),
+      log(bump({ ...s, called: [...s.called, me], uncalled: null }, me, 'calls'), {
+        player: me,
+        kind: 'call',
+      }),
       { actor: me, text: `{${me}} called UNO.`, tag: 'UNO!', tone: 'good' },
     );
   }
@@ -558,7 +633,7 @@ function move(s: UnoState, me: string, action: UnoAction, rng: Rng, late = false
     return tidyCalls(
       note(
         log(
-          { ...t.s, uncalled: null },
+          { ...bump(bump(t.s, caught, 'caught'), me, 'catches'), uncalled: null },
           { player: me, kind: 'catch', target: caught, count: t.got.length },
         ),
         {
@@ -583,8 +658,17 @@ function move(s: UnoState, me: string, action: UnoAction, rng: Rng, late = false
         if (cur.drawn !== null) throw new GameError('drew', 'Play the card you drew, or keep it.');
         if (cur.pending) {
           const t = take(cur, me, cur.pending.count, rng);
+          const dealt = bump(
+            bump(t.s, cur.pending.from, 'dealt', t.got.length),
+            me,
+            'hit',
+            t.got.length,
+          );
           const n = note(
-            log({ ...t.s, pending: null }, { player: me, kind: 'take', count: t.got.length, late }),
+            log(
+              { ...dealt, pending: null },
+              { player: me, kind: 'take', count: t.got.length, late },
+            ),
             {
               actor: me,
               text: `{${me}} took ${t.got.length} from {${cur.pending.from}}’s ${cur.pending.wild4 ? 'Wild Draw Four' : 'stacked Draw Twos'}.`,
@@ -630,7 +714,7 @@ function move(s: UnoState, me: string, action: UnoAction, rng: Rng, late = false
           const t = take(cur, p.from, p.count, rng);
           return note(
             log(
-              { ...t.s, pending: null },
+              { ...bump(bump(t.s, p.from, 'bluffCaught'), me, 'challengeWon'), pending: null },
               { player: me, kind: 'challenge', target: p.from, ok: true, count: t.got.length },
             ),
             {
@@ -646,7 +730,15 @@ function move(s: UnoState, me: string, action: UnoAction, rng: Rng, late = false
         const t = take(cur, me, p.count + 2, rng);
         const n = note(
           log(
-            { ...t.s, pending: null },
+            {
+              ...bump(
+                bump(bump(t.s, me, 'challengeLost'), p.from, 'dealt', p.count),
+                me,
+                'hit',
+                p.count,
+              ),
+              pending: null,
+            },
             { player: me, kind: 'challenge', target: p.from, ok: false, count: t.got.length },
           ),
           {
@@ -738,6 +830,154 @@ function recapStats(s: UnoState, order: string[]): RecapStats {
   };
 }
 
+/** The stats page: the score race, who made whom draw, bluffs, catches and the biggest stack. */
+function unoStory(s: UnoState, winners: string[]): GameStory | undefined {
+  const ids = s.players;
+  const rounds = Math.max(0, ...ids.map((id) => (s.trail?.[id]?.length ?? 1) - 1));
+  const tally = (id: string): Tally => ({ ...BLANK_TALLY, ...s.tally?.[id] });
+  const topBy = (key: keyof Tally) => [...ids].sort((a, b) => tally(b)[key] - tally(a)[key])[0]!;
+
+  const race =
+    rounds >= 2
+      ? raceStory({
+          series: ids.map((id) => ({ playerId: id, points: s.trail![id]! })),
+          winners,
+          step: 'round',
+          title: 'Score',
+          unit: ' points',
+        })
+      : undefined;
+
+  const headlines: StoryHeadline[] = [];
+  if (rounds >= 2 && s.biggest)
+    headlines.push({
+      label: 'Biggest round',
+      value: `${s.biggest.points}`,
+      detail: `{${s.biggest.player}}, round ${s.biggest.round}`,
+      playerId: s.biggest.player,
+    });
+  if (rounds < 2 && s.last && s.last.points > 0)
+    headlines.push({
+      label: 'Points scored',
+      value: `${s.last.points}`,
+      detail: `{${s.last.winner}} went out first`,
+      playerId: s.last.winner,
+    });
+  const menace = topBy('dealt');
+  if (tally(menace).dealt >= 6)
+    headlines.push({
+      label: 'Most draws dealt',
+      value: `${tally(menace).dealt}`,
+      detail: `{${menace}}`,
+      playerId: menace,
+    });
+
+  const facts: StoryFact[] = [];
+  if (s.stack && s.stack.count >= 6)
+    facts.push({
+      label: 'Giant stack',
+      text: `{${s.stack.player}} stacked draw cards into a pile of ${s.stack.count} to take, in round ${s.stack.round}.`,
+      playerIds: [s.stack.player],
+    });
+  const hit = topBy('hit');
+  if (tally(hit).hit >= 8)
+    facts.push({
+      label: 'Punching bag',
+      text: `{${hit}} was made to draw ${tally(hit).hit} cards by other players' draw cards.`,
+      playerIds: [hit],
+      tone: 'bad',
+    });
+  const bluffer = topBy('bluffCaught');
+  if (tally(bluffer).bluffCaught >= 1)
+    facts.push({
+      label: 'Caught bluffing',
+      text:
+        tally(bluffer).bluffCaught === 1
+          ? `{${bluffer}} played a Wild Draw Four with the color in hand and got challenged.`
+          : `{${bluffer}} was caught bluffing with a Wild Draw Four ${tally(bluffer).bluffCaught} times.`,
+      playerIds: [bluffer],
+      tone: 'bad',
+    });
+  else {
+    const sly = topBy('bluffs');
+    if (tally(sly).bluffs >= 2)
+      facts.push({
+        label: 'Bluffer',
+        text: `{${sly}} played a Wild Draw Four with the color in hand ${tally(sly).bluffs} times, and nobody called it.`,
+        playerIds: [sly],
+        tone: 'good',
+      });
+  }
+  const bad = topBy('challengeLost');
+  if (tally(bad).challengeLost >= 1)
+    facts.push({
+      label: 'Bad challenge',
+      text: `{${bad}} challenged a fair Wild Draw Four and paid for it.`,
+      playerIds: [bad],
+      tone: 'bad',
+    });
+  const napper = topBy('caught');
+  if (tally(napper).caught >= 2)
+    facts.push({
+      label: 'Forgot to say it',
+      text: `{${napper}} was caught without calling UNO ${tally(napper).caught} times.`,
+      playerIds: [napper],
+      tone: 'bad',
+    });
+  const eagle = topBy('catches');
+  if (tally(eagle).catches >= 2)
+    facts.push({
+      label: 'Eagle eye',
+      text: `{${eagle}} spotted ${tally(eagle).catches} forgotten UNO calls.`,
+      playerIds: [eagle],
+      tone: 'good',
+    });
+  const caller = topBy('calls');
+  if (tally(caller).calls >= 3)
+    facts.push({
+      label: 'Loud and proud',
+      text: `{${caller}} called UNO ${tally(caller).calls} times.`,
+      playerIds: [caller],
+    });
+  // Rounds won, from the score trail: a round is won by whoever's total went up.
+  if (rounds >= 3 && s.trail) {
+    const won = ids.map(
+      (id) => [id, s.trail![id]!.filter((v, i, a) => i > 0 && v > a[i - 1]!).length] as const,
+    );
+    const [leader, n] = [...won].sort((a, b) => b[1] - a[1])[0]!;
+    if (n >= 3 && won.filter((w) => w[1] === n).length === 1)
+      facts.push({
+        label: 'Round winner',
+        text: `{${leader}} won ${n} of the ${rounds} rounds.`,
+        playerIds: [leader],
+        tone: 'good',
+      });
+    const none = won.filter((w) => w[1] === 0);
+    if (none.length === 1)
+      facts.push({
+        label: 'Shut out',
+        text: `{${none[0]![0]}} never won a round.`,
+        playerIds: [none[0]![0]],
+        tone: 'bad',
+      });
+  }
+
+  const bars: StoryBars[] = [];
+  const dealtRows = ids
+    .map((playerId) => ({ playerId, value: tally(playerId).dealt }))
+    .sort((a, b) => b.value - a.value);
+  if (dealtRows[0]!.value >= 4) bars.push({ title: 'Cards made others draw', rows: dealtRows });
+  if (s.took)
+    bars.push({
+      title: 'Cards drawn',
+      rows: ids
+        .map((playerId) => ({ playerId, value: s.took?.[playerId] ?? 0 }))
+        .sort((a, b) => b.value - a.value),
+    });
+
+  return buildStory({ race, headlines, facts, bars: bars.slice(0, 2) });
+}
+
 /**
  * The result if the host ended the game now (2026-10-24: "End Game still saves progress
  * of any rounds"). Playing to a target, the points leader after the rounds finished so far wins
@@ -766,6 +1006,7 @@ export function partialResult(s: UnoState): GameResult | null {
     summary,
     reveal: reveal(rounds),
     recap: s.recap,
+    story: unoStory(s, winners),
     stats: recapStats(s, [
       ...winners,
       ...ranked((id) => s.scores[id] ?? 0).filter((id) => !winners.includes(id)),
@@ -930,6 +1171,7 @@ export const uno: GameModule<UnoState, UnoAction, UnoPlayerView, UnoTableView, U
             : `First to ${s.target}: ${top} points after ${s.round} rounds`,
       reveal,
       recap: s.recap,
+      story: unoStory(s, winners),
       stats: recapStats(s, [...winners, ...ranked.filter((id) => !winners.includes(id))]),
       highlights: s.biggest
         ? [

@@ -3,9 +3,15 @@ import {
   type Announcement,
   type GameModule,
   type GameResult,
+  type GameStory,
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type StoryBars,
+  type StoryFact,
+  type StoryHeadline,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import {
@@ -132,6 +138,12 @@ export interface BackgammonState {
   winner: Side | null;
   tally: Tally;
   recap: RecapEvent[];
+  /** Rolls each side has made (an opening roll counts for the side that plays it). Older games don't have it. */
+  rolls?: [number, number];
+  /** Rolls each side could not play at all. */
+  danced?: [number, number];
+  /** Times each side offered the cube. */
+  doubled?: [number, number];
 }
 
 export interface BackgammonTableView {
@@ -277,6 +289,7 @@ function openGame(s: BackgammonState, rng: Rng, now: number): BackgammonState {
     cubeOwner: null,
     showBy: null,
     tally: { ...s.tally, rolled: bump(s.tally.rolled, first, ivory + ebony) },
+    rolls: bump(s.rolls ?? [0, 0], first, 1),
   };
   next = log(next, { by: s.players[first], side: first, kind: 'open', dice });
   return clocked(next, now);
@@ -295,15 +308,18 @@ function afterRoll(
     rolled: bump(s.tally.rolled, side, dice[0] === dice[1] ? dice[0] * 4 : dice[0] + dice[1]),
     doublets: dice[0] === dice[1] ? bump(s.tally.doublets, side, 1) : s.tally.doublets,
   };
-  const rolled: BackgammonState = { ...s, dice, tally };
+  const rolled: BackgammonState = { ...s, dice, tally, rolls: bump(s.rolls ?? [0, 0], side, 1) };
   if (mostDice(s.pos, side, dice) === 0) {
-    const passed = log(rolled, {
-      by: s.players[side],
-      side,
-      kind: 'blocked',
-      dice,
-      ...(late ? { late: true } : {}),
-    });
+    const passed = log(
+      { ...rolled, danced: bump(s.danced ?? [0, 0], side, 1) },
+      {
+        by: s.players[side],
+        side,
+        kind: 'blocked',
+        dice,
+        ...(late ? { late: true } : {}),
+      },
+    );
     return clocked({ ...passed, phase: 'roll', turn: other(side), dice: null }, now);
   }
   return clocked({ ...rolled, phase: 'move', turn: side }, now);
@@ -421,6 +437,7 @@ function cubeAction(s: BackgammonState, side: Side, kind: 'double' | 'take' | 'd
     return clocked(
       {
         ...next,
+        doubled: bump(s.doubled ?? [0, 0], side, 1),
         phase: 'double',
         recap: [
           ...next.recap,
@@ -480,6 +497,139 @@ function statsOf(s: BackgammonState, order: Side[]): RecapStats {
   };
 }
 
+/** The stats page: the match score by game, hits, doubles, the cube and how the dice ran. */
+function backgammonStory(s: BackgammonState, winners: Side[]): GameStory | undefined {
+  const [a, b] = s.players;
+  const name = (side: Side) => s.players[side];
+  const facts: StoryFact[] = [];
+  const headlines: StoryHeadline[] = [];
+
+  // The match score after each game.
+  const race =
+    s.ends.length >= 2
+      ? raceStory({
+          series: [
+            { playerId: a, points: [0, ...s.ends.map((e) => e.score[0])] },
+            { playerId: b, points: [0, ...s.ends.map((e) => e.score[1])] },
+          ],
+          winners: winners.length === 1 ? [name(winners[0]!)] : [],
+          step: 'game',
+          title: 'Match score',
+          unit: ' points',
+        })
+      : undefined;
+
+  const rolls = s.rolls ?? [0, 0];
+  const totalRolls = rolls[0] + rolls[1];
+  if (totalRolls > 0)
+    headlines.push({
+      label: 'Rolls',
+      value: `${totalRolls}`,
+      detail: s.ends.length > 1 ? `over ${s.ends.length} games` : 'in the game',
+    });
+  const big = s.ends.reduce<GameEnd | null>((m, e) => (!m || e.points > m.points ? e : m), null);
+  if (big && big.points >= 2)
+    headlines.push({
+      label: 'Biggest game',
+      value: `${big.points}`,
+      detail: `{${big.winner}}, game ${big.game}`,
+      playerId: big.winner,
+    });
+
+  // Gammons and backgammons.
+  const wins = s.ends.filter((e) => e.kind > 1 && !e.dropped);
+  const bestWin = wins.sort((x, y) => y.kind - x.kind || y.points - x.points)[0];
+  if (bestWin)
+    facts.push({
+      label: bestWin.kind === 3 ? 'Backgammon' : 'Gammon',
+      text: `{${bestWin.winner}} won game ${bestWin.game} with a ${KIND_NAME[bestWin.kind]}, ${bestWin.points} points.`,
+      playerIds: [bestWin.winner],
+      tone: 'good',
+    });
+
+  // The cube: a fold, and a big cube played out.
+  const folded = s.ends.find((e) => e.dropped);
+  if (folded) {
+    const loser = folded.winner === a ? b : a;
+    facts.push({
+      label: 'Cube dropped',
+      text: `{${loser}} dropped the cube at ${folded.cube * 2} and gave up game ${folded.game}.`,
+      playerIds: [loser],
+      tone: 'bad',
+    });
+  }
+  const bigCube = s.ends
+    .filter((e) => !e.dropped && e.cube >= 4)
+    .sort((x, y) => y.cube - x.cube)[0];
+  if (bigCube)
+    facts.push({
+      label: 'High stakes',
+      text: `{${bigCube.winner}} won game ${bigCube.game} with the cube on ${bigCube.cube}.`,
+      playerIds: [bigCube.winner],
+      tone: 'good',
+    });
+  const doubled = s.doubled ?? [0, 0];
+  if (Math.max(...doubled) >= 3 && doubled[0] !== doubled[1]) {
+    const side: Side = doubled[0] > doubled[1] ? 0 : 1;
+    facts.push({
+      label: 'Cube-happy',
+      text: `{${name(side)}} offered the cube ${doubled[side]} times.`,
+      playerIds: [name(side)],
+    });
+  }
+
+  // Hits, doubles and how the dice ran.
+  const hits = s.tally.hits;
+  if (Math.max(...hits) >= 4 && hits[0] !== hits[1]) {
+    const side: Side = hits[0] > hits[1] ? 0 : 1;
+    facts.push({
+      label: 'Hit man',
+      text: `{${name(side)}} sent ${hits[side]} checkers to the bar, to ${hits[other(side)]} the other way.`,
+      playerIds: [name(side)],
+    });
+  }
+  const dbl = s.tally.doublets;
+  if (Math.max(...dbl) >= 4 && Math.abs(dbl[0] - dbl[1]) >= 2) {
+    const side: Side = dbl[0] > dbl[1] ? 0 : 1;
+    facts.push({
+      label: 'Double trouble',
+      text: `{${name(side)}} rolled doubles ${dbl[side]} times, against ${dbl[other(side)]}.`,
+      playerIds: [name(side)],
+      tone: 'good',
+    });
+  }
+  if (rolls[0] >= 12 && rolls[1] >= 12) {
+    const avg = (side: Side) => s.tally.rolled[side] / rolls[side];
+    const side: Side = avg(0) > avg(1) ? 0 : 1;
+    if (avg(side) - avg(other(side)) >= 1)
+      facts.push({
+        label: 'Hot dice',
+        text: `{${name(side)}} averaged ${avg(side).toFixed(1)} pips a roll to {${name(other(side))}}'s ${avg(other(side)).toFixed(1)}.`,
+        playerIds: [name(side), name(other(side))],
+      });
+  }
+  const danced = s.danced ?? [0, 0];
+  if (Math.max(...danced) >= 3 && danced[0] !== danced[1]) {
+    const side: Side = danced[0] > danced[1] ? 0 : 1;
+    facts.push({
+      label: 'Stuck on the bar',
+      text: `{${name(side)}} rolled ${danced[side]} times without being able to move.`,
+      playerIds: [name(side)],
+      tone: 'bad',
+    });
+  }
+
+  const pair = (v: readonly [number, number]) =>
+    ([0, 1] as Side[])
+      .map((side) => ({ playerId: name(side), value: v[side] }))
+      .sort((x, y) => y.value - x.value);
+  const bars: StoryBars[] = [];
+  if (hits[0] + hits[1] > 0) bars.push({ title: 'Checkers hit', rows: pair(hits) });
+  if (dbl[0] + dbl[1] > 0) bars.push({ title: 'Doubles rolled', rows: pair(dbl) });
+
+  return buildStory({ race, headlines, facts, bars });
+}
+
 function resultOf(s: BackgammonState, winners: Side[], summary: string): GameResult {
   const order: Side[] = winners.length === 1 ? [winners[0]!, other(winners[0]!)] : [0, 1];
   const biggest = s.ends.reduce<GameEnd | null>(
@@ -511,6 +661,7 @@ function resultOf(s: BackgammonState, winners: Side[], summary: string): GameRes
     recap: s.recap,
     roundName: 'Game',
     stats: statsOf(s, order),
+    story: backgammonStory(s, winners),
     standings: [0, 1].map((side) => ({
       playerId: s.players[side as Side],
       outcome: winners.length > 1 ? 'draw' : winners.includes(side as Side) ? 'win' : 'loss',

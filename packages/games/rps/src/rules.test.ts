@@ -62,6 +62,16 @@ describe('rounds', () => {
     expect(outcomes(allTied)).toEqual({ a: 'draw', b: 'draw', c: 'draw' });
   });
 
+  it('tells the story of a finished game', () => {
+    let s = fresh(4);
+    for (let i = 0; i < 4; i++) s = playRound(s, { a: 'rock', b: 'scissors', c: 'scissors' });
+    const story = rps.getResult(s)!.story!;
+    expect(story.charts![0]!.series.map((x) => x.playerId)).toEqual(ids);
+    expect(story.charts![0]!.series[0]!.points).toEqual([0, 2, 4, 6, 8]);
+    expect(story.facts!.some((f) => f.label === 'Clean sweep')).toBe(true);
+    expect(story.facts!.some((f) => f.label === 'One-trick')).toBe(true);
+  });
+
   it('rejects bad actions and players outside the game', () => {
     expect(rps.actionSchema.safeParse({ type: 'pick', pick: 'lizard' }).success).toBe(false);
     expect(() => pick(fresh(), 'zed', 'rock')).toThrow(/not in this game/);

@@ -51,6 +51,8 @@ export function raceStory(input: RaceInput): RaceStory {
 
   // "Better" in a common direction: higher is better after this.
   const good = (v: number) => (lowWins ? -v : v);
+  // "1 point", "2 points".
+  const count = (n: number) => `${fmt(n)}${Math.round(n) === 1 ? unit.replace(/s$/, '') : unit}`;
   const at = (s: RaceSeries, i: number) => s.points[Math.min(i, s.points.length - 1)] ?? 0;
 
   // Who led after each step (null for a tie at the top), and by how much.
@@ -123,8 +125,8 @@ export function raceStory(input: RaceInput): RaceStory {
           label: 'Comeback',
           text:
             worst.rank === series.length
-              ? `{${winner}} was dead last after ${step} ${worst.step}, ${fmt(worst.gap)}${unit} behind, and still won.`
-              : `{${winner}} was ${fmt(worst.gap)}${unit} behind after ${step} ${worst.step} and still won.`,
+              ? `{${winner}} was dead last after ${step} ${worst.step}, ${count(worst.gap)} behind, and still won.`
+              : `{${winner}} was ${count(worst.gap)} behind after ${step} ${worst.step} and still won.`,
           playerIds: [winner],
           tone: 'good',
         });
@@ -141,7 +143,7 @@ export function raceStory(input: RaceInput): RaceStory {
       if (margin > 0 && (margin <= 1 || margin / scale <= 0.05) && w === top) {
         facts.push({
           label: 'Photo finish',
-          text: `{${winner}} won by just ${fmt(margin)}${unit}.`,
+          text: `{${winner}} won by just ${count(margin)}.`,
           playerIds: [winner, runnerUp.playerId],
         });
       }
@@ -161,7 +163,7 @@ export function raceStory(input: RaceInput): RaceStory {
   if (gain.by > 0) {
     facts.push({
       label: `Huge ${step}`,
-      text: `{${gain.player}} ${lowWins ? 'shed' : 'gained'} ${fmt(gain.by)}${unit} on ${step} ${gain.step}.`,
+      text: `{${gain.player}} ${lowWins ? 'shed' : 'gained'} ${count(gain.by)} on ${step} ${gain.step}.`,
       playerIds: [gain.player],
       tone: 'good',
     });
@@ -169,7 +171,7 @@ export function raceStory(input: RaceInput): RaceStory {
   if (drop.by > 0) {
     facts.push({
       label: `Rough ${step}`,
-      text: `{${drop.player}} ${lowWins ? 'took on' : 'lost'} ${fmt(drop.by)}${unit} on ${step} ${drop.step}.`,
+      text: `{${drop.player}} ${lowWins ? 'took on' : 'lost'} ${count(drop.by)} on ${step} ${drop.step}.`,
       playerIds: [drop.player],
       tone: 'bad',
     });

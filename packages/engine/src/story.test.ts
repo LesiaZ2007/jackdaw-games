@@ -60,6 +60,20 @@ describe('raceStory', () => {
     expect(r.facts.find((f) => f.label === 'Rough round')?.text).toBe('{b} took on 35 on round 2.');
   });
 
+  it('says "1 point", not "1 points"', () => {
+    const r = raceStory({
+      series: [
+        { playerId: 'a', points: [0, 1, 2, 3, 21] },
+        { playerId: 'b', points: [0, 0, 1, 2, 20] },
+      ],
+      winners: ['a'],
+      step: 'round',
+      title: 'Score',
+      unit: ' points',
+    });
+    expect(r.facts.find((f) => f.label === 'Photo finish')?.text).toBe('{a} won by just 1 point.');
+  });
+
   it('says nothing about a game with one step', () => {
     const r = raceStory({
       series: [

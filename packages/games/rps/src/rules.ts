@@ -3,9 +3,13 @@ import {
   type BotLevel,
   type GameModule,
   type GameResult,
+  type GameStory,
   type RecapEvent,
   type RecapStats,
   type Rng,
+  type StoryFact,
+  buildStory,
+  raceStory,
 } from '@jackdaw/engine';
 import { z } from 'zod';
 import { meta } from './meta';
@@ -137,6 +141,133 @@ function statsFrom(state: RpsState, winners: string[]): RecapStats {
   };
 }
 
+/** The stats page, read out of the round history: the score race, throw habits, streaks and sweeps. */
+function rpsStory(state: RpsState, winners: string[]): GameStory | undefined {
+  const rounds = state.history;
+  if (rounds.length === 0) return undefined;
+  const ids = state.players;
+  const series = ids.map((playerId) => {
+    const points = [0];
+    for (const h of rounds) points.push(points[points.length - 1]! + (h.points[playerId] ?? 0));
+    return { playerId, points };
+  });
+  const race = raceStory({ series, winners, step: 'round', title: 'Score', unit: ' points' });
+
+  const topOf = (h: RoundResult) => Math.max(...Object.values(h.points));
+  const wonRound = (h: RoundResult, id: string) => topOf(h) > 0 && h.points[id] === topOf(h);
+  const facts: StoryFact[] = [];
+
+  // Clean sweeps: one throw beating everyone else's.
+  const sweeps: Record<string, number> = {};
+  for (const h of rounds) {
+    const top = topOf(h);
+    const leaders = ids.filter((id) => h.points[id] === top);
+    if (top > 0 && leaders.length === 1 && top === ids.length - 1 && ids.length > 2)
+      sweeps[leaders[0]!] = (sweeps[leaders[0]!] ?? 0) + 1;
+  }
+  const sweeper = Object.entries(sweeps).sort((a, b) => b[1] - a[1])[0];
+  if (sweeper)
+    facts.push({
+      label: 'Clean sweep',
+      text:
+        sweeper[1] === 1
+          ? `{${sweeper[0]}} beat every other throw in one round.`
+          : `{${sweeper[0]}} beat every other throw in ${sweeper[1]} rounds.`,
+      playerIds: [sweeper[0]],
+      tone: 'good',
+    });
+
+  // Longest run of rounds won.
+  let streak = { id: '', len: 0, end: 0 };
+  for (const id of ids) {
+    let run = 0;
+    rounds.forEach((h, i) => {
+      run = wonRound(h, id) ? run + 1 : 0;
+      if (run > streak.len) streak = { id, len: run, end: i + 1 };
+    });
+  }
+  if (streak.len >= 3)
+    facts.push({
+      label: 'Hot streak',
+      text: `{${streak.id}} won ${streak.len} rounds in a row, ending on round ${streak.end}.`,
+      playerIds: [streak.id],
+      tone: 'good',
+    });
+
+  // Throw habits: the most one-note player, and the most evenly mixed.
+  if (rounds.length >= 4) {
+    const habit = ids.map((id) => {
+      const counts = PICKS.map((p) => rounds.filter((h) => h.picks[id] === p).length);
+      const most = Math.max(...counts);
+      return {
+        id,
+        pick: PICKS[counts.indexOf(most)]!,
+        most,
+        pct: Math.round((most / rounds.length) * 100),
+      };
+    });
+    const fav = [...habit].sort((a, b) => b.most - a.most)[0]!;
+    if (fav.pct >= 60)
+      facts.push({
+        label: 'One-trick',
+        text: `{${fav.id}} threw ${fav.pick} in ${fav.pct}% of rounds.`,
+        playerIds: [fav.id],
+      });
+    const never = habit.find((h) => PICKS.some((p) => rounds.every((r) => r.picks[h.id] !== p)));
+    if (never && rounds.length >= 5) {
+      const unused = PICKS.find((p) => rounds.every((r) => r.picks[never.id] !== p))!;
+      facts.push({
+        label: 'Never once',
+        text: `{${never.id}} never threw ${unused} all game.`,
+        playerIds: [never.id],
+      });
+    }
+  }
+
+  // Nemesis: the pair where one player out-scored the other head to head by the most.
+  if (ids.length >= 2 && rounds.length >= 3) {
+    let nem = { a: '', b: '', by: 0 };
+    for (const a of ids)
+      for (const b of ids) {
+        if (a === b) continue;
+        const by =
+          rounds.filter((h) => beats(h.picks[a]!, h.picks[b]!)).length -
+          rounds.filter((h) => beats(h.picks[b]!, h.picks[a]!)).length;
+        if (by > nem.by) nem = { a, b, by };
+      }
+    if (nem.by >= 3) {
+      const won = rounds.filter((h) => beats(h.picks[nem.a]!, h.picks[nem.b]!)).length;
+      facts.push({
+        label: 'Nemesis',
+        text: `{${nem.a}} beat {${nem.b}} head to head in ${won} of ${rounds.length} rounds.`,
+        playerIds: [nem.a, nem.b],
+      });
+    }
+  }
+
+  // Shutouts: rounds with no points at all.
+  const draws = rounds.filter((h) => topOf(h) === 0).length;
+  if (draws >= 2 && draws >= rounds.length / 3)
+    facts.push({
+      label: 'Stalemates',
+      text: `${draws} of ${rounds.length} rounds ended with nobody scoring.`,
+    });
+
+  const roundsWon = ids.map((id) => [id, rounds.filter((h) => wonRound(h, id)).length] as const);
+  return buildStory({
+    race,
+    facts,
+    bars: [
+      {
+        title: 'Rounds won',
+        rows: [...roundsWon]
+          .sort((a, b) => b[1] - a[1])
+          .map(([playerId, value]) => ({ playerId, value })),
+      },
+    ],
+  });
+}
+
 /** The game's result from the points so far: the most wins, a tie shares it, all level is a draw. */
 function resultFrom(
   state: RpsState,
@@ -152,6 +283,7 @@ function resultFrom(
     recap: state.recap,
     roundName: 'Round',
     stats: statsFrom(state, winners),
+    story: rpsStory(state, winners),
     standings: state.players.map((playerId) => ({
       playerId,
       outcome: allTied ? 'draw' : winners.includes(playerId) ? 'win' : 'loss',

@@ -89,6 +89,8 @@ const short = (n: number) =>
 export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryContext }) {
   const steps = Math.max(...chart.series.map((s) => s.points.length));
   if (steps < 2) return null;
+  // A per-step chart's first point is step 1; a race's is the start.
+  const perStep = chart.kind === 'per-step';
   const all = chart.series.flatMap((s) => s.points);
   let lo = Math.min(...all);
   let hi = Math.max(...all);
@@ -100,7 +102,7 @@ export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryCo
     return ([1, 2, 2.5, 5, 10].find((m) => m * p >= v) ?? 10) * p;
   };
   const top = hi > 0 ? nice(hi) : 0;
-  const bottom = lo < 0 ? -nice(-lo) : lo;
+  const bottom = lo < 0 ? -nice(-lo) : 0;
   const W = 1000;
   const H = 1000;
   const x = (i: number) => (i / (steps - 1)) * W;
@@ -209,9 +211,9 @@ export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryCo
         </div>
       </div>
       <div className="jd-story__x" aria-hidden>
-        <span>Start</span>
+        <span>{perStep ? `${chart.xLabel ?? 'Step'} 1` : 'Start'}</span>
         <span>
-          {chart.xLabel ?? 'Step'} {steps - 1}
+          {chart.xLabel ?? 'Step'} {perStep ? steps : steps - 1}
         </span>
       </div>
     </figure>

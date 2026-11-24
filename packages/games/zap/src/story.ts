@@ -151,7 +151,7 @@ export function puzzleStory(s: RaceState, winners: string[]): GameStory | undefi
 
   const charts: GameStory['charts'] = [
     {
-      title: 'Seconds per puzzle (lower is faster)',
+      title: 'Solve times',
       xLabel: 'Puzzle',
       kind: 'per-step',
       series: s.players

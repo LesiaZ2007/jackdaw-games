@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { resolve } from 'node:path';
 
 /** The Avalon app's origin: its TV screen is shown in an iframe, the one thing we embed. */
 function avalonOrigin(): string | null {
@@ -96,5 +97,21 @@ const config: NextConfig = {
     ];
   },
 };
+
+// Cloudflare Workers build only (set in open-next.config.ts): the server bundle there has a size
+// limit, so it leaves out Letterhoard's word list (it would be in two chunks) and lib/words.ts
+// loads it from the static assets instead (written by scripts/cf-assets.mjs).
+if (process.env.JACKDAW_CLOUDFLARE === '1') {
+  config.webpack = (webpackConfig, { webpack }) => {
+    webpackConfig.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(
+        /^#packed-words$/,
+        // Builds run from apps/web.
+        resolve(process.cwd(), '../../packages/games/wordhoard/src/words.none.ts'),
+      ),
+    );
+    return webpackConfig;
+  };
+}
 
 export default config;

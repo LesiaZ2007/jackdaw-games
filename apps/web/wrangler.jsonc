@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jackdaw",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
+  "routes": [{ "pattern": "jackdaw.lastivka.dev", "custom_domain": true }],
+  "preview_urls": false,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  "services": [
+    {
+      // Self-reference binding used by the OpenNext adapter.
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "jackdaw",
+    },
+  ],
+  "vars": {
+    // Cloudflare puts the visitor's address in cf-connecting-ip (a visitor can send their own
+    // x-forwarded-for), so the per-address limits read that header here.
+    "JACKDAW_IP_HEADER": "cf-connecting-ip",
+    "AVALON_URL": "https://play-avalon.vercel.app",
+  },
+  "observability": { "enabled": true },
+  // Secrets (set with `npx wrangler secret put NAME`): KV_REST_API_URL, KV_REST_API_TOKEN,
+  // JACKDAW_LINK_SECRET, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT
+}

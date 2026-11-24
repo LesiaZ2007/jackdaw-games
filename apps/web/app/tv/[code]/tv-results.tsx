@@ -23,6 +23,15 @@ const RECAP_ROWS = 8;
 const REVEAL_MS = 8_000;
 const PANEL_MS = 12_000;
 const FACTS_PER_PANEL = 4;
+/** Short names for the panel tabs, so they fit one line. */
+const TABS: Record<string, string> = {
+  'How it ended': 'The end',
+  'Big numbers': 'Numbers',
+  'Fun facts': 'Facts',
+  'More facts': 'More',
+  'By the numbers': 'Table',
+  'What happened': 'Recap',
+};
 const OUTCOME: Record<Standing['outcome'], string> = { win: 'Won', loss: 'Lost', draw: 'Draw' };
 
 interface Panel {
@@ -41,10 +50,16 @@ export function TvResults({
   snapshot,
   players,
   hostName,
+  startAt = 'reveal',
+  startPanel = 0,
 }: {
   snapshot: LobbySnapshot;
   players: ScreenPlayer[];
   hostName: string;
+  /** Where the screen starts: the winner's moment, or straight into the stats (previews). */
+  startAt?: 'reveal' | 'stats';
+  /** Which stats panel to open on (previews). */
+  startPanel?: number;
 }) {
   const result = snapshot.results!;
   const game = catalogEntry(result.gameId)?.meta.name ?? 'The game';
@@ -111,7 +126,8 @@ export function TvResults({
     });
   }
   const facts = story?.facts ?? [];
-  for (let i = 0; i < facts.length; i += FACTS_PER_PANEL) {
+  // Two panels of facts at most; phones have the rest.
+  for (let i = 0; i < Math.min(facts.length, FACTS_PER_PANEL * 2); i += FACTS_PER_PANEL) {
     panels.push({
       id: `facts-${i}`,
       title: i === 0 ? 'Fun facts' : 'More facts',
@@ -201,8 +217,8 @@ export function TvResults({
   }
 
   // First the winner's moment, then the stats show, one panel after another.
-  const [stage, setStage] = useState<'reveal' | 'stats'>('reveal');
-  const [at, setAt] = useState(0);
+  const [stage, setStage] = useState<'reveal' | 'stats'>(startAt);
+  const [at, setAt] = useState(startPanel);
   const count = panels.length;
   useEffect(() => {
     if (!count) return;
@@ -289,6 +305,7 @@ export function TvResults({
         className="tv-standings"
         aria-label="Everyone's result"
         data-many={standings.length > 10 || undefined}
+        data-few={standings.length <= 6 || undefined}
       >
         <h2 className="jd-display tv-section-title">Standings</h2>
         <ol>
@@ -318,7 +335,7 @@ export function TvResults({
             <ol className="tv-show__tabs" aria-hidden>
               {panels.map((p, i) => (
                 <li key={p.id} data-on={i === at % count || undefined}>
-                  {p.title}
+                  {TABS[p.title] ?? p.title}
                   {i === at % count && (
                     <span
                       className="tv-show__clock"

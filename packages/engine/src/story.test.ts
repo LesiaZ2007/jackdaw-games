@@ -22,10 +22,10 @@ describe('raceStory', () => {
     expect(byLabel['Biggest lead']).toMatchObject({ value: '18', playerId: 'a' });
     const comeback = r.facts.find((f) => f.label === 'Comeback');
     expect(comeback?.text).toBe('{b} was dead last after hand 2, 30 chips behind, and still won.');
-    expect(r.facts.find((f) => f.label === 'Best hand')?.text).toBe(
+    expect(r.facts.find((f) => f.label === 'Huge hand')?.text).toBe(
       '{b} gained 30 chips on hand 4.',
     );
-    expect(r.facts.find((f) => f.label === 'Worst hand')?.tone).toBe('bad');
+    expect(r.facts.find((f) => f.label === 'Rough hand')?.tone).toBe('bad');
   });
 
   it('calls a wire-to-wire win and a photo finish', () => {
@@ -57,7 +57,7 @@ describe('raceStory', () => {
       lowWins: true,
     });
     expect(r.headlines[0]).toMatchObject({ label: 'Winning margin', value: '10', playerId: 'a' });
-    expect(r.facts.find((f) => f.label === 'Worst round')?.text).toBe('{b} took on 35 on round 2.');
+    expect(r.facts.find((f) => f.label === 'Rough round')?.text).toBe('{b} took on 35 on round 2.');
   });
 
   it('says nothing about a game with one step', () => {

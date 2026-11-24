@@ -786,6 +786,14 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   min-height: 64px;
   animation: tv-rise 600ms var(--ease-out) both;
 }
+/* A few players get big rows, so the column isn't mostly empty. */
+.tv-results--stats .tv-standings[data-few] .tv-standing {
+  min-height: 104px;
+  font-size: 36px;
+}
+.tv-results--stats .tv-standings[data-few] .jd-token {
+  --z: 72px !important;
+}
 .tv-results--stats .tv-standings[data-many] .tv-standing {
   min-height: 50px;
   font-size: 26px;

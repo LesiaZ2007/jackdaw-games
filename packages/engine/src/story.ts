@@ -61,7 +61,11 @@ export function raceStory(input: RaceInput): RaceStory {
     const [first, second] = ranked;
     const gap = good(at(first!, i)) - good(at(second!, i));
     leaders.push(gap > 0 ? first!.playerId : null);
-    if (gap > bigLead.by) bigLead = { by: gap, player: first!.playerId, step: i };
+    // The final gap is the winning margin, and once one player has everything there's no
+    // race left, so the biggest lead is one held while it was still a game.
+    const racing = lowWins || series.filter((s) => at(s, i) > 0).length >= 2;
+    if (i < steps - 1 && racing && gap > bigLead.by)
+      bigLead = { by: gap, player: first!.playerId, step: i };
   }
 
   let changes = 0;
@@ -78,7 +82,9 @@ export function raceStory(input: RaceInput): RaceStory {
   const runnerUp = finalRank.find((s) => s.playerId !== top.playerId)!;
   const margin = Math.abs(at(top, steps - 1) - at(runnerUp, steps - 1));
 
-  if (winner === top.playerId && margin > 0) {
+  // Knocking everyone out isn't a margin.
+  const knockout = !lowWins && at(runnerUp, steps - 1) <= 0;
+  if (winner === top.playerId && margin > 0 && !knockout) {
     headlines.push({
       label: 'Winning margin',
       value: `${fmt(margin)}`,
@@ -154,7 +160,7 @@ export function raceStory(input: RaceInput): RaceStory {
   }
   if (gain.by > 0) {
     facts.push({
-      label: 'Best ' + step,
+      label: `Huge ${step}`,
       text: `{${gain.player}} ${lowWins ? 'shed' : 'gained'} ${fmt(gain.by)}${unit} on ${step} ${gain.step}.`,
       playerIds: [gain.player],
       tone: 'good',
@@ -162,16 +168,10 @@ export function raceStory(input: RaceInput): RaceStory {
   }
   if (drop.by > 0) {
     facts.push({
-      label: 'Worst ' + step,
+      label: `Rough ${step}`,
       text: `{${drop.player}} ${lowWins ? 'took on' : 'lost'} ${fmt(drop.by)}${unit} on ${step} ${drop.step}.`,
       playerIds: [drop.player],
       tone: 'bad',
-    });
-  }
-  if (changes >= 4) {
-    facts.push({
-      label: 'Seesaw',
-      text: `The lead changed hands ${changes} times.`,
     });
   }
 

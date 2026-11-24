@@ -57,7 +57,7 @@ export function StoryHeadlines({ items, ctx }: { items: StoryHeadline[]; ctx: St
             {(h.detail || p) && (
               <span className="jd-story__detail">
                 {p && <Token avatar={p.avatar} size={ctx.tv ? 44 : 24} />}
-                {h.detail ? storyText(h.detail, ctx.names) : nameOf(ctx, h.playerId)}
+                <span>{h.detail ? storyText(h.detail, ctx.names) : nameOf(ctx, h.playerId)}</span>
               </span>
             )}
           </li>
@@ -70,15 +70,14 @@ export function StoryHeadlines({ items, ctx }: { items: StoryHeadline[]; ctx: St
 /** Spreads end labels so none overlap: `gap` is the least distance in the 0..1 range. */
 function spread(ys: number[], gap: number): number[] {
   const order = ys.map((y, i) => ({ y, i })).sort((a, b) => a.y - b.y);
-  for (let k = 1; k < order.length; k++) {
-    if (order[k]!.y - order[k - 1]!.y < gap) order[k]!.y = order[k - 1]!.y + gap;
-  }
-  // If the stack ran off the bottom, slide it back up.
-  const over = order.length ? order[order.length - 1]!.y - 1 : 0;
-  if (over > 0) for (const o of order) o.y -= over;
-  for (let k = order.length - 2; k >= 0; k--) {
-    if (order[k + 1]!.y - order[k]!.y < gap) order[k]!.y = order[k + 1]!.y - gap;
-  }
+  const n = order.length;
+  // Push crowded labels down, then back up from the bottom edge, then down from the top
+  // edge: only labels that would touch move.
+  for (let k = 1; k < n; k++) order[k]!.y = Math.max(order[k]!.y, order[k - 1]!.y + gap);
+  if (n) order[n - 1]!.y = Math.min(order[n - 1]!.y, 1);
+  for (let k = n - 2; k >= 0; k--) order[k]!.y = Math.min(order[k]!.y, order[k + 1]!.y - gap);
+  if (n) order[0]!.y = Math.max(order[0]!.y, 0);
+  for (let k = 1; k < n; k++) order[k]!.y = Math.max(order[k]!.y, order[k - 1]!.y + gap);
   const out = [...ys];
   for (const o of order) out[o.i] = o.y;
   return out;
@@ -124,6 +123,13 @@ export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryCo
   // Draw the winners last, on top.
   const drawn = [...lines].sort((a, b) => Number(a.won) - Number(b.won));
   const zero = bottom < 0 && top > 0 ? y(0) / H : null;
+  // Pins close together stack in rows, so their notes don't cover each other.
+  const marks: { x: number; text: string; at: number; row: number }[] = [];
+  for (const m of [...(chart.marks ?? [])].sort((a, b) => a.x - b.x).slice(0, 6)) {
+    const at = m.x / (steps - 1);
+    const row = marks.filter((p) => Math.abs(p.at - at) < 0.25).length;
+    marks.push({ ...m, at, row });
+  }
   const ticks = [top - pad, (top - pad + bottom) / 2, bottom].map((v) => ({
     v,
     at: y(v) / H,
@@ -150,11 +156,12 @@ export function StoryChartView({ chart, ctx }: { chart: StoryChart; ctx: StoryCo
               style={{ top: `${zero * 100}%` }}
             />
           )}
-          {(chart.marks ?? []).map((m) => (
+          {marks.map((m) => (
             <span
               key={`${m.x}-${m.text}`}
               className="jd-story__mark"
-              style={{ left: `${(m.x / (steps - 1)) * 100}%` }}
+              data-right={m.at > 0.6 || undefined}
+              style={{ left: `${m.at * 100}%`, ['--row' as string]: m.row }}
             >
               <span>{storyText(m.text, ctx.names)}</span>
             </span>
@@ -284,7 +291,7 @@ export function StoryView({ story, ctx }: { story: GameStory | undefined; ctx: S
       {story.charts?.map((c) => (
         <StoryChartView key={c.title} chart={c} ctx={ctx} />
       ))}
-      {story.facts && <StoryFacts facts={story.facts} ctx={ctx} />}
+      {story.facts && <StoryFacts facts={story.facts.slice(0, 6)} ctx={ctx} />}
       {story.bars?.map((b) => (
         <StoryBarsView key={b.title} bars={b} ctx={ctx} />
       ))}

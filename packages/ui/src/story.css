@@ -26,6 +26,13 @@
   box-shadow: 4px 4px 0 var(--ink);
   animation: jd-story-in 520ms var(--ease-out) both;
 }
+.jd-story__head:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+/* Pins on a chart need the TV's room; phones have the facts instead. */
+.jd-story:not(.jd-story--tv) .jd-story__mark {
+  display: none;
+}
 .jd-story__kicker,
 .jd-story__fact-label {
   font: 800 13px/1 var(--font-plaque);
@@ -170,7 +177,7 @@
 }
 .jd-story__mark > span {
   position: absolute;
-  top: 2px;
+  top: calc(2px + var(--row, 0) * 1.6em);
   left: 4px;
   max-width: 12em;
   padding: 1px 5px;
@@ -179,6 +186,10 @@
   font-size: 11px;
   line-height: 1.15;
   white-space: nowrap;
+}
+.jd-story__mark[data-right] > span {
+  left: auto;
+  right: 4px;
 }
 .jd-story__x {
   display: flex;
@@ -318,8 +329,13 @@
 .jd-story--tv .jd-story__bars {
   gap: 16px;
 }
+/* On the TV the panel's own heading names the chart. */
 .jd-story--tv .jd-story__chart-title {
-  font-size: 34px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
 }
 .jd-story--tv .jd-story__plot {
   --plot-h: 100%;
@@ -329,7 +345,7 @@
 }
 .jd-story--tv .jd-story__chart {
   height: 100%;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 .jd-story--tv .jd-story__axis {
   font-size: 24px;

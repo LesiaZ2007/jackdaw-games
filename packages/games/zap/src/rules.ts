@@ -21,6 +21,7 @@ import {
   type Puzzle,
 } from './puzzle';
 import { clock } from './time';
+import { puzzleStory } from './story';
 
 /**
  * Zap: LinkedIn's Zip. Everyone gets the same run of puzzles, made fresh for the game, and
@@ -208,6 +209,7 @@ function resultFrom(s: ZapState, early: boolean): GameResult | null {
     reveal,
     recap: s.recap,
     roundName: 'Puzzle',
+    story: puzzleStory(s, winners),
     stats: statsOf(s, order),
     standings: s.players.map((playerId) => ({
       playerId,

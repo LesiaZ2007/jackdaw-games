@@ -1,4 +1,12 @@
-import { GameError, type GameModule, type GameResult } from '@jackdaw/engine';
+import {
+  GameError,
+  buildStory,
+  type GameModule,
+  type GameResult,
+  type GameStory,
+  type StoryFact,
+  type StoryHeadline,
+} from '@jackdaw/engine';
 import { z } from 'zod';
 import { PUZZLES, generatePuzzle, withDifficulty } from '#puzzles';
 import { crosswordBot } from './bot';
@@ -127,6 +135,134 @@ function tableView(s: CrosswordState, playerId?: string): CrosswordView {
     notice: board.notice,
   };
 }
+const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+const plural = (n: number, one: string, many = one + 's') => `${n} ${n === 1 ? one : many}`;
+
+/** The stats page: who filled how much, who finished the most words, and what help was used. */
+function crosswordStory(s: CrosswordState, seconds: number): GameStory | undefined {
+  const race = s.mode === 'race';
+  const board = race ? (s.boards[s.winner ?? '']?.letters ? s.boards[s.winner!]! : s) : s;
+  const clues = gridClues(s.puzzle.rows, s.puzzle.across, s.puzzle.down);
+  const squares = s.puzzle.rows.join('').replace(/#/g, '').length;
+  const headlines: StoryHeadline[] = [
+    { label: race ? 'Winning time' : 'Time to solve', value: clock(seconds) },
+    { label: 'Squares', value: String(squares), detail: `${plural(clues.length, 'clue')}` },
+  ];
+  const facts: StoryFact[] = [];
+  const bars: GameStory['bars'] = [];
+  const checks = board.checks ?? 0;
+  const revealed = board.revealed?.length ?? 0;
+  if (race) {
+    const filled = (id: string) => (s.boards[id]?.letters ?? []).filter(Boolean).length;
+    bars.push({
+      title: 'Squares filled',
+      rows: [...s.players]
+        .sort((a, b) => filled(b) - filled(a))
+        .map((id) => ({ playerId: id, value: filled(id) })),
+    });
+    if (s.winner) {
+      const second = [...s.players]
+        .filter((id) => id !== s.winner)
+        .sort((a, b) => filled(b) - filled(a))[0];
+      if (second && squares - filled(second) <= 3 && squares - filled(second) > 0)
+        facts.push({
+          label: 'Photo finish',
+          text: `{${second}} was just ${plural(squares - filled(second), 'square')} short when {${s.winner}} finished.`,
+          playerIds: [s.winner, second],
+        });
+    }
+  } else {
+    const count: Record<string, number> = {};
+    for (const a of board.authors) if (a) count[a] = (count[a] ?? 0) + 1;
+    const ranked = s.players.map((id) => ({ id, n: count[id] ?? 0 })).sort((a, b) => b.n - a.n);
+    bars.push({
+      title: 'Squares filled',
+      rows: ranked.map((r) => ({ playerId: r.id, value: r.n })),
+    });
+    const top = ranked[0];
+    if (top && top.n > 0 && s.players.length > 1) {
+      const total = ranked.reduce((a, r) => a + r.n, 0);
+      headlines.push({
+        label: 'Most squares',
+        value: String(top.n),
+        detail: `{${top.id}}, ${Math.round((top.n / total) * 100)}% of the typing`,
+        playerId: top.id,
+      });
+    }
+    // A clue goes to whoever typed most of its squares.
+    const wins: Record<string, number> = {};
+    for (const c of clues) {
+      const mine: Record<string, number> = {};
+      for (const i of c.cells) {
+        const a = board.authors[i];
+        if (a) mine[a] = (mine[a] ?? 0) + 1;
+      }
+      const best = Object.entries(mine).sort((a, b) => b[1] - a[1])[0];
+      if (best && best[1] * 2 > c.cells.length) wins[best[0]] = (wins[best[0]] ?? 0) + 1;
+    }
+    const clueRank = s.players.map((id) => ({ id, n: wins[id] ?? 0 })).sort((a, b) => b.n - a.n);
+    if (clueRank.length > 1) {
+      bars.push({
+        title: 'Clues mostly filled',
+        rows: clueRank.map((r) => ({ playerId: r.id, value: r.n })),
+      });
+      const c = clueRank[0]!;
+      if (c.n >= 3)
+        facts.push({
+          label: 'Clue master',
+          text: `{${c.id}} filled most of the squares in ${plural(c.n, 'clue')}.`,
+          playerIds: [c.id],
+          tone: 'good',
+        });
+    }
+    if (top && s.players.length > 1 && top.n > 0) {
+      const second = ranked[1]!;
+      if (second.n === 0)
+        facts.push({
+          label: 'Solo run',
+          text: `{${top.id}} typed every letter.`,
+          playerIds: [top.id],
+        });
+      else if (top.n >= second.n * 2 && top.n >= 10)
+        facts.push({
+          label: 'Carried',
+          text: `{${top.id}} typed ${top.n} squares to {${second.id}}'s ${second.n}.`,
+          playerIds: [top.id, second.id],
+        });
+    }
+  }
+  const longest = [...clues].sort((a, b) => b.cells.length - a.cells.length)[0];
+  if (longest && longest.cells.length >= 7)
+    facts.push({
+      label: 'Longest word',
+      text: `The longest answer was ${longest.cells.length} letters: ${longest.number} ${longest.direction}.`,
+    });
+  if (s.help) {
+    if (checks + revealed > 0)
+      headlines.push({ label: 'Help used', value: String(checks + revealed) });
+    if (checks === 0 && revealed === 0)
+      facts.push({
+        label: 'No help',
+        text: race
+          ? 'The winning grid used no checks and no reveals.'
+          : 'Solved without a single check or reveal.',
+        tone: 'good',
+      });
+    else
+      facts.push({
+        label: 'Help used',
+        text: `${plural(checks, 'check')} and ${plural(revealed, 'revealed letter')}.`,
+      });
+  }
+  if (seconds > 0 && seconds <= 120 && squares >= 20)
+    facts.push({
+      label: 'Quick work',
+      text: `Done in ${clock(seconds)}.`,
+      tone: 'good',
+    });
+  return buildStory({ headlines, bars, facts });
+}
+
 function result(s: CrosswordState): GameResult {
   const seconds = Math.max(0, Math.floor(((s.finishedAt ?? s.startedAt) - s.startedAt) / 1000));
   return {
@@ -147,6 +283,7 @@ function result(s: CrosswordState): GameResult {
       s.revealed.length +
       ' letters revealed.',
     reveal: tableView(s),
+    story: crosswordStory(s, seconds),
     recap: [
       {
         text:

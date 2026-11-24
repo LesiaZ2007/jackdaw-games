@@ -367,3 +367,17 @@ describe('the recap', () => {
     for (const e of r.recap) expect(e.text).not.toMatch(/(^|\s)(wren|rook|finch)(\s|$)/);
   });
 });
+
+describe('end-of-game story', () => {
+  it('tells how a finished race went', () => {
+    let s = start(['wren', 'rook'], '4×4', 3);
+    for (let i = 0; i < 3; i++) {
+      s = solveFor(s, 'wren', 20_000 * (i + 1));
+      s = solveFor(s, 'rook', 20_000 * (i + 1) + 3_000 + i * 20_000);
+    }
+    const story = fandango.getResult(s)!.story!;
+    expect(story).toBeDefined();
+    expect(story.charts?.[0]?.kind).toBe('per-step');
+    expect(story.facts?.some((f) => f.label === 'Clean sweep')).toBe(true);
+  });
+});

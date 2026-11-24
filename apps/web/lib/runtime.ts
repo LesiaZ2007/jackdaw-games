@@ -67,4 +67,9 @@ export function getRuntime(): RoomRuntime {
   return g.__jackdawRuntime;
 }
 
-export const http = () => createHttpHandlers(getRuntime());
+/**
+ * JACKDAW_IP_HEADER names the address header the host sets itself (cf-connecting-ip on
+ * Cloudflare, see wrangler.jsonc). Unset on Vercel, which overwrites the usual headers.
+ */
+export const http = () =>
+  createHttpHandlers(getRuntime(), { ipHeader: process.env.JACKDAW_IP_HEADER || undefined });

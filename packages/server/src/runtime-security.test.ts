@@ -124,6 +124,19 @@ describe('address limits', () => {
     expect((await get({ 'x-vercel-forwarded-for': '10.1.1.1' })).status).toBe(200);
     expect((await get({ 'x-real-ip': '10.1.1.2' })).status).toBe(200);
   });
+
+  it('with ipHeader set, only that header names the address', async () => {
+    const { runtime, code } = await lobbyOf({ addressLimit: { polls: 2 } });
+    const http = createHttpHandlers(runtime, { ipHeader: 'cf-connecting-ip' });
+    const get = (headers: Record<string, string> = {}) =>
+      http.getLobby(new Request(`http://x/api/lobby/${code}`, { headers }), code);
+    const real = { 'cf-connecting-ip': '10.3.3.3' };
+    expect((await get({ ...real, 'x-forwarded-for': '10.9.9.1' })).status).toBe(200);
+    expect((await get({ ...real, 'x-forwarded-for': '10.9.9.2' })).status).toBe(200);
+    // A made-up x-forwarded-for or x-real-ip doesn't get the same visitor a fresh bucket.
+    expect((await get({ ...real, 'x-real-ip': '10.9.9.3' })).status).toBe(429);
+    expect((await get({ 'cf-connecting-ip': '10.3.3.4' })).status).toBe(200);
+  });
 });
 
 describe('strangers do not take the lock', () => {

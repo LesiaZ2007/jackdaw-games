@@ -29,7 +29,7 @@ export interface StoryContext {
 const inkOf = (ctx: StoryContext, id: string | undefined, fallback: number) => {
   const i = id ? ctx.order.indexOf(id) : -1;
   const n = i >= 0 ? i : fallback;
-  return { color: `var(--${INKS[n % INKS.length]})`, dashed: n >= INKS.length };
+  return { color: `var(--story-${INKS[n % INKS.length]})`, dashed: n >= INKS.length };
 };
 
 /** "{a} over {b}" with the names in bold. */

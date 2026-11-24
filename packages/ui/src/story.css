@@ -1,6 +1,37 @@
 /* The end-of-game stats page. Printed: flat fills, ink rules, no gradients or glows.
    Phone sizes here; `.jd-story--tv` (or anything inside `.tv-story`) takes the TV sizes. */
 
+/* The inks players' lines and bars are drawn in; lifted on dark paper so they all read. */
+:root {
+  --story-gules: var(--gules);
+  --story-azure: var(--azure);
+  --story-vert: var(--vert);
+  --story-or: var(--or);
+  --story-purpure: var(--purpure);
+  --story-tenne: var(--tenne);
+  --story-sable: var(--sable);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --story-gules: #d4695d;
+    --story-azure: #6f9fd6;
+    --story-vert: #6fb28e;
+    --story-or: #d2aa5c;
+    --story-purpure: #b58bc0;
+    --story-tenne: #d98f4e;
+    --story-sable: #c9cdd2;
+  }
+}
+:root[data-theme='dark'] {
+  --story-gules: #d4695d;
+  --story-azure: #6f9fd6;
+  --story-vert: #6fb28e;
+  --story-or: #d2aa5c;
+  --story-purpure: #b58bc0;
+  --story-tenne: #d98f4e;
+  --story-sable: #c9cdd2;
+}
+
 .jd-story {
   display: grid;
   gap: var(--space-4, 24px);

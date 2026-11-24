@@ -829,7 +829,7 @@ html:has(.tv-viewport--scroll)::-webkit-scrollbar {
   overflow: hidden;
 }
 .tv-show__tabs li[data-on] {
-  color: var(--on-fill);
+  color: var(--table);
   background: var(--ink);
   border-color: var(--ink);
 }

@@ -147,7 +147,7 @@ screen, thin walls, chompers and ghosts about 1.5 corridor tiles wide. Chompers 
 mouth and an eye and **stay upright** (facing left mirrors rather than flipping upside down);
 chasers are little ghosts (rounded top, scalloped hem, eyes), drawn fresh.
 
-- **Printed:** ink on cream paper like a puzzle-book page (as Zap does): soft wall fill with an
+- **Printed:** ink on cream paper like a puzzle-book page: soft wall fill with an
   inked rule, ink pellets, a gold ghost door, players in heraldic colors (gules, azure, vert, or)
   with ink outlines, ghosts in tenné, purpure, sable and teal. No glow.
 - **Neon:** glowing magenta outline walls on deep purple, faint scanlines, glowing outlined

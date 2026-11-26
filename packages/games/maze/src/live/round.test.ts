@@ -190,6 +190,80 @@ describe('LiveRound', () => {
     expect(c.walker.tile[1]).toBe(1);
   });
 
+  it('rejoin starts the turn count again', () => {
+    const r = new LiveRound({ layout: plain, startedAt: 0 });
+    const id = r.join('Wren', 'dev-1')!;
+    r.input(id, 'left', 57);
+    expect(r.join('Wren', 'dev-1')).toBe(id);
+    expect(r.snapshot(0).acks[id]).toBe(0);
+  });
+
+  it('seats are keyed by device, so two phones both called Wren get two chompers', () => {
+    const r = new LiveRound({ layout: plain, startedAt: 0 });
+    const a = r.join('Wren', 'dev-1');
+    const b = r.join('Wren', 'dev-2');
+    expect(a).not.toBe(b);
+    expect(r.join('Wren (2)', 'dev-1')).toBe(a);
+  });
+
+  it('board() lists every pellet taken without draining events', () => {
+    const r = new LiveRound({ layout: plain, startedAt: 0 });
+    const a = r.join('Wren', 'dev-1')!;
+    r.join('Rook', 'dev-2');
+    until(r, 0, 4000, () => r.board().length > 0 && r.peek(a).score > 0);
+    const all = r.board();
+    expect(all.length).toBeGreaterThan(0);
+    r.advance(4000);
+    expect(r.board().length).toBeGreaterThanOrEqual(all.length);
+    const s = r.snapshot(0);
+    expect(s.events.some((e) => e.kind === 'bump')).toBe(true);
+    expect(new Set(s.taken)).toEqual(new Set(r.board()));
+  });
+
+  describe('a turn tagged with the junction the phone turned at', () => {
+    /** Row 1 corridor, a branch down at x = 10 to a second corridor on row 3. */
+    const branch = (() => {
+      const m = corridor('.'.repeat(25));
+      m.rows[2] = row('.........'.replace(/./g, '#') + '.');
+      return m;
+    })();
+    const reach = (r: LiveRound, id: string, x: number) =>
+      until(r, 0, 3000, () => r.peek(id).x >= x);
+
+    it('is taken at that junction when the server is just past it', () => {
+      const r = new LiveRound({ layout: branch, startedAt: 0 });
+      const id = r.join('Wren')!;
+      const t = reach(r, id, 10.3);
+      r.input(id, 'down', 1, [10, 1]);
+      r.advance(t + 1);
+      const c = r.peek(id);
+      expect(c.dir).toBe('down');
+      expect(c.x).toBe(10);
+      expect(c.y).toBeGreaterThan(1.2);
+      expect(r.snapshot(0).acks[id]).toBe(1);
+    });
+
+    it('is queued when the server has not reached it yet', () => {
+      const r = new LiveRound({ layout: branch, startedAt: 0 });
+      const id = r.join('Wren')!;
+      const t = reach(r, id, 9.2);
+      r.input(id, 'down', 1, [10, 1]);
+      until(r, t, 1000, () => r.peek(id).y > 1.5);
+      expect(r.peek(id).x).toBe(10);
+    });
+
+    it('is treated as a normal (late) turn when the server is well past it', () => {
+      const r = new LiveRound({ layout: branch, startedAt: 0 });
+      const id = r.join('Wren')!;
+      const t = reach(r, id, 11.2);
+      r.input(id, 'down', 1, [10, 1]);
+      r.advance(t + 300);
+      const c = r.peek(id);
+      expect(c.dir).toBe('right');
+      expect(c.y).toBe(1);
+    });
+  });
+
   it('snapshots list pellets taken since a time, and events once', () => {
     const r = new LiveRound({ layout: plain, startedAt: 0 });
     r.join('Wren');

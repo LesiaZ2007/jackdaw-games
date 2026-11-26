@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./meta": "./src/meta.ts",
     "./live": "./src/live/index.ts",
+    "./live-spike": "./src/ui/live-spike.tsx",
     "./ui": "./src/ui/index.tsx"
   },
   "scripts": {

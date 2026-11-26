@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveContacts, type Contender } from './contact';
+import { resolveContacts, settleContacts, type Contender } from './contact';
 
 const c = (id: string, x: number, y: number, o: Partial<Contender> = {}): Contender => ({
   id,
@@ -49,6 +49,29 @@ describe('resolveContacts', () => {
     expect(
       resolveContacts([c('A', 5, 5, { hunting: true, immuneUntil: 1001 }), c('B', 5.5, 5)], 1000),
     ).toEqual([]);
+  });
+
+  it('settle: a mixed meeting eats each prey once and drops bumps with eaten chompers', () => {
+    const r = settleContacts(
+      resolveContacts([c('A', 5, 5, { hunting: true }), c('B', 5.4, 5), c('C', 5.2, 5.3)], 0),
+    );
+    expect(r).toEqual([
+      { kind: 'eat', by: 'A', eaten: 'B', cost: 200, gain: 400 },
+      { kind: 'eat', by: 'A', eaten: 'C', cost: 200, gain: 400 },
+    ]);
+  });
+
+  it('settle: two hunters and one prey eat it once', () => {
+    const r = settleContacts(
+      resolveContacts(
+        [c('A', 5, 5, { hunting: true }), c('B', 5.4, 5, { hunting: true }), c('C', 5.2, 5.3)],
+        0,
+      ),
+    );
+    expect(r.filter((e) => e.kind === 'eat')).toEqual([
+      { kind: 'eat', by: 'A', eaten: 'C', cost: 200, gain: 400 },
+    ]);
+    expect(r.filter((e) => e.kind === 'bump')).toEqual([]);
   });
 
   it('three-way meeting charges each pair once', () => {

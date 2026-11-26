@@ -40,7 +40,14 @@ export class LiveSpikeRoom {
 
   private onMessage(conn: Conn, data: string | ArrayBuffer): void {
     if (typeof data !== 'string' || data.length > 200) return;
-    let msg: { t?: unknown; name?: unknown; d?: unknown; n?: unknown };
+    let msg: {
+      t?: unknown;
+      name?: unknown;
+      device?: unknown;
+      d?: unknown;
+      n?: unknown;
+      at?: unknown;
+    };
     try {
       msg = JSON.parse(data) as typeof msg;
     } catch {
@@ -53,13 +60,22 @@ export class LiveSpikeRoom {
         this.lastT = 0;
         this.round = new LiveRound({ layout: layoutsOf('Medium')[0]!, startedAt: this.startedAt });
       }
-      const id = this.round.join(name);
+      const device =
+        typeof msg.device === 'string' && /^[A-Za-z0-9-]{8,40}$/.test(msg.device)
+          ? msg.device
+          : undefined;
+      const id = this.round.join(name, device);
       if (!id) {
         conn.ws.close(4000, 'full');
         return;
       }
       for (const other of this.conns)
-        if (other !== conn && other.id === id) other.ws.close(4001, 'Playing on another device');
+        if (other !== conn && other.id === id) {
+          // Stop it steering before its close event arrives.
+          other.id = null;
+          this.conns.delete(other);
+          other.ws.close(4001, 'Playing on another device');
+        }
       conn.id = id;
       this.send(conn, {
         t: 'hello',
@@ -67,13 +83,20 @@ export class LiveSpikeRoom {
         serverNow: Date.now(),
         startedAt: this.startedAt,
         layoutId: layoutsOf('Medium')[0]!.id,
+        taken: this.round.board(),
       });
       this.loop ??= setInterval(() => this.tick(), BROADCAST_MS);
       return;
     }
-    if (msg.t === 'dir' && conn.id && this.round && DIRS.includes(msg.d as string)) {
+    if (msg.t === 'turn' && conn.id && this.round && DIRS.includes(msg.d as string)) {
       if (++conn.sent > 30) return;
-      this.round.input(conn.id, msg.d as Dir, typeof msg.n === 'number' ? msg.n : 0);
+      const at =
+        Array.isArray(msg.at) &&
+        msg.at.length === 2 &&
+        msg.at.every((v) => typeof v === 'number' && Number.isFinite(v))
+          ? (msg.at as [number, number])
+          : undefined;
+      this.round.input(conn.id, msg.d as Dir, typeof msg.n === 'number' ? msg.n : 0, at);
     }
   }
 

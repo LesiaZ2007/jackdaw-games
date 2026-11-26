@@ -102,6 +102,3 @@ export const mazeUi: GameUi = {
   TvScreen,
   Results,
 };
-
-// SPIKE (docs/maze/LIVE-PLAN-1.md): the live maze's feel-check page.
-export { LiveSpike } from './live-spike';

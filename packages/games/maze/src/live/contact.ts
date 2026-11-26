@@ -50,3 +50,29 @@ export function resolveContacts(cs: readonly Contender[], tMs: number): ContactE
   }
   return out;
 }
+
+/**
+ * What one step's contacts actually do: eats first, then bumps, and each chomper is hit at most
+ * once. A hunter may eat several chompers; anyone already eaten, bumped or eating this step
+ * takes no further hit.
+ */
+export function settleContacts(events: readonly ContactEvent[]): ContactEvent[] {
+  const hit = new Set<string>();
+  const eating = new Set<string>();
+  const out: ContactEvent[] = [];
+  for (const e of events)
+    if (e.kind === 'eat' && !hit.has(e.eaten) && !hit.has(e.by)) {
+      out.push(e);
+      hit.add(e.eaten);
+      eating.add(e.by);
+    }
+  for (const e of events) {
+    if (e.kind !== 'bump') continue;
+    const busy = (id: string) => hit.has(id) || eating.has(id);
+    if (busy(e.a) || busy(e.b)) continue;
+    out.push(e);
+    hit.add(e.a);
+    hit.add(e.b);
+  }
+  return out;
+}

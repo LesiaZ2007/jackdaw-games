@@ -16,6 +16,7 @@ import { LiveClient } from './live-client';
 import { draw } from './render/core';
 import { useSize, useSound } from './use-maze';
 import './maze.css';
+import './live-spike.css';
 
 const BIRDS = ['Wren', 'Rook', 'Robin', 'Finch', 'Heron', 'Magpie'];
 const BANNER_MS = 1600;
@@ -31,9 +32,7 @@ interface Live {
 }
 
 export function LiveSpike() {
-  const [name, setName] = useState(
-    () => BIRDS[Math.floor((Date.now() / 1000) % BIRDS.length)] ?? 'Wren',
-  );
+  const [name, setName] = useState(() => BIRDS[randomInt(BIRDS.length)] ?? 'Wren');
   const [room, setRoom] = useState('JACK');
   const [phase, setPhase] = useState<Phase>({ kind: 'form' });
   const live = useRef<Live | null>(null);
@@ -44,12 +43,19 @@ export function LiveSpike() {
     const ws = new WebSocket(`${proto}//${location.host}/live/spike/${room.toUpperCase()}`);
     live.current = { ws, client: null, me: '' };
     setPhase({ kind: 'connecting' });
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'join', name }));
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'join', name, device: deviceId() }));
     ws.onclose = (e) =>
       setPhase({ kind: 'closed', why: e.reason === 'full' ? 'The room is full (4).' : e.reason });
     ws.onmessage = (e) => {
       const msg = JSON.parse(String(e.data)) as
-        | { t: 'hello'; id: string; serverNow: number; startedAt: number; layoutId: string }
+        | {
+            t: 'hello';
+            id: string;
+            serverNow: number;
+            startedAt: number;
+            layoutId: string;
+            taken: number[];
+          }
         | { t: 'snap'; s: Parameters<LiveClient['onSnapshot']>[0]; serverNow: number };
       const l = live.current;
       if (!l) return;
@@ -61,10 +67,11 @@ export function LiveSpike() {
           layout,
           startedAt: msg.startedAt,
           offsetMs: msg.serverNow - Date.now(),
+          taken: msg.taken,
         });
         setJoined(l);
         setPhase({ kind: 'playing' });
-      } else if (msg.t === 'snap') l.client?.onSnapshot(msg.s);
+      } else if (msg.t === 'snap') l.client?.onSnapshot(msg.s, msg.serverNow - Date.now());
     };
   };
 
@@ -124,8 +131,7 @@ function LivePlay({ live: l, name }: { live: Live; name: string }) {
   const steer = (d: Dir) => {
     if (!l.client || l.ws.readyState !== WebSocket.OPEN) return;
     sound.unlock();
-    const n = l.client.turn(d);
-    l.ws.send(JSON.stringify({ t: 'dir', d, n }));
+    l.client.turn(d);
   };
 
   // Arrow keys and WASD.
@@ -171,6 +177,9 @@ function LivePlay({ live: l, name }: { live: Live; name: string }) {
       const c = l.client;
       if (!c) return;
       const f = c.frame(Date.now());
+      // Turns your chomper took this frame go out with the junction where it took them.
+      for (const turn of c.takeOutbox())
+        if (l.ws.readyState === WebSocket.OPEN) l.ws.send(JSON.stringify({ t: 'turn', ...turn }));
       const effects: FrameEffect[] = [];
       const nameOf = (id: string) => f.chompers.find((x) => x.id === id)?.name.toUpperCase() ?? '';
       for (const e of f.events) onEvent(e, l.me, now, nameOf, f.chompers, effects);
@@ -329,6 +338,26 @@ function LivePlay({ live: l, name }: { live: Live; name: string }) {
       </div>
     </div>
   );
+}
+
+function randomInt(n: number): number {
+  const a = new Uint32Array(1);
+  crypto.getRandomValues(a);
+  return a[0]! % n;
+}
+
+/** A per-device id kept in this browser, so a reload gets the same chomper back. */
+function deviceId(): string {
+  const key = 'jackdaw:live-spike:device';
+  try {
+    const had = localStorage.getItem(key);
+    if (had) return had;
+    const id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+    return id;
+  } catch {
+    return crypto.randomUUID();
+  }
 }
 
 function power(ch: LiveChomper, t: number) {

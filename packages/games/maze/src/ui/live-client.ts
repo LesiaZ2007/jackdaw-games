@@ -12,35 +12,66 @@ export const SNAP_TILES = 1.5;
 const BLEND_MS = 150;
 /** Snapshots kept for drawing others. */
 const KEPT = 8;
+/** Another chomper can't travel this far between two snapshots: draw it as a jump. */
+const TELEPORT_TILES = 1;
+
+/** A turn to send: its sequence number, direction and where your chomper took it. */
+export interface LiveTurn {
+  n: number;
+  d: Dir;
+  at: [number, number];
+}
+
+interface Pending extends LiveTurn {
+  /** Round ms when your chomper took it. */
+  t: number;
+}
 
 /**
- * The phone's side of a live round (docs/maze/LIVE.md, "The phones and TV"). Your own chomper
- * is predicted with the same ChomperSim the server runs, so a turn shows at once; each snapshot
- * restarts it from the server's state and replays the turns the server hasn't applied yet, and
- * the difference is blended away. Everyone else is drawn INTERP_MS behind, between snapshots.
+ * The phone's side of a live round (docs/maze/LIVE.md, "The phones and TV").
+ *
+ * Your own chomper is predicted with the same ChomperSim the server runs, so a swipe shows at
+ * once. A swipe waits (as `queued`) for the junction where it can be taken; when your chomper
+ * takes it, the turn goes in the outbox with that junction, so the server turns you at the same
+ * place (LiveRound.input). Each snapshot restarts your chomper from the server's state and
+ * replays the turns the server hasn't applied yet; the difference in position is blended away.
+ * Everyone else is drawn INTERP_MS behind, between snapshots.
  */
 export class LiveClient {
   private readonly me: string;
   private readonly m: MazeLayout;
   private readonly startedAt: number;
-  private readonly offsetMs: number;
+  private offsetMs: number;
   private readonly sim: ChomperSim;
   private readonly bits: Uint8Array;
   private readonly taken = new Set<number>();
   private simT = 0;
   private seq = 0;
-  private pending: { seq: number; dir: Dir }[] = [];
+  private queued: Dir | null = null;
+  private pending: Pending[] = [];
+  private outbox: LiveTurn[] = [];
   private snaps: LiveSnapshot[] = [];
   private events: ContactEvent[] = [];
-  /** Drawn minus predicted at `fixAt` (round ms), fading over BLEND_MS. */
+  /** Drawn minus predicted at `fix.at` (round ms), fading over BLEND_MS. */
   private fix = { dx: 0, dy: 0, at: 0 };
 
-  constructor(o: { me: string; layout: MazeLayout; startedAt: number; offsetMs: number }) {
+  constructor(o: {
+    me: string;
+    layout: MazeLayout;
+    startedAt: number;
+    offsetMs: number;
+    /** Pellets taken before this phone joined. */
+    taken?: readonly number[];
+  }) {
     this.me = o.me;
     this.m = o.layout;
     this.startedAt = o.startedAt;
     this.offsetMs = o.offsetMs;
     this.bits = new Uint8Array(pelletIndex(o.layout).size);
+    for (const i of o.taken ?? []) {
+      this.taken.add(i);
+      this.bits[i] = 1;
+    }
     const seat = Number(o.me.replace(/\D/g, '')) - 1;
     this.sim = new ChomperSim({
       m: o.layout,
@@ -48,19 +79,30 @@ export class LiveClient {
       level: 1,
       powers: ['hunt'],
       ghosts: { ghosts: () => [] },
+      taken: this.bits,
       fruit: false,
     });
   }
 
-  /** A local turn, applied to your chomper at once. Returns its sequence number to send. */
-  turn(d: Dir): number {
-    this.seq++;
-    this.pending.push({ seq: this.seq, dir: d });
+  /** A swipe: your chomper takes it at the next open junction (a reverse at once). */
+  turn(d: Dir): void {
+    this.queued = d;
     this.sim.input(d);
-    return this.seq;
   }
 
-  onSnapshot(s: LiveSnapshot): void {
+  /** Turns your chomper has taken since the last call, to send to the server. */
+  takeOutbox(): LiveTurn[] {
+    const out = this.outbox;
+    this.outbox = [];
+    return out;
+  }
+
+  /**
+   * A snapshot from the server. `offsetSample` is its serverNow minus the local clock when it
+   * arrived; the largest seen is the best estimate of the clock offset.
+   */
+  onSnapshot(s: LiveSnapshot, offsetSample?: number): void {
+    if (offsetSample !== undefined && offsetSample > this.offsetMs) this.offsetMs = offsetSample;
     this.snaps.push(s);
     if (this.snaps.length > KEPT) this.snaps.shift();
     this.events.push(...s.events);
@@ -72,7 +114,7 @@ export class LiveClient {
     const own = s.chompers.find((c) => c.id === this.me);
     if (!own) return;
     const ack = s.acks[this.me] ?? 0;
-    this.pending = this.pending.filter((p) => p.seq > ack);
+    this.pending = this.pending.filter((p) => p.n > ack);
     const [px, py] = this.drawnAt(this.simT);
     const until = this.simT;
     this.sim.resume({
@@ -81,10 +123,10 @@ export class LiveClient {
       dyingUntil: own.dyingUntil,
       shieldUntil: own.shieldUntil,
     });
-    const last = this.pending[this.pending.length - 1];
-    if (last) this.sim.input(last.dir);
+    // The server's own queued turn (a late one it is still waiting to take), then ours on top.
+    if (own.walker.next) this.sim.input(own.walker.next);
     this.simT = s.t;
-    this.stepTo(until);
+    this.replayTo(until);
     const [nx, ny] = this.sim.position();
     const dx = px - nx;
     const dy = py - ny;
@@ -127,11 +169,48 @@ export class LiveClient {
     return { t, chompers: [own, ...others], taken, events };
   }
 
+  /** Steps your chomper live: a turn it takes goes in the outbox. */
   private stepTo(t: number): void {
     while (this.simT + STEP_MS <= t) {
+      const before = this.sim.position()[2];
       this.simT += STEP_MS;
       this.sim.step(STEP_MS, this.simT);
+      const after = this.sim.position()[2];
+      if (after && after !== before) this.took(after);
     }
+  }
+
+  /**
+   * After a resume: steps to `t` again, retaking the pending turns in order (each as its own
+   * queued turn, so it is taken at the first junction where it fits) and then the waiting swipe.
+   */
+  private replayTo(t: number): void {
+    const queue = [...this.pending];
+    const want = () => queue[0]?.d ?? this.queued;
+    const next = want();
+    if (next) this.sim.input(next);
+    while (this.simT + STEP_MS <= t) {
+      const before = this.sim.position()[2];
+      this.simT += STEP_MS;
+      this.sim.step(STEP_MS, this.simT);
+      const after = this.sim.position()[2];
+      if (after && after !== before && queue[0]?.d === after) {
+        queue.shift();
+        const w = want();
+        if (w) this.sim.input(w);
+      }
+    }
+  }
+
+  /** Your chomper just took a turn to `d`: record it and send it, with where it happened. */
+  private took(d: Dir): void {
+    const turns = this.sim.state().turns;
+    const last = turns[turns.length - 1];
+    if (!last) return;
+    if (this.queued === d) this.queued = null;
+    const turn: Pending = { n: ++this.seq, d, at: [last[1], last[2]], t: this.simT };
+    this.pending.push(turn);
+    this.outbox.push({ n: turn.n, d: turn.d, at: turn.at });
   }
 
   private drawnAt(t: number): [number, number] {
@@ -159,8 +238,8 @@ export class LiveClient {
       .filter((c) => c.id !== this.me)
       .map((cb) => {
         const ca = a.chompers.find((c) => c.id === cb.id);
-        // Through a tunnel (or a respawn) the gap is large: draw the newer spot.
-        if (!ca || Math.abs(cb.x - ca.x) > this.m.w / 2 || Math.abs(cb.y - ca.y) > 2) return cb;
+        // Through a tunnel or a respawn the gap is too big to glide across: draw the newer spot.
+        if (!ca || Math.hypot(cb.x - ca.x, cb.y - ca.y) > TELEPORT_TILES) return cb;
         return { ...cb, x: ca.x + (cb.x - ca.x) * k, y: ca.y + (cb.y - ca.y) * k };
       });
   }

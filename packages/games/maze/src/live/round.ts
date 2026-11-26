@@ -2,15 +2,21 @@ import { ChomperSim, DYING_MS } from '../sim/chomper';
 import type { MazeLayout } from '../sim/layouts';
 import { opposite } from '../sim/layouts';
 import { pelletIndex } from '../sim/pellets';
-import { POINTS } from '../sim/powers';
+import { POINTS, speeds } from '../sim/powers';
 import type { PowerKind } from '../sim/powers';
+import { canEnter } from '../sim/walker';
 import type { Dir, Walker } from '../sim/walker';
-import { BUMP_SHIELD_MS, resolveContacts } from './contact';
+import { BUMP_SHIELD_MS, resolveContacts, settleContacts } from './contact';
 import type { ContactEvent, Contender } from './contact';
 
 /** The sim's own step: 60 per second, as on the phones. */
 export const STEP_MS = 50 / 3;
 export const MAX_PLAYERS = 4;
+/**
+ * A turn tagged with the junction where the phone's own chomper took it is honoured if the
+ * server's chomper is at most this far past that junction (it is moved back and turned there).
+ */
+export const TURN_GRACE_TILES = 0.5;
 
 export interface LiveChomper {
   id: string;
@@ -43,6 +49,8 @@ export interface LiveSnapshot {
 
 interface Seat {
   id: string;
+  /** Who holds the seat: a per-device id, so two phones with one name get two chompers. */
+  key: string;
   name: string;
   seat: number;
   sim: ChomperSim;
@@ -77,11 +85,17 @@ export class LiveRound {
     this.takenBits = new Uint8Array(n);
   }
 
-  /** Seats a new name (up to MAX_PLAYERS) or returns that name's seat; null when full. */
-  join(name: string): string | null {
-    const key = name.trim().toLowerCase();
-    const had = this.seats.find((s) => s.name.toLowerCase() === key);
-    if (had) return had.id;
+  /**
+   * Seats a new device (up to MAX_PLAYERS) or gives a device its seat back (a rejoin, which
+   * starts its turn count again); null when full. `key` defaults to the name.
+   */
+  join(name: string, key = name.trim().toLowerCase()): string | null {
+    const had = this.seats.find((s) => s.key === key);
+    if (had) {
+      had.ack = 0;
+      had.name = name.trim() || had.name;
+      return had.id;
+    }
     const seat = this.seats.length;
     if (seat >= Math.min(MAX_PLAYERS, this.m.starts.length)) return null;
     const sim = new ChomperSim({
@@ -96,6 +110,7 @@ export class LiveRound {
     const id = `p${seat + 1}`;
     this.seats.push({
       id,
+      key,
       name: name.trim(),
       seat,
       sim,
@@ -107,12 +122,66 @@ export class LiveRound {
     return id;
   }
 
-  /** A turn from a phone; `seq` (rising per phone) comes back in `acks` once applied. */
-  input(id: string, dir: Dir, seq = 0): void {
+  /**
+   * A turn from a phone; `seq` (rising per phone) comes back in `acks` once applied. `at` is the
+   * junction where the phone's own chomper took the turn: if this chomper went past it by at most
+   * TURN_GRACE_TILES, it is moved back and turned there, carrying on by the distance it overshot;
+   * otherwise the turn is queued as usual (taken at the next open junction).
+   */
+  input(id: string, dir: Dir, seq = 0, at?: readonly [number, number]): void {
     const s = this.seats.find((x) => x.id === id);
     if (!s) return;
-    s.sim.input(dir);
     s.ack = Math.max(s.ack, seq);
+    const over = at ? this.overshoot(s, dir, at) : null;
+    if (over === null) {
+      s.sim.input(dir);
+      return;
+    }
+    const st = s.sim.state();
+    s.sim.resume({
+      walker: { tile: [at![0], at![1]], dir, next: null, prog: 0 },
+      power: st.power,
+      dyingUntil: st.dyingUntil,
+      shieldUntil: st.shieldUntil,
+    });
+    const speed = speeds(1)[st.power?.kind === 'dash' ? 'dash' : 'chomper'];
+    if (over > 0) this.collect(s, s.sim.step((over / speed) * 1000, this.t), this.t);
+  }
+
+  /** Every pellet and power spot taken so far (for a phone that joins mid-round); drains nothing. */
+  board(): number[] {
+    const out: number[] = [];
+    for (let i = 0; i < this.takenBits.length; i++) if (this.takenBits[i]) out.push(i);
+    return out;
+  }
+
+  /** One chomper as a snapshot would show it, without draining events. */
+  peek(id: string): LiveChomper {
+    return this.view(this.seats.find((s) => s.id === id)!);
+  }
+
+  /**
+   * How far past junction `at` this chomper is, along a straight line it is still on, when that
+   * is at most TURN_GRACE_TILES and `dir` is open there; null otherwise (queue the turn).
+   */
+  private overshoot(s: Seat, dir: Dir, at: readonly [number, number]): number | null {
+    const st = s.sim.state();
+    const heading = st.walker.dir;
+    if (!heading || heading === dir || heading === opposite(dir)) return null;
+    if (this.t < st.dyingUntil) return null;
+    if (!canEnter(this.m, at, dir, false)) return null;
+    const [x, y] = s.sim.position();
+    const along = heading === 'left' || heading === 'right';
+    if (along ? Math.abs(y - at[1]) > 1e-6 : Math.abs(x - at[0]) > 1e-6) return null;
+    const d =
+      heading === 'right'
+        ? x - at[0]
+        : heading === 'left'
+          ? at[0] - x
+          : heading === 'down'
+            ? y - at[1]
+            : at[1] - y;
+    return d >= 0 && d <= TURN_GRACE_TILES ? d : null;
   }
 
   /** Steps the sim in STEP_MS slices up to `now` (absolute ms), resolving contact after each. */
@@ -164,9 +233,7 @@ export class LiveRound {
         s.respawnAt = 0;
         s.sim.respawn(t);
       }
-      for (const e of s.sim.step(STEP_MS, t)) {
-        if (e.kind === 'pellet' || e.kind === 'power') this.claim(s, e.i, t, e.kind);
-      }
+      this.collect(s, s.sim.step(STEP_MS, t), t);
     }
     const cs: Contender[] = this.seats.map((s) => {
       const [x, y] = s.sim.position();
@@ -180,7 +247,12 @@ export class LiveRound {
         score: s.score,
       };
     });
-    for (const e of resolveContacts(cs, t)) this.apply(e, t);
+    for (const e of settleContacts(resolveContacts(cs, t))) this.apply(e, t);
+  }
+
+  private collect(s: Seat, events: ReturnType<ChomperSim['step']>, t: number): void {
+    for (const e of events)
+      if (e.kind === 'pellet' || e.kind === 'power') this.claim(s, e.i, t, e.kind);
   }
 
   private claim(s: Seat, i: number, t: number, kind: 'pellet' | 'power'): void {

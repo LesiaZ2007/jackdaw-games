@@ -1,6 +1,6 @@
 # Live Pac-Man (Contact mode): design
 
-2026-11-26. A real-time shared maze where chompers touch, run in a Cloudflare Durable Object.
+2026-11-26, approved by Lesia the same day. A real-time shared maze where chompers touch, run in a Cloudflare Durable Object.
 Extends `docs/maze/DESIGN.md` ("Approaches considered", option 2, tabled 2026-11-14 and taken up
 today). Everything not said here works as that document says.
 
@@ -123,7 +123,7 @@ LiveRound ──signed POST (self binding)──▶ runtime: server-only `liveRe
   tries a cross-site socket. The pass route works only on the Cloudflare site, and sockets check
   their `Origin` against the site's own address.
 
-### Platform addition (needs Lesia's OK)
+### Platform addition (approved by Lesia, 2026-11-26)
 
 A **server-only action**: the runtime gets an internal `applyServerAction(code, sessionId,
 action)` (not reachable from `POST /api/lobby`), and `GameModule` gets an optional

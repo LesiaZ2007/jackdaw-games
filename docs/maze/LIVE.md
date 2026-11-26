@@ -181,9 +181,13 @@ hidden and a Contact start is refused with "Contact needs jackdaw.lastivka.dev".
 
 ### Local development
 
-`next dev` can't run Durable Objects or WebSocket upgrades. **Builder's call:** develop live play
-with `pnpm cf:preview` (wrangler dev, reachable from phones on the LAN with `--ip 0.0.0.0`);
-`LiveRound`'s logic is a pure class tested in Vitest with a fake clock and fake sockets.
+`next dev` can't run Durable Objects or WebSocket upgrades, and `pnpm cf:build` fails on this
+Windows machine (OpenNext creates symlinks, which need Developer Mode; found 2026-11-26). So live
+play is developed with a standalone `wrangler dev` Worker: `pnpm --filter @jackdaw/web live:spike`
+bundles the page and serves it with the Durable Object on port 8787, reachable from phones on the
+LAN. `LiveRound` and `LiveClient` are pure classes tested in Vitest. Wiring the Durable Object into
+the OpenNext `jackdaw` Worker is verified in Cloudflare's own (Linux) build, or locally after
+turning on Windows Developer Mode or building in WSL.
 
 ## Order of work
 

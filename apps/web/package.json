@@ -12,7 +12,8 @@
     "test:e2e": "playwright test",
     "cf:build": "opennextjs-cloudflare build && node scripts/cf-assets.mjs",
     "cf:preview": "pnpm cf:build && opennextjs-cloudflare preview",
-    "cf:deploy": "pnpm cf:build && opennextjs-cloudflare deploy"
+    "cf:deploy": "pnpm cf:build && opennextjs-cloudflare deploy",
+    "live:spike": "node scripts/live-spike.mjs"
   },
   "dependencies": {
     "@jackdaw/engine": "workspace:*",

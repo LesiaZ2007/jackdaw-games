@@ -189,6 +189,28 @@ LAN. `LiveRound` and `LiveClient` are pure classes tested in Vitest. Wiring the 
 the OpenNext `jackdaw` Worker is verified in Cloudflare's own (Linux) build, or locally after
 turning on Windows Developer Mode or building in WSL.
 
+## Feel check (2026-11-26)
+
+Built as `docs/maze/LIVE-PLAN-1.md` (standalone `wrangler dev` Worker, `pnpm --filter
+@jackdaw/web live:spike`). Lesia played it: "this all looks good. However knowing intent is kind
+of hard and not always right." Taken as: a turn sometimes landed at a different junction than the
+one the phone showed, because the server got it after passing that junction.
+
+Decisions that follow (Lesia approved, "you're good to implement everything"):
+
+- **Turns go where the phone took them.** The phone sends a turn when its own chomper takes it,
+  tagged with that junction; the server moves its chomper back and turns it there if it is at most
+  `TURN_GRACE_TILES` (0.5) past, else queues it. Built and tested in `LiveRound.input`.
+- **Seats are keyed by a per-device id**, not by name; a rejoin gets the full board and starts its
+  turn count again.
+- **One step's contacts settle once per chomper** (eats first; a hunter may eat several).
+- **The phone keeps refining its clock offset** from every snapshot.
+- Kept as they are for now: bump −50 each with a 1.5 s shield, eat −200 / +400, touch 0.8 tiles.
+
+Still to decide in the build (from the review): bumps between chompers overlapping in the same
+direction should be edge-triggered or push them apart; the round should keep its clock when
+everyone drops; the Durable Object should use the hibernation API.
+
 ## Order of work
 
 1. **Feel check first** (a throwaway, kept off the catalog): `LiveRound` with two chompers, one

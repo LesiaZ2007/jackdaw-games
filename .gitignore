@@ -16,3 +16,6 @@ playwright-report/
 .vercel
 .env*
 .dev.vars*
+
+# Live maze feel-check bundle (apps/web/scripts/live-spike.mjs)
+apps/web/worker/.spike/

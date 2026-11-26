@@ -177,6 +177,19 @@ describe('LiveRound', () => {
     expect(byId(r, b).score).toBe(0);
   });
 
+  it('acknowledges the last turn applied and carries each walker', () => {
+    const r = new LiveRound({ layout: plain, startedAt: 0 });
+    const id = r.join('Wren')!;
+    r.advance(300);
+    r.input(id, 'left', 7);
+    r.advance(400);
+    const s = r.snapshot(0);
+    expect(s.acks[id]).toBe(7);
+    const c = s.chompers[0]!;
+    expect(c.walker.dir).toBe('left');
+    expect(c.walker.tile[1]).toBe(1);
+  });
+
   it('snapshots list pellets taken since a time, and events once', () => {
     const r = new LiveRound({ layout: plain, startedAt: 0 });
     r.join('Wren');

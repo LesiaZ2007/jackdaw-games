@@ -1,0 +1,17 @@
+// SPIKE (docs/maze/LIVE-PLAN-1.md): wrangler dev config for the live maze's feel check. Local
+// only: never `wrangler deploy` this file. Run with `pnpm --filter @jackdaw/web live:spike`.
+{
+  "name": "jackdaw-live-spike",
+  "main": "spike-dev.ts",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": false,
+  "assets": {
+    "directory": ".spike",
+    "binding": "ASSETS",
+    "run_worker_first": ["/live/*"],
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "LIVE_SPIKE_ROOM", "class_name": "LiveSpikeRoom" }],
+  },
+  "migrations": [{ "tag": "live-spike-1", "new_sqlite_classes": ["LiveSpikeRoom"] }],
+}

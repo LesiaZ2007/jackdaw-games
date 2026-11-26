@@ -4,7 +4,7 @@ import { opposite } from '../sim/layouts';
 import { pelletIndex } from '../sim/pellets';
 import { POINTS } from '../sim/powers';
 import type { PowerKind } from '../sim/powers';
-import type { Dir } from '../sim/walker';
+import type { Dir, Walker } from '../sim/walker';
 import { BUMP_SHIELD_MS, resolveContacts } from './contact';
 import type { ContactEvent, Contender } from './contact';
 
@@ -24,6 +24,8 @@ export interface LiveChomper {
   dyingUntil: number;
   /** Spawn or bump shield, whichever lasts longer. */
   shieldUntil: number;
+  /** Where the sim stands, so a phone can carry on from it (prediction). */
+  walker: Walker;
 }
 
 export interface LiveSnapshot {
@@ -35,6 +37,8 @@ export interface LiveSnapshot {
   taken: number[];
   /** Since the previous snapshot. */
   events: ContactEvent[];
+  /** Per player: the sequence number of the last turn applied. */
+  acks: Record<string, number>;
 }
 
 interface Seat {
@@ -46,6 +50,7 @@ interface Seat {
   bumpUntil: number;
   /** Eaten: respawn once round time reaches this. */
   respawnAt: number;
+  ack: number;
 }
 
 const NO_GHOSTS = { ghosts: () => [] };
@@ -89,12 +94,25 @@ export class LiveRound {
       fruit: false,
     });
     const id = `p${seat + 1}`;
-    this.seats.push({ id, name: name.trim(), seat, sim, score: 0, bumpUntil: 0, respawnAt: 0 });
+    this.seats.push({
+      id,
+      name: name.trim(),
+      seat,
+      sim,
+      score: 0,
+      bumpUntil: 0,
+      respawnAt: 0,
+      ack: 0,
+    });
     return id;
   }
 
-  input(id: string, dir: Dir): void {
-    this.seats.find((s) => s.id === id)?.sim.input(dir);
+  /** A turn from a phone; `seq` (rising per phone) comes back in `acks` once applied. */
+  input(id: string, dir: Dir, seq = 0): void {
+    const s = this.seats.find((x) => x.id === id);
+    if (!s) return;
+    s.sim.input(dir);
+    s.ack = Math.max(s.ack, seq);
   }
 
   /** Steps the sim in STEP_MS slices up to `now` (absolute ms), resolving contact after each. */
@@ -118,6 +136,7 @@ export class LiveRound {
       chompers: this.seats.map((s) => this.view(s)),
       taken,
       events,
+      acks: Object.fromEntries(this.seats.map((s) => [s.id, s.ack])),
     };
   }
 
@@ -135,6 +154,7 @@ export class LiveRound {
       power: st.power ? { ...st.power } : null,
       dyingUntil: st.dyingUntil,
       shieldUntil: Math.max(st.shieldUntil, s.bumpUntil),
+      walker: st.walker,
     };
   }
 

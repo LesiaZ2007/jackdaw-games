@@ -199,6 +199,15 @@ export interface GameModule<State, Action, View, TableView, Options> {
   optionsSchema: ZodType<Options>;
   /** Zod schema for one action, used to validate untrusted client input before applyAction. */
   actionSchema: ZodType<Action>;
+  /**
+   * Optional server-only actions (Lesia, 2026-11-26, for live rooms such as the Contact maze):
+   * moves only the server makes, e.g. a live room reporting its scores. Never reachable from a
+   * phone: the runtime applies them through `serverAction`, not the HTTP action route, which
+   * validates with `actionSchema` only. Validated with this schema, then `applyServerAction`.
+   */
+  serverActionSchema?: ZodType<unknown>;
+  /** Applies a server-only action (see serverActionSchema). Throws GameError to refuse it. */
+  applyServerAction?(state: State, action: unknown, now: number): State;
   defaultOptions(playerCount: number): Options;
   /** Error text to show the host, or null if these options work for this many players. */
   validateOptions?(options: Options, playerCount: number): string | null;

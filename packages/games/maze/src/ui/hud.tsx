@@ -113,6 +113,7 @@ const ModeKicker: Record<Mode, string> = {
   Solo: 'Solo',
   Shared: 'Shared maze',
   Race: 'Race',
+  Contact: 'Contact',
 };
 
 /** What this round is, over the maze while the countdown runs. */
@@ -121,7 +122,7 @@ export function StartPanel({ model, options }: { model: FrameModel; options: Maz
   const title =
     model.mode === 'Solo'
       ? `Clear ${options.mazes} ${options.mazes === 1 ? 'maze' : 'mazes'}`
-      : model.mode === 'Shared'
+      : model.mode === 'Shared' || model.mode === 'Contact'
         ? 'Most points wins'
         : 'First to finish wins big';
   const line =
@@ -129,7 +130,9 @@ export function StartPanel({ model, options }: { model: FrameModel; options: Maz
       ? 'Eat every pellet. Dodge the ghosts. Three lives.'
       : model.mode === 'Shared'
         ? `${options.mazes > 1 ? `${options.mazes} mazes, one at a time,` : 'One maze'} with ${others} ${others === 1 ? 'other' : 'others'}. The first to a pellet scores it. You pass through each other.`
-        : 'Everyone runs the same mazes alone. Clearing the last one first earns a bonus.';
+        : model.mode === 'Contact'
+          ? `One maze, live, with ${others} ${others === 1 ? 'other' : 'others'}. Bump into someone and you both lose points. With Hunt running, you eat them.`
+          : 'Everyone runs the same mazes alone. Clearing the last one first earns a bonus.';
   const powers = enabledPowers(options);
   const look = LOOKS[model.look];
   return (
@@ -150,6 +153,30 @@ export function StartPanel({ model, options }: { model: FrameModel; options: Maz
           </ul>
         ) : null}
         <div className="mz-keys">Swipe, or use the arrow keys or WASD</div>
+      </Lid>
+    </div>
+  );
+}
+
+/**
+ * A live (Contact) round on a site that can't host it: send the player to the one that can.
+ * `href` is this page on that site; `note` says what went wrong when it isn't that.
+ */
+export function AwayPanel({ href, note }: { href: string | null; note?: string }) {
+  return (
+    <div className="mz-over" aria-live="polite">
+      <Lid className="mz-lid mz-lid--small">
+        <div className="mz-kicker">Contact</div>
+        <h2 className="mz-lid__title">{note ? 'Lost the maze' : 'Live on the other site'}</h2>
+        <p className="mz-lid__p">
+          {note ??
+            'Contact rounds run live on jackdaw.lastivka.dev. Join this lobby there to play.'}
+        </p>
+        {href ? (
+          <p className="mz-lid__p">
+            <a href={href}>Open on jackdaw.lastivka.dev</a>
+          </p>
+        ) : null}
       </Lid>
     </div>
   );

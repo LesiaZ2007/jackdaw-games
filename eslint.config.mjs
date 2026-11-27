@@ -12,6 +12,7 @@ export default tseslint.config(
       '**/.next-check/**',
       '**/.open-next/**',
       '**/.wrangler/**',
+      '**/worker/.spike/**',
       '**/dist/**',
       '**/coverage/**',
       '**/next-env.d.ts',

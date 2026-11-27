@@ -4,7 +4,7 @@ import type { MazeSize } from './sim/layouts';
 import type { PowerKind } from './sim/powers';
 
 export const optionsSchema = z.object({
-  mode: z.enum(['Solo', 'Shared', 'Race']).describe('Mode'),
+  mode: z.enum(['Solo', 'Shared', 'Race', 'Contact']).describe('Mode'),
   mazes: z.number().int().min(1).max(5).describe('Number of mazes'),
   mazeSet: z.enum(['Mix', 'Handmade', 'Random']).describe('Maze style'),
   minutes: z.number().int().min(2).max(4).describe('Minutes'),
@@ -48,19 +48,28 @@ export function defaultOptions(playerCount: number): MazeOptions {
  */
 export function resolveSize(o: MazeOptions, playerCount: number): MazeSize {
   if (o.size !== 'Auto') return o.size;
-  return o.mode === 'Shared' && playerCount >= 5 ? 'Large' : 'Medium';
+  return (o.mode === 'Shared' || o.mode === 'Contact') && playerCount >= 5 ? 'Large' : 'Medium';
 }
 
-/** The power-ups this game can hand out. Classic is Hunt only; Solo has no one to attack. */
+/**
+ * The power-ups this game can hand out. Classic is Hunt only; Solo has no one to attack. Contact
+ * has no Jinx: chompers already chase each other there (docs/maze/LIVE.md).
+ */
 export function enabledPowers(o: MazeOptions): PowerKind[] {
   if (o.powerUps === 'Classic') return ['hunt'];
-  return POWER_KINDS.filter((k) => o[k] && !(o.mode === 'Solo' && ATTACK_POWERS.includes(k)));
+  return POWER_KINDS.filter(
+    (k) =>
+      o[k] &&
+      !(o.mode === 'Solo' && ATTACK_POWERS.includes(k)) &&
+      !(o.mode === 'Contact' && k === 'jinx'),
+  );
 }
 
 export function validateOptions(o: MazeOptions, playerCount: number): string | null {
   if (o.mode === 'Solo' && playerCount !== 1) return 'Solo is for exactly 1 player.';
   if (o.mode === 'Shared' && playerCount < 2) return 'Shared maze needs 2 or more players.';
   if (o.mode === 'Race' && playerCount < 2) return 'Race needs 2 or more players.';
+  if (o.mode === 'Contact' && playerCount < 2) return 'Contact needs 2 or more players.';
   if (enabledPowers(o).length === 0) return 'Turn on at least one power-up, or pick Classic.';
   return null;
 }

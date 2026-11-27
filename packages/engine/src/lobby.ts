@@ -852,6 +852,30 @@ export function applyGameAction(
   return finishIfOver(moved(lobby, game, state, rng.state, ctx), ctx);
 }
 
+/**
+ * A server-only action (GameModule.serverActionSchema): a move the server itself makes for the
+ * current session, e.g. a live room's scores. Phones can't send these; see the runtime's
+ * `serverAction`. Rejected for another session, a bad shape, or a game without them.
+ */
+export function applyServerAction(
+  lobby: Lobby,
+  input: { sessionId: string; action: unknown },
+  ctx: Ctx,
+): Lobby {
+  requireStatus(lobby, 'in_game');
+  const session = lobby.session!;
+  if (input.sessionId !== session.id) fail('STALE', 'That game has moved on. Try again.');
+  const game = gameFor(ctx, session.gameId);
+  const schema = game.serverActionSchema;
+  const apply = game.applyServerAction?.bind(game);
+  if (!schema || !apply) return fail('BAD_REQUEST', "This game doesn't take server moves.");
+  const parsed = schema.safeParse(input.action);
+  if (!parsed.success) fail('BAD_REQUEST', "That server move isn't understood.");
+  const rng = createRng(session.rngState);
+  const state = apply(session.state, parsed.data, ctx.now);
+  return finishIfOver(moved(lobby, game, state, rng.state, ctx), ctx);
+}
+
 /** The session after a move: the new state, seq and rng, and the game's chat lines for it. */
 function moved(
   lobby: Lobby,

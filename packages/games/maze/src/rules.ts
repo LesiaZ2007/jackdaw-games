@@ -137,6 +137,9 @@ export interface PlayerRec {
   lost?: number;
   /** Round total of power spots picked up (the facts forget them when a maze is cleared). */
   powerUps?: number;
+  /** Contact: bumps into other chompers, and other chompers eaten (from the live room). */
+  bumps?: number;
+  eats?: number;
 }
 
 export interface PowerSpot {
@@ -203,6 +206,8 @@ export interface MazeState {
    * index k the score at the end of the k-th step. Older games lack it.
    */
   trail?: { step: number; scores: Record<string, number[]> };
+  /** Contact: the last checkpoint the live room reported (its sequence number). */
+  live?: { seq: number };
 }
 
 const int = (min: number, max: number) => z.number().int().min(min).max(max);
@@ -1091,21 +1096,101 @@ function mazeStory(s: MazeState, winners: string[]): GameStory | undefined {
   return buildStory({ headlines, charts: chart ? [chart] : [], bars, facts });
 }
 
+// ---------------------------------------------------------------------------------------------
+// Contact: the live room (a Durable Object) runs the round and reports it here
+// (docs/maze/LIVE.md). Phones' ticks are ignored; these server-only checkpoints keep the score.
+
+/** How long after the bell a Contact round waits for the live room before ending on its own. */
+export const LIVE_GRACE_MS = 90_000;
+
+const liveStat = z.object({
+  score: z.number().int().min(0).max(1_000_000),
+  pellets: z.number().int().min(0).max(100_000),
+  ghosts: z.number().int().min(0).max(10_000),
+  caught: z.number().int().min(0).max(10_000),
+  fruit: z.number().int().min(0).max(10_000),
+  powers: z.number().int().min(0).max(10_000),
+  bumps: z.number().int().min(0).max(10_000),
+  eats: z.number().int().min(0).max(10_000),
+});
+
+export const liveResultSchema = z.object({
+  type: z.literal('liveResult'),
+  round: z.number().int().min(1),
+  /** Rising per report; an older or repeated one is ignored. */
+  seq: z.number().int().min(1),
+  /** The round is over (the bell, or the last maze cleared). */
+  final: z.boolean(),
+  players: z.record(z.string().max(64), liveStat),
+  /** New recap lines since the last report, players written as {id}. */
+  log: z
+    .array(
+      z.object({
+        actor: z.string().max(64).optional(),
+        text: z.string().max(200),
+        tag: z.string().max(24).optional(),
+        tone: z.enum(['good', 'bad']).optional(),
+      }),
+    )
+    .max(40),
+});
+export type LiveResult = z.infer<typeof liveResultSchema>;
+
+function applyLiveResult(s: MazeState, r: LiveResult, now: number): MazeState {
+  if (s.options.mode !== 'Contact' || r.round !== s.round) return s;
+  if (s.phase !== 'play' && s.phase !== 'countdown') return s;
+  if (r.seq <= (s.live?.seq ?? 0)) return s;
+  const players = { ...s.players };
+  for (const id of s.ids) {
+    const v = r.players[id];
+    if (!v) continue;
+    players[id] = {
+      ...players[id]!,
+      score: v.score,
+      pellets: v.pellets,
+      ghostsEaten: v.ghosts,
+      caught: v.caught,
+      fruit: v.fruit,
+      powerUps: v.powers,
+      bumps: v.bumps,
+      eats: v.eats,
+    };
+  }
+  const known = new Set(s.ids);
+  const log = r.log
+    .filter((e) => !e.actor || known.has(e.actor))
+    .map((e) => ({ round: s.round, ...e }));
+  const next = recordTrail({ ...s, players, live: { seq: r.seq }, log: [...s.log, ...log] }, now);
+  return r.final ? endRound(next, now) : next;
+}
+
 function resultOf(s: MazeState, winners: string[], summary: string): GameResult {
   const order = orderOf(s);
   const solo = s.options.mode === 'Solo';
-  const stats: RecapStats = {
-    columns: solo
-      ? ['Score', 'Mazes', 'Pellets', 'Ghosts', 'Lives left']
-      : ['Score', 'Mazes', 'Pellets', 'Ghosts', 'Caught'],
-    rows: order.map((id) => {
-      const p = s.players[id]!;
-      return {
-        playerId: id,
-        values: [p.score, p.cleared, p.pellets, p.ghostsEaten, solo ? p.lives : p.caught],
+  const contact = s.options.mode === 'Contact';
+  const stats: RecapStats = contact
+    ? {
+        columns: ['Score', 'Pellets', 'Ghosts', 'Caught', 'Bumps', 'Ate'],
+        rows: order.map((id) => {
+          const p = s.players[id]!;
+          return {
+            playerId: id,
+            values: [p.score, p.pellets, p.ghostsEaten, p.caught, p.bumps ?? 0, p.eats ?? 0],
+          };
+        }),
+      }
+    : {
+        columns: solo
+          ? ['Score', 'Mazes', 'Pellets', 'Ghosts', 'Lives left']
+          : ['Score', 'Mazes', 'Pellets', 'Ghosts', 'Caught'],
+        rows: order.map((id) => {
+          const p = s.players[id]!;
+          return {
+            playerId: id,
+            values: [p.score, p.cleared, p.pellets, p.ghostsEaten, solo ? p.lives : p.caught],
+          };
+        }),
       };
-    }),
-  };
   const standings: Standing[] = s.ids.map((id) => ({
     playerId: id,
     outcome: winners.includes(id) ? 'win' : 'loss',
@@ -1130,6 +1215,7 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
   meta,
   optionsSchema,
   actionSchema,
+  serverActionSchema: liveResultSchema,
   defaultOptions,
   validateOptions,
 
@@ -1176,6 +1262,8 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
   getTableView: table,
 
   applyAction(s, playerId, action, _rng, now) {
+    // Contact: the live room keeps the score; phones don't report ticks.
+    if (s.options.mode === 'Contact') return s;
     try {
       const next = tick(s, playerId, action, now);
       return next === s ? s : recordTrail(next, now);
@@ -1183,6 +1271,10 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
       // A tick never refuses; anything unexpected leaves the game as it was.
       return s;
     }
+  },
+
+  applyServerAction(s, action, now) {
+    return applyLiveResult(s, action as LiveResult, now);
   },
 
   getResult(s) {
@@ -1215,9 +1307,11 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
           ? `Solo: ${o.mazes} ${o.mazes === 1 ? 'maze' : 'mazes'}, three lives.`
           : o.mode === 'Race'
             ? `Race: ${o.mazes} ${o.mazes === 1 ? 'maze' : 'mazes'}, first to finish gets a bonus.`
-            : o.mazes > 1
-              ? `Shared maze: ${o.mazes} mazes, ${o.minutes} minutes. Chomp fast.`
-              : `Shared maze: ${o.minutes} minutes. Chomp fast.`,
+            : o.mode === 'Contact'
+              ? `Contact: ${o.minutes} minutes. Bump and you both pay; grab Hunt and eat the others.`
+              : o.mazes > 1
+                ? `Shared maze: ${o.mazes} mazes, ${o.minutes} minutes. Chomp fast.`
+                : `Shared maze: ${o.minutes} minutes. Chomp fast.`,
       );
       return lines;
     }
@@ -1227,7 +1321,11 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
 
   nextTimer(s) {
     if (s.phase === 'countdown') return { id: 'countdown', at: s.startAt };
-    if (s.phase === 'play' && s.endAt !== null) return { id: 'bell', at: s.endAt + BELL_GRACE_MS };
+    if (s.phase === 'play' && s.endAt !== null)
+      return {
+        id: 'bell',
+        at: s.endAt + (s.options.mode === 'Contact' ? LIVE_GRACE_MS : BELL_GRACE_MS),
+      };
     if (s.phase === 'between' && s.showBy !== null) return { id: 'show', at: s.showBy };
     return null;
   },
@@ -1239,7 +1337,8 @@ export const maze: GameModule<MazeState, MazeAction, MazePlayerView, MazeTableVi
     return s;
   },
 
-  bot: (ctx) => mazeBot(ctx),
+  // Contact bots are played by the live room, which sees the real maze.
+  bot: (ctx) => (ctx.tableView.mode === 'Contact' ? null : mazeBot(ctx)),
   botDelayMs: (s) => (s.phase === 'play' ? 900 : 2_000),
   realTime: true,
 };

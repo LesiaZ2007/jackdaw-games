@@ -6,6 +6,7 @@ import {
   ONLINE_WINDOW_MS,
   addBot,
   applyGameAction,
+  applyServerAction,
   backToLobby,
   chat,
   createLobby,
@@ -816,6 +817,18 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     ).lobby;
   }
 
+  /**
+   * A server-only move for the lobby's current session (GameModule.serverActionSchema), made by
+   * the server itself, e.g. a live room reporting its scores. Not reachable over HTTP: callers
+   * check their own signature first. Throws (stale session, bad shape, refused) like a move.
+   */
+  async function serverAction(code: string, sessionId: string, action: unknown): Promise<void> {
+    await withLobby(code, (l) => ({
+      lobby: applyServerAction(l, { sessionId, action }, ctx()),
+      result: null,
+    }));
+  }
+
   /** Tell a linked game's app the host ended it here. Best effort: Jackdaw has already moved on. */
   async function endLink(gameId: string, state: unknown) {
     try {
@@ -912,7 +925,17 @@ export function createRoomRuntime(opts: RuntimeOptions) {
     return { stats: lobbyStats(lobby.history), history: lobby.history };
   }
 
-  return { create, post, poll, redeemRejoin, stats, setPush, checkAddress, noteMiss };
+  return {
+    create,
+    post,
+    poll,
+    redeemRejoin,
+    stats,
+    setPush,
+    checkAddress,
+    noteMiss,
+    serverAction,
+  };
 }
 
 export type RoomRuntime = ReturnType<typeof createRoomRuntime>;

@@ -1,7 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "jackdaw",
-  "main": ".open-next/worker.js",
+  // worker/index.ts wraps OpenNext's .open-next/worker.js and adds the live Pac-Man rooms.
+  "main": "worker/index.ts",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "workers_dev": true,
@@ -24,7 +25,14 @@
     "JACKDAW_IP_HEADER": "cf-connecting-ip",
     "AVALON_URL": "https://play-avalon.vercel.app",
   },
+  // Live (Contact) Pac-Man: one Durable Object per lobby session (docs/maze/LIVE.md).
+  // SQLite-backed classes are the ones the free plan allows.
+  "durable_objects": {
+    "bindings": [{ "name": "LIVE_ROOM", "class_name": "LiveRoom" }],
+  },
+  "migrations": [{ "tag": "live-room-1", "new_sqlite_classes": ["LiveRoom"] }],
   "observability": { "enabled": true },
   // Secrets (set with `npx wrangler secret put NAME`): KV_REST_API_URL, KV_REST_API_TOKEN,
-  // JACKDAW_LINK_SECRET, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT
+  // JACKDAW_LINK_SECRET, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT. Live Pac-Man signs
+  // with JACKDAW_LIVE_SECRET if it's set, else JACKDAW_LINK_SECRET.
 }

@@ -7,3 +7,4 @@ export type { MazeLayout } from '../sim/layouts';
 export type { Dir } from '../sim/walker';
 export * from './pass';
 export * from './setup';
+export * from './hub';

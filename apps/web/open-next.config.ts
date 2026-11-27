@@ -10,6 +10,8 @@ process.env.JACKDAW_CLOUDFLARE = '1';
 // wrangler.jsonc (the custom domain and AVALON_URL).
 process.env.NEXT_PUBLIC_SITE_URL ??= 'https://jackdaw.lastivka.dev';
 process.env.AVALON_URL ??= 'https://play-avalon.vercel.app';
+// Live (Contact) Pac-Man runs only here: its Durable Object is in this Worker (worker/index.ts).
+process.env.NEXT_PUBLIC_LIVE ??= '1';
 
 export default defineCloudflareConfig({
   // Prerendered pages are served from the static assets. No R2/KV needed,

@@ -293,6 +293,11 @@ export class LiveRound {
     return this.over;
   }
 
+  /** 0-based maze being played now. */
+  mazeIndex(): number {
+    return this.maze;
+  }
+
   /** Round ms now. */
   now(): number {
     return this.t;

@@ -35,6 +35,11 @@ export class LiveHub {
   private finalSent = false;
   private done = false;
 
+  /** The lobby round this hub plays (a session can hold several). */
+  get roundNo(): number {
+    return this.setup.round;
+  }
+
   constructor(setup: LiveSetup) {
     this.setup = setup;
     this.round = new LiveRound(roundOptionsFrom(setup));

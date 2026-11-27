@@ -96,4 +96,9 @@ describe('LiveHub', () => {
     expect(hub.stopped()).toBe(true);
     expect(hub.tick(20_000)).toBeNull();
   });
+
+  it('says which round it serves, so the room can start a new hub for the next one', () => {
+    expect(new LiveHub(setup).roundNo).toBe(setup.round);
+    expect(new LiveHub({ ...setup, round: 4 }).roundNo).toBe(4);
+  });
 });

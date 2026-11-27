@@ -46,6 +46,13 @@ export class LiveRoom {
     const [, , code, session] = url.pathname.split('/');
     if (!pass || pass.code !== code || pass.session !== session)
       return new Response('Bad pass', { status: 403 });
+    // A session can hold several rounds: the next round's first pass starts a fresh hub.
+    if (this.hub && pass.setup.round < this.hub.roundNo)
+      return new Response('That round is over', { status: 403 });
+    if (this.hub && pass.setup.round > this.hub.roundNo) {
+      this.hub = null;
+      this.queued = null;
+    }
     if (!this.hub) {
       this.hub = new LiveHub(pass.setup);
       this.code = pass.code;
@@ -90,7 +97,8 @@ export class LiveRoom {
   private async post(report: LiveCheckpoint): Promise<void> {
     const secret = liveSecretOf(this.env);
     const self = this.env.WORKER_SELF_REFERENCE;
-    if (!secret || !self || !this.hub) return;
+    const hub = this.hub;
+    if (!secret || !self || !hub) return;
     this.posting = true;
     try {
       const body = JSON.stringify({ code: this.code, sessionId: this.session, result: report });
@@ -104,7 +112,7 @@ export class LiveRoom {
           },
         }),
       );
-      this.hub.reported(res.status);
+      hub.reported(res.status);
       if (res.ok || res.status === 409) {
         if (this.queued === report) this.queued = null;
       } else this.nextTry = Date.now() + RETRY_MS;

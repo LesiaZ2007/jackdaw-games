@@ -174,10 +174,13 @@ signed) are additions to the HTTP surface, not to `ClientMessage`.
 
 ### Where Contact is offered
 
-Contact appears in the mode options only where the site can run it. **Builder's call:** a build
-time flag set in the Cloudflare build (`open-next.config.ts`, as `NEXT_PUBLIC_SITE_URL` is) that
-the options UI and `validateOptions` context read through the registry; on Vercel the mode is
-hidden and a Contact start is refused with "Contact needs jackdaw.lastivka.dev".
+Contact appears in the mode options only where the site can run it: `NEXT_PUBLIC_LIVE=1` is set
+by the Cloudflare build (`open-next.config.ts`), and the lobby's options sheet hides Contact
+without it (`choiceShown` in `ui/lobby.tsx`), unless the table is already set to Contact.
+**As built (2026-11-27):** `validateOptions` does not refuse a Contact start on Vercel (it has no
+site context); a Vercel host can't pick Contact, and a Vercel phone in a Contact round sees
+"Live on the other site" with a link to this lobby on jackdaw.lastivka.dev. The pass route
+answers 404 on Vercel, so nothing live runs there.
 
 ### Local development
 
@@ -224,6 +227,38 @@ everyone drops; the Durable Object should use the hibernation API.
 6. Tests: `LiveRound` unit tests (contact rules, scoring, disconnects, idempotent result), an
    all-bot simulation test, an e2e on `cf:preview` with two browsers, and request/message counts
    noted in `docs/maze/DESIGN.md`. Update MIGRATION.md (new binding, secret) and PROGRESS.md.
+
+## As built (milestone 2, 2026-11-27)
+
+- **Rules** (`rules.ts`): Contact mode, scored only by the room's signed `liveResult` server-only
+  actions (checkpoints every 10 s, a final one at the bell); unscored end at `endAt + 90 s` if no
+  final result arrives.
+- **Room** (`apps/web/worker/live-room.ts`, `LiveHub` in `live/hub.ts`): one Durable Object per
+  lobby session at `/live/<CODE>/<session>`, routed by `apps/web/worker/index.ts` before OpenNext.
+  It checks the Origin and the pass, ticks every 50 ms (a plain interval, not hibernation: a round
+  is busy the whole time) and stops once the lobby has the final result.
+- **Passes** (`live/pass.ts`, `apps/web/lib/live.ts`): `POST /api/lobby/<CODE>/live` (the
+  player's token, or `?tv=1`) returns an HMAC pass with the round's setup; results come back
+  signed to `POST /api/lobby/<CODE>/live-result` through `WORKER_SELF_REFERENCE`.
+- **Screens** (`ui/live-screen.tsx`, `ui/live-client.ts`, `ui/live-frame.ts`): the shell gives
+  game screens an optional `livePass()` (`ScreenExtras`, filled by `apps/web/lib/live-pass.ts`);
+  phones predict their own chomper, the TV watches, and both draw with the usual renderer, cards,
+  banners and sounds. Results reuse the normal results screen.
+- **Checked:** unit tests for rules, round (with an all-bot round), hub, passes, client, framer and
+  the pass fetch; the real Worker bundle with `wrangler deploy --dry-run`; and the room under
+  `wrangler dev` (two passes connect and get snapshots, a forged pass and another session's pass
+  are refused). **Not yet checked:** a real round in browsers on the deployed site, since
+  `cf:build` needs Developer Mode on this PC.
+
+### Shipping it
+
+1. Merge, then `pnpm cf:deploy` (or Cloudflare's build). The `LIVE_ROOM` binding and its
+   `live-room-1` migration (`new_sqlite_classes`, allowed on the free plan) are created by that
+   deploy; no dashboard steps.
+2. Optional: `npx wrangler secret put JACKDAW_LIVE_SECRET`. Without it the room signs with
+   `JACKDAW_LINK_SECRET`, which is already set.
+3. Nothing changes on Vercel: it never sets `NEXT_PUBLIC_LIVE`, so Contact stays hidden there.
+4. Play a round on two phones and the TV at jackdaw.lastivka.dev.
 
 ## Left to the builder
 

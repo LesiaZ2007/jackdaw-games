@@ -6,6 +6,7 @@ import type { MazePlayerView, MazeTableView } from '../rules';
 import type { FrameModel } from './frame';
 import { Cards, ClearedPanel, EndPanel, SoundButton, StartPanel } from './hud';
 import { FRAME_PAD, fitTile, keyDir, swipeDir } from './layout';
+import { LiveScreen } from './live-screen';
 import { LOOKS, draw } from './render/core';
 import { readBest, useConfetti, useMazeLoop, useSize, useSound, writeBest } from './use-maze';
 import './maze.css';
@@ -15,7 +16,15 @@ import './maze.css';
  * left so it never sits under the cards or scrolls. Swipe anywhere (or use the arrow keys or
  * WASD) to steer. Panels in the printed style open and close the round.
  */
-export const PlayerScreen: GameUi['PlayerScreen'] = ({
+export const PlayerScreen: GameUi['PlayerScreen'] = (props) => {
+  const table = props.tableView as MazeTableView;
+  // Contact runs live in its own room (live-screen.tsx), not on the polled table.
+  if (table.mode === 'Contact')
+    return <LiveScreen table={table} tv={false} livePass={props.livePass} soundId={props.me} />;
+  return <PolledScreen {...props} />;
+};
+
+const PolledScreen: GameUi['PlayerScreen'] = ({
   view,
   tableView,
   me,

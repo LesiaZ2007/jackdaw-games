@@ -5,6 +5,7 @@ import { useState, useSyncExternalStore } from 'react';
 import { BirdMark, BoxLid, Chits, SeatTrack, type Seat } from '@jackdaw/ui';
 import { catalogEntry, gameUis } from '@/lib/catalog';
 import { optionsSummary, screenPlayers } from '@/lib/lobby-view';
+import { livePassFor } from '@/lib/live-pass';
 import { QrCode } from '@/lib/qr-code';
 import { games } from '@/lib/registry';
 import { serverClock } from '@/lib/clock';
@@ -122,6 +123,7 @@ export function TvLobby({ code }: { code: string }) {
               players={players}
               now={clock}
               reactions={snapshot.reactions}
+              livePass={livePassFor(code, true)}
             />
           </div>
         </TvStage>
@@ -147,6 +149,7 @@ export function TvLobby({ code }: { code: string }) {
                 players={players}
                 now={clock}
                 reactions={snapshot.reactions}
+                livePass={livePassFor(code, true)}
               />
             ) : (
               <p className="tv-closed__finding">This game has no TV screen yet.</p>

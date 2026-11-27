@@ -1,8 +1,16 @@
 import { ChomperSim } from '../sim/chomper';
 import type { MazeLayout } from '../sim/layouts';
 import { pelletIndex } from '../sim/pellets';
+import type { GhostView } from '../sim/ghosts';
+import type { PowerKind } from '../sim/powers';
 import type { Dir } from '../sim/walker';
-import { STEP_MS, type ContactEvent, type LiveChomper, type LiveSnapshot } from '../live';
+import {
+  STEP_MS,
+  type ContactEvent,
+  type LiveChomper,
+  type LiveNotice,
+  type LiveSnapshot,
+} from '../live';
 
 /** Others are drawn this far behind the newest snapshot, so they glide between snapshots. */
 export const INTERP_MS = 100;
@@ -14,6 +22,25 @@ const BLEND_MS = 150;
 const KEPT = 8;
 /** Another chomper can't travel this far between two snapshots: draw it as a jump. */
 const TELEPORT_TILES = 1;
+
+/** What to draw for one frame (LiveClient.frame). */
+export interface LiveFrame {
+  /** Round ms (the server's clock). */
+  t: number;
+  maze: number;
+  /** Yours first. */
+  chompers: LiveChomper[];
+  ghosts: GhostView[];
+  /** Pellet and spot indexes gone from the board. */
+  taken: Set<number>;
+  spots: NonNullable<LiveSnapshot['spots']>;
+  fruit: LiveSnapshot['fruit'];
+  /** Since the last frame. */
+  events: ContactEvent[];
+  notices: LiveNotice[];
+  pauseUntil: number;
+  over: boolean;
+}
 
 /** A turn to send: its sequence number, direction and where your chomper took it. */
 export interface LiveTurn {
@@ -38,13 +65,18 @@ interface Pending extends LiveTurn {
  * Everyone else is drawn INTERP_MS behind, between snapshots.
  */
 export class LiveClient {
-  private readonly me: string;
-  private readonly m: MazeLayout;
+  private readonly me: string | null;
+  private readonly layouts: readonly MazeLayout[];
+  private maze: number;
+  private m: MazeLayout;
+  private readonly seat: number;
+  private readonly powers: PowerKind[];
   private readonly startedAt: number;
   private offsetMs: number;
-  private readonly sim: ChomperSim;
-  private readonly bits: Uint8Array;
+  private sim: ChomperSim;
+  private bits: Uint8Array;
   private readonly taken = new Set<number>();
+  private notices: LiveNotice[] = [];
   private simT = 0;
   private seq = 0;
   private queued: Dir | null = null;
@@ -56,32 +88,62 @@ export class LiveClient {
   private fix = { dx: 0, dy: 0, at: 0 };
 
   constructor(o: {
-    me: string;
-    layout: MazeLayout;
+    /** Your player id; null on the TV, which only watches. */
+    me: string | null;
+    /** The round's mazes, in order (or `layout`, the one maze). */
+    layouts?: readonly MazeLayout[];
+    layout?: MazeLayout;
+    /** The maze the round is on now. */
+    maze?: number;
+    /** Your seat (picks the start tile); read from the id ("p2" → 1) when left out. */
+    seat?: number;
+    powers?: PowerKind[];
     startedAt: number;
     offsetMs: number;
     /** Pellets taken before this phone joined. */
     taken?: readonly number[];
   }) {
     this.me = o.me;
-    this.m = o.layout;
+    this.layouts = o.layouts ?? (o.layout ? [o.layout] : []);
+    this.maze = Math.max(0, Math.min(o.maze ?? 0, this.layouts.length - 1));
+    this.m = this.layouts[this.maze]!;
+    this.seat = o.seat ?? Math.max(0, Number((o.me ?? '').replace(/\D/g, '')) - 1);
+    this.powers = o.powers?.length ? o.powers : ['hunt'];
     this.startedAt = o.startedAt;
     this.offsetMs = o.offsetMs;
-    this.bits = new Uint8Array(pelletIndex(o.layout).size);
+    this.bits = new Uint8Array(pelletIndex(this.m).size);
     for (const i of o.taken ?? []) {
       this.taken.add(i);
       this.bits[i] = 1;
     }
-    const seat = Number(o.me.replace(/\D/g, '')) - 1;
-    this.sim = new ChomperSim({
-      m: o.layout,
-      start: o.layout.starts[Math.max(0, seat)] ?? o.layout.starts[0]!,
-      level: 1,
-      powers: ['hunt'],
+    this.sim = this.newSim();
+  }
+
+  private newSim(): ChomperSim {
+    const m = this.m;
+    return new ChomperSim({
+      m,
+      start: m.starts[this.seat % m.starts.length] ?? m.starts[0]!,
+      level: this.maze + 1,
+      powers: this.powers,
       ghosts: { ghosts: () => [] },
       taken: this.bits,
       fruit: false,
+      ...(this.me ? { id: this.me } : {}),
     });
+  }
+
+  /** The server moved on to maze `maze`: start it fresh (nothing taken, no turns pending). */
+  private toMaze(maze: number): void {
+    this.maze = maze;
+    this.m = this.layouts[maze]!;
+    this.bits = new Uint8Array(pelletIndex(this.m).size);
+    this.taken.clear();
+    this.pending = [];
+    this.queued = null;
+    this.snaps = [];
+    this.fix = { dx: 0, dy: 0, at: 0 };
+    this.sim = this.newSim();
   }
 
   /** A swipe: your chomper takes it at the next open junction (a reverse at once). */
@@ -103,17 +165,29 @@ export class LiveClient {
    */
   onSnapshot(s: LiveSnapshot, offsetSample?: number): void {
     if (offsetSample !== undefined && offsetSample > this.offsetMs) this.offsetMs = offsetSample;
+    const maze = s.maze ?? this.maze;
+    const moved = maze !== this.maze && !!this.layouts[maze];
+    if (moved) this.toMaze(maze);
     this.snaps.push(s);
     if (this.snaps.length > KEPT) this.snaps.shift();
     this.events.push(...s.events);
+    if (s.notices) this.notices.push(...s.notices);
     for (const i of s.taken) {
       this.taken.add(i);
       this.bits[i] = 1;
     }
+    // Power spots the server put back, holding what it picked.
+    for (const sp of s.spots ?? []) {
+      if (!sp.up) continue;
+      this.taken.delete(sp.i);
+      this.bits[sp.i] = 0;
+      this.sim.restoreSpot(sp.i, sp.kind);
+    }
     this.sim.take(this.bits);
     const own = s.chompers.find((c) => c.id === this.me);
     if (!own) return;
-    const ack = s.acks[this.me] ?? 0;
+    if (moved) this.simT = s.t;
+    const ack = s.acks[own.id] ?? 0;
     this.pending = this.pending.filter((p) => p.n > ack);
     const [px, py] = this.drawnAt(this.simT);
     const until = this.simT;
@@ -123,6 +197,8 @@ export class LiveClient {
       dyingUntil: own.dyingUntil,
       shieldUntil: own.shieldUntil,
     });
+    if (own.frozenUntil) this.sim.freeze(own.frozenUntil);
+    if (own.fogUntil) this.sim.fog(own.fogUntil);
     // The server's own queued turn (a late one it is still waiting to take), then ours on top.
     if (own.walker.next) this.sim.input(own.walker.next);
     this.simT = s.t;
@@ -134,12 +210,7 @@ export class LiveClient {
   }
 
   /** What to draw at local time `now`: your chomper predicted, others INTERP_MS behind. */
-  frame(now: number): {
-    t: number;
-    chompers: LiveChomper[];
-    taken: Set<number>;
-    events: ContactEvent[];
-  } {
+  frame(now: number): LiveFrame {
     const t = now + this.offsetMs - this.startedAt;
     this.stepTo(t);
     const latest = this.snaps[this.snaps.length - 1];
@@ -148,7 +219,7 @@ export class LiveClient {
     const st = this.sim.state();
     const own: LiveChomper = {
       ...(ownServer ?? {
-        id: this.me,
+        id: this.me ?? '',
         name: '',
         seat: 0,
         score: 0,
@@ -165,8 +236,22 @@ export class LiveClient {
     const taken = new Set(this.taken);
     for (let i = 0; i < this.bits.length; i++) if (!this.sim.has(i)) taken.add(i);
     const events = this.events;
+    const notices = this.notices;
     this.events = [];
-    return { t, chompers: [own, ...others], taken, events };
+    this.notices = [];
+    return {
+      t,
+      maze: this.maze,
+      chompers: this.me ? [own, ...others] : others,
+      ghosts: this.ghostsAt(t - INTERP_MS),
+      taken,
+      spots: latest?.spots ?? [],
+      fruit: latest?.fruit ?? null,
+      events,
+      notices,
+      pauseUntil: latest?.pauseUntil ?? 0,
+      over: latest?.over ?? false,
+    };
   }
 
   /** Steps your chomper live: a turn it takes goes in the outbox. */
@@ -219,9 +304,10 @@ export class LiveClient {
     return [x + this.fix.dx * k, y + this.fix.dy * k];
   }
 
-  private othersAt(t: number): LiveChomper[] {
+  /** The snapshots either side of round ms `t`, and how far between them `t` is (0–1). */
+  private around(t: number): [LiveSnapshot, LiveSnapshot, number] | null {
     const snaps = this.snaps;
-    if (!snaps.length) return [];
+    if (!snaps.length) return null;
     let a = snaps[0]!;
     let b = snaps[snaps.length - 1]!;
     if (t <= a.t) b = a;
@@ -233,7 +319,27 @@ export class LiveClient {
           b = snaps[i]!;
           break;
         }
-    const k = b.t > a.t ? (t - a.t) / (b.t - a.t) : 1;
+    return [a, b, b.t > a.t ? (t - a.t) / (b.t - a.t) : 1];
+  }
+
+  private ghostsAt(t: number): GhostView[] {
+    const got = this.around(t);
+    if (!got) return [];
+    const [a, b, k] = got;
+    return (b.ghosts ?? []).map((gb) => {
+      const ga = a.ghosts?.find((g) => g.id === gb.id);
+      if (!ga) return gb;
+      const dx = gb.pos[0] - ga.pos[0];
+      const dy = gb.pos[1] - ga.pos[1];
+      if (Math.hypot(dx, dy) > TELEPORT_TILES) return gb;
+      return { ...gb, pos: [ga.pos[0] + dx * k, ga.pos[1] + dy * k] };
+    });
+  }
+
+  private othersAt(t: number): LiveChomper[] {
+    const got = this.around(t);
+    if (!got) return [];
+    const [a, b, k] = got;
     return b.chompers
       .filter((c) => c.id !== this.me)
       .map((cb) => {

@@ -52,6 +52,8 @@ export const mazeUi: GameUi = {
       Solo: 'One player, three lives, a row of mazes to clear.',
       Shared: 'Everyone chases the same pellets in one maze. The first to a pellet scores it.',
       Race: 'Everyone runs the same mazes on their own. Clearing the last one first earns a bonus.',
+      Contact:
+        'One maze, live: chompers bump into each other and both lose points, and with Hunt running you can eat the others. Plays on jackdaw.lastivka.dev.',
     },
     mazes:
       'How many mazes in a round. In a Shared maze everyone moves on together once a maze is eaten. Later mazes have faster ghosts.',

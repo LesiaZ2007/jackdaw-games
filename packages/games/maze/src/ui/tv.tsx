@@ -7,6 +7,7 @@ import { layoutAt } from '../sim/generate';
 import type { FrameModel } from './frame';
 import { Cards, EndPanel } from './hud';
 import { fitTile, miniGrid } from './layout';
+import { LiveScreen } from './live-screen';
 import { LOOKS, draw, drawMini } from './render/core';
 import { colorOf } from './render/look';
 import { useConfetti, useMazeLoop, useSize } from './use-maze';
@@ -16,7 +17,14 @@ import './maze.css';
  * Maze on the TV. Solo: the one maze, big. Shared: the one maze with every chomper at full
  * strength and named. Race: everyone's maze in miniature, with the maze number each is on.
  */
-export const TvScreen: GameUi['TvScreen'] = ({ tableView, players, now }) => {
+export const TvScreen: GameUi['TvScreen'] = (props) => {
+  const table = props.tableView as MazeTableView;
+  if (table.mode === 'Contact')
+    return <LiveScreen table={table} tv livePass={props.livePass} soundId={null} />;
+  return <PolledTv {...props} />;
+};
+
+const PolledTv: GameUi['TvScreen'] = ({ tableView, players, now }) => {
   const table = tableView as MazeTableView;
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);

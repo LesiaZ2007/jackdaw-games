@@ -218,4 +218,158 @@ describe('LiveClient', () => {
     expect(f.taken.has(3)).toBe(true);
     expect(c.frame(160).events).toHaveLength(0);
   });
+
+  it('on the TV (nobody) every chomper is drawn from the snapshots', () => {
+    const m = corridor();
+    const c = new LiveClient({ me: null, layout: m, startedAt: 0, offsetMs: 0 });
+    c.onSnapshot({
+      t: 1000,
+      layoutId: m.id,
+      chompers: [own(4, 0)],
+      taken: [],
+      events: [],
+      acks: {},
+    });
+    const f = c.frame(1000 + INTERP_MS);
+    expect(f.chompers.map((x) => x.id)).toEqual(['p1']);
+    expect(f.chompers[0]!.x).toBe(4);
+  });
+
+  it('moves to the next maze when the server does', () => {
+    const a = corridor();
+    const b = { ...corridor(true), id: 'test-branch' };
+    const c = new LiveClient({
+      me: 'p1',
+      layouts: [a, b],
+      maze: 0,
+      startedAt: 0,
+      offsetMs: 0,
+      taken: [3],
+    });
+    expect(c.frame(0).maze).toBe(0);
+    c.onSnapshot({
+      t: 1000,
+      layoutId: b.id,
+      maze: 1,
+      chompers: [own(2, 1)],
+      taken: [],
+      events: [],
+      acks: {},
+    });
+    const f = c.frame(1000);
+    expect(f.maze).toBe(1);
+    expect(f.taken.has(3)).toBe(false);
+    expect(f.chompers[0]!.x).toBeCloseTo(2, 5);
+  });
+
+  it('a power spot the server puts back is drawn again, holding what the server says', () => {
+    const m = withSpot();
+    const c = client(m);
+    const i = 0;
+    c.onSnapshot({ t: 100, layoutId: m.id, chompers: [], taken: [i], events: [], acks: {} });
+    expect(c.frame(100).taken.has(i)).toBe(true);
+    c.onSnapshot({
+      t: 200,
+      layoutId: m.id,
+      chompers: [],
+      taken: [],
+      events: [],
+      acks: {},
+      spots: [{ i, kind: 'dash', up: true }],
+    });
+    const f = c.frame(200);
+    expect(f.taken.has(i)).toBe(false);
+    expect(f.spots).toEqual([{ i, kind: 'dash', up: true }]);
+  });
+
+  it('ghosts are drawn between snapshots, INTERP_MS behind', () => {
+    const m = corridor();
+    const c = client(m);
+    const g = (x: number) => [
+      { id: 0, pos: [x, 1] as [number, number], dir: 'right' as const, mode: 'chase' as const },
+    ];
+    c.onSnapshot({
+      t: 1000,
+      layoutId: m.id,
+      chompers: [],
+      taken: [],
+      events: [],
+      acks: {},
+      ghosts: g(5),
+    });
+    c.onSnapshot({
+      t: 1100,
+      layoutId: m.id,
+      chompers: [],
+      taken: [],
+      events: [],
+      acks: {},
+      ghosts: g(6),
+    });
+    expect(c.frame(1100 + INTERP_MS / 2).ghosts[0]!.pos[0]).toBeCloseTo(5.5, 5);
+  });
+
+  it('a freeze from the server slows the predicted chomper', () => {
+    const m = corridor();
+    const free = client(m);
+    const cold = client(m);
+    free.onSnapshot({
+      t: 0,
+      layoutId: m.id,
+      chompers: [own(2, 0)],
+      taken: [],
+      events: [],
+      acks: {},
+    });
+    cold.onSnapshot({
+      t: 0,
+      layoutId: m.id,
+      chompers: [{ ...own(2, 0), frozenUntil: 5000 }],
+      taken: [],
+      events: [],
+      acks: {},
+    });
+    expect(mine(cold, 1000).x - 2).toBeLessThan((mine(free, 1000).x - 2) * 0.8);
+  });
+
+  it('notices come out once', () => {
+    const m = corridor();
+    const c = client(m);
+    c.onSnapshot({
+      t: 100,
+      layoutId: m.id,
+      chompers: [],
+      taken: [],
+      events: [],
+      acks: {},
+      notices: [{ kind: 'cleared', maze: 0 }],
+    });
+    expect(c.frame(100).notices).toHaveLength(1);
+    expect(c.frame(110).notices).toHaveLength(0);
+  });
 });
+
+/** Your own chomper (p1) as the server sends it, standing on (x, 1) heading right. */
+function own(x: number, t: number): LiveChomper {
+  return {
+    id: 'p1',
+    name: 'Wren',
+    seat: 0,
+    x,
+    y: 1,
+    dir: 'right',
+    score: 0,
+    power: null,
+    dyingUntil: 0,
+    shieldUntil: t,
+    walker: { tile: [x, 1], dir: 'right', next: null, prog: 0 },
+  };
+}
+
+/** The corridor with one power spot, at the left end of the top row (pellet index 0). */
+function withSpot(): MazeLayout {
+  const m = corridor();
+  const rows = [...m.rows];
+  rows[1] = `#o${rows[1]!.slice(2)}`;
+  return { ...m, id: 'test-spot', rows, powers: [[1, 1]] };
+}

@@ -992,3 +992,24 @@ button.mz-row__btn:focus-visible {
     opacity: 1;
   }
 }
+
+/* A live (Contact) bump: the maze jolts for a moment (docs/maze/LIVE.md). */
+.mz-live-shake {
+  animation: mz-live-shake 160ms linear;
+}
+@keyframes mz-live-shake {
+  25% {
+    transform: translate(3px, -2px);
+  }
+  50% {
+    transform: translate(-3px, 2px);
+  }
+  75% {
+    transform: translate(2px, 1px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mz-live-shake {
+    animation: none;
+  }
+}

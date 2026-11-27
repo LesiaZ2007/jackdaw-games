@@ -287,6 +287,23 @@ export function LobbyActions({
   );
 }
 
+/** This site runs live (Contact) rooms: set by the Cloudflare build (open-next.config.ts). */
+const LIVE_SITE = process.env.NEXT_PUBLIC_LIVE === '1';
+
+/**
+ * Whether a choice shows: Contact only where live rooms run, or once it's picked (so a host on
+ * the other site still sees what the table is set to).
+ */
+export function choiceShown(
+  key: string,
+  choice: string | number,
+  o: MazeOptions,
+  live = LIVE_SITE,
+): boolean {
+  if (key === 'mode' && choice === 'Contact') return live || o.mode === 'Contact';
+  return true;
+}
+
 type Help = Record<string, string | Record<string, string>>;
 
 /** Whether an option shows in the lobby: Minutes only matters with a bell (not in Solo). */
@@ -365,13 +382,14 @@ export function OptionsSheet({
             : type === 'number' && f.minValue != null && f.maxValue != null
               ? Array.from({ length: f.maxValue - f.minValue + 1 }, (_, i) => f.minValue! + i)
               : [];
-        if (choices.length === 0) return null;
+        const shownChoices = choices.filter((c) => choiceShown(key, c, options));
+        if (shownChoices.length === 0) return null;
         const n = note(key);
         return (
           <div key={key} className="mz-opt">
             <dt>{f.description ?? key}</dt>
             <dd className="mz-opt__choices" role="radiogroup" aria-label={f.description ?? key}>
-              {choices.map((c) => (
+              {shownChoices.map((c) => (
                 <button
                   key={c}
                   type="button"

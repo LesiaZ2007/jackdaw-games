@@ -8,6 +8,7 @@ import {
   LobbyActions,
   Lineup,
   attractPlayers,
+  choiceShown,
   chomperColor,
   modeFor,
   optionShown,
@@ -298,5 +299,13 @@ describe('options shown', () => {
       expect(optionShown('mazes', o)).toBe(true);
       expect(optionShown('minutes', o)).toBe(mode !== 'Solo');
     }
+  });
+
+  it('offers Contact only on the site with live rooms, unless it is already picked', () => {
+    const o = defaultOptions(2);
+    expect(choiceShown('mode', 'Contact', o, true)).toBe(true);
+    expect(choiceShown('mode', 'Contact', o, false)).toBe(false);
+    expect(choiceShown('mode', 'Contact', { ...o, mode: 'Contact' }, false)).toBe(true);
+    expect(choiceShown('mode', 'Shared', o, false)).toBe(true);
   });
 });

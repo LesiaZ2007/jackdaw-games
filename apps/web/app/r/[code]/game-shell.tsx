@@ -5,6 +5,7 @@ import type { ClientMessage, LobbySnapshot } from '@jackdaw/engine';
 import type { LobbyChat, ScreenPlayer } from '@jackdaw/ui';
 import { catalogEntry } from '@/lib/catalog';
 import { serverClock as clock } from '@/lib/clock';
+import { livePassFor } from '@/lib/live-pass';
 import { TvWindow } from '../../tv/[code]/tv-stage';
 
 /**
@@ -68,6 +69,7 @@ export function GameShell({
         now={clock}
         reactions={s.reactions}
         chat={ui.fullBleed ? chat : undefined}
+        livePass={livePassFor(s.code, true)}
       />
     );
     return (
@@ -107,6 +109,7 @@ export function GameShell({
         chat={ui.fullBleed ? chat : undefined}
         hostId={s.hostId}
         displays={s.displays}
+        livePass={livePassFor(s.code, false)}
       />
     </div>
   );

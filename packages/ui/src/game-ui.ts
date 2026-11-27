@@ -193,6 +193,12 @@ export interface ScreenExtras {
   hostId?: string;
   /** How many TV displays are watching the lobby right now. */
   displays?: number;
+  /**
+   * Live rounds (Pac Man's Contact mode, docs/maze/LIVE.md): fetches a signed pass to this
+   * lobby's live room and the room's socket path, as this player (or as a viewer on a TV).
+   * Only on the site that hosts live rooms; undefined elsewhere.
+   */
+  livePass?: () => Promise<{ pass: string; path: string } | null>;
 }
 
 /**

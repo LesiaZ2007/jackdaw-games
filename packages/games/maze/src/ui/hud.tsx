@@ -113,6 +113,7 @@ const ModeKicker: Record<Mode, string> = {
   Solo: 'Solo',
   Shared: 'Shared maze',
   Race: 'Race',
+  Contact: 'Contact',
 };
 
 /** What this round is, over the maze while the countdown runs. */

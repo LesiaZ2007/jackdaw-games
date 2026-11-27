@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  BOT_DELAY_MS,
   createRng,
   mixSeed,
   randomSeed,
@@ -39,7 +40,6 @@ const DEMO_PLAYERS: ScreenPlayer[] = [
 const DEMO_PLAYER_IDS = DEMO_PLAYERS.map((p) => p.id);
 
 const OUTCOME_LABEL: Record<Standing['outcome'], string> = { win: 'Won', loss: 'Lost', draw: 'Draw' };
-const BOT_DELAY_MS = 700;
 
 interface DemoGame {
   state: ReturnType<typeof uno.setup>;
@@ -136,6 +136,10 @@ export function DemoRoom() {
     );
     if (!readyBot) return;
 
+    const pace = uno.botDelayMs;
+    const base = typeof pace === 'function' ? pace(state) : (pace ?? BOT_DELAY_MS);
+    const delayMs = Math.round(base * (0.8 + createRng(mixSeed(game.rngState, state.seq + 1)).next()));
+
     const id = window.setTimeout(() => {
       setGame((cur) => {
         if (!cur || cur.state.phase !== 'play' || !uno.bot) return cur;
@@ -159,7 +163,7 @@ export function DemoRoom() {
         }
         return cur;
       });
-    }, BOT_DELAY_MS);
+    }, delayMs);
     return () => window.clearTimeout(id);
   }, [game, state]);
 

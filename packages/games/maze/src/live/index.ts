@@ -5,3 +5,5 @@ export * from './round';
 export { layoutsOf } from '../sim/layouts';
 export type { MazeLayout } from '../sim/layouts';
 export type { Dir } from '../sim/walker';
+export * from './pass';
+export * from './setup';

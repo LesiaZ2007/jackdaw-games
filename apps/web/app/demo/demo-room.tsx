@@ -39,7 +39,11 @@ const DEMO_PLAYERS: ScreenPlayer[] = [
 ];
 const DEMO_PLAYER_IDS = DEMO_PLAYERS.map((p) => p.id);
 
-const OUTCOME_LABEL: Record<Standing['outcome'], string> = { win: 'Won', loss: 'Lost', draw: 'Draw' };
+const OUTCOME_LABEL: Record<Standing['outcome'], string> = {
+  win: 'Won',
+  loss: 'Lost',
+  draw: 'Draw',
+};
 
 interface DemoGame {
   state: ReturnType<typeof uno.setup>;
@@ -138,7 +142,9 @@ export function DemoRoom() {
 
     const pace = uno.botDelayMs;
     const base = typeof pace === 'function' ? pace(state) : (pace ?? BOT_DELAY_MS);
-    const delayMs = Math.round(base * (0.8 + createRng(mixSeed(game.rngState, state.seq + 1)).next()));
+    const delayMs = Math.round(
+      base * (0.8 + createRng(mixSeed(game.rngState, state.seq + 1)).next()),
+    );
 
     const id = window.setTimeout(() => {
       setGame((cur) => {
@@ -176,9 +182,7 @@ export function DemoRoom() {
   const mine = standings.find((st) => st.playerId === ME_ID);
   const me = byId.get(ME_ID);
 
-  const pageClass = result
-    ? 'lobby-page demo-page'
-    : 'lobby-page demo-page lobby-page--fit';
+  const pageClass = result ? 'lobby-page demo-page' : 'lobby-page demo-page lobby-page--fit';
 
   let outcome: Outcome = 'draw';
   let resultTitle = 'Game over';
@@ -261,7 +265,11 @@ export function DemoRoom() {
                           data-me={st.playerId === ME_ID || undefined}
                           style={{ animationDelay: `${200 + i * 70}ms` }}
                         >
-                          {p ? <Token avatar={p.avatar} size={36} /> : <span className="results__gone" />}
+                          {p ? (
+                            <Token avatar={p.avatar} size={36} />
+                          ) : (
+                            <span className="results__gone" />
+                          )}
                           <span className="results__who">
                             <span className="results__name">
                               {names[st.playerId] ?? 'Someone'}
@@ -269,7 +277,9 @@ export function DemoRoom() {
                             </span>
                             {st.role && <span className="results__role">{st.role}</span>}
                           </span>
-                          <OutcomeChip outcome={st.outcome}>{OUTCOME_LABEL[st.outcome]}</OutcomeChip>
+                          <OutcomeChip outcome={st.outcome}>
+                            {OUTCOME_LABEL[st.outcome]}
+                          </OutcomeChip>
                         </li>
                       );
                     })}

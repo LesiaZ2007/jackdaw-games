@@ -1,0 +1,50 @@
+@import '../r/lobby.css';
+@import '../r/results.css';
+
+/* Full-width stage when there is no docked lobby chat column. */
+.demo-page .lobby-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.demo-bar__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  min-width: 0;
+}
+
+.demo-bar__game {
+  font: 800 22px/1 var(--font-plaque);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.demo-bar__tag {
+  padding: 3px 8px;
+  border: 1.5px solid var(--ink);
+  font: 700 12px/1.1 var(--font-plaque);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.demo-bar__btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 12px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 16px/1 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.demo-bar__btn--go {
+  background: var(--vert);
+  color: var(--paper);
+}

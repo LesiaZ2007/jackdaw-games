@@ -1,10 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import type { GameCategory } from '@jackdaw/engine';
 import { Glyph, Plaque, range } from '@jackdaw/ui';
 import { COMPLEXITY_LABEL, type CatalogEntry } from '@/lib/catalog';
+import { isDemoGame } from '../demo/demo-engine';
 import { rememberedAvatar, rememberedName, rememberName } from '@/lib/identity';
 import { createLobby } from '@/lib/use-lobby';
 
@@ -221,6 +223,11 @@ export function StartLobby({
       <Plaque go onClick={start} disabled={busy}>
         {busy ? 'Opening a lobby…' : `Start a lobby with ${entry.meta.name}`}
       </Plaque>
+      {isDemoGame(entry.meta.id) && (
+        <Link href={`/demo?game=${entry.meta.id}`} className="jd-link">
+          Try solo demo vs bots
+        </Link>
+      )}
       {error && (
         <p role="alert" className="cat-error">
           {error}

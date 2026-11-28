@@ -20,6 +20,25 @@
   text-transform: uppercase;
 }
 
+.demo-bar__picker {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.demo-bar__select {
+  min-height: var(--tap);
+  max-width: 190px;
+  padding: 0 10px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: 800 18px/1 var(--font-plaque);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
 .demo-bar__tag {
   padding: 3px 8px;
   border: 1.5px solid var(--ink);
@@ -27,6 +46,7 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-2);
+  white-space: nowrap;
 }
 
 .demo-bar__btn {
@@ -41,10 +61,28 @@
   letter-spacing: 0.03em;
   text-transform: uppercase;
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
 }
 
 .demo-bar__btn--go {
   background: var(--vert);
   color: var(--paper);
+}
+
+@media (max-width: 640px) {
+  .demo-bar__tag {
+    display: none;
+  }
+
+  .demo-bar__select {
+    max-width: 132px;
+    padding: 0 6px;
+    font-size: 16px;
+  }
+
+  .demo-bar__btn {
+    padding: 0 8px;
+    font-size: 14px;
+  }
 }

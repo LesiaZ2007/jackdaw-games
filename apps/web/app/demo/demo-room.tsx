@@ -1,17 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
-import {
-  BOT_DELAY_MS,
-  createRng,
-  mixSeed,
-  randomSeed,
-  type RngState,
-  type Standing,
-} from '@jackdaw/engine';
-import { uno, type UnoAction } from '@jackdaw/game-uno';
-import { unoUi } from '@jackdaw/game-uno/ui';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import type { Lobby, Standing } from '@jackdaw/engine';
 import {
   BirdMark,
   Lid,
@@ -27,17 +18,20 @@ import {
   type Outcome,
   type ScreenPlayer,
 } from '@jackdaw/ui';
+import { catalogEntry, gameUis } from '../../lib/catalog';
+import { games } from '../../lib/registry';
+import {
+  DEMO_GAMES,
+  DEMO_ME_ID,
+  applyDemoAction,
+  createDemoLobby,
+  nextDemoAt,
+  resolveDemoGameId,
+  tickDemoLobby,
+} from './demo-engine';
 import './demo.css';
 
-const ME_ID = 'you';
-
-const DEMO_PLAYERS: ScreenPlayer[] = [
-  { id: ME_ID, name: 'You', avatar: { crest: 'fleur', tint: 'lagoon' }, online: true },
-  { id: 'bot-1', name: 'Rook', avatar: { crest: 'raven', tint: 'plum' }, online: true, bot: true },
-  { id: 'bot-2', name: 'Magpie', avatar: { crest: 'owl', tint: 'pine' }, online: true, bot: true },
-  { id: 'bot-3', name: 'Swift', avatar: { crest: 'fox', tint: 'rust' }, online: true, bot: true },
-];
-const DEMO_PLAYER_IDS = DEMO_PLAYERS.map((p) => p.id);
+const noopSubscribe = () => () => {};
 
 const OUTCOME_LABEL: Record<Standing['outcome'], string> = {
   win: 'Won',
@@ -45,144 +39,69 @@ const OUTCOME_LABEL: Record<Standing['outcome'], string> = {
   draw: 'Draw',
 };
 
-interface DemoGame {
-  state: ReturnType<typeof uno.setup>;
-  rngState: RngState;
-}
-
-function createDemoGame(): DemoGame {
-  const rng = createRng(randomSeed());
-  const state = uno.setup({
-    playerIds: DEMO_PLAYER_IDS,
-    options: {
-      length: 'One round',
-      drawing: 'Draw one',
-      stacking: 'No',
-      turnTimer: 'Off',
-    },
-    rng,
-    now: Date.now(),
-  });
-  return { state, rngState: rng.state };
-}
-
-/** Local-only single-player UNO round against three bots; never calls the server. */
-export function DemoRoom() {
+function DemoSession({ initialGame }: { initialGame: string }) {
   const theme = useTheme();
-  const [game, setGame] = useState<DemoGame | null>(null);
+  const [gameId, setGameId] = useState(() => resolveDemoGameId(initialGame));
+  const [lobby, setLobby] = useState<Lobby>(() => createDemoLobby(gameId));
 
-  useEffect(() => {
-    setGame(createDemoGame());
-  }, []);
-
-  const state = game?.state ?? null;
-  const result = state ? uno.getResult(state) : null;
-
-  const newGame = useCallback(() => {
-    setGame(createDemoGame());
-  }, []);
-
-  const sendAction = useCallback(async (action: UnoAction): Promise<boolean> => {
-    setGame((cur) => {
-      if (!cur) return cur;
-      try {
-        const timer = uno.nextTimer?.(cur.state);
-        if (action.type === 'deal' && timer?.id === 'deal' && uno.onTimer) {
-          const rng = createRng(cur.rngState);
-          const next = uno.onTimer(cur.state, timer.id, rng, Date.now());
-          return { state: next, rngState: rng.state };
-        }
-        const rng = createRng(cur.rngState);
-        const next = uno.applyAction(cur.state, ME_ID, action, rng, Date.now());
-        return { state: next, rngState: rng.state };
-      } catch {
-        return cur;
-      }
-    });
-    return true;
-  }, []);
-
-  useEffect(() => {
-    if (!game || !state || uno.getResult(state)) return;
-
-    const timer = uno.nextTimer?.(state);
-    if (state.phase === 'done' && timer && uno.onTimer) {
-      const waitMs = Math.max(250, timer.at - Date.now());
-      const id = window.setTimeout(() => {
-        setGame((cur) => {
-          if (!cur) return cur;
-          const t = uno.nextTimer?.(cur.state);
-          if (cur.state.phase !== 'done' || !t || !uno.onTimer) return cur;
-          const rng = createRng(cur.rngState);
-          const next = uno.onTimer(cur.state, t.id, rng, Date.now());
-          return { state: next, rngState: rng.state };
-        });
-      }, waitMs);
-      return () => window.clearTimeout(id);
+  const switchGame = useCallback((nextId: string) => {
+    const id = resolveDemoGameId(nextId);
+    setGameId(id);
+    setLobby(createDemoLobby(id));
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('game', id);
+      window.history.replaceState(null, '', url.pathname + url.search);
     }
+  }, []);
 
-    if (state.phase !== 'play' || !uno.bot) return;
+  const newDeal = useCallback(() => {
+    setLobby(createDemoLobby(gameId));
+  }, [gameId]);
 
-    const tableView = uno.getTableView(state);
-    const probeRng = createRng(mixSeed(game.rngState, state.seq + 1));
-    const readyBot = DEMO_PLAYERS.filter((p) => p.bot).find((bot) =>
-      Boolean(
-        uno.bot!({
-          playerId: bot.id,
-          playerIds: DEMO_PLAYER_IDS,
-          view: uno.getPlayerView(state, bot.id),
-          tableView,
-          rng: probeRng,
-          level: 'normal',
-          now: Date.now(),
-        }),
-      ),
-    );
-    if (!readyBot) return;
+  const sendAction = useCallback(async (action: unknown): Promise<boolean> => {
+    let accepted = false;
+    setLobby((cur) => {
+      const next = applyDemoAction(cur, action);
+      accepted = next !== cur;
+      return next;
+    });
+    return accepted;
+  }, []);
 
-    const pace = uno.botDelayMs;
-    const base = typeof pace === 'function' ? pace(state) : (pace ?? BOT_DELAY_MS);
-    const delayMs = Math.round(
-      base * (0.8 + createRng(mixSeed(game.rngState, state.seq + 1)).next()),
-    );
-
+  useEffect(() => {
+    const at = nextDemoAt(lobby);
+    if (at === null) return;
+    const waitMs = Math.max(80, at - Date.now());
     const id = window.setTimeout(() => {
-      setGame((cur) => {
-        if (!cur || cur.state.phase !== 'play' || !uno.bot) return cur;
-        const tView = uno.getTableView(cur.state);
-        const evalRng = createRng(mixSeed(cur.rngState, cur.state.seq + 1));
-        for (const bot of DEMO_PLAYERS) {
-          if (!bot.bot) continue;
-          const act = uno.bot({
-            playerId: bot.id,
-            playerIds: DEMO_PLAYER_IDS,
-            view: uno.getPlayerView(cur.state, bot.id),
-            tableView: tView,
-            rng: evalRng,
-            level: 'normal',
-            now: Date.now(),
-          });
-          if (!act) continue;
-          const rng = createRng(cur.rngState);
-          const next = uno.applyAction(cur.state, bot.id, act, rng, Date.now());
-          return { state: next, rngState: rng.state };
-        }
-        return cur;
-      });
-    }, delayMs);
+      setLobby((cur) => tickDemoLobby(cur));
+    }, waitMs);
     return () => window.clearTimeout(id);
-  }, [game, state]);
+  }, [lobby]);
 
-  const PlayerScreen = unoUi.PlayerScreen;
-  const playerView = state ? uno.getPlayerView(state, ME_ID) : null;
-  const tableView = state ? uno.getTableView(state) : null;
-  const names = Object.fromEntries(DEMO_PLAYERS.map((p) => [p.id, p.name]));
-  const byId = new Map(DEMO_PLAYERS.map((p) => [p.id, p]));
+  const mod = games[gameId];
+  const ui = gameUis[gameId];
+  const gameName = catalogEntry(gameId)?.meta.name ?? mod?.meta.name ?? 'Demo';
+  const session = lobby.session;
+  const result = lobby.results;
+  const PlayerScreen = ui?.PlayerScreen;
+
+  const players: ScreenPlayer[] = lobby.players.map((p) => ({
+    id: p.id,
+    name: p.name,
+    avatar: p.avatar,
+    online: true,
+    bot: p.bot,
+  }));
+  const names = Object.fromEntries(players.map((p) => [p.id, p.name]));
+  const byId = new Map(players.map((p) => [p.id, p]));
+
+  const playerView = session && mod ? mod.getPlayerView(session.state, DEMO_ME_ID) : null;
+  const tableView = session && mod ? mod.getTableView(session.state) : null;
+
   const standings = result?.standings ?? [];
-  const mine = standings.find((st) => st.playerId === ME_ID);
-  const me = byId.get(ME_ID);
-
-  const pageClass = result ? 'lobby-page demo-page' : 'lobby-page demo-page lobby-page--fit';
+  const mine = standings.find((st) => st.playerId === DEMO_ME_ID);
+  const me = byId.get(DEMO_ME_ID);
 
   let outcome: Outcome = 'draw';
   let resultTitle = 'Game over';
@@ -198,15 +117,31 @@ export function DemoRoom() {
           : 'A draw';
   }
 
+  const pageClass = result ? 'lobby-page demo-page' : 'lobby-page demo-page lobby-page--fit';
+
   return (
     <div className={pageClass}>
       <header className="lobby-bar">
-        <h1 className="sr-only">UNO demo</h1>
+        <h1 className="sr-only">{gameName} demo</h1>
         <Link href="/" className="lobby-bar__home" aria-label="Jackdaw home">
           <BirdMark width={40} height={40} weight={3} />
         </Link>
         <div className="demo-bar__title">
-          <span className="demo-bar__game">UNO</span>
+          <label className="demo-bar__picker">
+            <span className="sr-only">Choose demo game</span>
+            <select
+              className="demo-bar__select"
+              value={gameId}
+              onChange={(e) => switchGame(e.target.value)}
+              aria-label="Choose demo game"
+            >
+              {DEMO_GAMES.map((g) => (
+                <option key={g.meta.id} value={g.meta.id}>
+                  {g.meta.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <span className="demo-bar__tag">Demo · vs bots</span>
         </div>
         <div className="lobby-bar__actions">
@@ -218,7 +153,7 @@ export function DemoRoom() {
           >
             {theme === 'dark' ? 'Light' : 'Dark'}
           </button>
-          <button type="button" className="demo-bar__btn" onClick={newGame}>
+          <button type="button" className="demo-bar__btn" onClick={newDeal}>
             New deal
           </button>
           <Link href="/" className="demo-bar__btn demo-bar__btn--go">
@@ -229,13 +164,13 @@ export function DemoRoom() {
 
       <div className="lobby-layout">
         <main className="lobby-main">
-          {!result && PlayerScreen && playerView && tableView ? (
+          {!result && PlayerScreen && playerView != null && tableView != null ? (
             <div className="game-shell game-shell--fit">
               <PlayerScreen
                 view={playerView}
                 tableView={tableView}
-                me={ME_ID}
-                players={DEMO_PLAYERS}
+                me={DEMO_ME_ID}
+                players={players}
                 sendAction={sendAction}
                 now={() => Date.now()}
                 reactions={[]}
@@ -244,7 +179,7 @@ export function DemoRoom() {
           ) : result ? (
             <div className="results">
               <Lid className="results__head">
-                <span className="jd-label">UNO demo complete</span>
+                <span className="jd-label">{gameName} demo complete</span>
                 <Verdict
                   outcome={outcome}
                   title={resultTitle}
@@ -262,7 +197,7 @@ export function DemoRoom() {
                         <li
                           key={st.playerId}
                           data-outcome={st.outcome}
-                          data-me={st.playerId === ME_ID || undefined}
+                          data-me={st.playerId === DEMO_ME_ID || undefined}
                           style={{ animationDelay: `${200 + i * 70}ms` }}
                         >
                           {p ? (
@@ -273,7 +208,7 @@ export function DemoRoom() {
                           <span className="results__who">
                             <span className="results__name">
                               {names[st.playerId] ?? 'Someone'}
-                              {st.playerId === ME_ID && <small> (you)</small>}
+                              {st.playerId === DEMO_ME_ID && <small> (you)</small>}
                             </span>
                             {st.role && <span className="results__role">{st.role}</span>}
                           </span>
@@ -286,15 +221,18 @@ export function DemoRoom() {
                   </ol>
                 </section>
               )}
-              <RecapStatsTable stats={result.stats} names={names} me={ME_ID} />
+              <RecapStatsTable stats={result.stats} names={names} me={DEMO_ME_ID} />
               <RecapTimeline events={result.recap} names={names} roundName={result.roundName} />
               <div className="dock">
-                <Plaque go onClick={newGame}>
-                  Play UNO again
+                <Plaque go onClick={newDeal}>
+                  Play {gameName} again
                 </Plaque>
                 <Link href="/" className="demo-bar__btn">
                   Start a live lobby for friends
                 </Link>
+                <a href="https://lastivka.dev/guide/jackdaw/" className="jd-link" rel="noopener">
+                  Back to Lastivka field guide ↗
+                </a>
               </div>
             </div>
           ) : null}
@@ -302,4 +240,38 @@ export function DemoRoom() {
       </div>
     </div>
   );
+}
+
+/** Local-only multi-game demo against bird bots; never opens or mutates server lobbies. */
+export function DemoRoom({
+  initialGame,
+  initialName = 'UNO',
+}: {
+  initialGame: string;
+  initialName?: string;
+}) {
+  const mounted = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false,
+  );
+
+  if (!mounted) {
+    return (
+      <div className="lobby-page demo-page lobby-page--fit">
+        <header className="lobby-bar">
+          <h1 className="sr-only">{initialName} demo</h1>
+          <Link href="/" className="lobby-bar__home" aria-label="Jackdaw home">
+            <BirdMark width={40} height={40} weight={3} />
+          </Link>
+          <div className="demo-bar__title">
+            <span className="demo-bar__game">{initialName}</span>
+            <span className="demo-bar__tag">Demo · vs bots</span>
+          </div>
+        </header>
+      </div>
+    );
+  }
+
+  return <DemoSession initialGame={initialGame} />;
 }

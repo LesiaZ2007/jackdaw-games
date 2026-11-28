@@ -170,6 +170,9 @@ export function Home() {
                   Browse the games
                   <Icon.down />
                 </button>
+                <Link href="/demo" className="jd-link">
+                  Try a solo demo
+                </Link>
                 <Link href="/tv" className="jd-link">
                   Show a lobby on a TV
                 </Link>

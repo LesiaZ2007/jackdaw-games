@@ -72,6 +72,12 @@ export function About() {
         <Link href="/games" className="jd-link">
           Browse the games
         </Link>
+        <Link href="/demo" className="jd-link">
+          Try a solo demo
+        </Link>
+        <a href="https://lastivka.dev/guide/jackdaw/" className="jd-link" rel="noopener">
+          Lastivka field guide ↗
+        </a>
       </nav>
     </main>
   );

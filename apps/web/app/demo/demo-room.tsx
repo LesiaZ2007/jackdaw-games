@@ -41,7 +41,13 @@ const OUTCOME_LABEL: Record<Standing['outcome'], string> = {
 
 function DemoSession({ initialGame }: { initialGame: string }) {
   const theme = useTheme();
-  const [gameId, setGameId] = useState(() => resolveDemoGameId(initialGame));
+  const [gameId, setGameId] = useState(() => {
+    const fromUrl =
+      typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('game')
+        : null;
+    return resolveDemoGameId(fromUrl ?? initialGame);
+  });
   const [lobby, setLobby] = useState<Lobby>(() => createDemoLobby(gameId));
 
   const switchGame = useCallback((nextId: string) => {

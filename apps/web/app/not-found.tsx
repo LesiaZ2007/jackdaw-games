@@ -16,6 +16,12 @@ export default function NotFound() {
           <Link href="/" className="jd-plaque jd-plaque--go">
             Back home
           </Link>
+          <Link href="/demo" className="jd-plaque jd-plaque--small">
+            Try solo demo
+          </Link>
+          <a href="https://lastivka.dev/guide/jackdaw/" className="jd-link" rel="noopener">
+            Back to Lastivka ↗
+          </a>
         </div>
       </Lid>
     </main>

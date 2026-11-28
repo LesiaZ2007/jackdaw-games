@@ -1,11 +1,26 @@
 import type { Metadata } from 'next';
 import { DemoRoom } from './demo-room';
+import { resolveDemoGameId } from './demo-engine';
+import { catalogEntry } from '../../lib/catalog';
 
 export const metadata: Metadata = {
-  title: 'Try UNO · Demo',
-  description: 'Play a local round of UNO against three bird bots in your browser.',
+  title: 'Solo Demo vs Bots',
+  description:
+    'Play UNO, Cambio, Battleship, WordHoard, and more against bird bots right in your browser.',
+  openGraph: {
+    title: 'Solo Demo vs Bots · Jackdaw Games',
+    description:
+      'Play UNO, Cambio, Battleship, WordHoard, and more against bird bots right in your browser.',
+  },
 };
 
-export default function DemoPage() {
-  return <DemoRoom />;
+export default async function DemoPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ game?: string }>;
+}) {
+  const params = searchParams ? await searchParams : undefined;
+  const gameId = resolveDemoGameId(params?.game);
+  const name = catalogEntry(gameId)?.meta.name ?? 'UNO';
+  return <DemoRoom initialGame={gameId} initialName={name} />;
 }
